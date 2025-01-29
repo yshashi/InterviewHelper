@@ -1,0 +1,343 @@
+---
+layout: ../../layouts/Layout.astro
+title: Key Features of Angular
+---
+
+# Key Features of Angular
+
+## 1. Component-Based Architecture
+
+Angular's architecture is built around components, which are the fundamental building blocks of Angular applications.
+
+```typescript
+// Example of a component with different features
+@Component({
+  selector: 'app-user-profile',
+  template: `
+    <div class="profile-card">
+      <h2>{{ user.name | titlecase }}</h2>
+      <p>{{ user.bio }}</p>
+      <button (click)="updateProfile()">Update</button>
+    </div>
+  `,
+  styles: [`
+    .profile-card {
+      padding: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+  `]
+})
+export class UserProfileComponent implements OnInit {
+  user = { name: '', bio: '' };
+
+  ngOnInit() {
+    this.loadUserProfile();
+  }
+
+  loadUserProfile() {
+    // Load user data
+  }
+}
+```
+
+## 2. TypeScript Integration
+
+Angular is built with TypeScript, providing strong typing, object-oriented features, and compile-time error checking.
+
+```typescript
+// Interface definition
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+  lastLogin?: Date;
+}
+
+// Service with TypeScript
+@Injectable({
+  providedIn: 'root'
+})
+class UserService {
+  private users: User[] = [];
+
+  getUser(id: number): User | undefined {
+    return this.users.find(user => user.id === id);
+  }
+
+  addUser(user: Omit<User, 'id'>): User {
+    const newUser = { ...user, id: this.generateId() };
+    this.users.push(newUser);
+    return newUser;
+  }
+}
+```
+
+## 3. Dependency Injection (DI)
+
+Angular's DI system helps manage component dependencies and enables better testing and modularity.
+
+```typescript
+// Service definition
+@Injectable({
+  providedIn: 'root'
+})
+class LoggerService {
+  log(message: string) {
+    console.log(`[${new Date().toISOString()}]: ${message}`);
+  }
+}
+
+// Using the service in a component
+@Component({
+  selector: 'app-example'
+})
+class ExampleComponent {
+  constructor(
+    private logger: LoggerService,
+    private userService: UserService
+  ) {}
+
+  performAction() {
+    this.logger.log('Action performed');
+    // Use userService
+  }
+}
+```
+
+## 4. Powerful Template System
+
+Angular's template syntax provides powerful features for building dynamic UIs.
+
+```typescript
+@Component({
+  selector: 'app-todo-list',
+  template: `
+    <!-- Event Binding -->
+    <button (click)="addTask()">Add Task</button>
+
+    <!-- Property Binding -->
+    <input [value]="newTask" (input)="newTask = $event.target.value">
+
+    <!-- Structural Directives -->
+    <ul>
+      <li *ngFor="let task of tasks; let i = index">
+        <!-- Two-way Binding -->
+        <input [(ngModel)]="tasks[i]">
+        
+        <!-- Event with Parameter -->
+        <button (click)="removeTask(i)">Delete</button>
+      </li>
+    </ul>
+
+    <!-- Conditional Rendering -->
+    <p *ngIf="tasks.length === 0">No tasks available</p>
+  `
+})
+class TodoListComponent {
+  tasks: string[] = [];
+  newTask = '';
+
+  addTask() {
+    if (this.newTask.trim()) {
+      this.tasks.push(this.newTask);
+      this.newTask = '';
+    }
+  }
+
+  removeTask(index: number) {
+    this.tasks.splice(index, 1);
+  }
+}
+```
+
+## 5. Forms and Validation
+
+Angular provides two types of forms: Template-driven and Reactive forms.
+
+```typescript
+// Reactive Form Example
+@Component({
+  selector: 'app-registration',
+  template: `
+    <form [formGroup]="registrationForm" (ngSubmit)="onSubmit()">
+      <div>
+        <input formControlName="email" placeholder="Email">
+        <div *ngIf="email.invalid && email.touched" class="error">
+          <span *ngIf="email.errors?.['required']">Email is required</span>
+          <span *ngIf="email.errors?.['email']">Invalid email format</span>
+        </div>
+      </div>
+
+      <div>
+        <input formControlName="password" type="password" placeholder="Password">
+        <div *ngIf="password.invalid && password.touched" class="error">
+          <span *ngIf="password.errors?.['minlength']">
+            Password must be at least 8 characters
+          </span>
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="registrationForm.invalid">
+        Register
+      </button>
+    </form>
+  `
+})
+class RegistrationComponent {
+  registrationForm = new FormGroup({
+    email: new FormControl('', [Validators.required, Validators.email]),
+    password: new FormControl('', [
+      Validators.required,
+      Validators.minLength(8)
+    ])
+  });
+
+  get email() { return this.registrationForm.get('email')!; }
+  get password() { return this.registrationForm.get('password')!; }
+
+  onSubmit() {
+    if (this.registrationForm.valid) {
+      console.log(this.registrationForm.value);
+    }
+  }
+}
+```
+
+## 6. HTTP Client
+
+Angular provides a powerful HTTP client for making API calls.
+
+```typescript
+@Injectable({
+  providedIn: 'root'
+})
+class ApiService {
+  constructor(private http: HttpClient) {}
+
+  // GET request with type safety
+  getUsers(): Observable<User[]> {
+    return this.http.get<User[]>('/api/users').pipe(
+      retry(3),
+      catchError(this.handleError)
+    );
+  }
+
+  // POST request with body
+  createUser(user: Omit<User, 'id'>): Observable<User> {
+    return this.http.post<User>('/api/users', user).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    console.error('An error occurred:', error.message);
+    return throwError(() => 
+      new Error('Something went wrong; please try again later.'));
+  }
+}
+```
+
+## 7. Routing and Navigation
+
+Angular's router enables navigation between views.
+
+```typescript
+// Route configuration
+const routes: Routes = [
+  {
+    path: 'users',
+    component: UserListComponent,
+    children: [
+      { path: ':id', component: UserDetailComponent }
+    ],
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'admin',
+    loadChildren: () => 
+      import('./admin/admin.module').then(m => m.AdminModule),
+    canLoad: [AdminGuard]
+  }
+];
+
+// Using router in components
+@Component({
+  template: `
+    <nav>
+      <a routerLink="/users" routerLinkActive="active">Users</a>
+      <a [routerLink]="['/users', userId]">User Details</a>
+    </nav>
+    <router-outlet></router-outlet>
+  `
+})
+class AppComponent {
+  constructor(private router: Router) {}
+
+  navigateToUser(id: number) {
+    this.router.navigate(['/users', id], {
+      queryParams: { tab: 'profile' }
+    });
+  }
+}
+```
+
+## 8. Standalone Components (Modern Angular)
+
+Angular's standalone components provide a simpler way to build applications.
+
+```typescript
+// Standalone component
+@Component({
+  standalone: true,
+  selector: 'app-feature',
+  imports: [
+    CommonModule,
+    RouterModule,
+    SharedComponentsModule
+  ],
+  template: `
+    <div>
+      <h1>{{ title }}</h1>
+      <shared-component></shared-component>
+    </div>
+  `
+})
+export class FeatureComponent {
+  title = 'Feature Component';
+}
+
+// Bootstrap standalone application
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes),
+    provideHttpClient(),
+    provideAnimations()
+  ]
+}).catch(err => console.error(err));
+```
+
+## Interview Tips
+
+When discussing Angular's key features in an interview:
+
+1. **Emphasize Modern Features**:
+   - Highlight standalone components
+   - Discuss performance improvements
+   - Mention modern development practices
+
+2. **Real-world Applications**:
+   - Explain how features solve common problems
+   - Share examples from your experience
+   - Discuss scalability benefits
+
+3. **Best Practices**:
+   - Mention Angular's opinionated nature
+   - Discuss built-in security features
+   - Emphasize testing capabilities
+
+4. **Performance Considerations**:
+   - Talk about change detection strategies
+   - Mention lazy loading capabilities
+   - Discuss optimization techniques

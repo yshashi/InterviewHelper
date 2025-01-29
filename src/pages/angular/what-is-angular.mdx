@@ -1,0 +1,246 @@
+---
+layout: ../../layouts/Layout.astro
+title: What is Angular, and how is it different from AngularJS?
+---
+
+# What is Angular, and how is it different from AngularJS?
+
+## Introduction
+
+Angular is a modern, powerful TypeScript-based web application framework developed and maintained by Google. To understand Angular better and its differences from AngularJS, let's dive deep into both frameworks.
+
+## Angular (2+)
+
+Angular (version 2 and above) is a complete rewrite of AngularJS, introducing many modern web development concepts and best practices.
+
+### Key Features of Angular:
+
+1. **Component-Based Architecture**
+```typescript
+// Example of an Angular component
+@Component({
+  selector: 'app-user-profile',
+  template: `
+    <div class="user-profile">
+      <h2>{{ user.name }}</h2>
+      <p>{{ user.email }}</p>
+      <button (click)="updateProfile()">Update Profile</button>
+    </div>
+  `
+})
+export class UserProfileComponent {
+  user = {
+    name: 'John Doe',
+    email: 'john@example.com'
+  };
+
+  updateProfile() {
+    // Update logic here
+  }
+}
+```
+
+2. **TypeScript Support**
+- Strong typing
+- Object-oriented features
+- Better tooling and IDE support
+```typescript
+// Interface example
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+}
+
+// Service with TypeScript
+@Injectable({
+  providedIn: 'root'
+})
+export class UserService {
+  getUser(id: number): Observable<User> {
+    return this.http.get<User>(`/api/users/${id}`);
+  }
+}
+```
+
+3. **Dependency Injection**
+```typescript
+// Service definition
+@Injectable({
+  providedIn: 'root'
+})
+export class LoggerService {
+  log(message: string) {
+    console.log(`[${new Date().toISOString()}]: ${message}`);
+  }
+}
+
+// Component using the service
+@Component({
+  selector: 'app-example'
+})
+export class ExampleComponent {
+  constructor(private logger: LoggerService) {
+    this.logger.log('Component initialized');
+  }
+}
+```
+
+4. **Modules**
+```typescript
+@NgModule({
+  declarations: [
+    AppComponent,
+    UserProfileComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    HttpClientModule
+  ],
+  providers: [UserService],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+5. **Standalone Components (Angular 15+)**
+Angular now supports standalone components, enabling a module-free architecture while maintaining compatibility with existing modules.
+```typescript
+// Standalone component example
+@Component({
+  standalone: true,
+  selector: 'app-profile-editor',
+  imports: [CommonModule, ReactiveFormsModule],
+  template: `
+    <form [formGroup]="profileForm">
+      <input formControlName="username">
+      <button (click)="save()">Save</button>
+    </form>
+  `
+})
+export class ProfileEditorComponent {
+  profileForm = new FormGroup({
+    username: new FormControl('')
+  });
+
+  save() {
+    // Save logic
+  }
+}
+```
+
+6. **Module-Free Architecture**
+
+Modern Angular applications can bootstrap without modules using standalone components and direct provider configuration.
+```typescript
+// main.ts with standalone bootstrap
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
+import { AppComponent } from './app/app.component';
+import { routes } from './app/routes';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes),
+    { provide: API_BASE_URL, useValue: 'https://api.example.com' }
+  ]
+});
+```
+
+## AngularJS (1.x)
+
+AngularJS, also known as Angular 1.x, was the original framework released in 2010.
+
+### Key Features of AngularJS:
+
+1. **Scope and Controllers**
+```javascript
+// AngularJS controller example
+angular.module('myApp', [])
+  .controller('UserController', function($scope) {
+    $scope.user = {
+      name: 'John Doe',
+      email: 'john@example.com'
+    };
+    
+    $scope.updateUser = function() {
+      // Update logic here
+    };
+  });
+```
+
+2. **Two-way Data Binding**
+```html
+<!-- AngularJS two-way binding -->
+<input type="text" ng-model="user.name">
+<p>Hello, {{user.name}}!</p>
+```
+
+## Key Differences
+
+1. **Architecture**
+   - **Angular**: Component-based architecture
+   - **AngularJS**: MVC (Model-View-Controller) architecture
+
+2. **Language**
+   - **Angular**: TypeScript (with decorators and static typing)
+   - **AngularJS**: JavaScript (ES5, with no type checking)
+
+3. **Mobile Support**
+   - **Angular**: Built with mobile in mind, better performance
+   - **AngularJS**: Limited mobile support
+
+4. **Performance**
+   - **Angular**: Improved performance with Zone.js and Ivy renderer
+   - **AngularJS**: Slower due to digest cycle and watchers
+
+5. **Dependency Injection**
+```typescript
+// Angular (Modern)
+@Injectable({
+  providedIn: 'root'
+})
+class MyService {}
+
+// AngularJS (Old)
+angular.module('myApp').service('myService', function() {});
+```
+
+6. **Data Binding**
+```typescript
+// Angular (One-way by default)
+@Component({
+  template: '<div>{{name}}</div>'
+})
+class MyComponent {
+  name = 'John';
+}
+
+// AngularJS (Two-way by default)
+$scope.name = 'John';
+```
+
+## Interview Tips
+
+When answering this question in an interview:
+
+1. **Highlight the Evolution**:
+   - Explain how Angular evolved from AngularJS
+   - Mention the complete rewrite and why it was necessary
+
+2. **Focus on Modern Features**:
+   - Emphasize TypeScript benefits
+   - Discuss component-based architecture
+   - Mention performance improvements
+
+3. **Real-world Context**:
+   - Share experience with both versions if applicable
+   - Discuss migration scenarios
+   - Explain why companies choose Angular over AngularJS
+
+4. **Performance Implications**:
+   - Discuss the improved change detection
+   - Mention tree-shaking and better bundle sizes
+   - Highlight mobile performance benefits

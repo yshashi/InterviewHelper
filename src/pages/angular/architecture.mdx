@@ -1,0 +1,298 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Architecture Explained
+---
+
+# Angular Architecture Explained
+
+## Overview
+
+Angular follows a component-based architecture that promotes modularity, maintainability, and scalability. Here's a comprehensive overview of Angular's architecture:
+
+![Angular Architecture Overview](/images/angular/architecture.svg)
+
+## 1. Components and Templates
+
+Components are the fundamental building blocks of Angular applications. They consist of:
+
+```typescript
+// Component Definition
+@Component({
+  selector: 'app-user-profile',
+  template: `
+    <div class="profile">
+      <h2>{{ user.name }}</h2>
+      <p>{{ user.bio }}</p>
+      <button (click)="updateProfile()">Update</button>
+    </div>
+  `,
+  styles: [`
+    .profile {
+      padding: 1rem;
+      border: 1px solid #ddd;
+    }
+  `]
+})
+export class UserProfileComponent {
+  @Input() user: User;
+  @Output() update = new EventEmitter<User>();
+
+  updateProfile() {
+    this.update.emit(this.user);
+  }
+}
+```
+
+### Component Tree Structure
+
+Components in Angular form a tree structure, with the AppComponent at the root:
+
+![Component Tree Structure](/images/angular/component-tree.svg)
+
+## 2. Modules
+
+Modules in Angular help organize the application into cohesive blocks of functionality:
+
+```typescript
+@NgModule({
+  declarations: [
+    UserProfileComponent,
+    UserListComponent
+  ],
+  imports: [
+    CommonModule,
+    SharedModule,
+    UserRoutingModule
+  ],
+  providers: [
+    UserService,
+    { provide: API_URL, useValue: 'https://api.example.com' }
+  ],
+  exports: [UserProfileComponent]
+})
+export class UserModule { }
+```
+
+### Module Types:
+
+1. **Root Module (AppModule)**
+   - Bootstrap component
+   - Core services
+   - App-wide providers
+
+2. **Feature Modules**
+   - Domain-specific functionality
+   - Lazy loading support
+   - Encapsulated components
+
+3. **Shared Modules**
+   - Reusable components
+   - Common directives
+   - Pipes
+
+## 3. Dependency Injection (DI)
+
+Angular's DI system is hierarchical and follows the component tree:
+
+![Dependency Injection Flow](/images/angular/di-flow.svg)
+
+```typescript
+// Service with DI
+@Injectable({
+  providedIn: 'root'  // Application-wide singleton
+})
+export class DataService {
+  constructor(
+    private http: HttpClient,
+    @Inject(API_URL) private apiUrl: string
+  ) {}
+
+  getData(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/data`);
+  }
+}
+
+// Component using the service
+@Component({
+  providers: [
+    // Component-level provider
+    { provide: DataService, useClass: MockDataService }
+  ]
+})
+export class DataComponent {
+  constructor(private dataService: DataService) {}
+}
+```
+
+## 4. Data Flow and Change Detection
+
+Angular uses a unidirectional data flow and Zone.js for change detection:
+
+```typescript
+@Component({
+  selector: 'app-parent',
+  template: `
+    <app-child
+      [data]="parentData"
+      (update)="onUpdate($event)">
+    </app-child>
+  `
+})
+export class ParentComponent {
+  parentData = { value: 'initial' };
+
+  onUpdate(newValue: string) {
+    this.parentData = { value: newValue };
+  }
+}
+
+@Component({
+  selector: 'app-child',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div>{{ data.value }}</div>
+    <button (click)="updateValue()">Update</button>
+  `
+})
+export class ChildComponent {
+  @Input() data: { value: string };
+  @Output() update = new EventEmitter<string>();
+
+  updateValue() {
+    this.update.emit('new value');
+  }
+}
+```
+
+## 5. Services and State Management
+
+Services manage data, state, and business logic:
+
+```typescript
+// State Management Service
+@Injectable({
+  providedIn: 'root'
+})
+export class StateService {
+  private state = new BehaviorSubject<AppState>(initialState);
+  
+  // Expose state as observable
+  state$ = this.state.asObservable();
+
+  // Update state
+  updateState(newState: Partial<AppState>) {
+    this.state.next({
+      ...this.state.value,
+      ...newState
+    });
+  }
+
+  // Select specific state slice
+  select<T>(selector: (state: AppState) => T): Observable<T> {
+    return this.state$.pipe(
+      map(selector),
+      distinctUntilChanged()
+    );
+  }
+}
+```
+
+## 6. Routing and Navigation
+
+Angular's router enables navigation and lazy loading:
+
+```typescript
+const routes: Routes = [
+  {
+    path: 'users',
+    component: UserListComponent,
+    children: [
+      {
+        path: ':id',
+        component: UserDetailComponent,
+        resolve: {
+          user: UserResolver
+        }
+      }
+    ],
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'admin',
+    loadChildren: () => 
+      import('./admin/admin.module').then(m => m.AdminModule),
+    canLoad: [AdminGuard]
+  }
+];
+
+// Router Service Usage
+@Injectable()
+export class NavigationService {
+  constructor(
+    private router: Router,
+    private location: Location
+  ) {}
+
+  navigateToUser(id: string) {
+    this.router.navigate(['/users', id], {
+      queryParams: { view: 'details' }
+    });
+  }
+
+  goBack() {
+    this.location.back();
+  }
+}
+```
+
+## 7. HTTP and Backend Communication
+
+Angular's HttpClient handles API communication:
+
+```typescript
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiService {
+  constructor(
+    private http: HttpClient,
+    private errorHandler: ErrorHandlingService
+  ) {}
+
+  getData<T>(endpoint: string): Observable<T> {
+    return this.http.get<T>(`${this.apiUrl}/${endpoint}`).pipe(
+      retry(3),
+      catchError(error => this.errorHandler.handle(error))
+    );
+  }
+
+  postData<T>(endpoint: string, data: any): Observable<T> {
+    return this.http.post<T>(`${this.apiUrl}/${endpoint}`, data).pipe(
+      catchError(error => this.errorHandler.handle(error))
+    );
+  }
+}
+```
+
+## Interview Tips
+
+When discussing Angular's architecture in interviews:
+
+1. **Emphasize Modularity**
+   - Explain how components, modules, and services promote clean code
+   - Discuss how DI enables testing and maintainability
+
+2. **Performance Considerations**
+   - Change detection strategies
+   - Lazy loading
+   - State management patterns
+
+3. **Best Practices**
+   - Smart vs. Presentational components
+   - Service organization
+   - Module structure
+
+4. **Real-world Examples**
+   - Share experiences with large-scale applications
+   - Discuss architectural decisions and trade-offs
+   - Explain how Angular's architecture solves common problems

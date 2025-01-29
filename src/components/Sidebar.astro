@@ -3,152 +3,347 @@ const currentPath = Astro.url.pathname;
 
 const menuItems = [
   {
-    title: 'Getting Started',
-    icon: 'fas fa-rocket',
+    title: "Getting Started",
+    icon: "fas fa-rocket",
     items: [
-      { title: 'Introduction', path: '/introduction' },
-      { title: 'Getting Started', path: '/getting-started' }
-    ]
+      { title: "Introduction", path: "/introduction" },
+      { title: "Getting Started", path: "/getting-started" },
+    ],
   },
   {
-    title: 'Frontend Development',
-    icon: 'fas fa-desktop',
+    title: "Frontend Development",
+    icon: "fas fa-desktop",
     items: [
       {
-        title: 'Angular',
-        icon: 'fab fa-angular',
+        title: "Angular",
+        icon: "fab fa-angular",
         items: [
           {
-            title: 'Fundamentals',
+            title: "Basic Questions",
             items: [
-              { title: 'Architecture Overview', path: '/angular/architecture' },
-              { title: 'Components & Templates', path: '/angular/components-templates' },
-              { title: 'Dependency Injection', path: '/angular/dependency-injection' }
-            ]
+              {
+                title:
+                  "What is Angular, and how is it different from AngularJS?",
+                path: "/angular/what-is-angular",
+              },
+              {
+                title: "Key features of Angular?",
+                path: "/angular/key-features",
+              },
+              {
+                title: "Explain Angular’s architecture.",
+                path: "/angular/architecture",
+              },
+              {
+                title: "Explain Angular’s new architecture.",
+                path: "/angular/modern-architecture",
+              },
+              {
+                title: "Purpose of TypeScript in Angular?",
+                path: "/angular/typescript-purpose",
+              },
+              {
+                title: "components in Angular?",
+                path: "/angular/components",
+              },
+              {
+                title: "Data binding in Angular?",
+                path: "/angular/data-binding",
+              },
+              {
+                title: "What is a module in Angular, and why is it important?",
+                path: "/angular/module",
+              },
+              {
+                title: "What is Standalone Components?",
+                path: "/angular/standalone-components",
+              },
+              {
+                title: "Signals in angular?",
+                path: "/angular/signals",
+              },
+              {
+                title: "Explain the purpose of Angular CLI?",
+                path: "/angular/angular-cli",
+              },
+              {
+                title:
+                  "What are decorators in Angular? Name a few commonly used ones.",
+                path: "/angular/decorators",
+              },
+              {
+                title: "What are directives in Angular?",
+                path: "/angular/directives",
+              },
+            ],
           },
           {
-            title: 'Advanced Concepts',
+            title: "Intermediate Questions",
             items: [
-              { title: 'Change Detection', path: '/angular/change-detection' },
-              { title: 'Performance Optimization', path: '/angular/performance' },
-              { title: 'Security Best Practices', path: '/angular/security' }
-            ]
+              {
+                title:
+                  "What is the difference between ngIf and ngFor in Angular?",
+                path: "/angular/ngif-vs-ngfor",
+              },
+              {
+                title:
+                  "What is the difference between @Input() and @Output() decorators?",
+                path: "/angular/input-output",
+              },
+              {
+                title: "What is the purpose of Angular Pipes?",
+                path: "/angular/pipes",
+              },
+              {
+                title:
+                  "What is the difference between Template-Driven Forms and Reactive Forms in Angular?",
+                path: "/angular/forms",
+              },
+              {
+                title: "How does Angular handle routing?",
+                path: "/angular/routing",
+              },
+              {
+                title:
+                  "What are lifecycle hooks in Angular? Explain ngOnInit and ngOnDestroy",
+                path: "/angular/lifecycle-hooks",
+              },
+              {
+                title: "How is dependency injection implemented in Angular?",
+                path: "/angular/dependency-injection",
+              },
+              {
+                title: "What are Angular services, and how do you create one?",
+                path: "/angular/services",
+              },
+              {
+                title: "What is RxJS, and how is it used in Angular?",
+                path: "/angular/rxjs",
+              },
+              {
+                title:
+                  "What are Observables, and how are they different from Promises?",
+                path: "/angular/observables",
+              },
+            ],
           },
           {
-            title: 'State Management',
+            title: "Advanced Questions",
             items: [
-              { title: 'NgRx Overview', path: '/angular/ngrx' },
-              { title: 'RxJS Patterns', path: '/angular/rxjs-patterns' },
-              { title: 'Services & State', path: '/angular/services-state' }
-            ]
-          }
-        ]
+              {
+                title: "Explain the concept of lazy loading in Angular?",
+                path: "/angular/lazy-loading",
+              },
+              {
+                title: "What is ng-content, and how is it used?",
+                path: "/angular/ng-content",
+              },
+              {
+                title: "What are Angular Guards? Explain the different types.",
+                path: "/angular/guards",
+              },
+              {
+                title: "How do you manage state in an Angular application?",
+                path: "/angular/state-management",
+              },
+              {
+                title:
+                  "What is the purpose of ViewChild and ContentChild in Angular?",
+                path: "/angular/viewchild-contentchild",
+              },
+              {
+                title:
+                  "How do you optimize an Angular application for better performance?",
+                path: "/angular/performance",
+              },
+              {
+                title: "What is AOT (Ahead-of-Time) Compilation in Angular?",
+                path: "/angular/aot-compilation",
+              },
+              {
+                title:
+                  "What is the difference between constructor and ngOnInit in a component?",
+                path: "/angular/constructor-vs-ngoninit",
+              },
+              {
+                title:
+                  "What are Angular animations, and how are they implemented?",
+                path: "/angular/animations",
+              },
+              {
+                title:
+                  "How does Angular handle error management and debugging?",
+                path: "/angular/error-management",
+              },
+            ],
+          },
+          {
+            title: "Scenario-Based Questions",
+            items: [
+              {
+                title: "How would you debug a slow Angular app?",
+                path: "/angular/debugging",
+              },
+              {
+                title:
+                  "How do you secure an Angular application from vulnerabilities like XSS and CSRF?",
+                path: "/angular/security",
+              },
+              {
+                title:
+                  "How do you handle large datasets in Angular without compromising performance?",
+                path: "/angular/large-datasets",
+              },
+              {
+                title:
+                  "Explain how you would implement dynamic forms in Angular?",
+                path: "/angular/dynamic-forms",
+              },
+              {
+                title:
+                  "How do you handle multiple API calls simultaneously in Angular?",
+                path: "/angular/multiple-api-calls",
+              },
+              {
+                title:
+                  "What would you do if a component’s ngOnInit is not executing?",
+                path: "/angular/ngoninit-issues",
+              },
+              {
+                title: "How would you share data between sibling components?",
+                path: "/angular/component-communication",
+              },
+              {
+                title:
+                  "Describe how you would implement server-side rendering in Angular?",
+                path: "/angular/ssr",
+              },
+              {
+                title:
+                  "How do you ensure a component only loads after data is fetched from an API?",
+                path: "/angular/component-lazy-load",
+              },
+              {
+                title:
+                  "What steps would you take to migrate an AngularJS project to Angular?",
+                path: "/angular/migration-angularjs",
+              },
+            ],
+          },
+        ],
+      },
+
+      {
+        title: "React",
+        icon: "fab fa-react",
+        items: [
+          {
+            title: "Core Concepts",
+            items: [
+              { title: "Components & Props", path: "/react/components-props" },
+              { title: "Hooks in Depth", path: "/react/hooks" },
+              { title: "Context API", path: "/react/context-api" },
+            ],
+          },
+          {
+            title: "Advanced Patterns",
+            items: [
+              {
+                title: "Performance Patterns",
+                path: "/react/performance-patterns",
+              },
+              { title: "Custom Hooks", path: "/react/custom-hooks" },
+              { title: "Error Boundaries", path: "/react/error-boundaries" },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Backend Development",
+    icon: "fas fa-server",
+    items: [
+      {
+        title: ".NET",
+        icon: "fas fa-cube",
+        items: [
+          {
+            title: "ASP.NET Core",
+            items: [
+              { title: "Web API Design", path: "/dotnet/web-api" },
+              { title: "Middleware Pipeline", path: "/dotnet/middleware" },
+              { title: "Authentication & Authorization", path: "/dotnet/auth" },
+            ],
+          },
+          {
+            title: "Data Access",
+            items: [
+              { title: "Entity Framework Core", path: "/dotnet/ef-core" },
+              { title: "CQRS Pattern", path: "/dotnet/cqrs" },
+              { title: "Repository Pattern", path: "/dotnet/repository" },
+            ],
+          },
+          {
+            title: "Architecture",
+            items: [
+              {
+                title: "Clean Architecture",
+                path: "/dotnet/clean-architecture",
+              },
+              { title: "Microservices", path: "/dotnet/microservices" },
+              { title: "Domain-Driven Design", path: "/dotnet/ddd" },
+            ],
+          },
+        ],
       },
       {
-        title: 'React',
-        icon: 'fab fa-react',
+        title: "Node.js",
+        icon: "fab fa-node-js",
         items: [
           {
-            title: 'Core Concepts',
+            title: "Core Concepts",
             items: [
-              { title: 'Components & Props', path: '/react/components-props' },
-              { title: 'Hooks in Depth', path: '/react/hooks' },
-              { title: 'Context API', path: '/react/context-api' }
-            ]
+              { title: "Event Loop", path: "/nodejs/event-loop" },
+              { title: "Streams & Buffers", path: "/nodejs/streams" },
+              { title: "Error Handling", path: "/nodejs/error-handling" },
+            ],
           },
           {
-            title: 'Advanced Patterns',
+            title: "Database Integration",
             items: [
-              { title: 'Performance Patterns', path: '/react/performance-patterns' },
-              { title: 'Custom Hooks', path: '/react/custom-hooks' },
-              { title: 'Error Boundaries', path: '/react/error-boundaries' }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    title: 'Backend Development',
-    icon: 'fas fa-server',
-    items: [
-      {
-        title: '.NET',
-        icon: 'fas fa-cube',
-        items: [
-          {
-            title: 'ASP.NET Core',
-            items: [
-              { title: 'Web API Design', path: '/dotnet/web-api' },
-              { title: 'Middleware Pipeline', path: '/dotnet/middleware' },
-              { title: 'Authentication & Authorization', path: '/dotnet/auth' }
-            ]
+              { title: "Prisma ORM", path: "/nodejs/prisma" },
+              { title: "MongoDB", path: "/nodejs/mongodb" },
+              { title: "SQL Databases", path: "/nodejs/sql" },
+            ],
           },
-          {
-            title: 'Data Access',
-            items: [
-              { title: 'Entity Framework Core', path: '/dotnet/ef-core' },
-              { title: 'CQRS Pattern', path: '/dotnet/cqrs' },
-              { title: 'Repository Pattern', path: '/dotnet/repository' }
-            ]
-          },
-          {
-            title: 'Architecture',
-            items: [
-              { title: 'Clean Architecture', path: '/dotnet/clean-architecture' },
-              { title: 'Microservices', path: '/dotnet/microservices' },
-              { title: 'Domain-Driven Design', path: '/dotnet/ddd' }
-            ]
-          }
-        ]
+        ],
       },
-      {
-        title: 'Node.js',
-        icon: 'fab fa-node-js',
-        items: [
-          {
-            title: 'Core Concepts',
-            items: [
-              { title: 'Event Loop', path: '/nodejs/event-loop' },
-              { title: 'Streams & Buffers', path: '/nodejs/streams' },
-              { title: 'Error Handling', path: '/nodejs/error-handling' }
-            ]
-          },
-          {
-            title: 'Database Integration',
-            items: [
-              { title: 'Prisma ORM', path: '/nodejs/prisma' },
-              { title: 'MongoDB', path: '/nodejs/mongodb' },
-              { title: 'SQL Databases', path: '/nodejs/sql' }
-            ]
-          }
-        ]
-      }
-    ]
+    ],
   },
   {
-    title: 'DevOps & Deployment',
-    icon: 'fas fa-cloud',
+    title: "DevOps & Deployment",
+    icon: "fas fa-cloud",
     items: [
       {
-        title: 'CI/CD',
+        title: "CI/CD",
         items: [
-          { title: 'GitHub Actions', path: '/devops/github-actions' },
-          { title: 'Azure DevOps', path: '/devops/azure-devops' },
-          { title: 'Docker', path: '/devops/docker' }
-        ]
-      }
-    ]
+          { title: "GitHub Actions", path: "/devops/github-actions" },
+          { title: "Azure DevOps", path: "/devops/azure-devops" },
+          { title: "Docker", path: "/devops/docker" },
+        ],
+      },
+    ],
   },
   {
-    title: 'Testing',
-    icon: 'fas fa-vial',
+    title: "Testing",
+    icon: "fas fa-vial",
     items: [
-      { title: 'Unit Testing', path: '/testing/unit-testing' },
-      { title: 'Integration Testing', path: '/testing/integration-testing' },
-      { title: 'E2E Testing', path: '/testing/e2e-testing' }
-    ]
-  }
+      { title: "Unit Testing", path: "/testing/unit-testing" },
+      { title: "Integration Testing", path: "/testing/integration-testing" },
+      { title: "E2E Testing", path: "/testing/e2e-testing" },
+    ],
+  },
 ];
 ---
 
@@ -162,48 +357,67 @@ const menuItems = [
         >
           <div class="flex items-center">
             <i class={`${section.icon} w-4 lg:w-5 h-4 lg:h-5 mr-2`} />
-            <span class="font-medium text-sm lg:text-base">{section.title}</span>
+            <span class="font-medium text-sm lg:text-base">
+              {section.title}
+            </span>
           </div>
           <i class="fas fa-chevron-down transform transition-transform duration-200 text-sm lg:text-base" />
         </button>
 
-        <div class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1" id={`section-${index}-content`}>
+        <div
+          class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1"
+          id={`section-${index}-content`}
+        >
           {section.items?.map((item, subIndex) => (
             <>
-              {'items' in item ? (
+              {"items" in item ? (
                 <div class="mb-1.5 lg:mb-2">
                   <button
                     class="w-full flex items-center justify-between px-3 lg:px-4 py-1.5 lg:py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                     data-section={`section-${index}-${subIndex}`}
                   >
                     <div class="flex items-center">
-                      {'icon' in item && item.icon && <i class={`${item.icon} w-3.5 lg:w-4 h-3.5 lg:h-4 mr-2`} />}
-                      <span class="font-medium text-xs lg:text-sm">{item.title}</span>
+                      {"icon" in item && item.icon && (
+                        <i
+                          class={`${item.icon} w-3.5 lg:w-4 h-3.5 lg:h-4 mr-2`}
+                        />
+                      )}
+                      <span class="font-medium text-xs lg:text-sm">
+                        {item.title}
+                      </span>
                     </div>
                     <i class="fas fa-chevron-down transform transition-transform duration-200 text-xs lg:text-sm" />
                   </button>
 
-                  <div class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1" id={`section-${index}-${subIndex}-content`}>
+                  <div
+                    class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1"
+                    id={`section-${index}-${subIndex}-content`}
+                  >
                     {item.items?.map((subItem, subSubIndex) => (
                       <>
-                        {'items' in subItem ? (
+                        {"items" in subItem ? (
                           <div class="mb-1.5 lg:mb-2">
                             <button
                               class="w-full flex items-center justify-between px-3 lg:px-4 py-1.5 lg:py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                               data-section={`section-${index}-${subIndex}-${subSubIndex}`}
                             >
-                              <span class="font-medium text-xs lg:text-sm">{subItem.title}</span>
+                              <span class="font-medium text-xs lg:text-sm">
+                                {subItem.title}
+                              </span>
                               <i class="fas fa-chevron-down transform transition-transform duration-200 text-xs lg:text-sm" />
                             </button>
 
-                            <div class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1" id={`section-${index}-${subIndex}-${subSubIndex}-content`}>
+                            <div
+                              class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1"
+                              id={`section-${index}-${subIndex}-${subSubIndex}-content`}
+                            >
                               {subItem.items?.map((subSubItem) => (
                                 <a
                                   href={subSubItem.path}
                                   class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
                                     currentPath === subSubItem.path
-                                      ? 'text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   }`}
                                 >
                                   {subSubItem.title}
@@ -216,8 +430,8 @@ const menuItems = [
                             href={subItem.path}
                             class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
                               currentPath === subItem.path
-                                ? 'text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                             }`}
                           >
                             {subItem.title}
@@ -232,8 +446,8 @@ const menuItems = [
                   href={item.path}
                   class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
                     currentPath === item.path
-                      ? 'text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 >
                   {item.title}
@@ -250,46 +464,50 @@ const menuItems = [
 <script>
   function initializeSidebar() {
     // Get all section buttons
-    const sectionButtons = document.querySelectorAll('[data-section]');
-    
+    const sectionButtons = document.querySelectorAll("[data-section]");
+
     // Get current path
     const currentPath = window.location.pathname;
-    
+
     sectionButtons.forEach((button) => {
-      const sectionId = button.getAttribute('data-section');
+      const sectionId = button.getAttribute("data-section");
       const content = document.getElementById(`${sectionId}-content`);
-      const chevron = button.querySelector('.fa-chevron-down');
-      
+      const chevron = button.querySelector(".fa-chevron-down");
+
       // Check if any child link matches current path
       const hasActiveChild = content?.querySelector(`a[href="${currentPath}"]`);
-      
+
       if (hasActiveChild) {
         // Expand all parent sections if there's an active child
         let parentContent = content;
         let parentButton = button;
         while (parentContent && parentButton) {
-          parentContent.classList.remove('hidden');
-          parentButton.querySelector('.fa-chevron-down')?.classList.add('rotate-180');
-          parentButton = parentButton.parentElement?.closest('[data-section]') as Element;
+          parentContent.classList.remove("hidden");
+          parentButton
+            .querySelector(".fa-chevron-down")
+            ?.classList.add("rotate-180");
+          parentButton = parentButton.parentElement?.closest(
+            "[data-section]"
+          ) as Element;
           parentContent = parentButton?.nextElementSibling as HTMLElement;
         }
       }
-      
-      button.addEventListener('click', () => {
+
+      button.addEventListener("click", () => {
         // Toggle content visibility
-        content?.classList.toggle('hidden');
-        
+        content?.classList.toggle("hidden");
+
         // Rotate chevron icon
-        chevron?.classList.toggle('rotate-180');
+        chevron?.classList.toggle("rotate-180");
       });
     });
   }
 
   // Initialize when the DOM is loaded
-  document.addEventListener('DOMContentLoaded', initializeSidebar);
-  
+  document.addEventListener("DOMContentLoaded", initializeSidebar);
+
   // Initialize when document is loaded (for Astro view transitions)
-  if (document.readyState === 'complete') {
+  if (document.readyState === "complete") {
     initializeSidebar();
   }
 </script>

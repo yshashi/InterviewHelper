@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Angular Architecture Diagram -->
+  <style>
+    .title { font: bold 24px sans-serif; }
+    .component { font: 16px sans-serif; }
+    .arrow { stroke: #666; stroke-width: 2; marker-end: url(#arrowhead); }
+    .box { fill: #f0f0f0; stroke: #666; stroke-width: 2; }
+    .highlight { fill: #e1e1ff; }
+  </style>
+  
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="40" text-anchor="middle" class="title">Angular Architecture Overview</text>
+  
+  <!-- Components Layer -->
+  <rect x="100" y="100" width="600" height="100" class="box highlight"/>
+  <text x="400" y="150" text-anchor="middle" class="component">Components (Templates + Logic)</text>
+  
+  <!-- Services Layer -->
+  <rect x="100" y="250" width="600" height="100" class="box"/>
+  <text x="400" y="300" text-anchor="middle" class="component">Services &amp; Dependency Injection</text>
+  
+  <!-- Routing Layer -->
+  <rect x="100" y="400" width="280" height="80" class="box"/>
+  <text x="240" y="440" text-anchor="middle" class="component">Routing</text>
+  
+  <!-- State Management -->
+  <rect x="420" y="400" width="280" height="80" class="box"/>
+  <text x="560" y="440" text-anchor="middle" class="component">State Management</text>
+  
+  <!-- HTTP/Backend -->
+  <rect x="100" y="520" width="600" height="60" class="box"/>
+  <text x="400" y="550" text-anchor="middle" class="component">HTTP Client &amp; Backend Communication</text>
+  
+  <!-- Connecting Arrows -->
+  <line x1="400" y1="200" x2="400" y2="250" class="arrow"/>
+  <line x1="240" y1="350" x2="240" y2="400" class="arrow"/>
+  <line x1="560" y1="350" x2="560" y2="400" class="arrow"/>
+  <line x1="400" y1="480" x2="400" y2="520" class="arrow"/>
+</svg>

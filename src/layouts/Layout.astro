@@ -26,7 +26,7 @@ const { title } = Astro.props;
     <div class="pt-16 flex relative">
       <!-- Sidebar with overlay -->
       <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity duration-300"></div>
-      <aside id="sidebar" class="transform lg:transform-none lg:opacity-100 transition-all duration-300 fixed w-[280px] lg:w-64 left-0 top-16 bottom-0 overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 -translate-x-full lg:translate-x-0 z-40">
+      <aside id="sidebar" class="transform lg:transform-none lg:opacity-100 transition-all duration-300 fixed w-[280px] lg:w-96 left-0 top-16 bottom-0 overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 -translate-x-full lg:translate-x-0 z-40">
         <Sidebar />
       </aside>
       
@@ -118,6 +118,13 @@ const { title } = Astro.props;
       html {
         font-family: system-ui, sans-serif;
         scroll-behavior: smooth;
+        background: white;
+        color: #1a1a1a;
+      }
+
+      .dark html {
+        background: #0d1117;
+        color: #ffffff;
       }
       
       body {
@@ -125,22 +132,183 @@ const { title } = Astro.props;
         padding: 0;
       }
 
-      /* Scrollbar Styles */
-      ::-webkit-scrollbar {
+      /* MDX Content Styles */
+      .container h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #1a1a1a;
+      }
+
+      .dark .container h1 {
+        color: #ffffff;
+      }
+
+      .container h2 {
+        font-size: 1.875rem;
+        font-weight: 600;
+        margin: 2rem 0 1rem;
+        color: #2d3748;
+      }
+
+      .dark .container h2 {
+        color: #e2e8f0;
+      }
+
+      .container h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 1.5rem 0 1rem;
+        color: #4a5568;
+      }
+
+      .dark .container h3 {
+        color: #cbd5e0;
+      }
+
+      .container p {
+        margin: 1rem 0;
+        line-height: 1.75;
+        color: #4a5568;
+      }
+
+      .dark .container p {
+        color: #a0aec0;
+      }
+
+      .container ul, .container ol {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+        color: #4a5568;
+      }
+
+      .dark .container ul,
+      .dark .container ol {
+        color: #a0aec0;
+      }
+
+      .container li {
+        margin: 0.5rem 0;
+        line-height: 1.75;
+      }
+
+      /* Code Blocks */
+      .container pre {
+        background-color: #f7fafc;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        overflow-x: auto;
+        margin: 1.5rem 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875rem;
+        line-height: 1.7;
+      }
+
+      .dark .container pre {
+        background-color: #1a202c;
+      }
+
+      .container code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875rem;
+        padding: 0.2rem 0.4rem;
+        background-color: #edf2f7;
+        border-radius: 0.25rem;
+        color: #2d3748;
+      }
+
+      .dark .container code {
+        background-color: #2d3748;
+        color: #e2e8f0;
+      }
+
+      .container pre code {
+        background-color: transparent;
+        padding: 0;
+        color: #1a202c;
+      }
+
+      .dark .container pre code {
+        color: #e2e8f0;
+      }
+
+      /* Links */
+      .container a {
+        color: #4c51bf;
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+
+      .dark .container a {
+        color: #7f9cf5;
+      }
+
+      .container a:hover {
+        text-decoration: underline;
+      }
+
+      /* Blockquotes */
+      .container blockquote {
+        border-left: 4px solid #e2e8f0;
+        margin: 1.5rem 0;
+        padding: 0.5rem 0 0.5rem 1rem;
+        color: #718096;
+        font-style: italic;
+      }
+
+      .dark .container blockquote {
+        border-left-color: #4a5568;
+        color: #a0aec0;
+      }
+
+      /* Tables */
+      .container table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+      }
+
+      .container th,
+      .container td {
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        text-align: left;
+      }
+
+      .dark .container th,
+      .dark .container td {
+        border-color: #4a5568;
+      }
+
+      .container th {
+        background-color: #f7fafc;
+        font-weight: 600;
+      }
+
+      .dark .container th {
+        background-color: #2d3748;
+      }
+
+      /* Custom Scrollbar */
+      .scrollbar-thin {
+        scrollbar-width: thin;
+      }
+
+      .scrollbar-thin::-webkit-scrollbar {
         width: 6px;
       }
 
-      ::-webkit-scrollbar-track {
+      .scrollbar-thin::-webkit-scrollbar-track {
         background: transparent;
       }
 
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+      .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
         border-radius: 3px;
       }
 
-      .dark ::-webkit-scrollbar-thumb {
-        background: #475569;
+      .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: rgba(75, 85, 99, 0.5);
       }
 
       /* Transitions */
@@ -148,6 +316,85 @@ const { title } = Astro.props;
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 150ms;
+      }
+
+      /* Syntax Highlighting */
+      .token.comment,
+      .token.prolog,
+      .token.doctype,
+      .token.cdata {
+        color: #6b7280;
+      }
+
+      .dark .token.comment,
+      .dark .token.prolog,
+      .dark .token.doctype,
+      .dark .token.cdata {
+        color: #9ca3af;
+      }
+
+      .token.punctuation {
+        color: #4b5563;
+      }
+
+      .dark .token.punctuation {
+        color: #d1d5db;
+      }
+
+      .token.property,
+      .token.tag,
+      .token.boolean,
+      .token.number,
+      .token.constant,
+      .token.symbol {
+        color: #4f46e5;
+      }
+
+      .dark .token.property,
+      .dark .token.tag,
+      .dark .token.boolean,
+      .dark .token.number,
+      .dark .token.constant,
+      .dark .token.symbol {
+        color: #818cf8;
+      }
+
+      .token.selector,
+      .token.attr-name,
+      .token.string,
+      .token.char,
+      .token.builtin {
+        color: #059669;
+      }
+
+      .dark .token.selector,
+      .dark .token.attr-name,
+      .dark .token.string,
+      .dark .token.char,
+      .dark .token.builtin {
+        color: #34d399;
+      }
+
+      .token.operator,
+      .token.entity,
+      .token.url,
+      .token.variable {
+        color: #7c3aed;
+      }
+
+      .dark .token.operator,
+      .dark .token.entity,
+      .dark .token.url,
+      .dark .token.variable {
+        color: #a78bfa;
+      }
+
+      .token.keyword {
+        color: #dc2626;
+      }
+
+      .dark .token.keyword {
+        color: #f87171;
       }
     </style>
   </body>

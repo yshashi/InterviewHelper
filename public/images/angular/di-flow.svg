@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dependency Injection Flow Diagram -->
+  <style>
+    .title { font: bold 24px sans-serif; }
+    .component { font: 16px sans-serif; }
+    .box { fill: #f0f0f0; stroke: #666; stroke-width: 2; rx: 5; }
+    .arrow { stroke: #666; stroke-width: 2; marker-end: url(#arrowhead); }
+    .highlight { fill: #e1e1ff; }
+  </style>
+  
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="40" text-anchor="middle" class="title">Dependency Injection Flow</text>
+  
+  <!-- Injector -->
+  <rect x="300" y="70" width="200" height="60" class="box highlight"/>
+  <text x="400" y="105" text-anchor="middle" class="component">Root Injector</text>
+  
+  <!-- Module -->
+  <rect x="100" y="180" width="180" height="60" class="box"/>
+  <text x="190" y="215" text-anchor="middle" class="component">Feature Module</text>
+  
+  <!-- Component -->
+  <rect x="320" y="180" width="160" height="60" class="box"/>
+  <text x="400" y="215" text-anchor="middle" class="component">Component</text>
+  
+  <!-- Service -->
+  <rect x="520" y="180" width="180" height="60" class="box"/>
+  <text x="610" y="215" text-anchor="middle" class="component">Service</text>
+  
+  <!-- Child Components -->
+  <rect x="200" y="290" width="160" height="60" class="box"/>
+  <text x="280" y="325" text-anchor="middle" class="component">Child Component</text>
+  
+  <rect x="440" y="290" width="160" height="60" class="box"/>
+  <text x="520" y="325" text-anchor="middle" class="component">Child Component</text>
+  
+  <!-- Connecting Lines -->
+  <line x1="400" y1="130" x2="190" y2="180" class="arrow"/>
+  <line x1="400" y1="130" x2="400" y2="180" class="arrow"/>
+  <line x1="400" y1="130" x2="610" y2="180" class="arrow"/>
+  
+  <line x1="400" y1="240" x2="280" y2="290" class="arrow"/>
+  <line x1="400" y1="240" x2="520" y2="290" class="arrow"/>
+</svg>

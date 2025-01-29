@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font: bold 24px sans-serif; }
+    .component { font: 16px sans-serif; }
+    .note { font: italic 14px sans-serif; fill: #666; }
+    .box { fill: #f0f0f0; stroke: #666; stroke-width: 2; rx: 10; }
+    .highlight { fill: #e1e1ff; }
+    .arrow { stroke: #666; stroke-width: 2; marker-end: url(#arrowhead); }
+  </style>
+  
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+  
+  
+  <rect x="300" y="70" width="200" height="60" class="box highlight"/>
+  <text x="400" y="105" text-anchor="middle" class="component">main.ts (Bootstrap)</text>
+  
+  <rect x="100" y="180" width="180" height="60" class="box"/>
+  <text x="190" y="215" text-anchor="middle" class="component">Standalone Comp A</text>
+  
+  <rect x="320" y="180" width="160" height="60" class="box"/>
+  <text x="400" y="215" text-anchor="middle" class="component">Standalone Comp B</text>
+  
+  <rect x="520" y="180" width="180" height="60" class="box"/>
+  <text x="610" y="215" text-anchor="middle" class="component">Standalone Comp C</text>
+  
+  <rect x="150" y="290" width="200" height="60" class="box"/>
+  <text x="250" y="325" text-anchor="middle" class="component">Environmental Providers</text>
+  
+  <rect x="450" y="290" width="200" height="60" class="box"/>
+  <text x="550" y="325" text-anchor="middle" class="component">Route Providers</text>
+  
+  <rect x="200" y="390" width="400" height="60" class="box"/>
+  <text x="400" y="425" text-anchor="middle" class="component">Shared Features (Guards, Interceptors, etc.)</text>
+  
+  <line x1="400" y1="130" x2="190" y2="180" class="arrow"/>
+  <line x1="400" y1="130" x2="400" y2="180" class="arrow"/>
+  <line x1="400" y1="130" x2="610" y2="180" class="arrow"/>
+  
+  <line x1="250" y1="240" x2="250" y2="290" class="arrow"/>
+  <line x1="550" y1="240" x2="550" y2="290" class="arrow"/>
+  
+  <line x1="250" y1="350" x2="400" y2="390" class="arrow"/>
+  <line x1="550" y1="350" x2="400" y2="390" class="arrow"/>
+  
+  <text x="100" y="470" class="note">No NgModule required</text>
+  <text x="600" y="470" class="note">Direct dependency imports</text>
+</svg>
