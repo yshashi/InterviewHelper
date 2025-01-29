@@ -1,0 +1,287 @@
+---
+layout: ../../layouts/QuestionLayout.astro
+title: What is Angular Framework?
+description: A comprehensive guide to understanding the Angular framework, its features, and real-world applications
+---
+
+# What is Angular Framework?
+
+Angular is a powerful, open-source front-end web application framework developed and maintained by Google. It's a complete rewrite of AngularJS and has been designed to build scalable, maintainable, and efficient web applications.
+
+## Core Concepts
+
+### 1. Component-Based Architecture
+
+Angular follows a component-based architecture where UI elements are encapsulated into self-contained components. Here's a simple example:
+
+```typescript
+// user-profile.component.ts
+@Component({
+  selector: 'app-user-profile',
+  template: `
+    <div class="profile-card">
+      <img [src]="user.avatar" alt="Profile Picture">
+      <h2>{{ user.name }}</h2>
+      <p>{{ user.bio }}</p>
+      <button (click)="editProfile()">Edit Profile</button>
+    </div>
+  `,
+  styles: [`
+    .profile-card {
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  `]
+})
+export class UserProfileComponent {
+  user = {
+    name: 'John Doe',
+    bio: 'Full-stack developer',
+    avatar: 'path/to/avatar.jpg'
+  };
+
+  editProfile() {
+    // Handle edit logic
+  }
+}
+```
+
+### 2. Modular Design
+
+Angular applications are organized into modules that help manage complexity and enable lazy loading:
+
+```typescript
+// app.module.ts
+@NgModule({
+  declarations: [
+    AppComponent,
+    UserProfileComponent,
+    DashboardComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    HttpClientModule,
+    RouterModule.forRoot(routes)
+  ],
+  providers: [UserService],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+### 3. Dependency Injection
+
+Angular's DI system makes components reusable and testable:
+
+```typescript
+// user.service.ts
+@Injectable({
+  providedIn: 'root'
+})
+export class UserService {
+  constructor(private http: HttpClient) {}
+
+  getUser(id: string): Observable<User> {
+    return this.http.get<User>(`/api/users/${id}`);
+  }
+}
+
+// user-profile.component.ts
+@Component({...})
+export class UserProfileComponent {
+  constructor(private userService: UserService) {}
+
+  loadUser(id: string) {
+    this.userService.getUser(id).subscribe(
+      user => this.user = user
+    );
+  }
+}
+```
+
+## Real-World Example: E-commerce Dashboard
+
+Here's a practical example of how Angular can be used to build a real e-commerce dashboard:
+
+```typescript
+// dashboard.component.ts
+@Component({
+  selector: 'app-dashboard',
+  template: `
+    <div class="dashboard-container">
+      <!-- Sales Overview -->
+      <app-sales-chart [data]="salesData"></app-sales-chart>
+      
+      <!-- Recent Orders -->
+      <app-order-list
+        [orders]="recentOrders"
+        (orderSelected)="handleOrderSelect($event)">
+      </app-order-list>
+      
+      <!-- Inventory Status -->
+      <app-inventory-status
+        [products]="lowStockProducts"
+        (reorder)="handleReorder($event)">
+      </app-inventory-status>
+    </div>
+  `
+})
+export class DashboardComponent implements OnInit {
+  salesData: SalesData[] = [];
+  recentOrders: Order[] = [];
+  lowStockProducts: Product[] = [];
+
+  constructor(
+    private salesService: SalesService,
+    private orderService: OrderService,
+    private inventoryService: InventoryService
+  ) {}
+
+  ngOnInit() {
+    // Load dashboard data
+    this.loadDashboardData();
+    
+    // Set up real-time updates
+    this.setupRealtimeUpdates();
+  }
+
+  private loadDashboardData() {
+    // Load sales data
+    this.salesService.getDailySales()
+      .pipe(
+        catchError(error => {
+          console.error('Error loading sales data:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(data => this.salesData = data);
+
+    // Load recent orders
+    this.orderService.getRecentOrders()
+      .subscribe(orders => this.recentOrders = orders);
+
+    // Check inventory status
+    this.inventoryService.getLowStockProducts()
+      .subscribe(products => this.lowStockProducts = products);
+  }
+
+  private setupRealtimeUpdates() {
+    // Set up WebSocket connection for real-time order updates
+    this.orderService.orderUpdates$
+      .pipe(
+        filter(order => order.status === 'new'),
+        tap(order => this.handleNewOrder(order))
+      )
+      .subscribe();
+  }
+
+  handleOrderSelect(order: Order) {
+    // Navigate to order details
+  }
+
+  handleReorder(product: Product) {
+    // Initiate reorder process
+  }
+
+  private handleNewOrder(order: Order) {
+    // Update orders list and notify user
+    this.recentOrders = [order, ...this.recentOrders.slice(0, 9)];
+    this.notifyNewOrder(order);
+  }
+}
+```
+
+## Key Features
+
+1. **Two-way Data Binding**
+   - Automatic synchronization between model and view
+   - Reduces boilerplate code
+
+2. **Templates**
+   - Declarative approach to building UI
+   - Powerful directives and pipes
+
+3. **Routing**
+   - Client-side navigation
+   - Route guards for authentication
+   - Lazy loading for better performance
+
+4. **Forms**
+   - Template-driven and reactive forms
+   - Built-in validation
+   - Custom validators
+
+5. **HTTP Client**
+   - Built-in HTTP client
+   - Interceptors for request/response handling
+   - Progress events
+
+6. **Testing**
+   - Built for testability
+   - Karma and Jasmine integration
+   - TestBed utility
+
+## Best Practices
+
+1. **Follow Angular Style Guide**
+   - Consistent naming conventions
+   - Proper file organization
+   - Component best practices
+
+2. **Performance Optimization**
+   ```typescript
+   @Component({
+     changeDetection: ChangeDetectionStrategy.OnPush,
+     // ... other metadata
+   })
+   export class OptimizedComponent {
+     // Use immutable data patterns
+     // Implement trackBy functions for ngFor
+     // Use pure pipes
+   }
+   ```
+
+3. **Error Handling**
+   ```typescript
+   // Global error handler
+   @Injectable()
+   export class GlobalErrorHandler implements ErrorHandler {
+     handleError(error: Error) {
+       // Log to monitoring service
+       // Show user-friendly message
+       console.error('An error occurred:', error);
+     }
+   }
+   ```
+
+## Common Use Cases
+
+1. **Enterprise Applications**
+   - Complex business logic
+   - Large-scale data management
+   - Multiple user roles
+
+2. **Progressive Web Apps (PWAs)**
+   - Offline capabilities
+   - Push notifications
+   - App-like experience
+
+3. **Single Page Applications (SPAs)**
+   - Smooth navigation
+   - Better user experience
+   - Reduced server load
+
+## Related Topics
+
+- [AngularJS vs Angular](/questions/angularjs-vs-angular)
+- [TypeScript in Angular](/questions/typescript-intro)
+- [Angular Architecture](/questions/angular-architecture)
+- [Key Components](/questions/angular-key-components)
+
+## Additional Resources
+
+- [Official Angular Documentation](https://angular.io/docs)
+- [Angular GitHub Repository](https://github.com/angular/angular)
+- [Angular CLI Documentation](https://cli.angular.io/)

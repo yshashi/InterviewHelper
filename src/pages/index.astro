@@ -1,0 +1,83 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Sidebar from '../components/Sidebar.astro';
+---
+
+<Layout title="Angular Interview Guide - Comprehensive Questions and Answers">
+  <Header />
+  <Sidebar slot="sidebar" />
+  
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">
+      Angular Interview Guide
+    </h1>
+    
+    <p class="text-lg text-gray-700 dark:text-gray-300 mb-8">
+      A comprehensive resource for Angular interview preparation, featuring in-depth explanations,
+      practical examples, and best practices.
+    </p>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
+        <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          Getting Started
+        </h2>
+        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
+          Begin your interview preparation with fundamental Angular concepts and gradually progress to advanced topics.
+        </p>
+        <a
+          href="/questions/what-is-angular"
+          class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-primary rounded-lg hover:bg-secondary focus:ring-4 focus:outline-none focus:ring-blue-300"
+        >
+          Start Learning
+          <svg
+            class="w-3.5 h-3.5 ml-2"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 14 10"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M1 5h12m0 0L9 1m4 4L9 9"
+            />
+          </svg>
+        </a>
+      </div>
+
+      <div class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
+        <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          Latest Updates
+        </h2>
+        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
+          Stay current with the newest Angular features, best practices, and commonly asked interview questions.
+        </p>
+        <a
+          href="/questions/angular-cli"
+          class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-primary rounded-lg hover:bg-secondary focus:ring-4 focus:outline-none focus:ring-blue-300"
+        >
+          View Updates
+          <svg
+            class="w-3.5 h-3.5 ml-2"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 14 10"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M1 5h12m0 0L9 1m4 4L9 9"
+            />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>

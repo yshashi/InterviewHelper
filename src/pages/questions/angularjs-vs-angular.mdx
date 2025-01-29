@@ -1,0 +1,280 @@
+---
+layout: ../../layouts/QuestionLayout.astro
+title: AngularJS vs Angular - Key Differences
+description: Understanding the major differences between AngularJS (Angular 1.x) and modern Angular (2+)
+---
+
+# What is the difference between AngularJS and Angular?
+
+AngularJS (Angular 1.x) and Angular (2+) are two distinct frameworks, with the latter being a complete rewrite of the former. Let's explore their key differences and understand why the change was necessary.
+
+## Core Architecture Differences
+
+### 1. Programming Language
+
+**AngularJS:**
+```javascript
+// AngularJS Controller
+angular.module('myApp', [])
+  .controller('UserController', function($scope) {
+    $scope.user = {
+      name: 'John Doe',
+      email: 'john@example.com'
+    };
+    
+    $scope.updateUser = function() {
+      // Update user logic
+    };
+  });
+```
+
+**Angular (2+):**
+```typescript
+// Angular Component
+@Component({
+  selector: 'app-user',
+  template: `
+    <div>
+      <h2>{{ user.name }}</h2>
+      <p>{{ user.email }}</p>
+      <button (click)="updateUser()">Update</button>
+    </div>
+  `
+})
+export class UserComponent {
+  user = {
+    name: 'John Doe',
+    email: 'john@example.com'
+  };
+
+  updateUser() {
+    // Update user logic
+  }
+}
+```
+
+### 2. Component Architecture
+
+**AngularJS:**
+```javascript
+// AngularJS Directive
+angular.module('myApp')
+  .directive('userCard', function() {
+    return {
+      restrict: 'E',
+      scope: {
+        userData: '='
+      },
+      template: `
+        <div class="user-card">
+          <h3>{{userData.name}}</h3>
+          <p>{{userData.email}}</p>
+        </div>
+      `
+    };
+  });
+```
+
+**Angular (2+):**
+```typescript
+// Angular Component with Input
+@Component({
+  selector: 'app-user-card',
+  template: `
+    <div class="user-card">
+      <h3>{{user.name}}</h3>
+      <p>{{user.email}}</p>
+    </div>
+  `
+})
+export class UserCardComponent {
+  @Input() user: User;
+}
+```
+
+## Key Differences Table
+
+| Feature | AngularJS (1.x) | Angular (2+) |
+|---------|----------------|--------------|
+| Language | JavaScript | TypeScript |
+| Architecture | MVC | Component-based |
+| Mobile Support | Limited | Excellent |
+| Performance | Slower due to digest cycle | Faster with improved change detection |
+| Learning Curve | Moderate | Steeper initially |
+| Dependency Injection | Limited | Enhanced |
+| CLI Support | No official CLI | Angular CLI |
+| Testing | Karma, Jasmine | Karma, Jasmine with better tools |
+
+## Real-World Example: Form Handling
+
+### AngularJS Approach:
+
+```javascript
+// AngularJS Form
+angular.module('myApp')
+  .controller('FormController', function($scope, $http) {
+    $scope.formData = {};
+    
+    $scope.submitForm = function() {
+      $http.post('/api/submit', $scope.formData)
+        .success(function(response) {
+          $scope.message = 'Form submitted successfully!';
+        })
+        .error(function(error) {
+          $scope.error = 'Error submitting form';
+        });
+    };
+  });
+```
+
+```html
+<form ng-submit="submitForm()">
+  <input type="text" ng-model="formData.name" required>
+  <input type="email" ng-model="formData.email" required>
+  <button type="submit">Submit</button>
+</form>
+```
+
+### Angular (Modern) Approach:
+
+```typescript
+// Angular Reactive Form
+@Component({
+  selector: 'app-user-form',
+  template: `
+    <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+      <input formControlName="name" placeholder="Name">
+      <div *ngIf="userForm.get('name').invalid && userForm.get('name').touched">
+        Please enter a valid name
+      </div>
+      
+      <input formControlName="email" placeholder="Email">
+      <div *ngIf="userForm.get('email').invalid && userForm.get('email').touched">
+        Please enter a valid email
+      </div>
+      
+      <button type="submit" [disabled]="userForm.invalid">Submit</button>
+    </form>
+  `
+})
+export class UserFormComponent implements OnInit {
+  userForm: FormGroup;
+
+  constructor(
+    private fb: FormBuilder,
+    private userService: UserService
+  ) {}
+
+  ngOnInit() {
+    this.userForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]]
+    });
+  }
+
+  onSubmit() {
+    if (this.userForm.valid) {
+      this.userService.submitForm(this.userForm.value)
+        .pipe(
+          catchError(error => {
+            console.error('Error submitting form:', error);
+            return EMPTY;
+          })
+        )
+        .subscribe(response => {
+          console.log('Form submitted successfully:', response);
+        });
+    }
+  }
+}
+```
+
+## Migration Considerations
+
+When migrating from AngularJS to Angular, consider:
+
+1. **Incremental Migration**
+   ```typescript
+   // Using ngUpgrade for hybrid applications
+   @NgModule({
+     imports: [
+       BrowserModule,
+       UpgradeModule
+     ],
+     declarations: [
+       AppComponent
+     ]
+   })
+   export class AppModule {
+     constructor(private upgrade: UpgradeModule) { }
+     
+     ngDoBootstrap() {
+       this.upgrade.bootstrap(document.body, ['myApp']);
+     }
+   }
+   ```
+
+2. **State Management**
+   - Move from `$scope` to services and components
+   - Consider using NgRx for complex state management
+
+3. **Routing Changes**
+   ```typescript
+   // Angular Router Configuration
+   const routes: Routes = [
+     { 
+       path: 'users',
+       component: UsersComponent,
+       children: [
+         { 
+           path: ':id',
+           component: UserDetailComponent,
+           canActivate: [AuthGuard]
+         }
+       ]
+     }
+   ];
+   ```
+
+## Advantages of Modern Angular
+
+1. **Better Performance**
+   - Improved change detection
+   - Ahead-of-Time compilation
+   - Tree-shaking
+
+2. **Enhanced Security**
+   - Built-in XSS protection
+   - CSRF protection
+   - Content Security Policy
+
+3. **Modern Development Experience**
+   - TypeScript support
+   - Better tooling
+   - CLI support
+
+## Common Migration Challenges
+
+1. **Scope Management**
+   - Moving from `$scope` to component-based architecture
+   - Understanding component lifecycle
+
+2. **Dependency Injection**
+   - Adapting to the new DI system
+   - Managing providers
+
+3. **Template Syntax**
+   - Learning new binding syntax
+   - Understanding structural directives
+
+## Related Topics
+
+- [What is Angular?](/questions/what-is-angular)
+- [TypeScript Introduction](/questions/typescript-intro)
+- [Angular Architecture](/questions/angular-architecture)
+
+## Additional Resources
+
+- [Official Angular Update Guide](https://update.angular.io)
+- [ngUpgrade Documentation](https://angular.io/guide/upgrade)
+- [Angular Style Guide](https://angular.io/guide/styleguide)

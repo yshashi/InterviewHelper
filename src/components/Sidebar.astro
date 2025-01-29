@@ -1,0 +1,225 @@
+---
+const categories = [
+  {
+    title: "Introduction and Basics",
+    slug: "intro-basics",
+    items: [
+      { title: "What is Angular Framework?", slug: "what-is-angular" },
+      { title: "What is the difference between AngularJS and Angular?", slug: "angularjs-vs-angular" },
+      { title: "What is TypeScript?", slug: "typescript-intro" },
+      { title: "Write a pictorial diagram of Angular architecture.", slug: "angular-architecture" },
+      { title: "What are the key components of Angular?", slug: "angular-key-components" },
+    ],
+  },
+  {
+    title: "Components and Templates",
+    slug: "components-templates",
+    items: [
+      { title: "What are directives?", slug: "what-are-directives" },
+      { title: "What are components?", slug: "what-are-components" },
+      { title: "What are the differences between Component and Directive?", slug: "component-vs-directive" },
+      { title: "What is a template?", slug: "what-is-template" },
+      { title: "What is a module?", slug: "what-is-module" },
+    ],
+  },
+  {
+    title: "Lifecycle Hooks and Metadata",
+    slug: "lifecycle-metadata",
+    items: [
+      { title: "What are lifecycle hooks available?", slug: "lifecycle-hooks" },
+      { title: "What is data binding?", slug: "data-binding" },
+      { title: "What is metadata?", slug: "what-is-metadata" },
+    ],
+  },
+  {
+    title: "Dev Tools and Configuration",
+    slug: "dev-tools-config",
+    items: [
+      { title: "What is Angular CLI?", slug: "angular-cli" },
+      { title: "What is the difference between constructor and ngOnInit?", slug: "constructor-vs-ngoninit" },
+      { title: "What is a service?", slug: "what-is-service" },
+    ],
+  },
+  {
+    title: "DI and Hierarchies",
+    slug: "dependency-injection",
+    items: [
+      { title: "What is dependency injection in Angular?", slug: "dependency-injection" },
+      { title: "How is Dependency Hierarchy formed?", slug: "dependency-hierarchy" },
+    ],
+  },
+  {
+    title: "Pipes and Async Operations",
+    slug: "pipes-async",
+    items: [
+      { title: "What is the purpose of async pipe?", slug: "async-pipe-purpose" },
+      { title: "What is the option to choose between inline and external template file?", slug: "inline-vs-external-template" },
+      { title: "What is the purpose of *ngFor directive?", slug: "ngfor-purpose" },
+      { title: "What is the purpose of ngIf directive?", slug: "ngif-purpose" },
+    ],
+  },
+  {
+    title: "Templates and Interpolation",
+    slug: "templates-interpolation",
+    items: [
+      { title: "What happens if you use the script tag inside a template?", slug: "script-tag-template" },
+      { title: "What is interpolation?", slug: "interpolation" },
+      { title: "What are template expressions?", slug: "template-expressions" },
+      { title: "What are template statements?", slug: "template-statements" },
+      { title: "How do you categorize data binding types?", slug: "data-binding-types" },
+    ],
+  },
+  {
+    title: "Pipes and Transformations",
+    slug: "pipes-transformations",
+    items: [
+      { title: "What are pipes?", slug: "what-are-pipes" },
+      { title: "What is a parameterized pipe?", slug: "parameterized-pipe" },
+      { title: "How do you chain pipes?", slug: "chaining-pipes" },
+      { title: "What is a custom pipe?", slug: "custom-pipe" },
+      { title: "Give an example of a custom pipe.", slug: "custom-pipe-example" },
+      { title: "What is the difference between pure and impure pipes?", slug: "pure-vs-impure-pipes" },
+    ],
+  },
+  {
+    title: "Modules and Bootstrapping",
+    slug: "modules-bootstrapping",
+    items: [
+      { title: "What is a bootstrapping module?", slug: "bootstrapping-module" },
+    ],
+  },
+  {
+    title: "Observables and RxJS",
+    slug: "observables-rxjs",
+    items: [
+      { title: "What are observables?", slug: "what-are-observables" },
+      { title: "What is HttpClient and its benefits?", slug: "httpclient-benefits" },
+      { title: "Explain how to use HttpClient with an example.", slug: "httpclient-example" },
+      { title: "How can you read the full response?", slug: "read-full-response" },
+      { title: "How do you perform error handling?", slug: "error-handling" },
+      { title: "What is RxJS?", slug: "what-is-rxjs" },
+      { title: "What is subscribing?", slug: "subscribing" },
+      { title: "What is an observable?", slug: "observable" },
+      { title: "What is an observer?", slug: "observer" },
+      { title: "What is the difference between a promise and an observable?", slug: "promise-vs-observable" },
+    ],
+  },
+  {
+    title: "Advanced Observable Features",
+    slug: "advanced-observables",
+    items: [
+      { title: "What is multicasting?", slug: "multicasting" },
+      { title: "How do you perform error handling in observables?", slug: "error-handling-observables" },
+      { title: "What is the shorthand notation for the subscribe method?", slug: "subscribe-shorthand" },
+      { title: "What are the utility functions provided by RxJS?", slug: "rxjs-utility-functions" },
+      { title: "What are observable creation functions?", slug: "observable-creation-functions" },
+      { title: "What will happen if you do not supply a handler for the observer?", slug: "no-observer-handler" },
+    ],
+  },
+  {
+    title: "Angular Elements",
+    slug: "angular-elements",
+    items: [
+      { title: "What are Angular elements?", slug: "angular-elements" },
+      { title: "What is the browser support of Angular Elements?", slug: "angular-elements-browser-support" },
+      { title: "What are custom elements?", slug: "custom-elements" },
+      { title: "Do I need to bootstrap custom elements?", slug: "bootstrap-custom-elements" },
+      { title: "Explain how custom elements work internally.", slug: "custom-elements-internal" },
+    ],
+  },
+];
+
+---
+
+<div class="h-full px-3 py-4 overflow-y-auto bg-white dark:bg-angular-dark-lighter">
+  <a href="/" class="flex items-center px-2 mb-6">
+    <span class="self-center text-xl font-semibold whitespace-nowrap gradient-text">Angular Interview</span>
+  </a>
+  <ul class="space-y-2 font-medium">
+    {
+      categories.map((category) => (
+        <li>
+          <button
+            type="button"
+            class="flex items-center w-full p-2 text-gray-900 dark:text-angular-text-light transition duration-75 rounded-lg group hover:bg-gray-100 dark:hover:bg-angular-dark"
+            data-category={category.slug}
+          >
+            <span class="flex-1 text-left whitespace-nowrap">{category.title}</span>
+            {category.items.length > 0 && (
+              <svg
+                class="w-3 h-3 category-icon transition-transform duration-200"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="m1 1 4 4 4-4"
+                />
+              </svg>
+            )}
+          </button>
+          {category.items.length > 0 && (
+            <ul class="category-items hidden py-2 space-y-1" data-category={category.slug}>
+              {category.items.map((item) => (
+                <li>
+                  <a
+                    href={`/questions/${item.slug}`}
+                    class="flex items-center w-full p-2 text-gray-900 dark:text-angular-text-light transition duration-75 pl-11 rounded-lg hover:bg-gray-100 dark:hover:bg-angular-dark group"
+                  >
+                    {item.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<script>
+
+  const categoryButtons = document.querySelectorAll('button[data-category]');
+
+  const storedState = localStorage.getItem('categoryState');
+  const categoryState = storedState ? JSON.parse(storedState) : {};
+
+  function toggleCategory(button: Element) {
+    const category = button.getAttribute('data-category') as string;
+    const items = document.querySelector(`.category-items[data-category="${category}"]`);
+    const icon = button.querySelector('.category-icon') as HTMLElement;
+    
+    if (items && icon) {
+      const isExpanded = !items.classList.contains('hidden');
+      items.classList.toggle('hidden');
+      if (isExpanded) {
+        icon.style.transform = 'rotate(0deg)';
+        categoryState[category] = false;
+      } else {
+        icon.style.transform = 'rotate(180deg)';
+        categoryState[category] = true;
+      }
+
+      localStorage.setItem('categoryState', JSON.stringify(categoryState));
+    }
+  }
+
+  categoryButtons.forEach((button) => {
+    const category = button.getAttribute('data-category') as string;
+    const items = document.querySelector(`.category-items[data-category="${category}"]`);
+    const icon = button.querySelector('.category-icon') as HTMLElement;
+    
+    if (items && icon && categoryState[category]) {
+      items.classList.remove('hidden');
+      icon.style.transform = 'rotate(180deg)';
+    }
+
+    button.addEventListener('click', () => toggleCategory(button));
+  });
+</script>
