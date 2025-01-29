@@ -2,13 +2,14 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Introduction - Good Tech Interview Guide">
-  <div class="prose dark:prose-invert max-w-3xl mx-auto px-4 py-8">
-    <h1>Welcome to Good Tech Interview Guide</h1>
+<Layout title="Introduction - Interview Guide">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-8 text-gray-900 dark:text-white">Introduction</h1>
     
-    <h2>Your Ultimate Resource for Technical Interviews</h2>
+    <div class="prose dark:prose-invert max-w-none mb-12">
+      <h2>Your Ultimate Resource for Technical Interviews</h2>
     
-    <p>Welcome to Good Tech Interview Guide – your comprehensive companion for mastering technical interviews in the modern software development landscape. Whether you're preparing for your next big tech interview or looking to strengthen your technical knowledge, you've come to the right place.</p>
+    <p>Welcome to Interview Guide – your comprehensive companion for mastering technical interviews in the modern software development landscape. Whether you're preparing for your next big tech interview or looking to strengthen your technical knowledge, you've come to the right place.</p>
     
     <h2>What Sets Us Apart</h2>
     <ul>
@@ -55,30 +56,27 @@ import Layout from '../layouts/Layout.astro';
       <h2 class="text-xl font-bold mb-4">Ready to Begin?</h2>
       <p class="mb-4">Start your journey by visiting our <a href="/getting-started" class="text-blue-600 dark:text-blue-400 hover:underline">Getting Started</a> page to choose your learning path.</p>
     </div>
+    </div>
   </div>
 </Layout>
 
 <style>
-  .prose {
-    @apply max-w-3xl mx-auto;
-  }
-  
-  .prose h1 {
-    @apply text-4xl font-bold mb-8 text-gray-900 dark:text-white;
-  }
-  
   .prose h2 {
-    @apply text-2xl font-bold mt-8 mb-4 text-gray-800 dark:text-gray-100;
+    @apply text-2xl font-bold mb-4 text-gray-900 dark:text-white;
   }
-  
   .prose h3 {
-    @apply text-xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-100;
+    @apply text-xl font-bold mb-3 text-gray-800 dark:text-gray-200;
   }
-  
-  .prose p {
-    @apply mb-4 text-gray-600 dark:text-gray-300;
+  .prose ul {
+    @apply list-disc list-inside mb-6 text-gray-600 dark:text-gray-300;
   }
-  
+  .prose li {
+    @apply mb-2;
+  }
+  .prose strong {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+
   .prose ul, .prose ol {
     @apply mb-6 pl-6;
   }
