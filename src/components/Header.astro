@@ -3,10 +3,20 @@
 
 <header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
   <div class="flex items-center justify-between h-16 px-4">
-    <div class="flex items-center">
+    <div class="flex items-center space-x-4">
+      <!-- Mobile menu button -->
+      <button 
+        id="mobile-menu-button"
+        type="button"
+        class="lg:hidden text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5"
+        aria-label="Toggle sidebar navigation"
+      >
+        <i class="fas fa-bars text-xl"></i>
+      </button>
+
       <a href="/" class="flex items-center">
         <span class="text-xl font-bold text-gray-900 dark:text-white bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Good Tech Interview Guide
+          Interview Guide
         </span>
       </a>
     </div>

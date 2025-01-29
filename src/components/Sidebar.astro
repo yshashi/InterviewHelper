@@ -152,55 +152,55 @@ const menuItems = [
 ];
 ---
 
-<nav class="py-4">
+<nav class="py-3 lg:py-4">
   {
     menuItems.map((section, index) => (
-      <div class="mb-2">
+      <div class="mb-1.5 lg:mb-2">
         <button
-          class="w-full flex items-center justify-between px-4 py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+          class="w-full flex items-center justify-between px-3 lg:px-4 py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
           data-section={`section-${index}`}
         >
           <div class="flex items-center">
-            <i class={`${section.icon} w-5 h-5 mr-2`} />
-            <span class="font-medium">{section.title}</span>
+            <i class={`${section.icon} w-4 lg:w-5 h-4 lg:h-5 mr-2`} />
+            <span class="font-medium text-sm lg:text-base">{section.title}</span>
           </div>
-          <i class="fas fa-chevron-down transform transition-transform duration-200" />
+          <i class="fas fa-chevron-down transform transition-transform duration-200 text-sm lg:text-base" />
         </button>
 
-        <div class="hidden pl-4 mt-2 space-y-1" id={`section-${index}-content`}>
+        <div class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1" id={`section-${index}-content`}>
           {section.items?.map((item, subIndex) => (
             <>
               {'items' in item ? (
-                <div class="mb-2">
+                <div class="mb-1.5 lg:mb-2">
                   <button
-                    class="w-full flex items-center justify-between px-4 py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                    class="w-full flex items-center justify-between px-3 lg:px-4 py-1.5 lg:py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                     data-section={`section-${index}-${subIndex}`}
                   >
                     <div class="flex items-center">
-                      {'icon' in item && item.icon && <i class={`${item.icon} w-4 h-4 mr-2`} />}
-                      <span class="font-medium text-sm">{item.title}</span>
+                      {'icon' in item && item.icon && <i class={`${item.icon} w-3.5 lg:w-4 h-3.5 lg:h-4 mr-2`} />}
+                      <span class="font-medium text-xs lg:text-sm">{item.title}</span>
                     </div>
-                    <i class="fas fa-chevron-down transform transition-transform duration-200" />
+                    <i class="fas fa-chevron-down transform transition-transform duration-200 text-xs lg:text-sm" />
                   </button>
 
-                  <div class="hidden pl-4 mt-2 space-y-1" id={`section-${index}-${subIndex}-content`}>
+                  <div class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1" id={`section-${index}-${subIndex}-content`}>
                     {item.items?.map((subItem, subSubIndex) => (
                       <>
                         {'items' in subItem ? (
-                          <div class="mb-2">
+                          <div class="mb-1.5 lg:mb-2">
                             <button
-                              class="w-full flex items-center justify-between px-4 py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                              class="w-full flex items-center justify-between px-3 lg:px-4 py-1.5 lg:py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                               data-section={`section-${index}-${subIndex}-${subSubIndex}`}
                             >
-                              <span class="font-medium text-sm">{subItem.title}</span>
-                              <i class="fas fa-chevron-down transform transition-transform duration-200" />
+                              <span class="font-medium text-xs lg:text-sm">{subItem.title}</span>
+                              <i class="fas fa-chevron-down transform transition-transform duration-200 text-xs lg:text-sm" />
                             </button>
 
-                            <div class="hidden pl-4 mt-2 space-y-1" id={`section-${index}-${subIndex}-${subSubIndex}-content`}>
+                            <div class="hidden pl-3 lg:pl-4 mt-1 lg:mt-2 space-y-0.5 lg:space-y-1" id={`section-${index}-${subIndex}-${subSubIndex}-content`}>
                               {subItem.items?.map((subSubItem) => (
                                 <a
                                   href={subSubItem.path}
-                                  class={`block px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${
+                                  class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
                                     currentPath === subSubItem.path
                                       ? 'text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20'
                                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -214,7 +214,7 @@ const menuItems = [
                         ) : (
                           <a
                             href={subItem.path}
-                            class={`block px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${
+                            class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
                               currentPath === subItem.path
                                 ? 'text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20'
                                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -230,7 +230,7 @@ const menuItems = [
               ) : (
                 <a
                   href={item.path}
-                  class={`block px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${
+                  class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
                     currentPath === item.path
                       ? 'text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
