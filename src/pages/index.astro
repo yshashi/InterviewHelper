@@ -1,8 +1,12 @@
 ---
+import { getEntry } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
+export const prerender = true;
 ---
+
+<meta http-equiv="refresh" content="0;url=/introduction" />
 
 <Layout title="Angular Interview Guide - Comprehensive Questions and Answers">
   <Header />

@@ -1,173 +1,87 @@
 ---
+import Header from '../components/Header.astro';
+import Sidebar from '../components/Sidebar.astro';
+
 interface Props {
   title: string;
-  description?: string;
 }
 
-const { title, description = "Comprehensive Angular interview questions and answers with code examples" } = Astro.props;
+const { title } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content={description} />
+    <meta name="description" content="Astro description" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="min-h-screen bg-white dark:bg-angular-dark text-gray-900 dark:text-angular-text-light antialiased font-inter transition-colors duration-200">
-    <div class="flex min-h-screen">
-      <!-- Sidebar -->
-      <aside class="fixed top-0 left-0 z-40 w-80 h-screen transition-transform -translate-x-full sm:translate-x-0">
-        <slot name="sidebar" />
+  <body class="bg-white dark:bg-gray-900">
+    <Header />
+    
+    <div class="pt-16 flex">
+      <aside class="w-64 fixed left-0 top-16 h-[calc(100vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+        <Sidebar />
       </aside>
-
-      <!-- Main page slot -->
-      <div class="flex-1 sm:ml-80">
-        <slot />
-        
-        <!-- Mobile sidebar backdrop -->
-        <div class="fixed inset-0 bg-black/50 dark:bg-black/80 sm:hidden hidden" id="sidebar-backdrop"></div>
-      </div>
+      
+      <main class="flex-1 ml-64 min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900">
+        <div class="container mx-auto p-6">
+          <slot />
+        </div>
+      </main>
     </div>
 
     <style is:global>
+      :root {
+        --accent: 136, 58, 234;
+        --accent-light: 224, 204, 250;
+        --accent-dark: 49, 10, 101;
+        --accent-gradient: linear-gradient(
+          45deg,
+          rgb(var(--accent)),
+          rgb(var(--accent-light)) 30%,
+          white 60%
+        );
+      }
+      
+      html {
+        font-family: system-ui, sans-serif;
+        scroll-behavior: smooth;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Scrollbar Styles */
       ::-webkit-scrollbar {
         width: 6px;
-        height: 6px;
       }
 
       ::-webkit-scrollbar-track {
-        @apply bg-transparent;
+        background: transparent;
       }
 
       ::-webkit-scrollbar-thumb {
-        @apply bg-gray-300 dark:bg-gray-600;
+        background: #cbd5e1;
         border-radius: 3px;
       }
 
-      ::-webkit-scrollbar-thumb:hover {
-        @apply bg-gray-400 dark:bg-gray-500;
+      .dark ::-webkit-scrollbar-thumb {
+        background: #475569;
       }
 
-      html {
-        font-family: 'Inter', system-ui, sans-serif;
-      }
-
-      pre {
-        @apply bg-gray-100 dark:bg-angular-dark-lighter border border-gray-200 dark:border-gray-700;
-      }
-
-      code {
-        @apply text-angular-primary dark:text-angular-secondary;
-      }
-
-      @media (max-width: 640px) {
-        h1 {
-          @apply text-mobile-h1;
-        }
-        h2 {
-          @apply text-mobile-h2;
-        }
-        p, li {
-          @apply text-mobile-base;
-        }
-      }
-
-      .prose {
-        @apply text-gray-900 dark:text-angular-text-light;
-      }
-
-      .prose h1,
-      .prose h2,
-      .prose h3,
-      .prose h4,
-      .prose h5,
-      .prose h6 {
-        @apply text-gray-900 dark:text-white;
-      }
-
-      .prose strong {
-        @apply text-gray-900 dark:text-white;
-      }
-
-      .prose code {
-        @apply text-angular-primary dark:text-angular-secondary;
-      }
-
-      .prose a {
-        @apply text-angular-primary hover:text-angular-secondary transition-colors;
-      }
-
-      .prose blockquote {
-        @apply text-gray-900 dark:text-angular-text-light border-l-4 border-angular-primary dark:border-angular-secondary;
-      }
-
-      .gradient-text {
-        @apply bg-gradient-to-r from-angular-primary via-angular-secondary to-angular-tertiary text-transparent bg-clip-text;
-      }
-
-      .transition-colors {
-        transition-property: background-color, border-color, color, fill, stroke;
+      /* Transitions */
+      .transition-all {
+        transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        transition-duration: 200ms;
+        transition-duration: 150ms;
       }
     </style>
-
-    <script>
-      // handing the mobile menu
-      const menuButton = document.querySelector('button[aria-label="Toggle menu"]');
-      const sidebar = document.querySelector('aside');
-      const backdrop = document.getElementById('sidebar-backdrop');
-
-      menuButton?.addEventListener('click', () => {
-        sidebar?.classList.toggle('-translate-x-full');
-        backdrop?.classList.toggle('hidden');
-      });
-
-      backdrop?.addEventListener('click', () => {
-        sidebar?.classList.add('-translate-x-full');
-        backdrop.classList.add('hidden');
-      });
-
-      // Initialize theme
-      const storedTheme = localStorage.getItem('theme');
-      if (storedTheme !== null) {
-        window.localStorage.setItem('theme', storedTheme);
-      }
-      const theme = (() => {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-          return localStorage.getItem('theme') as string;
-        }
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          return 'dark';
-        }
-        return 'light';
-      })();
-          
-      if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
-      }
-
-      window.localStorage.setItem('theme', theme);
-
-      // we are making sure to check the system theme first
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (!localStorage.getItem('theme')) {
-          if (e.matches) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-        }
-      });
-    </script>
   </body>
 </html>

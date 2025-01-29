@@ -1,0 +1,109 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TechnologyCard from '../components/TechnologyCard.astro';
+
+const technologies = [
+  {
+    title: 'Angular',
+    description: 'Master Angular fundamentals, advanced concepts, and best practices for enterprise applications.',
+    icon: 'fab fa-angular',
+    color: 'bg-red-600',
+    href: '/frontend/angular/angular-fundamentals'
+  },
+  {
+    title: 'React',
+    description: 'Deep dive into React hooks, patterns, and modern development practices.',
+    icon: 'fab fa-react',
+    color: 'bg-blue-500',
+    href: '/frontend/react/react-core'
+  },
+  {
+    title: '.NET',
+    description: 'Explore ASP.NET Core, Clean Architecture, and enterprise patterns.',
+    icon: 'fab fa-microsoft',
+    color: 'bg-purple-600',
+    href: '/backend/dotnet/aspnet-core'
+  },
+  {
+    title: 'Node.js',
+    description: 'Learn server-side JavaScript, API development, and modern backend practices.',
+    icon: 'fab fa-node-js',
+    color: 'bg-green-600',
+    href: '/backend/nodejs/node-core'
+  }
+];
+---
+
+<Layout title="Getting Started - Good Tech Interview Guide">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-8 text-gray-900 dark:text-white">Getting Started</h1>
+    
+    <div class="prose dark:prose-invert max-w-none mb-12">
+      <h2>Welcome to Your Learning Journey</h2>
+      <p>
+        Welcome to Good Tech Interview Guide! This getting started guide will help you navigate through our comprehensive resources
+        and prepare effectively for your technical interviews. Choose your preferred technology stack below to begin your journey.
+      </p>
+
+      <h3>How to Use This Guide</h3>
+      <ul>
+        <li>Select your preferred technology from the cards below</li>
+        <li>Start with fundamental concepts and gradually move to advanced topics</li>
+        <li>Practice with real interview questions and coding challenges</li>
+        <li>Review implementation patterns and best practices</li>
+      </ul>
+
+      <h3>Learning Path Recommendations</h3>
+      <ul>
+        <li><strong>Frontend Developers:</strong> Start with JavaScript fundamentals, then move to either Angular or React</li>
+        <li><strong>Backend Developers:</strong> Choose between .NET and Node.js paths, focusing on API design and architecture</li>
+        <li><strong>Full Stack Developers:</strong> Combine frontend and backend paths, with extra focus on system design</li>
+      </ul>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {technologies.map(tech => (
+        <TechnologyCard {...tech} />
+      ))}
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Interview Preparation Tips</h3>
+        <ul class="space-y-2 text-gray-600 dark:text-gray-300">
+          <li>• Review core concepts daily</li>
+          <li>• Practice coding on whiteboards</li>
+          <li>• Participate in mock interviews</li>
+          <li>• Study system design principles</li>
+        </ul>
+      </div>
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Common Interview Topics</h3>
+        <ul class="space-y-2 text-gray-600 dark:text-gray-300">
+          <li>• Data Structures & Algorithms</li>
+          <li>• System Design & Architecture</li>
+          <li>• Design Patterns</li>
+          <li>• Problem-Solving Approaches</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .prose h2 {
+    @apply text-2xl font-bold mb-4 text-gray-900 dark:text-white;
+  }
+  .prose h3 {
+    @apply text-xl font-bold mb-3 text-gray-800 dark:text-gray-200;
+  }
+  .prose ul {
+    @apply list-disc list-inside mb-6 text-gray-600 dark:text-gray-300;
+  }
+  .prose li {
+    @apply mb-2;
+  }
+  .prose strong {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+</style>
