@@ -1,0 +1,378 @@
+---
+layout: ../../layouts/Layout.astro
+title: What are Decorators in Angular?
+---
+
+# What are Decorators in Angular?
+
+## Question 1: What are Decorators in Angular and why are they important?
+
+**Answer:** Decorators are special declarations that modify classes, methods, properties, or parameters at design time. They are crucial in Angular for:
+1. Configuring components, services, and modules
+2. Implementing dependency injection
+3. Managing metadata
+4. Defining component behavior and structure
+
+Example of common decorators:
+```typescript
+// Class decorators
+@Component({
+  selector: 'app-root',
+  template: `<h1>{{title}}</h1>`
+})
+class AppComponent {
+  title = 'My App';
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+class UserService {
+  getUsers() { }
+}
+
+// Property decorators
+class UserComponent {
+  @Input() user: User;
+  @Output() save = new EventEmitter<User>();
+  @ViewChild('content') content: ElementRef;
+  @HostBinding('class.active') isActive = false;
+}
+
+// Method decorators
+class Component {
+  @HostListener('click')
+  onClick() { }
+  
+  @ViewChildren(ChildComponent)
+  children: QueryList<ChildComponent>;
+}
+
+// Parameter decorators
+class Component {
+  constructor(
+    // Basic service injection
+    private service: DataService,
+    
+    // Token-based injection
+    @Inject(API_CONFIG) private config: ApiConfig,
+    
+    // Optional dependency
+    @Optional() private logger: LoggerService,
+    
+    // Skip self in injection chain
+    @SkipSelf() private parent: ParentService,
+    
+    // Host-level injection
+    @Host() private host: HostService,
+    
+    // Attribute value injection
+    @Attribute('role') private role: string
+  ) { }
+  
+  @Input() set data(value: any) {
+    if (this.logger) {
+      this.logger.log('Data updated:', value);
+    }
+    this._data = value;
+  }
+  
+  private _data: any;
+}
+```
+
+## Question 2: How do Class Decorators work in Angular?
+
+**Answer:** Class decorators define the metadata for classes, such as components, services, and modules. They determine how these classes should be processed, instantiated, and used.
+
+```typescript
+// Component decorator
+@Component({
+  selector: 'app-user',
+  template: `
+    <div class="user-card">
+      <h2>{{user.name}}</h2>
+      <p>{{user.email}}</p>
+      <ng-content></ng-content>
+    </div>
+  `,
+  styles: [`
+    .user-card {
+      padding: 1rem;
+      border: 1px solid #ccc;
+    }
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [UserService]
+})
+class UserComponent implements OnInit {
+  @Input() user: User;
+  
+  constructor(private service: UserService) {}
+  
+  ngOnInit() {
+    // Lifecycle hook
+  }
+}
+
+// Injectable decorator
+@Injectable({
+  providedIn: 'root',
+  useFactory: (http: HttpClient) => {
+    return new UserService(http);
+  },
+  deps: [HttpClient]
+})
+class UserService {
+  constructor(private http: HttpClient) {}
+}
+
+// NgModule decorator
+@NgModule({
+  declarations: [UserComponent],
+  imports: [CommonModule],
+  exports: [UserComponent],
+  providers: [
+    {
+      provide: USER_CONFIG,
+      useValue: defaultConfig
+    }
+  ]
+})
+class UserModule { }
+```
+
+## Question 3: How do Property and Method Decorators work?
+
+**Answer:** Property and method decorators modify or enhance class members. They're used for data binding, event handling, and accessing child elements.
+
+```typescript
+@Component({
+  template: `
+    <div [class.active]="isActive">
+      <button (click)="onClick()">
+        {{buttonText}}
+      </button>
+      <div #content>
+        <ng-content></ng-content>
+      </div>
+    </div>
+  `
+})
+class InteractiveComponent {
+  // Property decorators
+  @Input() buttonText = 'Click me';
+  @Output() action = new EventEmitter<void>();
+  @ViewChild('content') content: ElementRef;
+  @HostBinding('attr.role') role = 'button';
+  
+  // Method decorators
+  @HostListener('click')
+  onClick() {
+    this.action.emit();
+  }
+  
+  @HostListener('window:resize', ['$event'])
+  onResize(event: Event) {
+    this.handleResize(event);
+  }
+  
+  // Lifecycle hooks
+  @Input() set config(value: Config) {
+    // Setter decorator
+    this._config = value;
+    this.updateConfig();
+  }
+  
+  private _config: Config;
+}
+```
+
+## Question 4: How do Parameter Decorators work with Dependency Injection?
+
+**Answer:** Parameter decorators are used in constructor parameters to modify how dependencies are injected, allowing for custom injection behavior and optional dependencies.
+
+```typescript
+// Custom injection token
+const API_CONFIG = new InjectionToken<ApiConfig>('api.config');
+
+@Component({
+  template: `<div>{{data | json}}</div>`
+})
+class DataComponent {
+  constructor(
+    // Basic service injection
+    private service: DataService,
+    
+    // Token-based injection
+    @Inject(API_CONFIG) private config: ApiConfig,
+    
+    // Optional dependency
+    @Optional() private logger: LoggerService,
+    
+    // Skip self in injection chain
+    @SkipSelf() private parent: ParentService,
+    
+    // Host-level injection
+    @Host() private host: HostService,
+    
+    // Attribute value injection
+    @Attribute('role') private role: string
+  ) { }
+  
+  @Input() set data(value: any) {
+    if (this.logger) {
+      this.logger.log('Data updated:', value);
+    }
+    this._data = value;
+  }
+  
+  private _data: any;
+}
+```
+
+## Question 5: How do you create Custom Decorators?
+
+**Answer:** Custom decorators can be created to add reusable behavior or metadata to classes, properties, methods, or parameters.
+
+```typescript
+// Custom class decorator
+function Logger() {
+  return function (target: any) {
+    // Add logging functionality
+    const original = target.prototype.ngOnInit;
+    
+    target.prototype.ngOnInit = function () {
+      console.log(`${target.name} initialized`);
+      original?.apply(this);
+    };
+    
+    return target;
+  };
+}
+
+// Custom property decorator
+function Debounce(delay: number = 300) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
+    const original = descriptor.value;
+    let timeout: any;
+    
+    descriptor.value = function (...args: any[]) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        original.apply(this, args);
+      }, delay);
+    };
+    
+    return descriptor;
+  };
+}
+
+// Using custom decorators
+@Logger()
+@Component({
+  template: `
+    <input (input)="onSearch($event)">
+  `
+})
+class SearchComponent {
+  @Debounce(500)
+  onSearch(event: Event) {
+    // Search logic
+  }
+}
+```
+
+## Common Interview Follow-up Questions:
+
+1. **Q: What's the difference between @Injectable() and @Component()?**
+   A: @Injectable() marks a class as available for dependency injection, while @Component() defines a UI component with its template and styles:
+   ```typescript
+   @Injectable({
+     providedIn: 'root'  // Singleton service
+   })
+   class GlobalService { }
+   
+   @Component({
+     selector: 'app-root',
+     template: `...`,  // UI template
+     styles: [`...`]   // Component styles
+   })
+   class AppComponent { }
+   ```
+
+2. **Q: How do you handle decorator inheritance?**
+   A: Decorators are inherited but can be overridden in child classes:
+   ```typescript
+   @Component({
+     selector: 'base-component',
+     template: '<div>Base</div>'
+   })
+   class BaseComponent {
+     @Input() data: any;
+   }
+   
+   @Component({
+     selector: 'child-component',
+     template: '<div>Child</div>'
+   })
+   class ChildComponent extends BaseComponent {
+     // Inherits @Input() data
+     @Input() override data: string;  // Type narrowing
+   }
+   ```
+
+3. **Q: What are the performance implications of decorators?**
+   A: Decorators are processed at runtime, so complex decorators can impact performance:
+   ```typescript
+   // Efficient decorator
+   function Simple() {
+     return function (target: any) {
+       // Simple metadata addition
+       return target;
+     };
+   }
+   
+   // Potentially expensive decorator
+   function Complex() {
+     return function (target: any) {
+       // Deep object manipulation
+       return new Proxy(target, {
+         // Complex handlers
+       });
+     };
+   }
+   ```
+
+4. **Q: How do you test components with decorators?**
+   A: Use TestBed to properly configure decorators in tests:
+   ```typescript
+   describe('DecoratedComponent', () => {
+     let component: DecoratedComponent;
+     let fixture: ComponentFixture<DecoratedComponent>;
+     
+     beforeEach(async () => {
+       await TestBed.configureTestingModule({
+         declarations: [DecoratedComponent],
+         providers: [
+           {
+             provide: API_CONFIG,
+             useValue: mockConfig
+           }
+         ]
+       }).compileComponents();
+       
+       fixture = TestBed.createComponent(DecoratedComponent);
+       component = fixture.componentInstance;
+     });
+     
+     it('should handle decorated properties', () => {
+       component.decoratedMethod();
+       expect(/* assertions */);
+     });
+   });
+   ```

@@ -1,0 +1,486 @@
+---
+layout: ../../layouts/Layout.astro
+title: Signals in Angular
+---
+
+# Signals in Angular
+
+## Introduction
+
+Signals are a new feature introduced in Angular 16+ that provides fine-grained reactivity. They offer a more efficient way to handle state changes and updates in Angular applications.
+
+## What are Signals?
+
+Signals are special objects that wrap a value and notify consumers when that value changes. They provide several benefits:
+
+1. Fine-grained reactivity
+2. Better performance through reduced change detection
+3. More predictable data flow
+4. Improved developer experience
+
+## Basic Signal Usage
+
+```typescript
+import { Component, signal, computed, effect } from '@angular/core';
+
+@Component({
+  selector: 'app-counter',
+  template: `
+    <h2>Counter: {{count()}}</h2>
+    <p>Doubled: {{doubled()}}</p>
+    <button (click)="increment()">Increment</button>
+  `
+})
+export class CounterComponent {
+  // Create a signal with initial value
+  count = signal(0);
+  
+  // Computed signal that depends on count
+  doubled = computed(() => this.count() * 2);
+  
+  // Effect to handle side effects
+  constructor() {
+    effect(() => {
+      console.log(`Count changed to: ${this.count()}`);
+    });
+  }
+  
+  increment() {
+    // Update signal value
+    this.count.update(n => n + 1);
+  }
+}
+```
+
+## Signal Operations
+
+### 1. Creating Signals
+
+```typescript
+// Basic signal
+const name = signal('John');
+
+// Typed signal
+const age = signal<number>(25);
+
+// Object signal
+const user = signal<User>({
+  id: 1,
+  name: 'John',
+  email: 'john@example.com'
+});
+```
+
+### 2. Reading and Writing Signals
+
+```typescript
+// Reading signal value
+console.log(name()); // 'John'
+
+// Setting new value
+name.set('Jane');
+
+// Updating based on previous value
+age.update(n => n + 1);
+
+```
+
+### 3. Computed Signals
+
+```typescript
+const firstName = signal('John');
+const lastName = signal('Doe');
+
+const fullName = computed(() => {
+  return `${firstName()} ${lastName()}`;
+});
+
+// Computed signals are read-only
+console.log(fullName()); // 'John Doe'
+```
+
+## Real-World Examples
+
+### 1. Form Handling
+
+```typescript
+@Component({
+  template: `
+    <form (submit)="onSubmit()">
+      <input [value]="username()" 
+             (input)="username.set($event.target.value)">
+      <p>Current value: {{username()}}</p>
+      <p>Is valid: {{isValid()}}</p>
+    </form>
+  `
+})
+export class FormComponent {
+  username = signal('');
+  isValid = computed(() => this.username().length >= 3);
+  
+  onSubmit() {
+    if (this.isValid()) {
+      // Handle form submission
+    }
+  }
+}
+```
+
+### 2. Data Fetching
+
+```typescript
+@Component({
+  template: `
+    @if (loading()) {
+      <div>Loading...</div>
+    } @else {
+      @if (error()) {
+        <div>Error: {{error()}}</div>
+      } @else {
+        <ul>
+          @for (user of users(); track user.id) {
+            <li>{{user.name}}</li>
+          }
+        </ul>
+      }
+    }
+  `
+})
+export class UserListComponent {
+  users = signal<User[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
+  
+  constructor(private userService: UserService) {
+    this.loadUsers();
+  }
+  
+  async loadUsers() {
+    this.loading.set(true);
+    try {
+      const users = await this.userService.getUsers();
+      this.users.set(users);
+    } catch (err) {
+      this.error.set(err.message);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+}
+```
+
+## Best Practices
+
+### 1. Signal Granularity
+
+```typescript
+// Bad: Single large signal
+const userData = signal({
+  name: 'John',
+  age: 25,
+  email: 'john@example.com'
+});
+
+// Good: Separate signals for independent values
+const name = signal('John');
+const age = signal(25);
+const email = signal('john@example.com');
+```
+
+### 2. Using Computed Signals
+
+```typescript
+// Good: Derive values using computed
+const items = signal([1, 2, 3, 4, 5]);
+const evenItems = computed(() => 
+  items().filter(n => n % 2 === 0)
+);
+const itemCount = computed(() => 
+  items().length
+);
+```
+
+### 3. Effect Usage
+
+```typescript
+// Good: Use effects for side effects
+const theme = signal('light');
+
+effect(() => {
+  document.body.classList.toggle('dark-mode', 
+    theme() === 'dark'
+  );
+});
+```
+
+## Interview Tips 💡
+
+1. **Key Points to Remember**:
+   - Signals are a new reactivity primitive in Angular 16+
+   - They provide fine-grained reactivity
+   - Three main types: basic signals, computed signals, and effects
+   - Better performance than traditional change detection
+
+2. **Common Interview Questions**:
+   - "What are Signals and why were they introduced?"
+   - "How do Signals differ from RxJS Observables?"
+   - "Explain the difference between computed signals and effects"
+   - "What performance benefits do Signals provide?"
+
+3. **Code Examples to Practice**:
+   - Basic signal creation and usage
+   - Computed signals with dependencies
+   - Effects for side effects
+   - Signal-based components
+
+4. **Best Practices to Highlight**:
+   - Keep signals granular
+   - Use computed for derived values
+   - Use effects for side effects
+   - Proper signal typing
+
+## Conclusion
+
+Signals represent a significant evolution in Angular's reactivity system. They provide a more efficient and intuitive way to handle state changes and updates in Angular applications. Understanding Signals is crucial for modern Angular development, as they offer better performance and developer experience compared to traditional approaches.
+
+## Question 1: What are Signals in Angular and why were they introduced?
+
+**Answer:** Signals are a new reactivity primitive in Angular that provide fine-grained reactivity, better performance through automatic dependency tracking, and more predictable change detection. They were introduced to improve performance and developer experience compared to traditional change detection.
+
+```typescript
+import { Component, signal, computed } from '@angular/core';
+
+@Component({
+  selector: 'app-counter',
+  template: `
+    <h1>Count: {{ count() }}</h1>
+    <h2>Double: {{ doubleCount() }}</h2>
+    <button (click)="increment()">Increment</button>
+  `
+})
+export class CounterComponent {
+  // Create a signal
+  count = signal(0);
+  
+  // Computed value based on signal
+  doubleCount = computed(() => this.count() * 2);
+  
+  increment() {
+    // Update signal value
+    this.count.update(n => n + 1);
+  }
+}
+```
+
+## Question 2: How do you create and update Signals in Angular?
+
+**Answer:** Signals can be created using the signal() function and updated using set() or update() methods. The set() method directly sets a new value, while update() modifies the value based on its current state.
+
+```typescript
+@Component({
+  template: `
+    <div>Name: {{ name() }}</div>
+    <div>Age: {{ age() }}</div>
+    <div>User: {{ user().name }}</div>
+  `
+})
+class SignalsComponent {
+  // Creating signals with initial values
+  name = signal('John');
+  age = signal(25);
+  user = signal({ name: 'John', email: 'john@example.com' });
+  
+  updateProfile() {
+    // Direct value update
+    this.name.set('Jane');
+    
+    // Update based on previous value
+    this.age.update(n => n + 1);
+    
+    // Update object signal
+    this.user.set({ 
+      name: 'Jane', 
+      email: 'jane@example.com' 
+    });
+  }
+}
+```
+
+## Question 3: What are Computed Signals and how do they work?
+
+**Answer:** Computed Signals are derived values that automatically update when their dependencies change. They are created using the computed() function and are read-only by default.
+
+```typescript
+@Component({
+  template: `
+    <div>First Name: {{ firstName() }}</div>
+    <div>Last Name: {{ lastName() }}</div>
+    <div>Full Name: {{ fullName() }}</div>
+    <div>Adult: {{ isAdult() }}</div>
+  `
+})
+class UserComponent {
+  firstName = signal('John');
+  lastName = signal('Doe');
+  age = signal(25);
+  
+  // Computed signals
+  fullName = computed(() => 
+    `${this.firstName()} ${this.lastName()}`
+  );
+  
+  isAdult = computed(() => this.age() >= 18);
+  
+  // Computed with multiple dependencies
+  userInfo = computed(() => ({
+    name: this.fullName(),
+    canVote: this.isAdult()
+  }));
+}
+```
+
+## Question 4: How do Signals integrate with Angular's change detection?
+
+**Answer:** Signals automatically track dependencies and trigger updates only when their values change, leading to more efficient change detection compared to traditional Zone.js-based change detection.
+
+```typescript
+@Component({
+  template: `
+    <h1>{{ title() }}</h1>
+    <div>Updates: {{ updateCount() }}</div>
+    <div>Expensive: {{ expensiveOperation() }}</div>
+  `
+})
+class PerformanceComponent {
+  title = signal('Performance Demo');
+  updateCount = signal(0);
+  
+  // Computed signals only recalculate when dependencies change
+  expensiveOperation = computed(() => {
+    console.log('Calculating...');
+    return this.heavyCalculation(this.title());
+  });
+  
+  private heavyCalculation(input: string): string {
+    // Expensive operation
+    return input.split('').reverse().join('');
+  }
+  
+  update() {
+    // Only triggers recalculation of affected computed values
+    this.updateCount.update(n => n + 1);
+  }
+}
+```
+
+## Question 5: What are Signal Effects and when should you use them?
+
+**Answer:** Signal Effects are used to perform side effects when signal values change, such as updating the DOM, making API calls, or logging. They are created using the effect() function and automatically track and respond to signal changes.
+
+```typescript
+@Component({
+  template: `
+    <input [value]="searchTerm()" 
+           (input)="updateSearch($event)">
+    <div>Results: {{ results() }}</div>
+  `
+})
+class SearchComponent implements OnDestroy {
+  searchTerm = signal('');
+  results = signal<string[]>([]);
+  private cleanup = effect(() => {
+    // Automatically runs when searchTerm changes
+    console.log(`Searching for: ${this.searchTerm()}`);
+    this.searchAPI(this.searchTerm());
+  });
+  
+  updateSearch(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchTerm.set(value);
+  }
+  
+  private searchAPI(term: string) {
+    // API call logic
+  }
+  
+  ngOnDestroy() {
+    // Clean up effect
+    this.cleanup();
+  }
+}
+```
+
+## Common Interview Follow-up Questions:
+
+1. **Q: What are the advantages of Signals over traditional change detection?**
+   A: Signals provide:
+   - Fine-grained reactivity
+   - Better performance through automatic dependency tracking
+   - More predictable change detection
+   - Less memory usage
+   ```typescript
+   // Traditional approach
+   class Component {
+     value = 0;
+     // Triggers full component check
+     update() { this.value++; }
+   }
+   
+   // Signal approach
+   class Component {
+     value = signal(0);
+     // Only updates affected parts
+     update() { this.value.update(n => n + 1); }
+   }
+   ```
+
+2. **Q: How do you handle async operations with Signals?**
+   A: Use toSignal() to convert Observables to Signals:
+   ```typescript
+   @Component({
+     template: `
+       <div>Data: {{ data() }}</div>
+       <div>Loading: {{ loading() }}</div>
+     `
+   })
+   class AsyncComponent {
+     private http = inject(HttpClient);
+     data = toSignal(
+       this.http.get('/api/data'),
+       { initialValue: null }
+     );
+     loading = signal(false);
+   }
+   ```
+
+3. **Q: How do you test components using Signals?**
+   A: Test Signals similar to regular properties but call them as functions:
+   ```typescript
+   describe('SignalComponent', () => {
+     it('should update count', () => {
+       const component = new SignalComponent();
+       expect(component.count()).toBe(0);
+       
+       component.increment();
+       expect(component.count()).toBe(1);
+       expect(component.doubleCount()).toBe(2);
+     });
+   });
+   ```
+
+4. **Q: Can Signals replace RxJS in Angular applications?**
+   A: Signals complement RxJS rather than replace it:
+   ```typescript
+   @Component({
+     template: `<div>{{ data() }}</div>`
+   })
+   class HybridComponent {
+     // Convert Observable to Signal
+     private dataSubject = new BehaviorSubject<string>('');
+     data = toSignal(this.dataSubject);
+     
+     // Convert Signal to Observable
+     count = signal(0);
+     count$ = toObservable(this.count);
+   }
+   ```

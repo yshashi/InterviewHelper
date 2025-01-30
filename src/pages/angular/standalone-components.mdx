@@ -1,0 +1,275 @@
+---
+layout: ../../layouts/Layout.astro
+title: What is Standalone Components?
+---
+
+# What is Standalone Components?
+
+## Question 1: What are Standalone Components in Angular and why were they introduced?
+
+**Answer:**
+Standalone Components, introduced in Angular 14+, are components that can be used without declaring them in an NgModule. They:
+1. Reduce boilerplate code
+2. Simplify application architecture
+3. Make dependency management clearer
+4. Improve tree-shaking
+
+Example of a standalone component:
+```typescript
+@Component({
+  selector: 'app-user',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+    UserProfileComponent
+  ],
+  template: `
+    <h1>User Details</h1>
+    <app-user-profile [user]="user">
+    </app-user-profile>
+    <a routerLink="/edit">Edit</a>
+  `
+})
+export class UserComponent {
+  @Input() user: User;
+}
+```
+
+## Question 2: How do you migrate from NgModule-based components to Standalone Components?
+
+**Answer:** To migrate from NgModule-based components to Standalone Components, remove the component from its NgModule, add standalone: true to the component decorator, and import necessary dependencies directly in the component; use the schematic command ng generate @angular/core:standalone to automate the migration for the entire project.
+```typescript
+// Before: Traditional Component
+@Component({
+  selector: 'app-feature'
+})
+export class FeatureComponent { }
+
+@NgModule({
+  declarations: [FeatureComponent],
+  imports: [CommonModule],
+  exports: [FeatureComponent]
+})
+export class FeatureModule { }
+
+// After: Standalone Component
+@Component({
+  selector: 'app-feature',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div *ngIf="data">
+      {{data.title}}
+    </div>
+  `
+})
+export class FeatureComponent { }
+
+// Using in another standalone component
+@Component({
+  standalone: true,
+  imports: [FeatureComponent],
+  template: `
+    <app-feature></app-feature>
+  `
+})
+export class ParentComponent { }
+```
+
+## Question 3: How do you handle routing with Standalone Components?
+
+**Answer:**
+```typescript
+// Standalone Component with Routes
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterModule],
+  template: `
+    <router-outlet></router-outlet>
+  `
+})
+export class AppComponent { }
+
+// Routes configuration
+const routes: Routes = [
+  {
+    path: 'users',
+    loadComponent: () => 
+      import('./users/user.component')
+        .then(m => m.UserComponent)
+  },
+  {
+    path: 'admin',
+    loadChildren: () => 
+      import('./admin/routes')
+        .then(m => m.ADMIN_ROUTES)
+  }
+];
+
+// Bootstrap application
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes),
+    provideAnimations()
+  ]
+});
+```
+
+## Question 4: How do you handle dependency injection with Standalone Components?
+
+**Answer:**
+```typescript
+// Service
+@Injectable({
+  providedIn: 'root'  // Available application-wide
+})
+class GlobalService { }
+
+// Component-scoped service
+@Injectable()
+class FeatureService { }
+
+// Standalone Component with providers
+@Component({
+  standalone: true,
+  providers: [FeatureService],
+  template: `
+    <div>Feature content</div>
+  `
+})
+class FeatureComponent {
+  constructor(
+    private globalService: GlobalService,
+    private featureService: FeatureService
+  ) { }
+}
+
+// Bootstrap with providers
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideHttpClient(),
+    {
+      provide: CONFIG_TOKEN,
+      useValue: environment.config
+    }
+  ]
+});
+```
+
+## Question 5: What are the best practices for using Standalone Components?
+
+**Answer:** Ensuring they are self-contained and reusable, directly importing only necessary dependencies, leveraging lazy loading for performance, avoiding unnecessary NgModule usage, and organizing them logically within the project structure for maintainability.
+```typescript
+// 1. Group related functionality
+@Component({
+  standalone: true,
+  imports: [
+    // Feature-specific imports
+    UserProfileComponent,
+    UserSettingsComponent,
+    // Utility imports
+    CommonModule,
+    ReactiveFormsModule
+  ]
+})
+class UserDashboardComponent { }
+
+// 2. Create standalone features
+const FEATURE_ROUTES: Routes = [
+  {
+    path: '',
+    loadComponent: () => 
+      import('./feature.component')
+        .then(m => m.FeatureComponent)
+  }
+];
+
+// 3. Share common functionality
+@Component({
+  standalone: true,
+  exports: [
+    CommonModule,
+    SharedComponents,
+    UtilityPipes
+  ]
+})
+class SharedUiComponent { }
+```
+
+## Common Interview Follow-up Questions:
+
+1. **Q: Can Standalone Components and NgModule-based components work together?**
+   A: Yes, they can be mixed in the same application:
+   ```typescript
+   // NgModule importing standalone component
+   @NgModule({
+     imports: [StandaloneComponent]
+   })
+   class AppModule { }
+   
+   // Standalone component importing NgModule exports
+   @Component({
+     standalone: true,
+     imports: [SharedModule]
+   })
+   class StandaloneComponent { }
+   ```
+
+2. **Q: How do you handle shared dependencies with Standalone Components?**
+   A: Use imports array or create shared standalone components:
+   ```typescript
+   // Shared utilities
+   const SHARED_IMPORTS = [
+     CommonModule,
+     RouterModule,
+     ReactiveFormsModule
+   ];
+   
+   @Component({
+     standalone: true,
+     imports: [...SHARED_IMPORTS]
+   })
+   ```
+
+3. **Q: What are the performance implications of using Standalone Components?**
+   A: They can improve performance through:
+   - Better tree-shaking
+   - More granular lazy loading
+   - Reduced bundle size
+   ```typescript
+   // Granular lazy loading
+   const routes: Routes = [
+     {
+       path: 'feature',
+       loadComponent: () => 
+         import('./feature.component')
+           .then(m => m.FeatureComponent)
+     }
+   ];
+   ```
+
+4. **Q: How do you test Standalone Components?**
+   A: Similar to regular components but simpler setup:
+   ```typescript
+   import { ComponentFixture, TestBed } from '@angular/core/testing';
+   
+   describe('StandaloneComponent', () => {
+     let component: StandaloneComponent;
+     let fixture: ComponentFixture<StandaloneComponent>;
+   
+     beforeEach(async () => {
+       await TestBed.configureTestingModule({
+         imports: [StandaloneComponent]
+       }).compileComponents();
+   
+       fixture = TestBed.createComponent(StandaloneComponent);
+       component = fixture.componentInstance;
+     });
+   
+     it('should create', () => {
+       expect(component).toBeTruthy();
+     });
+   });
+   ```

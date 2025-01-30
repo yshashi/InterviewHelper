@@ -1,0 +1,279 @@
+---
+layout: ../../layouts/Layout.astro
+title: Explain the Purpose of Angular CLI
+---
+
+# Explain the Purpose of Angular CLI
+
+## Question 1: What is Angular CLI and why is it important?
+
+**Answer:** Angular CLI (Command Line Interface) is a powerful development tool that automates common development tasks in Angular applications. It's important because it:
+1. Streamlines project creation and setup
+2. Enforces consistent project structure
+3. Provides development tools and commands
+4. Automates build optimization
+
+Example of common CLI commands:
+```bash
+# Create new project
+ng new my-app --routing --style scss
+
+# Generate components and services
+ng generate component users
+ng generate service data
+ng generate module admin --routing
+
+# Development commands
+ng serve --port 4200 --open
+ng build --configuration production
+ng test --watch
+ng lint
+```
+
+## Question 2: How do you use Angular CLI for code generation?
+
+**Answer:** Angular CLI provides the `ng generate` (or `ng g`) command to create various application elements with proper naming, files, and boilerplate code.
+
+```bash
+# Generate component with tests and module
+ng g component users --module=app
+
+# Generate lazy-loaded feature module
+ng g module admin --route admin --module app
+
+# Generate service with tests
+ng g service core/services/auth
+
+# Generate interface
+ng g interface models/user
+
+# Generate guard
+ng g guard auth --implements CanActivate
+
+# Generate pipe
+ng g pipe shared/pipes/filter
+
+# Generate directive
+ng g directive shared/directives/highlight
+
+# Generate library
+ng g library my-lib
+
+# Generate application (in workspace)
+ng g application admin-app
+```
+
+## Question 3: How do you configure and customize Angular CLI?
+
+**Answer:** Angular CLI can be configured through the `angular.json` file and command-line options to customize builds, testing, and development settings.
+
+```json
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "my-app": {
+      "projectType": "application",
+      "root": "",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/my-app",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": ["zone.js"],
+            "tsConfig": "tsconfig.app.json",
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.scss"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "sourceMap": false,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true
+            },
+            "staging": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Question 4: How do you use Angular CLI for development and testing?
+
+**Answer:** Angular CLI provides commands for development server, testing, and debugging with various configuration options.
+
+```bash
+# Development server
+ng serve --port 4200 --open --ssl --proxy-config proxy.conf.json
+
+# Testing
+ng test --watch --code-coverage
+ng e2e --port 4201
+
+# Debugging and analysis
+ng lint
+ng build --stats-json
+ng serve --source-map
+
+# Example proxy configuration (proxy.conf.json)
+{
+  "/api": {
+    "target": "http://localhost:3000",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
+
+# Example test configuration (karma.conf.js)
+module.exports = function (config) {
+  config.set({
+    basePath: '',
+    frameworks: ['jasmine', '@angular-devkit/build-angular'],
+    plugins: [
+      require('karma-jasmine'),
+      require('karma-chrome-launcher'),
+      require('karma-coverage')
+    ],
+    coverageReporter: {
+      dir: 'coverage/',
+      reporters: [
+        { type: 'html' },
+        { type: 'text-summary' }
+      ]
+    }
+  });
+};
+```
+
+## Question 5: How do you optimize builds with Angular CLI?
+
+**Answer:** Angular CLI provides various build optimization options to improve application performance and reduce bundle size.
+
+```bash
+# Production build with optimizations
+ng build --configuration production
+
+# Analyze bundle size
+ng build --stats-json
+# Then use webpack-bundle-analyzer
+
+# Custom builder configuration
+{
+  "build": {
+    "builder": "@angular-devkit/build-angular:browser",
+    "options": {
+      "optimization": {
+        "scripts": true,
+        "styles": true,
+        "fonts": false
+      },
+      "outputHashing": "all",
+      "sourceMap": false,
+      "namedChunks": false,
+      "aot": true,
+      "extractLicenses": true,
+      "vendorChunk": false,
+      "buildOptimizer": true,
+      "budgets": [
+        {
+          "type": "initial",
+          "maximumWarning": "2mb",
+          "maximumError": "5mb"
+        }
+      ]
+    }
+  }
+}
+```
+
+## Common Interview Follow-up Questions:
+
+1. **Q: What's the difference between ng serve and ng build?**
+   A: ng serve runs a development server with live reload, while ng build creates production-ready files:
+   ```bash
+   # Development server with HMR
+   ng serve --hmr
+   
+   # Production build
+   ng build --configuration production
+   ```
+
+2. **Q: How do you handle environment-specific configuration?**
+   A: Use environment files and file replacements in angular.json:
+   ```typescript
+   // environment.ts
+   export const environment = {
+     production: false,
+     apiUrl: 'http://localhost:3000'
+   };
+   
+   // angular.json
+   {
+     "configurations": {
+       "production": {
+         "fileReplacements": [
+           {
+             "replace": "src/environments/environment.ts",
+             "with": "src/environments/environment.prod.ts"
+           }
+         ]
+       }
+     }
+   }
+   ```
+
+3. **Q: How do you customize the build process?**
+   A: Use builders and custom configurations:
+   ```json
+   {
+     "architect": {
+       "build": {
+         "builder": "@angular-devkit/build-angular:browser",
+         "options": {
+           "customWebpackConfig": {
+             "path": "./custom-webpack.config.js"
+           }
+         }
+       }
+     }
+   }
+   ```
+
+4. **Q: How do you manage multiple projects in a workspace?**
+   A: Use the projects section in angular.json:
+   ```bash
+   # Generate new application
+   ng generate application admin-app
+   
+   # Generate library
+   ng generate library shared-lib
+   
+   # Build specific project
+   ng build my-app
+   ng build shared-lib
+   
+   # Serve specific project
+   ng serve admin-app
+   ```

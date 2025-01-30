@@ -1,0 +1,242 @@
+---
+layout: ../../layouts/Layout.astro
+title: Components in Angular
+---
+
+# Components in Angular
+
+## Question 1: What are Components in Angular and why are they important?
+
+**Answer:**
+Components are the fundamental building blocks of Angular applications. They are:
+1. Self-contained units of functionality
+2. Consist of a template (HTML), styles (CSS), and logic (TypeScript)
+3. Can be reused across the application
+4. Follow a component-based architecture
+
+Example of a basic component:
+```typescript
+@Component({
+  selector: 'app-user',
+  template: `
+    <div class="user-card">
+      <h2>{{user.name}}</h2>
+      <p>{{user.email}}</p>
+    </div>
+  `,
+  styles: [`
+    .user-card {
+      padding: 16px;
+      border: 1px solid #ccc;
+    }
+  `]
+})
+export class UserComponent {
+  @Input() user: {name: string; email: string};
+}
+```
+
+## Question 2: What are the key parts of an Angular Component?
+
+**Answer:**
+```typescript
+// 1. Component Decorator
+@Component({
+  // Selector for using in HTML
+  selector: 'app-product',
+  
+  // Template (can be inline or separate file)
+  templateUrl: './product.component.html',
+  
+  // Styles (can be inline or separate files)
+  styleUrls: ['./product.component.css'],
+  
+  // Change detection strategy
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+
+// 2. Component Class
+export class ProductComponent implements OnInit {
+  // Properties
+  @Input() productId: number;
+  @Output() addToCart = new EventEmitter<number>();
+  
+  // Constructor for dependency injection
+  constructor(private productService: ProductService) {}
+  
+  // Lifecycle hooks
+  ngOnInit() {
+    this.loadProduct();
+  }
+  
+  // Methods
+  addToCartClicked() {
+    this.addToCart.emit(this.productId);
+  }
+}
+```
+
+## Question 3: Explain Component Lifecycle Hooks in Angular
+
+**Answer:**
+```typescript
+@Component({...})
+export class LifecycleComponent implements 
+  OnInit, 
+  OnChanges, 
+  DoCheck, 
+  AfterViewInit,
+  AfterViewChecked,
+  OnDestroy {
+  
+  // Called when input properties change
+  ngOnChanges(changes: SimpleChanges) {
+    console.log('Input changes:', changes);
+  }
+  
+  // Called once after first ngOnChanges
+  ngOnInit() {
+    console.log('Component initialized');
+  }
+  
+  // Called during every change detection run
+  ngDoCheck() {
+    console.log('Change detection running');
+  }
+  
+  // Called after view is initialized
+  ngAfterViewInit() {
+    console.log('View initialized');
+  }
+  
+  // Called after view is checked
+  ngAfterViewChecked() {
+    console.log('View checked');
+  }
+  
+  // Called before component is destroyed
+  ngOnDestroy() {
+    console.log('Component being destroyed');
+  }
+}
+```
+
+## Question 4: How do Components communicate with each other?
+
+**Answer:**
+```typescript
+// Parent Component
+@Component({
+  selector: 'app-parent',
+  template: `
+    <app-child
+      [data]="parentData"
+      (dataChange)="onDataChange($event)">
+    </app-child>
+  `
+})
+class ParentComponent {
+  parentData = 'Hello';
+  
+  onDataChange(newData: string) {
+    console.log('Child changed data:', newData);
+  }
+}
+
+// Child Component
+@Component({
+  selector: 'app-child'
+})
+class ChildComponent {
+  @Input() data: string;
+  @Output() dataChange = new EventEmitter<string>();
+  
+  updateData(newValue: string) {
+    this.dataChange.emit(newValue);
+  }
+}
+```
+
+## Question 5: What are Component Styles and View Encapsulation?
+
+**Answer:**
+```typescript
+@Component({
+  selector: 'app-styled',
+  template: `
+    <div class="container">
+      <h1>{{title}}</h1>
+    </div>
+  `,
+  styles: [`
+    .container { 
+      padding: 20px;
+    }
+    h1 { 
+      color: blue;
+    }
+  `],
+  // View Encapsulation options
+  encapsulation: ViewEncapsulation.Emulated // Default
+  // Other options:
+  // ViewEncapsulation.None
+  // ViewEncapsulation.ShadowDom
+})
+```
+
+## Common Interview Follow-up Questions:
+
+1. **Q: What's the difference between smart and presentational components?**
+   A: Smart components manage data and business logic, while presentational components focus on UI and receive data via inputs.
+
+2. **Q: How do you optimize component performance?**
+   A: Use OnPush change detection, implement trackBy with ngFor, use pure pipes, and lazy load components when possible.
+   ```typescript
+   @Component({
+     changeDetection: ChangeDetectionStrategy.OnPush
+   })
+   class OptimizedComponent {
+     trackByFn(index: number, item: any): number {
+       return item.id;
+     }
+   }
+   ```
+
+3. **Q: What are content projection and ng-content?**
+   A: They allow components to receive and display content from their parent:
+   ```typescript
+   @Component({
+     selector: 'app-card',
+     template: `
+       <div class="card">
+         <div class="header">
+           <ng-content select="[header]"></ng-content>
+         </div>
+         <div class="body">
+           <ng-content></ng-content>
+         </div>
+       </div>
+     `
+   })
+   ```
+
+4. **Q: How do you handle errors in components?**
+   A: Use error boundaries, try-catch blocks, and error handlers:
+   ```typescript
+   @Component({
+     template: `
+       @if (error) {
+         <error-display [error]="error" />
+       } @else {
+         <ng-content></ng-content>
+       }
+     `
+   })
+   class ErrorBoundaryComponent implements ErrorHandler {
+     error: any = null;
+     
+     handleError(error: any) {
+       this.error = error;
+     }
+   }
+   ```

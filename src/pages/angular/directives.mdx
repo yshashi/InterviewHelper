@@ -1,0 +1,336 @@
+---
+layout: ../../layouts/Layout.astro
+title: What are Directives in Angular?
+---
+
+# What are Directives in Angular?
+
+## Question 1: What are Directives in Angular and what are their types?
+
+**Answer:** Directives in Angular are classes that add behavior to elements in your applications. There are three types:
+1. **Component Directives**: Components are directives with a template
+2. **Structural Directives**: Change the DOM layout by adding/removing elements
+3. **Attribute Directives**: Change the appearance or behavior of an element
+
+Example of each type:
+```typescript
+// 1. Component Directive
+@Component({
+  selector: 'app-user',
+  template: `<h1>{{name}}</h1>`
+})
+class UserComponent {
+  name = 'John';
+}
+
+// 2. Structural Directive
+@Directive({
+  selector: '[appUnless]'
+})
+class UnlessDirective {
+  @Input() set appUnless(condition: boolean) {
+    if (!condition) {
+      this.viewContainer.createEmbeddedView(this.templateRef);
+    } else {
+      this.viewContainer.clear();
+    }
+  }
+  
+  constructor(
+    private templateRef: TemplateRef<any>,
+    private viewContainer: ViewContainerRef
+  ) {}
+}
+
+// 3. Attribute Directive
+@Directive({
+  selector: '[appHighlight]'
+})
+class HighlightDirective {
+  @Input() highlightColor = 'yellow';
+  
+  @HostListener('mouseenter')
+  onMouseEnter() {
+    this.highlight(this.highlightColor);
+  }
+  
+  @HostListener('mouseleave')
+  onMouseLeave() {
+    this.highlight(null);
+  }
+  
+  private highlight(color: string | null) {
+    this.el.nativeElement.style.backgroundColor = color;
+  }
+  
+  constructor(private el: ElementRef) {}
+}
+```
+
+## Question 2: How do you create and use Custom Directives in Angular?
+
+**Answer:** Custom directives are created using the @Directive decorator and can interact with the host element through ElementRef, HostListener, and HostBinding.
+
+```typescript
+// Custom attribute directive
+@Directive({
+  selector: '[appTooltip]',
+  standalone: true
+})
+class TooltipDirective {
+  @Input('appTooltip') tooltipText = '';
+  
+  // Host element binding
+  @HostBinding('style.position') position = 'relative';
+  
+  // Host element event listener
+  @HostListener('mouseenter')
+  showTooltip() {
+    this.tooltip.style.display = 'block';
+  }
+  
+  @HostListener('mouseleave')
+  hideTooltip() {
+    this.tooltip.style.display = 'none';
+  }
+  
+  private tooltip: HTMLElement;
+  
+  constructor(private el: ElementRef) {
+    this.createTooltip();
+  }
+  
+  private createTooltip() {
+    this.tooltip = document.createElement('div');
+    this.tooltip.className = 'tooltip';
+    this.tooltip.textContent = this.tooltipText;
+    this.el.nativeElement.appendChild(this.tooltip);
+  }
+}
+
+// Using the directive
+@Component({
+  template: `
+    <button [appTooltip]="'Click me!'">
+      Hover me
+    </button>
+  `
+})
+class AppComponent { }
+```
+
+## Question 3: How do Structural Directives work in Angular?
+
+**Answer:** Structural directives manipulate DOM elements using microsyntax (*directive) and work with TemplateRef and ViewContainerRef to add/remove elements.
+
+```typescript
+// Custom structural directive
+@Directive({
+  selector: '[appRepeat]'
+})
+class RepeatDirective {
+  constructor(
+    private templateRef: TemplateRef<any>,
+    private viewContainer: ViewContainerRef
+  ) {}
+  
+  @Input() set appRepeatTimes(count: number) {
+    this.viewContainer.clear();
+    for (let i = 0; i < count; i++) {
+      this.viewContainer.createEmbeddedView(
+        this.templateRef,
+        { index: i }
+      );
+    }
+  }
+}
+
+// Using structural directive
+@Component({
+  template: `
+    <!-- Repeat element 3 times -->
+    <div *appRepeat="3; let i=index">
+      Item {{i}}
+    </div>
+    
+    <!-- Built-in structural directives -->
+    <div *ngIf="show">Conditional</div>
+    <div *ngFor="let item of items">{{item}}</div>
+    <div [ngSwitch]="value">
+      <div *ngSwitchCase="'A'">A</div>
+      <div *ngSwitchDefault>Default</div>
+    </div>
+  `
+})
+class AppComponent { }
+```
+
+## Question 4: How do you share data between directives and components?
+
+**Answer:** Data can be shared using Input/Output decorators, services, or by accessing the host component through dependency injection.
+
+```typescript
+// Directive with inputs and outputs
+@Directive({
+  selector: '[appInteractive]'
+})
+class InteractiveDirective {
+  @Input() config: any;
+  @Output() action = new EventEmitter<string>();
+  
+  @HostListener('click')
+  onClick() {
+    this.action.emit('clicked');
+  }
+}
+
+// Service for sharing data
+@Injectable()
+class SharedService {
+  private data = new BehaviorSubject<any>(null);
+  data$ = this.data.asObservable();
+  
+  updateData(value: any) {
+    this.data.next(value);
+  }
+}
+
+// Component using directive and service
+@Component({
+  template: `
+    <div [appInteractive]="config"
+         (action)="handleAction($event)">
+      Interactive Element
+    </div>
+  `
+})
+class AppComponent {
+  constructor(private shared: SharedService) {}
+  
+  handleAction(event: string) {
+    this.shared.updateData(event);
+  }
+}
+```
+
+## Question 5: What are the lifecycle hooks available for directives?
+
+**Answer:** Directives have access to the same lifecycle hooks as components, such as OnInit, OnDestroy, OnChanges, etc.
+
+```typescript
+@Directive({
+  selector: '[appLifecycle]'
+})
+class LifecycleDirective implements OnInit, 
+  OnDestroy, OnChanges {
+  @Input() config: any;
+  
+  ngOnInit() {
+    console.log('Directive initialized');
+  }
+  
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['config']) {
+      console.log('Config changed:', 
+        changes['config'].currentValue);
+    }
+  }
+  
+  ngOnDestroy() {
+    console.log('Directive destroyed');
+  }
+}
+```
+
+## Common Interview Follow-up Questions:
+
+1. **Q: What's the difference between HostBinding and ElementRef?**
+   A: HostBinding provides declarative binding to host element properties, while ElementRef gives direct access to the DOM element:
+   ```typescript
+   @Directive({
+     selector: '[appStyle]'
+   })
+   class StyleDirective {
+     // Declarative binding
+     @HostBinding('style.color') color = 'red';
+     
+     // Direct DOM access
+     constructor(private el: ElementRef) {
+       el.nativeElement.style.fontSize = '16px';
+     }
+   }
+   ```
+
+2. **Q: How do you optimize directive performance?**
+   A: Use OnPush change detection, avoid expensive operations in lifecycle hooks, and implement pure pipes for transformations:
+   ```typescript
+   @Directive({
+     selector: '[appOptimized]',
+     changeDetection: ChangeDetectionStrategy.OnPush
+   })
+   class OptimizedDirective {
+     @Input() set data(value: any) {
+       // Cache expensive computations
+       if (this.cached !== value) {
+         this.cached = value;
+         this.compute();
+       }
+     }
+   }
+   ```
+
+3. **Q: How do you test directives?**
+   A: Test directives using TestBed and ComponentFixture:
+   ```typescript
+   describe('HighlightDirective', () => {
+     let component: TestComponent;
+     let fixture: ComponentFixture<TestComponent>;
+     
+     beforeEach(() => {
+       TestBed.configureTestingModule({
+         declarations: [
+           TestComponent, 
+           HighlightDirective
+         ]
+       });
+       
+       fixture = TestBed.createComponent(TestComponent);
+       component = fixture.componentInstance;
+     });
+     
+     it('should highlight on hover', () => {
+       const element = fixture.debugElement
+         .query(By.directive(HighlightDirective));
+       
+       element.triggerEventHandler('mouseenter', null);
+       expect(element.nativeElement.style.backgroundColor)
+         .toBe('yellow');
+     });
+   });
+   ```
+
+4. **Q: What are the best practices for creating directives?**
+   A: Follow these guidelines:
+   - Use meaningful selectors with prefixes
+   - Keep directives focused and single-responsibility
+   - Provide good documentation
+   - Make them reusable and configurable
+   ```typescript
+   @Directive({
+     selector: '[appPrefix]',
+     standalone: true
+   })
+   class WellDesignedDirective {
+     // Clear input names
+     @Input() config: DirectiveConfig;
+     
+     // Document public methods
+     /**
+      * Updates the directive's state
+      * @param newState The new state to apply
+      */
+     updateState(newState: State) {
+       // Implementation
+     }
+   }
+   ```

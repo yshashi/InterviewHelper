@@ -1,0 +1,251 @@
+---
+layout: ../../layouts/Layout.astro
+title: Data Binding in Angular
+---
+
+# Data Binding in Angular
+
+## Question 1: What is Data Binding in Angular and what are its types?
+
+**Answer:**
+Data binding in Angular is a mechanism for synchronizing data between the component class and its template. There are four types:
+
+1. **Interpolation** (`{{}}`): One-way from class to template
+2. **Property Binding** ([property]): One-way from class to template
+3. **Event Binding** ((event)): One-way from template to class
+4. **Two-way Binding** ([(ngModel)]): Two-way between class and template
+
+Example of all types:
+```typescript
+@Component({
+  selector: 'app-data-binding',
+  template: `
+    <!-- Interpolation -->
+    <h1>{{title}}</h1>
+    
+    <!-- Property Binding -->
+    <img [src]="imageUrl">
+    <button [disabled]="isDisabled">Click me</button>
+    
+    <!-- Event Binding -->
+    <button (click)="handleClick($event)">Save</button>
+    
+    <!-- Two-way Binding -->
+    <input [(ngModel)]="username">
+    <p>Hello, {{username}}!</p>
+  `
+})
+export class DataBindingComponent {
+  title = 'Data Binding Demo';
+  imageUrl = 'path/to/image.jpg';
+  isDisabled = false;
+  username = '';
+  
+  handleClick(event: MouseEvent) {
+    console.log('Button clicked:', event);
+  }
+}
+```
+
+## Question 2: How does Property Binding differ from Interpolation?
+
+**Answer:** Property Binding binds a property of a DOM element to a component property using [], while Interpolation inserts a component property value into the template using `{{ }}`
+```typescript
+@Component({
+  template: `
+    <!-- Interpolation -->
+    <div>{{message}}</div>
+    <div title="{{tooltipText}}">Hover me</div>
+    
+    <!-- Property Binding -->
+    <div [innerHTML]="message"></div>
+    <div [title]="tooltipText">Hover me</div>
+    
+    <!-- When to use which -->
+    <img src="{{imageUrl}}">  // Works, but not recommended
+    <img [src]="imageUrl">    // Preferred way
+    
+    <!-- Property binding required for non-string values -->
+    <button [disabled]="isDisabled">Click</button>
+    <div [style.width.px]="width">Sized div</div>
+  `
+})
+class BindingComponent {
+  message = '<b>Hello</b>';  // Will be escaped in interpolation
+  tooltipText = 'Helpful tip';
+  imageUrl = 'image.jpg';
+  isDisabled = true;  // Boolean
+  width = 100;       // Number
+}
+```
+
+## Question 3: How does Event Binding work in Angular?
+
+**Answer:** Event Binding in Angular allows you to listen for and respond to user actions (like clicks or keystrokes) by binding a DOM event to a component method using (), such as (click)="handleClick()".
+```typescript
+@Component({
+  template: `
+    <!-- Basic event binding -->
+    <button (click)="onClick()">Click Me</button>
+    
+    <!-- With event data -->
+    <input (input)="onInput($event)">
+    
+    <!-- Multiple events -->
+    <div (mouseenter)="onHover()" 
+         (mouseleave)="onLeave()">
+      Hover me
+    </div>
+    
+    <!-- Custom events -->
+    <app-child (userSaved)="onUserSaved($event)">
+    </app-child>
+  `
+})
+class EventComponent {
+  onClick() {
+    console.log('Clicked!');
+  }
+  
+  onInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    console.log('Input value:', value);
+  }
+  
+  onUserSaved(user: User) {
+    console.log('User saved:', user);
+  }
+}
+```
+
+## Question 4: How does Two-way Binding work and when should you use it?
+
+**Answer:** Two-way Binding in Angular combines Property Binding and Event Binding using [(ngModel)] to keep the component property and the view in sync, and it should be used when you need to both display and update a property simultaneously, such as in forms.
+```typescript
+@Component({
+  template: `
+    <!-- Two-way binding with ngModel -->
+    <input [(ngModel)]="username">
+    
+    <!-- Same as above but expanded -->
+    <input [ngModel]="username" 
+           (ngModelChange)="username = $event">
+    
+    <!-- Custom two-way binding -->
+    <app-counter [(value)]="count">
+    </app-counter>
+  `
+})
+class TwoWayComponent {
+  username = '';
+  count = 0;
+}
+
+// Custom component with two-way binding
+@Component({
+  selector: 'app-counter',
+  template: `
+    <button (click)="increment()">+</button>
+    <span>{{value}}</span>
+    <button (click)="decrement()">-</button>
+  `
+})
+class CounterComponent {
+  @Input() value: number = 0;
+  @Output() valueChange = new EventEmitter<number>();
+  
+  increment() {
+    this.valueChange.emit(this.value + 1);
+  }
+  
+  decrement() {
+    this.valueChange.emit(this.value - 1);
+  }
+}
+```
+
+## Question 5: What are Template Reference Variables and how do they relate to data binding?
+
+**Answer:** Template Reference Variables (#var) are used to reference DOM elements or Angular components/directives in a template, allowing direct access to their properties or methods, and they relate to data binding by enabling interaction with the element's data or state without explicitly binding to the component class.
+```typescript
+@Component({
+  template: `
+    <!-- Basic reference -->
+    <input #nameInput>
+    <button (click)="greet(nameInput.value)">
+      Greet
+    </button>
+    
+    <!-- Component reference -->
+    <app-child #childComp></app-child>
+    <button (click)="childComp.doSomething()">
+      Call child method
+    </button>
+    
+    <!-- With directives -->
+    <form #loginForm="ngForm" (submit)="onSubmit(loginForm)">
+      <input name="username" ngModel>
+    </form>
+  `
+})
+class TemplateVarComponent {
+  greet(name: string) {
+    alert(`Hello ${name}!`);
+  }
+  
+  onSubmit(form: NgForm) {
+    console.log(form.value);
+  }
+}
+```
+
+## Common Interview Follow-up Questions:
+
+1. **Q: What is the difference between [attr.] and [prop.] bindings?**
+   A: [attr.] binds to HTML attributes, while [prop.] binds to DOM properties. Use [attr.] when you need to set HTML attributes that don't have corresponding DOM properties.
+   ```typescript
+   <div [attr.aria-label]="label">
+   <input [prop.disabled]="isDisabled">
+   ```
+
+2. **Q: How do you handle null or undefined values in data binding?**
+   A: Use the safe navigation operator (?.) or nullish coalescing operator (??):
+   ```typescript
+   {{user?.name ?? 'Anonymous'}}
+   <div [class.active]="isActive ?? false">
+   ```
+
+3. **Q: How do you optimize data binding for performance?**
+   A: Use OnPush change detection, avoid complex expressions in templates, and minimize bindings:
+   ```typescript
+   @Component({
+     changeDetection: ChangeDetectionStrategy.OnPush,
+     template: `
+       <!-- Compute in component -->
+       <div>{{computedValue}}</div>
+       
+       <!-- Instead of -->
+       <div>{{expensiveComputation()}}</div>
+     `
+   })
+   ```
+
+4. **Q: How do you handle form data binding?**
+   A: Use Template-driven forms with ngModel or Reactive forms:
+   ```typescript
+   // Reactive Form
+   @Component({
+     template: `
+       <form [formGroup]="userForm">
+         <input formControlName="name">
+         <input formControlName="email">
+       </form>
+     `
+   })
+   class FormComponent {
+     userForm = new FormGroup({
+       name: new FormControl(''),
+       email: new FormControl('')
+     });
+   }
+   ```

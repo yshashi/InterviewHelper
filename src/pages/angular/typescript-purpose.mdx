@@ -1,0 +1,171 @@
+---
+layout: ../../layouts/Layout.astro
+title: Purpose of TypeScript in Angular
+---
+
+# Purpose of TypeScript in Angular
+
+## Question 1: Why does Angular use TypeScript?
+
+**Answer:**
+Angular uses TypeScript for several key reasons:
+1. Static typing and type checking
+2. Object-oriented features
+3. Enhanced IDE support
+4. Early error detection
+5. Better code organization and maintainability
+
+## Question 2: What are the main benefits of using TypeScript in Angular applications?
+
+**Answer:**
+```typescript
+// Without TypeScript
+function addUser(user) {
+  // No type checking
+  return user.firstName + ' ' + user.lastName;
+}
+
+// With TypeScript
+interface User {
+  firstName: string;
+  lastName: string;
+  age: number;
+}
+
+function addUser(user: User): string {
+  return user.firstName + ' ' + user.lastName;
+}
+```
+
+Benefits include:
+1. Catch errors during development
+2. Better code completion
+3. Easier refactoring
+4. Clear interface definitions
+5. Improved team collaboration
+
+## Question 3: How does TypeScript improve Angular development workflow?
+
+**Answer:**
+```typescript
+// Type-safe component
+@Component({
+  selector: 'app-user',
+  template: `<h1>{{user.name}}</h1>`
+})
+class UserComponent {
+  // Type checking for properties
+  @Input() user!: {
+    name: string;
+    email: string;
+    role: 'admin' | 'user';
+  };
+
+  // Return type inference
+  getUserRole(): 'admin' | 'user' {
+    return this.user.role;
+  }
+}
+```
+
+Key improvements:
+1. Better tooling support
+2. Immediate feedback on errors
+3. Improved code navigation
+4. Self-documenting code
+5. Type-safe templates
+
+## Question 4: What are TypeScript decorators and how are they used in Angular?
+
+**Answer:**
+```typescript
+// Class decorator
+@Component({
+  selector: 'app-root',
+  template: '<div>{{title}}</div>'
+})
+
+// Property decorator
+class MyComponent {
+  @Input() title: string;
+  
+  @Output() 
+  clicked = new EventEmitter<void>();
+  
+  @ViewChild('myButton') 
+  button: ElementRef;
+}
+```
+
+Decorators provide:
+1. Metadata about classes
+2. Component configuration
+3. Dependency injection setup
+4. Property and method modification
+5. Angular-specific functionality
+
+## Question 5: How does TypeScript's interface feature benefit Angular applications?
+
+**Answer:**
+```typescript
+// Define interface
+interface UserData {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+}
+
+// Use in service
+@Injectable({providedIn: 'root'})
+class UserService {
+  getUser(): Observable<UserData> {
+    return this.http.get<UserData>('/api/user');
+  }
+}
+
+// Use in component
+@Component({...})
+class UserComponent {
+  user: UserData;
+  
+  constructor(private userService: UserService) {
+    this.userService.getUser().subscribe(
+      (data: UserData) => this.user = data
+    );
+  }
+}
+```
+
+Benefits of interfaces:
+1. Type-safe HTTP requests
+2. Contract between components
+3. Consistent data structures
+4. Better code documentation
+5. Improved maintainability
+
+## Common Interview Follow-up Questions:
+
+1. **Q: Is TypeScript required for Angular development?**
+   A: While you can use JavaScript, TypeScript is highly recommended and provides better development experience with Angular.
+
+2. **Q: What's the difference between interfaces and classes in TypeScript?**
+   A: Interfaces are purely for type checking and removed during compilation, while classes generate JavaScript code and can be instantiated.
+
+3. **Q: How does TypeScript help with dependency injection?**
+   A: TypeScript's type system helps Angular's DI system ensure correct service injection and provides better tooling support.
+
+4. **Q: What are generics in TypeScript and how are they used in Angular?**
+   A: Generics provide type-safe templates, commonly used with services, observables, and collections:
+   ```typescript
+   interface Response<T> {
+     data: T;
+     status: number;
+   }
+   
+   class ApiService {
+     get<T>(url: string): Observable<Response<T>> {
+       return this.http.get<Response<T>>(url);
+     }
+   }
+   ```
