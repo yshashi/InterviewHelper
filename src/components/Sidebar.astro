@@ -429,7 +429,7 @@ const menuItems = [
                           <a
                             href={subItem.path}
                             class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
-                              currentPath === subItem.path
+                              (currentPath.includes(subItem.path) || currentPath === subItem.path)
                                 ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                             }`}
@@ -445,7 +445,7 @@ const menuItems = [
                 <a
                   href={item.path}
                   class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
-                    currentPath === item.path
+                    currentPath.includes(item.path) || currentPath === item.path
                       ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
