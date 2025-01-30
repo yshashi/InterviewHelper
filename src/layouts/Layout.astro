@@ -33,7 +33,9 @@ const { title } = Astro.props;
       <!-- Main content -->
       <main class="flex-1 lg:ml-64 min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900 w-full">
         <div class="container mx-auto p-4 lg:p-6 max-w-7xl h-full overflow-y-auto">
-          <slot />
+          <div class="max-w-6xl mx-auto px-4 py-8">
+            <slot />
+          </div>
         </div>
       </main>
     </div>
@@ -218,7 +220,6 @@ const { title } = Astro.props;
       }
 
       .dark .container code {
-        background-color: #2d3748;
         color: #e2e8f0;
       }
 
@@ -316,85 +317,6 @@ const { title } = Astro.props;
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 150ms;
-      }
-
-      /* Syntax Highlighting */
-      .token.comment,
-      .token.prolog,
-      .token.doctype,
-      .token.cdata {
-        color: #6b7280;
-      }
-
-      .dark .token.comment,
-      .dark .token.prolog,
-      .dark .token.doctype,
-      .dark .token.cdata {
-        color: #9ca3af;
-      }
-
-      .token.punctuation {
-        color: #4b5563;
-      }
-
-      .dark .token.punctuation {
-        color: #d1d5db;
-      }
-
-      .token.property,
-      .token.tag,
-      .token.boolean,
-      .token.number,
-      .token.constant,
-      .token.symbol {
-        color: #4f46e5;
-      }
-
-      .dark .token.property,
-      .dark .token.tag,
-      .dark .token.boolean,
-      .dark .token.number,
-      .dark .token.constant,
-      .dark .token.symbol {
-        color: #818cf8;
-      }
-
-      .token.selector,
-      .token.attr-name,
-      .token.string,
-      .token.char,
-      .token.builtin {
-        color: #059669;
-      }
-
-      .dark .token.selector,
-      .dark .token.attr-name,
-      .dark .token.string,
-      .dark .token.char,
-      .dark .token.builtin {
-        color: #34d399;
-      }
-
-      .token.operator,
-      .token.entity,
-      .token.url,
-      .token.variable {
-        color: #7c3aed;
-      }
-
-      .dark .token.operator,
-      .dark .token.entity,
-      .dark .token.url,
-      .dark .token.variable {
-        color: #a78bfa;
-      }
-
-      .token.keyword {
-        color: #dc2626;
-      }
-
-      .dark .token.keyword {
-        color: #f87171;
       }
     </style>
   </body>

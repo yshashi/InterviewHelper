@@ -1,4 +1,4 @@
-# Angular Interview Guide
+# Interview Helper
 
 A comprehensive platform for Angular interview preparation, featuring in-depth explanations, practical examples, and best practices. Built with Astro and TailwindCSS.
 

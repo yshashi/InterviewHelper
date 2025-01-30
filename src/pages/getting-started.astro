@@ -34,18 +34,18 @@ const technologies = [
 ];
 ---
 
-<Layout title="Getting Started - Good Tech Interview Guide">
+<Layout title="Getting Started - Interview helper">
   <div class="max-w-6xl mx-auto px-4 py-8">
     <h1 class="text-4xl font-bold mb-8 text-gray-900 dark:text-white">Getting Started</h1>
     
     <div class="prose dark:prose-invert max-w-none mb-12">
       <h2>Welcome to Your Learning Journey</h2>
       <p>
-        Welcome to Good Tech Interview Guide! This getting started guide will help you navigate through our comprehensive resources
+        Welcome to Interview helper! This getting started guide will help you navigate through our comprehensive resources
         and prepare effectively for your technical interviews. Choose your preferred technology stack below to begin your journey.
       </p>
 
-      <h3>How to Use This Guide</h3>
+      <h3>How to Use This platform</h3>
       <ul>
         <li>Select your preferred technology from the cards below</li>
         <li>Start with fundamental concepts and gradually move to advanced topics</li>
@@ -61,7 +61,9 @@ const technologies = [
       </ul>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <span class="text-red-400 text-2xl font-bold">**Currently this platform is in beta stage. So we just started working on adding new interview questions**</span>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
       {technologies.map(tech => (
         <TechnologyCard {...tech} />
       ))}
