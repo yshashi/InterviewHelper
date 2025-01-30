@@ -4,21 +4,74 @@ import Sidebar from '../components/Sidebar.astro';
 
 interface Props {
   title: string;
+  description?: string;
+  image?: string;
+  canonicalURL?: string;
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  description = "Comprehensive interview preparation platform with in-depth explanations, practical examples, and best practices for various technologies.",
+  image = "/interview.png",
+  canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
+} = Astro.props;
+
+// Construct meta title
+const metaTitle = `${title} | Interview Helper - Your Tech Interview Preparation Guide`;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Astro description" />
     <meta name="viewport" content="width=device-width" />
+    
+    <!-- Primary Meta Tags -->
+    <title>{metaTitle}</title>
+    <meta name="title" content={metaTitle} />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={metaTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(image, Astro.site)} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={metaTitle} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(image, Astro.site)} />
+    
+    <!-- Additional Meta Tags -->
+    <meta name="keywords" content="interview preparation, tech interviews, coding interviews, programming questions, interview helper, technical interview guide" />
+    <meta name="author" content="Interview Helper" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#4f46e5" />
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Preload Font -->
+    <link
+      rel="preload"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      />
+    </noscript>
+    
     <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
   </head>
   <body class="bg-white dark:bg-gray-900">
     <Header />

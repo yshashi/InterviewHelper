@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.interviewhelper.in/sitemap-index.xml
+
+# Crawl-delay for all bots
+Crawl-delay: 10
