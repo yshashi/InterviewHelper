@@ -12,7 +12,7 @@ interface Props {
 const {
   title,
   description = "Comprehensive interview preparation platform with in-depth explanations, practical examples, and best practices for various technologies.",
-  image = "/interview.png",
+  image = "https://res.cloudinary.com/dmcpsaspr/image/upload/w_1000,ar_16:9,c_fill,g_auto,e_sharpen/v1738256893/InterviewHelper/logo.webp",
   canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
 } = Astro.props;
 
@@ -31,6 +31,8 @@ const metaTitle = `${title} | Interview Helper - Your Tech Interview Preparation
     <meta name="title" content={metaTitle} />
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
+    <meta name="image" property="og:image" content={new URL(image, Astro.site)}>
+    <meta name="author" content="SashiKumar Yadav">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
