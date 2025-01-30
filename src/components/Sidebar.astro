@@ -415,7 +415,7 @@ const menuItems = [
                                 <a
                                   href={subSubItem.path}
                                   class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
-                                    currentPath === subSubItem.path
+                                    currentPath.includes(subSubItem.path) || currentPath === subSubItem.path
                                       ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
                                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   }`}
@@ -495,10 +495,7 @@ const menuItems = [
       }
 
       button.addEventListener("click", () => {
-        // Toggle content visibility
         content?.classList.toggle("hidden");
-
-        // Rotate chevron icon
         chevron?.classList.toggle("rotate-180");
       });
     });
@@ -506,9 +503,4 @@ const menuItems = [
 
   // Initialize when the DOM is loaded
   document.addEventListener("DOMContentLoaded", initializeSidebar);
-
-  // Initialize when document is loaded (for Astro view transitions)
-  if (document.readyState === "complete") {
-    initializeSidebar();
-  }
 </script>
