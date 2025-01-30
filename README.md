@@ -60,7 +60,7 @@ npm run preview
 ```
 /
 ├── public/
-│   └── favicon.svg
+│   └── favicon.ico
 ├── src/
 │   ├── components/
 │   │   ├── Header.astro
