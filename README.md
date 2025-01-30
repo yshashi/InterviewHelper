@@ -4,10 +4,9 @@ A comprehensive platform for Angular interview preparation, featuring in-depth e
 
 ## Features
 
-- 📚 Comprehensive Angular interview questions and answers
+- 📚 Comprehensive interview questions and answers
 - 💻 Interactive code examples with syntax highlighting
 - 🌓 Dark/Light mode support
-- 🔍 Full-text search functionality
 - 📱 Responsive design for all devices
 - ⚡ Fast performance with Astro
 - 🎨 Beautiful UI with TailwindCSS
@@ -23,8 +22,8 @@ A comprehensive platform for Angular interview preparation, featuring in-depth e
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/angular-interview.git
-cd angular-interview
+git clone https://github.com/yourusername/InterviewHelper.git
+cd InterviewHelper
 ```
 
 2. Install dependencies:

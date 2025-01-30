@@ -7,7 +7,7 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://angular-interview-guide.dev',
+  site: 'https://www.interviewhelper.in/',
   integrations: [
     mdx(),
     tailwind(),
