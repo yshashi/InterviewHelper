@@ -17,11 +17,11 @@
   </defs>
   
   <!-- Title -->
-  <text x="400" y="40" text-anchor="middle" class="title">Dependency Injection Flow</text>
+  <text x="400" y="40" fill="#696" text-anchor="middle" class="title">Dependency Injection Flow</text>
   
   <!-- Injector -->
   <rect x="300" y="70" width="200" height="60" class="box highlight"/>
-  <text x="400" y="105" text-anchor="middle" class="component">Root Injector</text>
+  <text x="400" y="105" fill="#696" text-anchor="middle" class="component">Root Injector</text>
   
   <!-- Module -->
   <rect x="100" y="180" width="180" height="60" class="box"/>

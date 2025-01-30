@@ -17,7 +17,7 @@
   </defs>
   
   <!-- Title -->
-  <text x="400" y="40" text-anchor="middle" class="title">Angular Architecture Overview</text>
+  <text x="400" y="40" fill="#696" text-anchor="middle" class="title">Angular Architecture Overview</text>
   
   <!-- Components Layer -->
   <rect x="100" y="100" width="600" height="100" class="box highlight"/>

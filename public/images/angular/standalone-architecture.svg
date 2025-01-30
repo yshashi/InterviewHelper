@@ -15,6 +15,9 @@
       <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
     </marker>
   </defs>
+
+  <!-- Main title -->
+  <text x="400" y="40" fill="#696" text-anchor="middle" class="title">Angular Standalone Architecture</text>
   
   
   <rect x="300" y="70" width="200" height="60" class="box highlight"/>
