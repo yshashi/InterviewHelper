@@ -1,15 +1,7 @@
 ---
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
-import { ClientRouter } from 'astro:transitions';
 import Analytics from '@vercel/analytics/astro'
-
-const pageTransition = {
-  forwards: {
-    old: { name: 'fadeOut', duration: '0.2s', easing: 'ease-out' },
-    new: { name: 'scaleIn', duration: '0.3s', easing: 'ease-out' }
-  }
-};
 
 interface Props {
   title?: string;
@@ -42,7 +34,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <ClientRouter />
     <Analytics />
     
     <!-- Primary Meta Tags -->
@@ -106,7 +97,7 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
       
       <!-- Main content -->
       <main class="flex-1 min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900 w-full lg:ml-[280px]">
-        <div class="container mx-auto p-4 lg:p-6 max-w-[1200px]" transition:animate={pageTransition}>
+        <div class="container mx-auto p-4 lg:p-6 max-w-[1200px]">
           <slot />
         </div>
       </main>
@@ -177,22 +168,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
     </script>
 
     <style is:global>
-      /* For fade and scale animations */
-      @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; }
-      }
-
-      @keyframes scaleIn {
-        from { 
-          opacity: 0;
-          transform: scale(0.98);
-        }
-        to { 
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
 
       :root {
         --accent: 136, 58, 234;
