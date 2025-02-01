@@ -5,10 +5,18 @@ import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
 import compress from 'astro-compress';
 import react from '@astrojs/react';
+import vercel from '@astrojs/vercel/static';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://www.interviewhelper.in',
+  output: 'static',
+  adapter: vercel({
+    webAnalytics: {
+      enabled: true
+    },
+    imageService: true,
+  }),
   integrations: [
     mdx(),
     tailwind(),
@@ -23,17 +31,7 @@ export default defineConfig({
       HTML: true,
       JavaScript: true,
       Image: false,
-      SVG: true,
-    }),
-  ],
-  markdown: {
-    shikiConfig: {
-      theme: 'dracula',
-      wrap: true,
-    },
-  },
-  compressHTML: true,
-  build: {
-    inlineStylesheets: 'auto',
-  },
+      SVG: false,
+    })
+  ]
 });
