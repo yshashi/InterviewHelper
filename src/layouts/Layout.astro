@@ -2,6 +2,7 @@
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
 import { ClientRouter } from 'astro:transitions';
+import Analytics from '@vercel/analytics/astro'
 
 const pageTransition = {
   forwards: {
@@ -42,6 +43,7 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <ClientRouter />
+    <Analytics />
     
     <!-- Primary Meta Tags -->
     <title>{metaTitle}</title>
