@@ -2,7 +2,7 @@
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Analytics from '@vercel/analytics/astro'
-import { ClientRouter } from 'astro:transitions';
+
 
 
 
@@ -37,7 +37,7 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <ClientRouter />
+
     <Analytics />
     
     <!-- Primary Meta Tags -->
@@ -172,11 +172,21 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
         });
       }
 
-      // Initialize on page load
-      document.addEventListener('astro:page-load', initializeMobileMenu);
-      
-      // Initialize immediately for first load
+      // Initialize immediately
       initializeMobileMenu();
+      
+      // Re-initialize after navigation
+      window.addEventListener('popstate', () => {
+        setTimeout(initializeMobileMenu, 0);
+      });
+      
+      // Handle clicks on links
+      document.addEventListener('click', (e) => {
+        const link = (e.target as HTMLElement).closest('a');
+        if (link && link.href && link.href.startsWith(window.location.origin)) {
+          setTimeout(initializeMobileMenu, 0);
+        }
+      });
 
       // Handle resize events
       window.addEventListener('resize', () => {

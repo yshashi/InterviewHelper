@@ -519,21 +519,19 @@ const menuItems = [
     });
   }
 
-  // Initialize on page load
-  document.addEventListener('astro:page-load', initializeSidebar);
+  // Initialize immediately
+  initializeSidebar();
 
-  // Handle view transitions
-  document.addEventListener('astro:after-swap', () => {
-    // Restore sidebar state after page swap
-    const sectionButtons = document.querySelectorAll('[data-section]');
-    sectionButtons.forEach((button) => {
-      const sectionId = button.getAttribute('data-section');
-      if (sidebarState.get(sectionId)) {
-        const content = document.getElementById(`${sectionId}-content`);
-        const chevron = button.querySelector('.fa-chevron-down');
-        content?.classList.remove('hidden');
-        chevron?.classList.add('rotate-180');
-      }
-    });
+  // Re-initialize after navigation
+  window.addEventListener('popstate', () => {
+    setTimeout(initializeSidebar, 0);
+  });
+
+  // Handle clicks on links
+  document.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest('a');
+    if (link && link.href && link.href.startsWith(window.location.origin)) {
+      setTimeout(initializeSidebar, 0);
+    }
   });
 </script>
