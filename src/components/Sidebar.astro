@@ -463,6 +463,12 @@ const menuItems = [
 
 <script>
   function initializeSidebar() {
+    // Remove existing click listeners
+    document.querySelectorAll("[data-section]").forEach((button) => {
+      const newButton = button.cloneNode(true);
+      button.parentNode?.replaceChild(newButton, button);
+    });
+
     // Get all section buttons
     const sectionButtons = document.querySelectorAll("[data-section]");
 
@@ -503,4 +509,7 @@ const menuItems = [
 
   // Initialize when the DOM is loaded
   document.addEventListener("DOMContentLoaded", initializeSidebar);
+
+  // Re-initialize on client-side navigation
+  document.addEventListener("astro:page-load", initializeSidebar);
 </script>
