@@ -462,54 +462,78 @@ const menuItems = [
 </nav>
 
 <script>
+  let sidebarState = new Map();
+
+  // Load saved state from sessionStorage
+  const savedState = sessionStorage.getItem('sidebarState');
+  if (savedState) {
+    sidebarState = new Map(JSON.parse(savedState));
+  }
+
   function initializeSidebar() {
-    // Remove existing click listeners
-    document.querySelectorAll("[data-section]").forEach((button) => {
-      const newButton = button.cloneNode(true);
-      button.parentNode?.replaceChild(newButton, button);
-    });
-
-    // Get all section buttons
-    const sectionButtons = document.querySelectorAll("[data-section]");
-
-    // Get current path
     const currentPath = window.location.pathname;
-    console.log(currentPath);
+    const sectionButtons = document.querySelectorAll('[data-section]');
 
     sectionButtons.forEach((button) => {
-      const sectionId = button.getAttribute("data-section");
+      if (button.hasAttribute('data-initialized')) return;
+      button.setAttribute('data-initialized', 'true');
+
+      const sectionId = button.getAttribute('data-section');
       const content = document.getElementById(`${sectionId}-content`);
-      const chevron = button.querySelector(".fa-chevron-down");
+      const chevron = button.querySelector('.fa-chevron-down');
 
-      // Check if any child link matches current path
-      const hasActiveChild = content?.querySelector(`a[href="${currentPath}"]`);
+      // Restore state or initialize based on current path
+      if (sidebarState.has(sectionId)) {
+        if (sidebarState.get(sectionId)) {
+          content?.classList.remove('hidden');
+          chevron?.classList.add('rotate-180');
+        }
+      } else {
+        const hasActiveChild = content?.querySelector(`a[href="${currentPath}"]`);
+        if (hasActiveChild) {
+          content?.classList.remove('hidden');
+          chevron?.classList.add('rotate-180');
+          sidebarState.set(sectionId, true);
 
-      if (hasActiveChild) {
-        // Expand all parent sections if there's an active child
-        let parentContent = content;
-        let parentButton = button;
-        while (parentContent && parentButton) {
-          parentContent.classList.remove("hidden");
-          parentButton
-            .querySelector(".fa-chevron-down")
-            ?.classList.add("rotate-180");
-          parentButton = parentButton.parentElement?.closest(
-            "[data-section]"
-          ) as Element;
-          parentContent = parentButton?.nextElementSibling as HTMLElement;
+          // Expand parent sections
+          let parentButton = button.parentElement?.closest('[data-section]');
+          while (parentButton) {
+            const parentId = parentButton.getAttribute('data-section');
+            sidebarState.set(parentId, true);
+            const parentContent = document.getElementById(`${parentId}-content`);
+            const parentChevron = parentButton.querySelector('.fa-chevron-down');
+            parentContent?.classList.remove('hidden');
+            parentChevron?.classList.add('rotate-180');
+            parentButton = parentButton.parentElement?.closest('[data-section]');
+          }
         }
       }
 
-      button.addEventListener("click", () => {
-        content?.classList.toggle("hidden");
-        chevron?.classList.toggle("rotate-180");
+      // Add click handler
+      button.addEventListener('click', () => {
+        const isExpanded = !content?.classList.toggle('hidden');
+        chevron?.classList.toggle('rotate-180');
+        sidebarState.set(sectionId, isExpanded);
+        sessionStorage.setItem('sidebarState', JSON.stringify(Array.from(sidebarState.entries())));
       });
     });
   }
 
-  // Initialize when the DOM is loaded
-  document.addEventListener("DOMContentLoaded", initializeSidebar);
+  // Initialize on page load
+  document.addEventListener('astro:page-load', initializeSidebar);
 
-  // Re-initialize on client-side navigation
-  document.addEventListener("astro:page-load", initializeSidebar);
+  // Handle view transitions
+  document.addEventListener('astro:after-swap', () => {
+    // Restore sidebar state after page swap
+    const sectionButtons = document.querySelectorAll('[data-section]');
+    sectionButtons.forEach((button) => {
+      const sectionId = button.getAttribute('data-section');
+      if (sidebarState.get(sectionId)) {
+        const content = document.getElementById(`${sectionId}-content`);
+        const chevron = button.querySelector('.fa-chevron-down');
+        content?.classList.remove('hidden');
+        chevron?.classList.add('rotate-180');
+      }
+    });
+  });
 </script>

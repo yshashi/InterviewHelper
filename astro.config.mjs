@@ -11,6 +11,7 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   site: 'https://www.interviewhelper.in',
   output: 'static',
+  prefetch: true,
   adapter: vercel(),
   integrations: [
     mdx(),

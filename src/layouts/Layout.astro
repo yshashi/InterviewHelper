@@ -2,6 +2,9 @@
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Analytics from '@vercel/analytics/astro'
+import { ClientRouter } from 'astro:transitions';
+
+
 
 interface Props {
   title?: string;
@@ -34,6 +37,7 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <ClientRouter />
     <Analytics />
     
     <!-- Primary Meta Tags -->
@@ -97,56 +101,82 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
       
       <!-- Main content -->
       <main class="flex-1 min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900 w-full lg:ml-[280px]">
-        <div class="container mx-auto p-4 lg:p-6 max-w-[1200px]">
+        <div class="container mx-auto p-4 lg:p-6 max-w-[1200px] transition-opacity duration-200">
           <slot />
         </div>
       </main>
     </div>
 
     <script>
-      // Get elements
-      const mobileMenuButton = document.getElementById('mobile-menu-button');
-      const sidebar = document.getElementById('sidebar');
-      const sidebarOverlay = document.getElementById('sidebar-overlay');
+      // Get elements (in global scope)
+      let mobileMenuButton = document.getElementById('mobile-menu-button');
+      let sidebar = document.getElementById('sidebar');
+      let sidebarOverlay = document.getElementById('sidebar-overlay');
 
-      // Toggle sidebar function
-      function toggleSidebar() {
-        if (sidebar && sidebarOverlay) {
-          const isHidden = sidebar.classList.contains('-translate-x-full');
-          
-          if (isHidden) {
-            // Show sidebar
-            sidebar.classList.remove('-translate-x-full');
-            sidebarOverlay.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-          } else {
-            // Hide sidebar
-            sidebar.classList.add('-translate-x-full');
-            sidebarOverlay.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
+      function initializeMobileMenu() {
+        // Refresh element references
+        mobileMenuButton = document.getElementById('mobile-menu-button');
+        sidebar = document.getElementById('sidebar');
+        sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        // Remove existing listeners if any
+        const oldButton = mobileMenuButton?.cloneNode(true);
+        if (oldButton && mobileMenuButton?.parentNode) {
+          mobileMenuButton.parentNode.replaceChild(oldButton, mobileMenuButton);
+        }
+
+        // Toggle sidebar function
+        function toggleSidebar() {
+          if (sidebar && sidebarOverlay) {
+            const isHidden = sidebar.classList.contains('-translate-x-full');
+            
+            if (isHidden) {
+              // Show sidebar
+              sidebar.classList.remove('-translate-x-full');
+              sidebarOverlay.classList.remove('hidden');
+              document.body.classList.add('overflow-hidden');
+            } else {
+              // Hide sidebar
+              sidebar.classList.add('-translate-x-full');
+              sidebarOverlay.classList.add('hidden');
+              document.body.classList.remove('overflow-hidden');
+            }
           }
         }
+
+        // Add click event listeners
+        oldButton?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleSidebar();
+        });
+
+        sidebarOverlay?.addEventListener('click', toggleSidebar);
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+          if (window.innerWidth < 1024) {
+            const target = e.target as HTMLElement;
+            if (!sidebar?.contains(target) && !oldButton?.contains(target)) {
+              sidebar?.classList.add('-translate-x-full');
+              sidebarOverlay?.classList.add('hidden');
+              document.body.classList.remove('overflow-hidden');
+            }
+          }
+        });
+
+        // Close sidebar on navigation
+        document.addEventListener('astro:after-swap', () => {
+          sidebar?.classList.add('-translate-x-full');
+          sidebarOverlay?.classList.add('hidden');
+          document.body.classList.remove('overflow-hidden');
+        });
       }
 
-      // Add click event listeners
-      mobileMenuButton?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleSidebar();
-      });
-
-      sidebarOverlay?.addEventListener('click', toggleSidebar);
-
-      // Close sidebar when clicking outside
-      document.addEventListener('click', (e) => {
-        if (window.innerWidth < 1024) {
-          const target = e.target as HTMLElement;
-          if (!sidebar?.contains(target) && !mobileMenuButton?.contains(target)) {
-            sidebar?.classList.add('-translate-x-full');
-            sidebarOverlay?.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
-          }
-        }
-      });
+      // Initialize on page load
+      document.addEventListener('astro:page-load', initializeMobileMenu);
+      
+      // Initialize immediately for first load
+      initializeMobileMenu();
 
       // Handle resize events
       window.addEventListener('resize', () => {
@@ -168,7 +198,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
     </script>
 
     <style is:global>
-
       :root {
         --accent: 136, 58, 234;
         --accent-light: 224, 204, 250;
