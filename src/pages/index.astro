@@ -1,86 +1,208 @@
 ---
+import LinkButton from '../components/LinkButton.astro';
 import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
-import Sidebar from '../components/Sidebar.astro';
+
 export const prerender = true;
+
+const technologies = [
+  { name: 'Angular', icon: 'devicon-angularjs-plain colored' },
+  { name: 'React', icon: 'devicon-react-original colored' },
+  { name: 'Node.js', icon: 'devicon-nodejs-plain colored' },
+  { name: '.NET', icon: 'devicon-dot-net-plain colored' },
+  { name: 'JavaScript', icon: 'devicon-javascript-plain colored' },
+  { name: 'TypeScript', icon: 'devicon-typescript-plain colored' },
+];
+
+const features = [
+  {
+    title: 'Comprehensive Coverage',
+    description: 'In-depth interview questions and answers across multiple technologies and frameworks.',
+    icon: '📚'
+  },
+  {
+    title: 'Real-world Examples',
+    description: 'Practical examples and scenarios from actual industry experience.',
+    icon: '💼'
+  },
+  {
+    title: 'Community Driven',
+    description: 'Open platform for developers to contribute and share their knowledge.',
+    icon: '🤝'
+  },
+  {
+    title: 'Regular Updates',
+    description: 'Constantly updated content to keep up with the latest tech trends.',
+    icon: '🔄'
+  }
+];
 ---
 
-<meta http-equiv="refresh" content="0;url=/introduction" />
-
-<Layout title="Interview Helper - Comprehensive Questions and Answers">
-  <Header />
-  <Sidebar slot="sidebar" />
+<Layout 
+  title="Interview Helper - Your Ultimate Tech Interview Preparation Platform"
+  description="Comprehensive interview preparation platform covering Angular, React, Node.js, .NET, and more. Created by Sashikumar Yadav, Senior Software Engineer."
+>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
   
-  <div class="max-w-4xl mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">
-      Interview Helper
-    </h1>
-    
-    <p class="text-lg text-gray-700 dark:text-gray-300 mb-8">
-      A comprehensive resource for Angular interview preparation, featuring in-depth explanations,
-      practical examples, and best practices.
-    </p>
-
-    <div class="grid gap-6 md:grid-cols-2">
-      <div class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
-        <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Getting Started
-        </h2>
-        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
-          Begin your interview preparation with fundamental Angular concepts and gradually progress to advanced topics.
+  <div class="min-h-screen bg-white dark:bg-gray-900">    
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div class="flex flex-col items-center">
+        <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
+          <span class="block">Master Your Tech <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Interview Journey</span></span>
+        </h1>
+        <p class="mt-3 max-w-md mx-auto text-base text-gray-500 dark:text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+          Your comprehensive resource for technical interview preparation. From fundamentals to advanced concepts, we've got you covered across multiple technologies.
         </p>
-        <a
-          href="/questions/what-is-angular"
-          class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-primary rounded-lg hover:bg-secondary focus:ring-4 focus:outline-none focus:ring-blue-300"
-        >
-          Start Learning
-          <svg
-            class="w-3.5 h-3.5 ml-2"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 14 10"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M1 5h12m0 0L9 1m4 4L9 9"
-            />
-          </svg>
-        </a>
+        <div class="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+          <LinkButton text="Get Started" href="/introduction" />
+          <div class="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
+            <a href="https://github.com/yshashi/InterviewHelper" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 md:py-4 md:text-lg md:px-10">
+              View on GitHub
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
-        <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Latest Updates
+      <div class="mt-20">
+        <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white text-center mb-10">
+          Technologies Covered
         </h2>
-        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
-          Stay current with the newest Angular features, best practices, and commonly asked interview questions.
-        </p>
-        <a
-          href="/questions/angular-cli"
-          class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-primary rounded-lg hover:bg-secondary focus:ring-4 focus:outline-none focus:ring-blue-300"
-        >
-          View Updates
-          <svg
-            class="w-3.5 h-3.5 ml-2"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 14 10"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M1 5h12m0 0L9 1m4 4L9 9"
-            />
-          </svg>
-        </a>
+        <div class="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-6">
+          {technologies.map((tech) => (
+            <div class="flex flex-col items-center">
+              <i class={`${tech.icon} text-5xl mb-2`}></i>
+              <span class="text-gray-600 dark:text-gray-300">{tech.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      <div class="mt-20">
+        <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white text-center mb-10">
+          Why Choose Interview Helper?
+        </h2>
+        <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => (
+            <div class="relative p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+              <div class="text-3xl mb-4">{feature.icon}</div>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+              <p class="text-gray-500 dark:text-gray-400">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="mt-20 bg-gray-50 dark:bg-gray-800 rounded-xl p-8">
+        <div class="max-w-3xl mx-auto text-center">
+          <img 
+            src="https://github.com/yshashi.png" 
+            alt="Sashikumar Yadav" 
+            class="w-32 h-32 rounded-full mx-auto mb-6 border-4 border-blue-500"
+          />
+          <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">
+            About the Creator
+          </h2>
+          <p class="text-xl text-gray-500 dark:text-gray-400 mb-6">
+            Hi! I'm Sashikumar Yadav, a Senior Software Engineer at Ti&M Singapore. With a passion for teaching and community building, I created Interview Helper to empower developers in their technical interview journey.
+          </p>
+          <p class="text-gray-500 dark:text-gray-400 mb-8">
+            My motivation behind this platform is simple: to give back to the developer community that has helped me grow. I believe that knowledge should be accessible to everyone, and through Interview Helper, I aim to create a comprehensive resource that helps developers prepare for technical interviews effectively. This platform is built with love and dedication, incorporating real-world scenarios and practical insights from my experience in the tech industry.
+          </p>
+          <div class="flex flex-wrap justify-center gap-4">
+            <a 
+              href="https://youtube.com/@letsprogram30" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="flex items-center px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200 dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800"
+            >
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              Let's Program
+            </a>
+            <a 
+              href="https://letsprogram.in" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-100 dark:hover:bg-blue-800"
+            >
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4M8 11v4M16 11v4"/>
+              </svg>
+              Blog
+            </a>
+            <a 
+              href="https://sashikumar.dev" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="flex items-center px-4 py-2 text-sm font-medium text-purple-600 bg-purple-100 rounded-md hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-100 dark:hover:bg-purple-800"
+            >
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+              </svg>
+              Portfolio
+            </a>
+            <a 
+              href="https://linkhub.letsprogram.in/yshashi30" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="flex items-center px-4 py-2 text-sm font-medium text-green-600 bg-green-100 rounded-md hover:bg-green-200 dark:bg-green-900 dark:text-green-100 dark:hover:bg-green-800"
+            >
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+              LinkHub
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-20 bg-gray-50 dark:bg-gray-800 rounded-xl p-8">
+        <div class="text-center">
+          <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">
+            Join Our Community
+          </h2>
+          <p class="text-xl text-gray-500 dark:text-gray-400 mb-8">
+            Contribute to our open-source platform and help others succeed in their tech interviews.
+          </p>
+          <a 
+            href="https://github.com/yshashi/InterviewHelper"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
+          >
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
+            </svg>
+            Contribute on GitHub
+          </a>
+        </div>
+      </div>
+    </main>
   </div>
 </Layout>
+
+<script>
+  const THEME_KEY = 'interview_helper_theme';
+
+  // Function to get current theme
+  function getCurrentTheme() {
+    return localStorage.getItem(THEME_KEY) === 'dark' || 
+      (!localStorage.getItem(THEME_KEY) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+
+  // Function to set theme
+  function setTheme(isDark: boolean) {
+    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', isDark);
+  }
+
+  // Initialize theme on page load and after navigation
+  document.addEventListener('astro:page-load', () => {
+    setTheme(getCurrentTheme());
+  });
+
+  document.addEventListener('astro:after-swap', () => {
+    setTheme(getCurrentTheme());
+  });
+</script>
