@@ -14,8 +14,23 @@
         <i class="fas fa-bars text-xl"></i>
       </button>
 
-      <a href="/" class="flex items-center">
-        <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+      <a href="/" class="flex items-center gap-1">
+        <svg width="50" height="50" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <polygon points="128,20 236,80 208,216 128,256 48,216 20,80" 
+                   fill="url(#gradient)" stroke="white" stroke-width="10" stroke-linejoin="round"/>
+          <text x="50%" y="67%" font-size="100" font-weight="bold" text-anchor="middle"
+                fill="white" font-family="Arial, sans-serif" letter-spacing="2">
+            IH
+          </text>
+          <defs>
+            <linearGradient id="gradient" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#2563eb"/>
+              <stop offset="1" stop-color="#9333ea"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        
+        <span class="text-xl hidden md:block mt-1 font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           Interview Helper
         </span>
       </a>
@@ -25,23 +40,28 @@
       <button
         id="theme-toggle"
         type="button"
-        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5"
+        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 
+        focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 
+        w-10 h-10 flex items-center justify-center rounded-lg"
         aria-label="Toggle dark mode"
       >
         <i id="theme-toggle-dark-icon" class="hidden fas fa-moon text-lg"></i>
         <i id="theme-toggle-light-icon" class="hidden fas fa-sun text-lg"></i>
       </button>
-
+    
       <a
         href="https://github.com/yshashi/InterviewHelper"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5"
+        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 
+        focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 
+        w-10 h-10 flex items-center justify-center rounded-lg"
         title="View on GitHub"
       >
         <i class="fab fa-github text-lg"></i>
       </a>
     </div>
+    
   </div>
 </header>
 
