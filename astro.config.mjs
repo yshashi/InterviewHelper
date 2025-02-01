@@ -5,18 +5,13 @@ import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
 import compress from 'astro-compress';
 import react from '@astrojs/react';
-import vercel from '@astrojs/vercel/static';
+import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://www.interviewhelper.in',
   output: 'static',
-  adapter: vercel({
-    webAnalytics: {
-      enabled: true
-    },
-    imageService: true,
-  }),
+  adapter: vercel(),
   integrations: [
     mdx(),
     tailwind(),
