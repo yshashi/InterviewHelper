@@ -1,0 +1,436 @@
+---
+layout: ../../layouts/Layout.astro
+title: Error Management in Angular
+---
+
+# Error Management in Angular
+
+## Question 1: How do you implement comprehensive error handling in Angular?
+
+**Answer:**
+Angular error handling involves multiple layers:
+
+1. Global Error Handling
+2. HTTP Error Interceptors
+3. RxJS Error Handling
+4. Component-Level Error Boundaries
+5. Form Validation Errors
+6. Logging and Monitoring
+
+## Question 2: How do you implement global error handling?
+
+**Answer:**
+Here's a comprehensive global error handling implementation:
+
+```typescript
+// 1. Custom Error Handler
+@Injectable()
+export class GlobalErrorHandler implements ErrorHandler {
+  private logger = inject(LoggingService);
+  private notifier = inject(NotificationService);
+  
+  handleError(error: Error) {
+    // Log error details
+    this.logger.logError({
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      user: this.getCurrentUser()
+    });
+    
+    // Show user-friendly notification
+    this.notifier.showError(
+      this.getReadableError(error)
+    );
+    
+    // Optionally report to monitoring service
+    this.reportToMonitoring(error);
+  }
+  
+  private getReadableError(error: any): string {
+    if (error instanceof HttpErrorResponse) {
+      return this.getHttpErrorMessage(error);
+    }
+    
+    if (error instanceof TypeError) {
+      return 'A technical error occurred. Please try again.';
+    }
+    
+    return error.message || 'An unexpected error occurred';
+  }
+  
+  private getHttpErrorMessage(error: HttpErrorResponse): string {
+    switch (error.status) {
+      case 401: return 'Please log in to continue';
+      case 403: return 'You don\'t have permission for this action';
+      case 404: return 'The requested resource was not found';
+      case 500: return 'A server error occurred. Please try again later';
+      default: return 'An error occurred while communicating with the server';
+    }
+  }
+}
+
+// 2. HTTP Error Interceptor
+@Injectable()
+export class ErrorInterceptor implements HttpInterceptor {
+  private errorHandler = inject(ErrorHandler);
+  private auth = inject(AuthService);
+  
+  intercept(
+    req: HttpRequest<any>,
+    next: HttpHandler
+  ): Observable<HttpEvent<any>> {
+    return next.handle(req).pipe(
+      retry({
+        count: 2,
+        delay: this.getBackoffDelay
+      }),
+      catchError(error => {
+        if (error instanceof HttpErrorResponse) {
+          return this.handleHttpError(error);
+        }
+        this.errorHandler.handleError(error);
+        return EMPTY;
+      })
+    );
+  }
+  
+  private handleHttpError(
+    error: HttpErrorResponse
+  ): Observable<never> {
+    switch (error.status) {
+      case 401:
+        this.auth.redirectToLogin();
+        break;
+      case 403:
+        this.navigateToForbidden();
+        break;
+      case 503:
+        return this.retryWithBackoff(error);
+    }
+    throw error;
+  }
+  
+  private getBackoffDelay(retryCount: number): number {
+    return Math.min(1000 * Math.pow(2, retryCount), 10000);
+  }
+}
+
+// 3. Application Configuration
+const appConfig: ApplicationConfig = {
+  providers: [
+    // Global error handler
+    {
+      provide: ErrorHandler,
+      useClass: GlobalErrorHandler
+    },
+    // HTTP interceptors
+    provideHttpClient(
+      withInterceptors([errorInterceptor])
+    ),
+    // Logging
+    {
+      provide: LoggingService,
+      useClass: environment.production ? 
+        ProductionLogger : 
+        DevelopmentLogger
+    }
+  ]
+};
+```
+
+## Question 3: How do you handle component-level errors?
+
+**Answer:**
+Here's how to implement component-level error handling:
+
+```typescript
+// 1. Error Boundary Component
+@Component({
+  selector: 'app-error-boundary',
+  template: `
+    @if (hasError()) {
+      <div class="error-container">
+        <h3>Something went wrong</h3>
+        <p>{{ errorMessage() }}</p>
+        <button (click)="retry()">
+          Try Again
+        </button>
+      </div>
+    } @else {
+      <ng-content></ng-content>
+    }
+  `
+})
+export class ErrorBoundaryComponent {
+  private errorHandler = inject(ErrorHandler);
+  
+  hasError = signal(false);
+  errorMessage = signal<string>('');
+  
+  @Input() fallback: TemplateRef<any> | null = null;
+  
+  handleError(error: Error) {
+    this.hasError.set(true);
+    this.errorMessage.set(
+      this.getReadableError(error)
+    );
+    this.errorHandler.handleError(error);
+  }
+  
+  retry() {
+    this.hasError.set(false);
+    this.errorMessage.set('');
+  }
+}
+
+// 2. Component with Error Handling
+@Component({
+  selector: 'app-user-profile',
+  template: `
+    <app-error-boundary>
+      @if (error(); as errorMessage) {
+        <error-alert [message]="errorMessage" />
+      }
+      
+      @if (user(); as userData) {
+        <user-details [user]="userData" />
+      }
+    </app-error-boundary>
+  `
+})
+export class UserProfileComponent {
+  private userService = inject(UserService);
+  
+  user = signal<User | null>(null);
+  error = signal<string | null>(null);
+  
+  loadUser(id: string) {
+    this.userService.getUser(id).pipe(
+      catchError(error => {
+        this.handleError(error);
+        return EMPTY;
+      })
+    ).subscribe(user => {
+      this.user.set(user);
+    });
+  }
+  
+  private handleError(error: any) {
+    this.error.set(
+      this.getReadableError(error)
+    );
+  }
+}
+```
+
+## Question 4: How do you implement form validation error handling?
+
+**Answer:**
+Here's a comprehensive form validation error handling approach:
+
+```typescript
+// 1. Custom Validators
+@Injectable({ providedIn: 'root' })
+export class CustomValidators {
+  static passwordStrength(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      
+      if (!value) return null;
+      
+      const hasUpperCase = /[A-Z]/.test(value);
+      const hasLowerCase = /[a-z]/.test(value);
+      const hasNumber = /[0-9]/.test(value);
+      const hasSpecialChar = /[!@#$%^&*]/.test(value);
+      
+      const valid = hasUpperCase && hasLowerCase && 
+                   hasNumber && hasSpecialChar;
+                   
+      return valid ? null : {
+        passwordStrength: {
+          missing: {
+            upperCase: !hasUpperCase,
+            lowerCase: !hasLowerCase,
+            number: !hasNumber,
+            specialChar: !hasSpecialChar
+          }
+        }
+      };
+    };
+  }
+}
+
+// 2. Form Component with Error Handling
+@Component({
+  selector: 'app-user-form',
+  template: `
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="form-field">
+        <input formControlName="email" />
+        @if (showFieldError('email'); as errors) {
+          <div class="error-messages">
+            @if (errors.required) {
+              <span>Email is required</span>
+            }
+            @if (errors.email) {
+              <span>Invalid email format</span>
+            }
+          </div>
+        }
+      </div>
+      
+      <div class="form-field">
+        <input 
+          type="password"
+          formControlName="password"
+        />
+        @if (showFieldError('password'); as errors) {
+          <div class="error-messages">
+            @if (errors.required) {
+              <span>Password is required</span>
+            }
+            @if (errors.passwordStrength; as strength) {
+              <div class="password-errors">
+                @if (strength.missing.upperCase) {
+                  <span>Missing uppercase letter</span>
+                }
+                @if (strength.missing.number) {
+                  <span>Missing number</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+      
+      <button type="submit" 
+              [disabled]="!form.valid">
+        Submit
+      </button>
+    </form>
+  `
+})
+export class UserFormComponent {
+  private fb = inject(FormBuilder);
+  
+  form = this.fb.group({
+    email: ['', [
+      Validators.required, 
+      Validators.email
+    ]],
+    password: ['', [
+      Validators.required,
+      Validators.minLength(8),
+      CustomValidators.passwordStrength()
+    ]]
+  });
+  
+  showFieldError(field: string): ValidationErrors | null {
+    const control = this.form.get(field);
+    return control?.touched && control?.errors || null;
+  }
+  
+  onSubmit() {
+    if (this.form.valid) {
+      // Process form
+    } else {
+      this.markFormTouched();
+    }
+  }
+  
+  private markFormTouched() {
+    Object.values(this.form.controls).forEach(
+      control => control.markAsTouched()
+    );
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Error Monitoring**
+   ```typescript
+   @Injectable({ providedIn: 'root' })
+   export class MonitoringService {
+     private metrics = signal<ErrorMetric[]>([]);
+     
+     trackError(error: Error) {
+       this.metrics.update(m => [...m, {
+         type: error.name,
+         message: error.message,
+         timestamp: Date.now(),
+         context: this.getErrorContext()
+       }]);
+     }
+   }
+   ```
+
+2. **Testing Error Scenarios**
+   ```typescript
+   describe('ErrorHandler', () => {
+     it('should handle HTTP errors', () => {
+       const handler = TestBed.inject(ErrorHandler);
+       const error = new HttpErrorResponse({
+         status: 404,
+         statusText: 'Not Found'
+       });
+       
+       expect(() => handler.handleError(error))
+         .not.toThrow();
+     });
+   });
+   ```
+
+3. **Performance Considerations**
+   ```typescript
+   @Injectable()
+   export class PerformantErrorHandler {
+     private errorBuffer: Error[] = [];
+     
+     handleError(error: Error) {
+       this.errorBuffer.push(error);
+       
+       // Batch process errors
+       if (this.errorBuffer.length >= 5) {
+         this.processErrorBatch();
+       }
+     }
+   }
+   ```
+
+4. **Security Best Practices**
+   ```typescript
+   @Injectable()
+   export class SecureErrorHandler {
+     handleError(error: Error) {
+       // Sanitize error messages
+       const safeMessage = this.sanitizeErrorMessage(
+         error.message
+       );
+       
+       // Remove sensitive data
+       const safeStack = this.removeSensitiveData(
+         error.stack
+       );
+     }
+   }
+   ```
+
+Remember: In interviews, focus on:
+- Global error handling
+- HTTP error handling
+- Component-level errors
+- Form validation
+- Security considerations
+- Testing strategies
+- Performance implications
+
+Key points to emphasize:
+1. Comprehensive error handling
+2. User-friendly error messages
+3. Security considerations
+4. Performance optimization
+5. Testing approaches
+6. Monitoring and logging
+7. Best practices

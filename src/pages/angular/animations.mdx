@@ -1,0 +1,411 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Animations
+---
+
+# Angular Animations
+
+## Question 1: What are Angular animations and how do you implement them?
+
+**Answer:**
+Angular animations provide a powerful system for implementing animations declaratively. Key concepts include:
+
+1. State and transition animations
+2. Keyframe animations
+3. Group animations
+4. Reusable animations
+5. Route animations
+
+## Question 2: How do you implement basic animations in Angular?
+
+**Answer:**
+Here are examples of different animation types:
+
+```typescript
+// 1. Basic State Animation
+import { 
+  trigger, 
+  state, 
+  style, 
+  animate, 
+  transition 
+} from '@angular/animations';
+
+@Component({
+  selector: 'app-animated-card',
+  template: `
+    <div [@cardState]="state" 
+         (click)="toggleState()">
+      <ng-content></ng-content>
+    </div>
+  `,
+  animations: [
+    trigger('cardState', [
+      state('normal', style({
+        transform: 'scale(1)',
+        opacity: 1
+      })),
+      state('expanded', style({
+        transform: 'scale(1.1)',
+        opacity: 0.9
+      })),
+      transition('normal <=> expanded', [
+        animate('200ms ease-in-out')
+      ])
+    ])
+  ]
+})
+export class AnimatedCardComponent {
+  state = signal<'normal' | 'expanded'>('normal');
+  
+  toggleState() {
+    this.state.update(current => 
+      current === 'normal' ? 'expanded' : 'normal'
+    );
+  }
+}
+
+// 2. Keyframe Animation
+@Component({
+  selector: 'app-shake-button',
+  template: `
+    <button [@shakeAnimation]="shake()"
+            (click)="triggerShake()">
+      Click Me!
+    </button>
+  `,
+  animations: [
+    trigger('shakeAnimation', [
+      transition('false => true', [
+        animate('500ms', keyframes([
+          style({ transform: 'translate3d(-10px, 0, 0)', offset: 0.1 }),
+          style({ transform: 'translate3d(10px, 0, 0)', offset: 0.3 }),
+          style({ transform: 'translate3d(-10px, 0, 0)', offset: 0.5 }),
+          style({ transform: 'translate3d(10px, 0, 0)', offset: 0.7 }),
+          style({ transform: 'translate3d(0, 0, 0)', offset: 1 })
+        ]))
+      ])
+    ])
+  ]
+})
+export class ShakeButtonComponent {
+  shake = signal(false);
+  
+  triggerShake() {
+    this.shake.set(true);
+    setTimeout(() => this.shake.set(false), 500);
+  }
+}
+```
+
+## Question 3: How do you implement complex animations?
+
+**Answer:**
+Here are examples of more complex animations:
+
+```typescript
+// 1. Group Animations
+@Component({
+  selector: 'app-complex-animation',
+  template: `
+    <div [@complexAnimation]="state()">
+      <div class="card">
+        <h2>{{ title }}</h2>
+        <p>{{ content }}</p>
+      </div>
+    </div>
+  `,
+  animations: [
+    trigger('complexAnimation', [
+      transition('void => *', [
+        group([
+          query('.card', [
+            style({ transform: 'translateY(-100%)' }),
+            animate('300ms ease-out', 
+              style({ transform: 'translateY(0)' }))
+          ]),
+          query('h2', [
+            style({ opacity: 0, transform: 'translateX(-100%)' }),
+            animate('300ms 100ms ease-out', 
+              style({ opacity: 1, transform: 'translateX(0)' }))
+          ]),
+          query('p', [
+            style({ opacity: 0, transform: 'translateX(100%)' }),
+            animate('300ms 200ms ease-out', 
+              style({ opacity: 1, transform: 'translateX(0)' }))
+          ])
+        ])
+      ])
+    ])
+  ]
+})
+export class ComplexAnimationComponent {
+  state = signal<string>('active');
+}
+
+// 2. Reusable Animations
+// animations.ts
+export const fadeAnimation = trigger('fade', [
+  transition(':enter', [
+    style({ opacity: 0 }),
+    animate('300ms', style({ opacity: 1 }))
+  ]),
+  transition(':leave', [
+    animate('300ms', style({ opacity: 0 }))
+  ])
+]);
+
+export const slideAnimation = trigger('slide', [
+  transition(':enter', [
+    style({ transform: 'translateX(-100%)' }),
+    animate('300ms ease-out', 
+      style({ transform: 'translateX(0)' }))
+  ]),
+  transition(':leave', [
+    animate('300ms ease-in', 
+      style({ transform: 'translateX(100%)' }))
+  ])
+]);
+
+// Usage in component
+@Component({
+  selector: 'app-animated',
+  template: `
+    @if (show()) {
+      <div @fade>
+        Faded content
+      </div>
+    }
+    
+    @if (items(); as list) {
+      @for (item of list; track item.id) {
+        <div @slide>
+          {{ item.name }}
+        </div>
+      }
+    }
+  `,
+  animations: [fadeAnimation, slideAnimation]
+})
+export class AnimatedComponent {
+  show = signal(true);
+  items = signal<Item[]>([]);
+}
+
+// 3. Route Animations
+@Component({
+  selector: 'app-root',
+  template: `
+    <div [@routeAnimations]="
+      getRouteState(outlet)
+    ">
+      <router-outlet #outlet="outlet" />
+    </div>
+  `,
+  animations: [
+    trigger('routeAnimations', [
+      transition('* <=> *', [
+        style({ position: 'relative' }),
+        query(':enter, :leave', [
+          style({
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%'
+          })
+        ], { optional: true }),
+        query(':enter', [
+          style({ left: '-100%' })
+        ], { optional: true }),
+        query(':leave', animateChild(), { optional: true }),
+        group([
+          query(':leave', [
+            animate('300ms ease-out', 
+              style({ left: '100%' }))
+          ], { optional: true }),
+          query(':enter', [
+            animate('300ms ease-out', 
+              style({ left: '0%' }))
+          ], { optional: true })
+        ])
+      ])
+    ])
+  ]
+})
+export class AppComponent {
+  getRouteState(outlet: RouterOutlet) {
+    return outlet?.activatedRouteData?.['animation'];
+  }
+}
+```
+
+## Question 4: How do you optimize animations for performance?
+
+**Answer:**
+Here are performance optimization techniques:
+
+```typescript
+// 1. Web Animations API
+@Component({
+  animations: [
+    trigger('performantAnimation', [
+      transition('* => *', [
+        animate('{{ duration }}ms {{ timing }}', 
+          style({ transform: '{{ transform }}' }))
+      ], {
+        params: {
+          duration: 300,
+          timing: 'ease-out',
+          transform: 'translateX(0)'
+        }
+      })
+    ])
+  ]
+})
+export class PerformantComponent {
+  // Use transform instead of left/top
+  animationState = signal({
+    duration: 300,
+    timing: 'ease-out',
+    transform: 'translateX(100%)'
+  });
+}
+
+// 2. Optimized List Animations
+@Component({
+  template: `
+    @for (item of items(); track item.id) {
+      <div @listAnimation>
+        {{ item.name }}
+      </div>
+    }
+  `,
+  animations: [
+    trigger('listAnimation', [
+      transition(':enter', [
+        style({ 
+          opacity: 0, 
+          transform: 'translateY(-20px)' 
+        }),
+        animate('200ms ease-out', style({ 
+          opacity: 1, 
+          transform: 'translateY(0)' 
+        }))
+      ])
+    ])
+  ]
+})
+export class ListComponent {
+  items = signal<Item[]>([]);
+}
+```
+
+## Interview Tips 💡
+
+1. **Animation States**
+   ```typescript
+   // Define clear states
+   trigger('elementState', [
+     state('inactive', style({
+       backgroundColor: '#eee',
+       transform: 'scale(1)'
+     })),
+     state('active', style({
+       backgroundColor: '#cfd8dc',
+       transform: 'scale(1.1)'
+     })),
+     transition('inactive => active', animate('100ms ease-in')),
+     transition('active => inactive', animate('100ms ease-out'))
+   ])
+   ```
+
+2. **Reusable Animations**
+   ```typescript
+   // Create animation factory
+   export const slideInAnimation = (
+     duration: number = 300
+   ) => 
+     trigger('slideIn', [
+       transition(':enter', [
+         style({ transform: 'translateX(-100%)' }),
+         animate(`${duration}ms ease-out`, 
+           style({ transform: 'translateX(0)' }))
+       ])
+     ]);
+   ```
+
+3. **Performance Tips**
+   ```typescript
+   // Use transform and opacity
+   trigger('performant', [
+     state('visible', style({
+       opacity: 1,
+       transform: 'translateX(0)'
+     })),
+     state('hidden', style({
+       opacity: 0,
+       transform: 'translateX(-100%)'
+     }))
+   ])
+   ```
+
+4. **Testing**
+   ```typescript
+   describe('AnimatedComponent', () => {
+     it('should trigger animation', fakeAsync(() => {
+       const fixture = TestBed.createComponent(
+         AnimatedComponent
+       );
+       const component = fixture.componentInstance;
+       
+       component.state.set('active');
+       fixture.detectChanges();
+       
+       tick(300); // Animation duration
+       expect(component.state()).toBe('active');
+     }));
+   });
+   ```
+
+5. **Common Patterns**
+   ```typescript
+   // Stagger animations
+   query(':enter', stagger('50ms', [
+     style({ opacity: 0, transform: 'translateY(-20px)' }),
+     animate('200ms ease-out', 
+       style({ opacity: 1, transform: 'translateY(0)' }))
+   ]))
+   ```
+
+6. **Best Practices**
+   ```typescript
+   // Use params for flexibility
+   trigger('parameterized', [
+     transition('* => *', [
+       animate('{{ duration }}ms {{ timing }}')
+     ], {
+       params: {
+         duration: 300,
+         timing: 'ease-out'
+       }
+     })
+   ])
+   ```
+
+Remember: In interviews, focus on:
+- Animation concepts
+- Implementation patterns
+- Performance optimization
+- Testing strategies
+- Best practices
+- Common use cases
+- Browser support
+
+Key points to emphasize:
+1. State-based animations
+2. Keyframe animations
+3. Route animations
+4. Performance optimization
+5. Testing approaches
+6. Reusability
+7. Best practices

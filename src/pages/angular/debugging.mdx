@@ -1,0 +1,359 @@
+---
+layout: ../../layouts/Layout.astro
+title: Debugging Angular Performance Issues
+---
+
+# How to Debug a Slow Angular Application
+
+As a senior full-stack developer with extensive experience in large-scale Angular applications, let me walk you through my systematic approach to debugging performance issues.
+
+The key is to follow a methodical process:
+
+1. **Identify Performance Metrics**
+2. **Profile the Application**
+3. **Analyze Bottlenecks**
+4. **Implement Solutions**
+5. **Measure Improvements**
+
+Here's my implementation approach:
+
+```typescript
+// 1. Performance Monitoring Service
+@Injectable({ providedIn: 'root' })
+export class PerformanceMonitoringService {
+  private metrics = signal<PerformanceMetric[]>([]);
+  private logger = inject(LoggingService);
+  
+  // Track component performance
+  trackComponent(componentName: string) {
+    const startTime = performance.now();
+    const memoryStart = performance.memory?.usedJSHeapSize;
+    
+    return {
+      end: () => {
+        const duration = performance.now() - startTime;
+        const memoryUsed = performance.memory?.usedJSHeapSize - memoryStart;
+        
+        this.logMetrics({
+          component: componentName,
+          duration,
+          memoryUsed,
+          timestamp: new Date()
+        });
+      }
+    };
+  }
+  
+  // Track change detection cycles
+  trackChangeDetection() {
+    return {
+      start: () => performance.mark('cd_start'),
+      end: () => {
+        performance.mark('cd_end');
+        performance.measure('cd', 'cd_start', 'cd_end');
+        
+        const duration = performance.getEntriesByName('cd')[0].duration;
+        if (duration > 10) {
+          this.logger.warn(
+            `Long change detection cycle: ${duration}ms`
+          );
+        }
+      }
+    };
+  }
+  
+  private logMetrics(metric: PerformanceMetric) {
+    this.metrics.update(m => [...m, metric]);
+    
+    // Log to monitoring service
+    if (metric.duration > 100 || metric.memoryUsed > 1000000) {
+      this.logger.warn('Performance issue detected', metric);
+    }
+  }
+}
+
+// 2. Network Performance Monitoring
+@Injectable()
+export class NetworkMonitorInterceptor implements HttpInterceptor {
+  private monitor = inject(PerformanceMonitoringService);
+  
+  intercept(
+    req: HttpRequest<any>,
+    next: HttpHandler
+  ): Observable<HttpEvent<any>> {
+    const startTime = performance.now();
+    
+    return next.handle(req).pipe(
+      finalize(() => {
+        const duration = performance.now() - startTime;
+        
+        if (duration > 1000) {
+          this.monitor.logSlowRequest({
+            url: req.url,
+            method: req.method,
+            duration,
+            timestamp: new Date()
+          });
+        }
+      })
+    );
+  }
+}
+
+// 3. Optimized Component Example
+@Component({
+  selector: 'app-optimized',
+  template: `
+    @if (data(); as items) {
+      @for (item of items; track trackById) {
+        <item-component 
+          [data]="item"
+          @deferLoad
+        />
+      }
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class OptimizedComponent {
+  private monitor = inject(PerformanceMonitoringService);
+  private destroy$ = inject(DestroyRef);
+  
+  data = signal<any[]>([]);
+  loading = signal(false);
+  
+  ngOnInit() {
+    const tracker = this.monitor.trackComponent(
+      'OptimizedComponent'
+    );
+    
+    // Monitor memory usage
+    interval(5000).pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe(() => {
+      this.checkMemoryUsage();
+    });
+    
+    // Load data with performance tracking
+    this.loading.set(true);
+    this.loadData().pipe(
+      finalize(() => {
+        this.loading.set(false);
+        tracker.end();
+      })
+    ).subscribe();
+  }
+  
+  private checkMemoryUsage() {
+    if (performance.memory) {
+      const used = performance.memory.usedJSHeapSize;
+      const limit = performance.memory.jsHeapSizeLimit;
+      
+      if (used > limit * 0.8) {
+        this.monitor.logMemoryWarning({
+          used,
+          limit,
+          component: 'OptimizedComponent'
+        });
+      }
+    }
+  }
+}
+
+// 4. Web Worker for Heavy Computations
+// performance.worker.ts
+self.addEventListener('message', ({ data }) => {
+  const { items, operation } = data;
+  
+  switch (operation) {
+    case 'filter':
+      const filtered = filterLargeDataset(items);
+      self.postMessage({ filtered });
+      break;
+      
+    case 'sort':
+      const sorted = sortLargeDataset(items);
+      self.postMessage({ sorted });
+      break;
+  }
+});
+
+// 5. Performance Optimization Service
+@Injectable({ providedIn: 'root' })
+export class PerformanceOptimizationService {
+  private worker: Worker;
+  
+  constructor() {
+    this.worker = new Worker(
+      new URL('./performance.worker', import.meta.url)
+    );
+  }
+  
+  optimizeOperation<T>(
+    items: T[],
+    operation: 'filter' | 'sort'
+  ): Observable<T[]> {
+    return new Observable(observer => {
+      const startTime = performance.now();
+      
+      this.worker.postMessage({ items, operation });
+      
+      const handler = ({ data }: MessageEvent) => {
+        const duration = performance.now() - startTime;
+        
+        if (duration > 100) {
+          console.warn(
+            `Long operation detected: ${operation} took ${duration}ms`
+          );
+        }
+        
+        observer.next(data[operation === 'filter' ? 'filtered' : 'sorted']);
+        observer.complete();
+      };
+      
+      this.worker.addEventListener('message', handler);
+      
+      return () => {
+        this.worker.removeEventListener('message', handler);
+      };
+    });
+  }
+}
+```
+
+Real-world optimization example:
+
+```typescript
+// Before optimization
+@Component({
+  template: `
+    <div *ngFor="let item of items">
+      {{ heavyComputation(item) }}
+    </div>
+  `
+})
+
+// After optimization
+@Component({
+  template: `
+    <virtual-scroller
+      #scroll
+      [items]="items()"
+      [enableUnequalChildrenSizes]="true"
+    >
+      <div *ngFor="let item of scroll.viewPortItems; trackBy: trackById">
+        {{ computedValues()[item.id] }}
+      </div>
+    </virtual-scroller>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class OptimizedComponent {
+  items = signal<Item[]>([]);
+  
+  // Cache computed values
+  computedValues = computed(() => {
+    const cache = new Map<string, any>();
+    
+    for (const item of this.items()) {
+      if (!cache.has(item.id)) {
+        cache.set(
+          item.id,
+          this.heavyComputation(item)
+        );
+      }
+    }
+    
+    return Object.fromEntries(cache);
+  });
+}
+```
+
+When debugging performance issues, I focus on these key areas:
+
+1. **Change Detection**
+   - Use OnPush strategy
+   - Minimize template expressions
+   - Track change detection cycles
+
+2. **Memory Management**
+   ```typescript
+   // Implement proper cleanup
+   ngOnDestroy() {
+     // Clear large data structures
+     this.items.set([]);
+     // Clear caches
+     this.cache.clear();
+     // Force garbage collection if needed
+     if (window.gc) {
+       window.gc();
+     }
+   }
+   ```
+
+3. **Network Optimization**
+   ```typescript
+   // Implement request caching
+   @Injectable()
+   export class CachingInterceptor {
+     private cache = new Map<string, any>();
+     
+     intercept(req: HttpRequest<any>, next: HttpHandler) {
+       if (req.method !== 'GET') {
+         return next.handle(req);
+       }
+       
+       const cached = this.cache.get(req.url);
+       if (cached) {
+         return of(cached);
+       }
+       
+       return next.handle(req).pipe(
+         tap(response => {
+           this.cache.set(req.url, response);
+         })
+       );
+     }
+   }
+   ```
+
+4. **Bundle Optimization**
+   ```typescript
+   // Implement lazy loading
+   const routes = [{
+     path: 'admin',
+     loadChildren: () => import('./admin/admin.module')
+   }];
+   
+   // Use deferred loading
+   @defer (on viewport) {
+     <heavy-component />
+   }
+   ```
+
+Key points I emphasize in interviews:
+
+1. **Systematic Approach**
+   - Always profile before optimizing
+   - Use Chrome DevTools effectively
+   - Monitor key performance metrics
+
+2. **Common Solutions**
+   - OnPush change detection
+   - Virtual scrolling
+   - Lazy loading
+   - Web Workers
+
+3. **Monitoring**
+   - Performance metrics
+   - Memory usage
+   - Network requests
+   - Change detection cycles
+
+4. **Best Practices**
+   - Clean up resources
+   - Optimize templates
+   - Implement caching
+   - Use proper tracking
+
+This approach has helped me optimize several enterprise-level Angular applications, achieving significant performance improvements in both load times and runtime performance.

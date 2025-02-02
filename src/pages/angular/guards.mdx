@@ -1,0 +1,288 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Guards
+---
+
+# Angular Guards
+
+## Question 1: What are Angular Guards and what types are available?
+
+**Answer:**
+Angular Guards are mechanisms to control route access and behavior. In Angular 17+, they are implemented as functions that return boolean or UrlTree values. Types include:
+
+1. **CanActivate**: Controls if a route can be activated
+2. **CanActivateChild**: Controls child route activation
+3. **CanDeactivate**: Controls if a user can leave a route
+4. **Resolve**: Pre-fetches data before route activation
+5. **CanMatch**: Controls if a route can be matched
+
+## Question 2: How do you implement different types of guards?
+
+**Answer:**
+Here are modern implementations of various guards:
+
+```typescript
+// 1. Authentication Guard
+export const authGuard = () => {
+  const router = inject(Router);
+  const authService = inject(AuthService);
+  
+  if (authService.isAuthenticated()) {
+    return true;
+  }
+  
+  // Redirect to login with return URL
+  const returnUrl = router.routerState.snapshot.url;
+  return router.createUrlTree(['/login'], {
+    queryParams: { returnUrl }
+  });
+};
+
+// 2. Role Guard
+export const roleGuard = (allowedRoles: string[]) => {
+  const authService = inject(AuthService);
+  
+  return authService.userRole$.pipe(
+    map(role => {
+      if (allowedRoles.includes(role)) {
+        return true;
+      }
+      return router.createUrlTree(['/unauthorized']);
+    })
+  );
+};
+
+// 3. Form Deactivation Guard
+export const formDeactivateGuard = (
+  component: HasUnsavedChanges
+) => {
+  if (component.hasUnsavedChanges()) {
+    return confirm(
+      'You have unsaved changes. Do you really want to leave?'
+    );
+  }
+  return true;
+};
+
+// 4. Data Resolver
+export const userResolver: ResolveFn<User> = (
+  route: ActivatedRouteSnapshot
+) => {
+  const userService = inject(UserService);
+  const id = route.paramMap.get('id')!;
+  
+  return userService.getUser(id).pipe(
+    catchError(() => {
+      return EMPTY;
+    })
+  );
+};
+
+// 5. Can Match Guard
+export const versionGuard: CanMatchFn = (
+  route: Route
+) => {
+  const versionService = inject(VersionService);
+  
+  return versionService.version$.pipe(
+    map(version => {
+      if (version >= route.data?.['minVersion']) {
+        return true;
+      }
+      return router.createUrlTree(['/upgrade']);
+    })
+  );
+};
+
+// Usage in Routes
+const routes: Routes = [
+  {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.routes'),
+    canActivate: [authGuard],
+    canMatch: [versionGuard],
+    data: { minVersion: 2 }
+  },
+  {
+    path: 'profile/:id',
+    component: ProfileComponent,
+    canActivate: [() => roleGuard(['admin', 'user'])],
+    resolve: { user: userResolver },
+    canDeactivate: [
+      (component: ProfileComponent) => formDeactivateGuard(component)
+    ]
+  }
+];
+```
+
+## Question 3: How do you combine multiple guards?
+
+**Answer:**
+Here's how to implement combined guards:
+
+```typescript
+// Combined guard function
+export const combinedGuard = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  
+  return combineLatest([
+    authService.isAuthenticated$,
+    authService.hasRequiredRole$
+  ]).pipe(
+    map(([isAuth, hasRole]) => {
+      if (!isAuth) {
+        return router.createUrlTree(['/login']);
+      }
+      if (!hasRole) {
+        return router.createUrlTree(['/unauthorized']);
+      }
+      return true;
+    })
+  );
+};
+
+// Guard with dependencies
+export const featureGuard = () => {
+  const featureService = inject(FeatureService);
+  const configService = inject(ConfigService);
+  
+  return combineLatest([
+    featureService.isEnabled$,
+    configService.config$
+  ]).pipe(
+    map(([isEnabled, config]) => {
+      if (!isEnabled) {
+        return router.createUrlTree(['/disabled']);
+      }
+      if (!config.allowFeature) {
+        return router.createUrlTree(['/config-required']);
+      }
+      return true;
+    })
+  );
+};
+```
+
+## Interview Tips 💡
+
+1. **Guard Patterns**
+   ```typescript
+   // Async Guard
+   export const asyncGuard = () => {
+     return new Promise<boolean>(resolve => {
+       // Async operation
+       setTimeout(() => resolve(true), 1000);
+     });
+   };
+   
+   // Observable Guard
+   export const observableGuard = () => {
+     return timer(1000).pipe(
+       map(() => true)
+     );
+   };
+   ```
+
+2. **Error Handling**
+   ```typescript
+   export const robustGuard = () => {
+     const errorHandler = inject(ErrorHandler);
+     
+     return inject(AuthService).check().pipe(
+       catchError(error => {
+         errorHandler.handleError(error);
+         return of(false);
+       })
+     );
+   };
+   ```
+
+3. **Testing Guards**
+   ```typescript
+   describe('AuthGuard', () => {
+     it('should allow authenticated users', () => {
+       TestBed.configureTestingModule({
+         providers: [
+           {
+             provide: AuthService,
+             useValue: { isAuthenticated: () => true }
+           }
+         ]
+       });
+       
+       expect(authGuard()).toBe(true);
+     });
+   });
+   ```
+
+4. **Performance Optimization**
+   ```typescript
+   // Cache guard results
+   export const cachedGuard = () => {
+     const cache = inject(CacheService);
+     const cacheKey = 'guard_result';
+     
+     const cached = cache.get(cacheKey);
+     if (cached) return cached;
+     
+     const result = heavyGuardLogic();
+     cache.set(cacheKey, result);
+     return result;
+   };
+   ```
+
+5. **Common Implementations**
+   ```typescript
+   // Permission Guard
+   export const permissionGuard = (
+     requiredPermission: string
+   ) => {
+     const permissionService = inject(PermissionService);
+     
+     return permissionService.hasPermission(
+       requiredPermission
+     );
+   };
+   
+   // Feature Flag Guard
+   export const featureFlagGuard = (
+     featureKey: string
+   ) => {
+     const featureService = inject(FeatureService);
+     
+     return featureService.isEnabled(featureKey);
+   };
+   ```
+
+6. **Best Practices**
+   ```typescript
+   // Separate concerns
+   export const moduleGuard = () => {
+     return combineLatest([
+       authGuard(),
+       featureGuard(),
+       permissionGuard('MODULE_ACCESS')
+     ]).pipe(
+       map(results => results.every(Boolean))
+     );
+   };
+   ```
+
+Remember: In interviews, focus on:
+- Understanding different guard types
+- Implementation patterns
+- Error handling
+- Testing strategies
+- Performance considerations
+- Common use cases
+- Best practices
+
+Key points to emphasize:
+1. Route protection mechanisms
+2. Authentication/Authorization patterns
+3. Data pre-fetching
+4. Form protection
+5. Testing approaches
+6. Error handling
+7. Performance optimization

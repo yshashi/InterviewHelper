@@ -1,0 +1,365 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Performance Optimization
+---
+
+# Angular Performance Optimization
+
+## Question 1: What are the key strategies for optimizing Angular applications?
+
+**Answer:**
+Key optimization strategies include:
+
+1. Change Detection Optimization
+2. Lazy Loading
+3. Preloading Strategies
+4. Bundle Size Optimization
+5. Caching
+6. Server-Side Rendering (SSR)
+7. Memory Management
+8. Network Optimization
+
+## Question 2: How do you optimize change detection in Angular 17+?
+
+**Answer:**
+Here are modern change detection optimization techniques:
+
+```typescript
+// 1. Using Signals for efficient updates
+@Component({
+  selector: 'app-user-list',
+  template: `
+    @if (users(); as userList) {
+      <ul>
+        @for (user of userList; track user.id) {
+          <app-user-card [user]="user" />
+        }
+      </ul>
+    }
+  `
+})
+export class UserListComponent {
+  users = signal<User[]>([]);
+  
+  // Computed values are cached
+  activeUsers = computed(() => 
+    this.users().filter(u => u.isActive)
+  );
+  
+  // Effect for side effects
+  effect(() => {
+    console.log('Active users:', this.activeUsers());
+  });
+}
+
+// 2. OnPush Change Detection
+@Component({
+  selector: 'app-user-card',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="card">
+      <h3>{{ user().name }}</h3>
+      <p>{{ user().email }}</p>
+    </div>
+  `
+})
+export class UserCardComponent {
+  user = input.required<User>();
+}
+
+// 3. Manual Change Detection
+@Component({
+  selector: 'app-performance-critical',
+  template: `
+    <div>{{ heavyComputation() }}</div>
+    <button (click)="update()">Update</button>
+  `
+})
+export class PerformanceCriticalComponent {
+  private cd = inject(ChangeDetectorRef);
+  
+  heavyComputation() {
+    // Expensive calculation
+    return result;
+  }
+  
+  update() {
+    this.cd.detach();
+    // Perform updates
+    this.cd.reattach();
+  }
+}
+```
+
+## Question 3: How do you optimize bundle size and loading?
+
+**Answer:**
+Here are bundle optimization techniques:
+
+```typescript
+// 1. Route-level code splitting
+const routes: Routes = [
+  {
+    path: 'admin',
+    loadChildren: () => 
+      import('./admin/admin.routes')
+        .then(m => m.ADMIN_ROUTES)
+  }
+];
+
+// 2. Component-level code splitting
+@Component({
+  template: `
+    @defer (on viewport) {
+      <heavy-chart [data]="chartData" />
+    } @loading {
+      <loading-spinner />
+    }
+  `
+})
+export class DashboardComponent {}
+
+// 3. Preloading Strategy
+@Injectable({ providedIn: 'root' })
+export class OptimizedPreloadingStrategy 
+  implements PreloadAllModules {
+  
+  preload(route: Route, load: () => Observable<any>) {
+    if (route.data?.['preload'] === true) {
+      // Preload on idle
+      return fromEvent(window, 'idle').pipe(
+        take(1),
+        switchMap(() => load())
+      );
+    }
+    return of(null);
+  }
+}
+
+// 4. Asset Optimization
+@Injectable({ providedIn: 'root' })
+export class ImageOptimizationService {
+  loadImage(url: string, width: number): Observable<string> {
+    return defer(() => {
+      const img = new Image();
+      img.src = this.getOptimizedUrl(url, width);
+      return fromEvent(img, 'load').pipe(
+        map(() => img.src)
+      );
+    });
+  }
+  
+  private getOptimizedUrl(url: string, width: number): string {
+    return `${url}?w=${width}&q=80&format=webp`;
+  }
+}
+```
+
+## Question 4: How do you implement caching and memory management?
+
+**Answer:**
+Here are caching and memory management strategies:
+
+```typescript
+// 1. HTTP Caching
+@Injectable({ providedIn: 'root' })
+export class CachingInterceptor implements HttpInterceptor {
+  private cache = inject(HttpCacheService);
+  
+  intercept(req: HttpRequest<any>, next: HttpHandler) {
+    if (!this.isCacheable(req)) {
+      return next.handle(req);
+    }
+    
+    const cachedResponse = this.cache.get(req);
+    if (cachedResponse) {
+      return of(cachedResponse);
+    }
+    
+    return next.handle(req).pipe(
+      tap(response => {
+        this.cache.set(req, response);
+      })
+    );
+  }
+}
+
+// 2. Memory Management
+@Component({
+  template: `
+    <video #player [src]="videoUrl"></video>
+  `
+})
+export class VideoPlayerComponent implements OnDestroy {
+  @ViewChild('player')
+  player!: ElementRef<HTMLVideoElement>;
+  
+  private subscriptions = new Subscription();
+  
+  ngOnInit() {
+    // Group subscriptions
+    this.subscriptions.add(
+      this.videoService.stream$.subscribe()
+    );
+  }
+  
+  ngOnDestroy() {
+    // Clean up resources
+    this.subscriptions.unsubscribe();
+    this.player.nativeElement.src = '';
+  }
+}
+
+// 3. RxJS Memory Management
+@Injectable({ providedIn: 'root' })
+export class DataService {
+  private dataSubject = new BehaviorSubject<Data[]>([]);
+  
+  // Share single subscription
+  readonly data$ = this.dataSubject.asObservable().pipe(
+    shareReplay(1)
+  );
+  
+  // Auto-complete after time
+  readonly timedData$ = this.data$.pipe(
+    takeUntil(timer(60000))
+  );
+  
+  // Clean up on destroy
+  readonly autoCleanData$ = this.data$.pipe(
+    takeUntilDestroyed()
+  );
+}
+```
+
+## Interview Tips 💡
+
+1. **Performance Monitoring**
+   ```typescript
+   // Custom Performance Monitoring
+   @Injectable({ providedIn: 'root' })
+   export class PerformanceMonitor {
+     private metrics = signal<Metric[]>([]);
+     
+     trackMetric(name: string, value: number) {
+       this.metrics.update(m => [...m, { name, value }]);
+       
+       // Report to analytics
+       this.analytics.send({
+         metric: name,
+         value,
+         timestamp: Date.now()
+       });
+     }
+   }
+   ```
+
+2. **Network Optimization**
+   ```typescript
+   // Implement HTTP compression
+   import { provideHttpClient, withInterceptors } from '@angular/common/http';
+
+   export const appConfig: ApplicationConfig = {
+     providers: [
+       provideHttpClient(
+         withInterceptors([
+           compressionInterceptor
+         ])
+       )
+     ]
+   };
+   ```
+
+3. **Build Optimization**
+   ```json
+   {
+     "configurations": {
+       "production": {
+         "optimization": true,
+         "sourceMap": false,
+         "namedChunks": false,
+         "aot": true,
+         "extractLicenses": true,
+         "vendorChunk": false,
+         "buildOptimizer": true
+       }
+     }
+   }
+   ```
+
+4. **Memory Leaks Prevention**
+   ```typescript
+   @Component({
+     template: `
+       @if (data$ | async; as data) {
+         {{ data }}
+       }
+     `
+   })
+   export class SafeComponent implements OnDestroy {
+     private destroy$ = new Subject<void>();
+     
+     data$ = this.service.getData().pipe(
+       takeUntil(this.destroy$)
+     );
+     
+     ngOnDestroy() {
+       this.destroy$.next();
+       this.destroy$.complete();
+     }
+   }
+   ```
+
+5. **Virtual Scrolling**
+   ```typescript
+   @Component({
+     template: `
+       <cdk-virtual-scroll-viewport 
+         itemSize="50"
+         class="viewport"
+       >
+         @for (item of items; track item.id) {
+           <div class="item">{{ item.name }}</div>
+         }
+       </cdk-virtual-scroll-viewport>
+     `
+   })
+   export class VirtualScrollComponent {
+     items = signal<Item[]>([]);
+   }
+   ```
+
+6. **Web Workers**
+   ```typescript
+   // Heavy computation in worker
+   const worker = new Worker(
+     new URL('./app.worker', import.meta.url)
+   );
+   
+   worker.postMessage({ 
+     data: heavyData 
+   });
+   
+   worker.onmessage = ({ data }) => {
+     console.log('Computed:', data);
+   };
+   ```
+
+Remember: In interviews, focus on:
+- Change detection optimization
+- Bundle size reduction
+- Loading strategies
+- Caching mechanisms
+- Memory management
+- Network optimization
+- Build optimization
+- Testing for performance
+
+Key points to emphasize:
+1. Signal-based reactivity
+2. OnPush change detection
+3. Lazy loading strategies
+4. Bundle optimization
+5. Memory leak prevention
+6. Caching strategies
+7. Performance monitoring

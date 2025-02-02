@@ -1,0 +1,171 @@
+---
+layout: ../../layouts/Layout.astro
+title: Understanding @Input() and @Output() Decorators in Angular
+---
+
+# Understanding @Input() and @Output() Decorators in Angular
+
+## Question 1: What are @Input() and @Output() decorators and what's their purpose?
+
+**Answer:**
+@Input() and @Output() are decorators in Angular that facilitate component communication:
+
+- **@Input()** allows a parent component to pass data to a child component
+- **@Output()** enables a child component to send data back to the parent through event emission
+
+## Question 2: How do you implement @Input() in Angular 17+?
+
+**Answer:**
+Here's a modern implementation using Angular 17+ features:
+
+```typescript
+// child.component.ts
+import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'app-child',
+  template: `
+    <div>
+      <h3>Welcome {{ username }}!</h3>
+      <p>Role: {{ userRole() }}</p>
+    </div>
+  `
+})
+export class ChildComponent {
+  // Basic input
+  @Input() username: string = '';
+  
+  // Input with Signal (Angular 17+)
+  @Input({ required: true }) userRole!: () => string;
+  
+  // Input with transform function
+  @Input({ transform: (value: string) => value.toUpperCase() })
+  title: string = '';
+}
+
+// parent.component.ts
+@Component({
+  selector: 'app-parent',
+  template: `
+    <app-child 
+      [username]="user.name"
+      [userRole]="roleSignal"
+      [title]="'developer'"
+    ></app-child>
+  `
+})
+export class ParentComponent {
+  user = { name: 'John Doe' };
+  roleSignal = signal('Admin');
+}
+```
+
+## Question 3: How do you implement @Output() with EventEmitter?
+
+**Answer:**
+Here's a practical example:
+
+```typescript
+// child.component.ts
+import { Component, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'app-child',
+  template: `
+    <div>
+      <button (click)="onUserAction()">Perform Action</button>
+      <button (click)="onStatusChange('active')">Set Active</button>
+    </div>
+  `
+})
+export class ChildComponent {
+  @Output() userAction = new EventEmitter<void>();
+  @Output() statusChange = new EventEmitter<string>();
+  
+  onUserAction() {
+    this.userAction.emit();
+  }
+  
+  onStatusChange(status: string) {
+    this.statusChange.emit(status);
+  }
+}
+
+// parent.component.ts
+@Component({
+  selector: 'app-parent',
+  template: `
+    <app-child
+      (userAction)="handleUserAction()"
+      (statusChange)="handleStatusChange($event)"
+    ></app-child>
+  `
+})
+export class ParentComponent {
+  handleUserAction() {
+    console.log('User action received from child');
+  }
+  
+  handleStatusChange(status: string) {
+    console.log(`Status changed to: ${status}`);
+  }
+}
+```
+
+## Question 4: What are the best practices for using @Input() and @Output()?
+
+**Answer:**
+1. Use required inputs when the component cannot function without them:
+```typescript
+@Input({ required: true }) data!: DataType;
+```
+
+2. Provide default values for optional inputs:
+```typescript
+@Input() theme: 'light' | 'dark' = 'light';
+```
+
+3. Use transform functions for input preprocessing:
+```typescript
+@Input({ transform: (value: number) => Math.max(0, value) })
+count: number = 0;
+```
+
+4. Name outputs with specific event names:
+```typescript
+@Output() statusChange = new EventEmitter<string>();  // Good
+@Output() myEvent = new EventEmitter<void>();        // Too generic
+```
+
+## Interview Tips 💡
+
+1. **Understanding Decorators**
+   - Be ready to explain that decorators are a TypeScript feature used by Angular for metadata
+   - Know that @Input() and @Output() are from @angular/core
+
+2. **Data Flow**
+   - Explain that @Input() represents downward data flow (parent → child)
+   - @Output() represents upward data flow (child → parent)
+   - This follows Angular's unidirectional data flow principle
+
+3. **Advanced Features**
+   - Mention Angular 17's required inputs feature
+   - Discuss transform functions for input preprocessing
+   - Know about signal inputs and their benefits
+
+4. **Common Pitfalls**
+   - Be aware that @Input() properties are undefined during construction
+   - Understand that EventEmitter extends RxJS Subject
+   - Know when to use ngOnChanges for input changes
+
+5. **Real-World Scenarios**
+   - Be prepared to discuss component communication patterns
+   - Know how to handle complex data structures
+   - Understand when to use services vs @Input()/@Output()
+
+6. **Performance Considerations**
+   - Discuss OnPush change detection strategy
+   - Know how to optimize event emission
+   - Understand the impact of excessive property bindings
+
+Remember: In interviews, focus on demonstrating not just how to use these decorators, but also why and when to use them. Show understanding of Angular's component architecture and data flow patterns.

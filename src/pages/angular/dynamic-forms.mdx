@@ -1,0 +1,297 @@
+---
+layout: ../../layouts/Layout.astro
+title: Dynamic Forms in Angular
+---
+
+# Implementing Dynamic Forms in Angular
+
+Let me walk you through how I would implement dynamic forms in Angular, focusing on real-world scenarios.
+
+First, let's understand what makes a form "dynamic":
+1. Form fields are generated based on configuration/data
+2. Validation rules can be added/modified at runtime
+3. Form structure can change based on user input
+4. Fields can be conditionally shown/hidden
+
+Here's how I would implement it:
+
+```typescript
+// 1. Define the form configuration interface
+interface FormField {
+  type: 'text' | 'number' | 'select' | 'checkbox';
+  name: string;
+  label: string;
+  validations?: {
+    required?: boolean;
+    minLength?: number;
+    pattern?: string;
+    custom?: (value: any) => boolean;
+  };
+  options?: { value: any; label: string; }[];
+  dependent?: {
+    field: string;
+    value: any;
+    action: 'show' | 'hide';
+  };
+}
+
+// 2. Create a dynamic form component
+@Component({
+  selector: 'app-dynamic-form',
+  template: `
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      @for (field of formFields; track field.name) {
+        @if (shouldShowField(field)) {
+          <div class="form-field">
+            <label>{{ field.label }}</label>
+            
+            @switch (field.type) {
+              @case ('text') {
+                <input 
+                  [formControlName]="field.name"
+                  [type]="field.type"
+                />
+              }
+              @case ('select') {
+                <select [formControlName]="field.name">
+                  @for (option of field.options; track option.value) {
+                    <option [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
+              }
+              @case ('checkbox') {
+                <input 
+                  type="checkbox"
+                  [formControlName]="field.name"
+                />
+              }
+            }
+            
+            @if (showError(field.name)) {
+              <div class="error">
+                {{ getErrorMessage(field.name) }}
+              </div>
+            }
+          </div>
+        }
+      }
+      <button type="submit">Submit</button>
+    </form>
+  `
+})
+export class DynamicFormComponent {
+  @Input() formFields: FormField[] = [];
+  form!: FormGroup;
+  
+  ngOnInit() {
+    this.createForm();
+    this.setupFieldDependencies();
+  }
+  
+  private createForm() {
+    const group = {};
+    
+    for (const field of this.formFields) {
+      group[field.name] = ['', this.getValidators(field)];
+    }
+    
+    this.form = new FormGroup(group);
+  }
+  
+  private getValidators(field: FormField): ValidatorFn[] {
+    const validators: ValidatorFn[] = [];
+    
+    if (field.validations?.required) {
+      validators.push(Validators.required);
+    }
+    
+    if (field.validations?.minLength) {
+      validators.push(
+        Validators.minLength(field.validations.minLength)
+      );
+    }
+    
+    if (field.validations?.pattern) {
+      validators.push(
+        Validators.pattern(field.validations.pattern)
+      );
+    }
+    
+    if (field.validations?.custom) {
+      validators.push((control) => {
+        return field.validations?.custom?.(control.value) 
+          ? null 
+          : { custom: true };
+      });
+    }
+    
+    return validators;
+  }
+  
+  private setupFieldDependencies() {
+    for (const field of this.formFields) {
+      if (field.dependent) {
+        this.form.get(field.dependent.field)?.valueChanges
+          .pipe(takeUntilDestroyed())
+          .subscribe(value => {
+            this.handleDependency(field, value);
+          });
+      }
+    }
+  }
+  
+  private handleDependency(field: FormField, value: any) {
+    const shouldShow = value === field.dependent?.value;
+    const control = this.form.get(field.name);
+    
+    if (field.dependent?.action === 'show') {
+      if (shouldShow) {
+        control?.enable();
+      } else {
+        control?.disable();
+      }
+    }
+  }
+  
+  shouldShowField(field: FormField): boolean {
+    if (!field.dependent) return true;
+    
+    const dependentValue = this.form.get(
+      field.dependent.field
+    )?.value;
+    
+    return field.dependent.action === 'show'
+      ? dependentValue === field.dependent.value
+      : dependentValue !== field.dependent.value;
+  }
+  
+  showError(fieldName: string): boolean {
+    const control = this.form.get(fieldName);
+    return control?.invalid && control?.touched || false;
+  }
+  
+  getErrorMessage(fieldName: string): string {
+    const control = this.form.get(fieldName);
+    
+    if (!control?.errors) return '';
+    
+    if (control.errors['required']) {
+      return 'This field is required';
+    }
+    
+    if (control.errors['minlength']) {
+      return 'Input is too short';
+    }
+    
+    if (control.errors['pattern']) {
+      return 'Invalid format';
+    }
+    
+    if (control.errors['custom']) {
+      return 'Invalid value';
+    }
+    
+    return 'Invalid input';
+  }
+  
+  onSubmit() {
+    if (this.form.valid) {
+      console.log(this.form.value);
+    } else {
+      this.markFormTouched();
+    }
+  }
+  
+  private markFormTouched() {
+    Object.values(this.form.controls).forEach(
+      control => control.markAsTouched()
+    );
+  }
+}
+```
+
+Now, here's how you would use this dynamic form:
+
+```typescript
+// In your parent component
+const formConfig: FormField[] = [
+  {
+    type: 'select',
+    name: 'userType',
+    label: 'User Type',
+    options: [
+      { value: 'individual', label: 'Individual' },
+      { value: 'company', label: 'Company' }
+    ],
+    validations: {
+      required: true
+    }
+  },
+  {
+    type: 'text',
+    name: 'companyName',
+    label: 'Company Name',
+    dependent: {
+      field: 'userType',
+      value: 'company',
+      action: 'show'
+    },
+    validations: {
+      required: true,
+      minLength: 3
+    }
+  },
+  {
+    type: 'text',
+    name: 'email',
+    label: 'Email',
+    validations: {
+      required: true,
+      pattern: '^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$'
+    }
+  },
+  {
+    type: 'checkbox',
+    name: 'subscribe',
+    label: 'Subscribe to newsletter'
+  }
+];
+
+@Component({
+  template: `
+    <app-dynamic-form
+      [formFields]="formConfig"
+      (formSubmit)="handleSubmit($event)"
+    />
+  `
+})
+export class ParentComponent {
+  formConfig = formConfig;
+  
+  handleSubmit(data: any) {
+    // Handle form submission
+  }
+}
+```
+
+Key points to emphasize in the interview:
+
+1. **Flexibility**: The solution can handle various field types and can be easily extended.
+
+2. **Validation**: Supports both built-in and custom validators that can be dynamically applied.
+
+3. **Dependencies**: Fields can be shown/hidden based on other field values.
+
+4. **Type Safety**: Using TypeScript interfaces ensures type safety throughout the implementation.
+
+5. **Performance**: Uses Angular's latest control flow syntax (@if, @for) for better performance.
+
+6. **Maintainability**: The code is modular and follows Angular best practices.
+
+7. **Error Handling**: Comprehensive error handling and display.
+
+8. **Reusability**: The component can be reused across the application with different configurations.
+
+This implementation provides a robust foundation for dynamic forms while remaining flexible enough to handle various use cases. The code follows Angular best practices and modern patterns, making it both maintainable and performant.

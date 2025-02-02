@@ -1,0 +1,278 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Routing
+---
+
+# Angular Routing
+
+## Question 1: What is Angular Routing and how is it implemented?
+
+**Answer:**
+Angular Routing is a mechanism for navigating between different components/views in an Angular application. It enables:
+- Navigation between pages
+- Passing parameters
+- Guards for route protection
+- Lazy loading of modules
+- Child routes and route nesting
+
+Here's a modern implementation example:
+
+```typescript
+// app.routes.ts
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: '',
+    component: HomeComponent,
+    title: 'Home' // New in Angular 15+
+  },
+  {
+    path: 'products',
+    loadChildren: () => import('./products/products.routes')
+      .then(m => m.PRODUCT_ROUTES),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'profile/:id',
+    component: ProfileComponent,
+    resolve: {
+      user: userResolver
+    }
+  },
+  {
+    path: '**',
+    component: NotFoundComponent
+  }
+];
+
+// app.config.ts
+import { ApplicationConfig } from '@angular/core';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(
+      routes,
+      withComponentInputBinding() // Enable route parameters as inputs
+    )
+  ]
+};
+```
+
+## Question 2: How do you implement route guards and resolvers?
+
+**Answer:**
+Here's how to implement route protection and data resolution:
+
+```typescript
+// auth.guard.ts
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+
+export const authGuard = () => {
+  const router = inject(Router);
+  const authService = inject(AuthService);
+
+  if (authService.isAuthenticated()) {
+    return true;
+  }
+
+  return router.createUrlTree(['/login']);
+};
+
+// user.resolver.ts
+import { inject } from '@angular/core';
+import { ResolveFn } from '@angular/router';
+
+export const userResolver: ResolveFn<User> = (route) => {
+  const userService = inject(UserService);
+  return userService.getUser(route.params['id']);
+};
+
+// profile.component.ts
+@Component({
+  selector: 'app-profile',
+  template: `
+    <h1>Profile of {{ user().name }}</h1>
+    <div>Email: {{ user().email }}</div>
+  `
+})
+export class ProfileComponent {
+  id = input.required<number>(); // Route resolved data as input
+}
+```
+
+## Question 3: How do you implement lazy loading and preloading strategies?
+
+**Answer:**
+Here's how to implement lazy loading and custom preloading:
+
+```typescript
+// app.config.ts
+import { provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(
+      routes,
+      withPreloading(PreloadAllModules), // Preload all lazy modules
+      withComponentInputBinding()
+    )
+  ]
+};
+
+// Custom preloading strategy
+import { PreloadAllModules, Route } from '@angular/router';
+import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class SelectivePreloadStrategy implements PreloadAllModules {
+  preload(route: Route, load: () => Observable<any>): Observable<any> {
+    return route.data?.['preload'] === true ? load() : of(null);
+  }
+}
+
+// Usage in routes
+{
+  path: 'products',
+  loadChildren: () => import('./products/products.routes'),
+  data: { preload: true }
+}
+```
+
+## Question 4: How do you handle route parameters and query parameters?
+
+**Answer:**
+```typescript
+import { Component, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+@Component({
+  selector: 'app-product',
+  template: `
+    <h1>Product: {{ productId() }}</h1>
+    <div>Category: {{ category() }}</div>
+  `
+})
+export class ProductComponent {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  
+  // Route Parameter
+  productId = toSignal(this.route.paramMap.pipe(
+    map(params => params.get('id'))
+  ));
+
+  // Query Parameter
+  category = toSignal(this.route.queryParamMap.pipe(
+    map(params => params.get('category'))
+  ));
+
+  // Navigation methods
+  navigateToProduct(id: string) {
+    this.router.navigate(['/products', id], {
+      queryParams: { category: 'electronics' },
+      queryParamsHandling: 'merge'
+    });
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Route Configuration Best Practices**
+   ```typescript
+   // Use constants for route paths
+   export const ROUTES = {
+     PRODUCTS: 'products',
+     PRODUCT_DETAIL: (id: string) => `products/${id}`
+   } as const;
+
+   // Type-safe route parameters
+   interface ProductRouteParams {
+     id: string;
+   }
+
+   // Type-safe route data
+   interface ProductRouteData {
+     preload: boolean;
+     roles: string[];
+   }
+   ```
+
+2. **Navigation Patterns**
+   ```typescript
+   // Different navigation methods
+   router.navigate(['/products']);
+   router.navigateByUrl('/products');
+   
+   // Relative navigation
+   router.navigate(['../'], { relativeTo: route });
+   
+   // With state
+   router.navigate(['/products'], {
+     state: { from: 'home' }
+   });
+   ```
+
+3. **Route Guards Patterns**
+   ```typescript
+   // Combining multiple guards
+   export const adminGuard = () => {
+     return combineLatest([
+       inject(AuthGuard).canActivate(),
+       inject(RoleGuard).canActivate()
+     ]).pipe(
+       map(([isAuth, hasRole]) => isAuth && hasRole)
+     );
+   };
+   ```
+
+4. **Error Handling**
+   ```typescript
+   // Global 404 handling
+   {
+     path: '**',
+     component: NotFoundComponent,
+     data: { title: 'Page Not Found' }
+   }
+
+   // Navigation error handling
+   router.events.pipe(
+     filter(event => event instanceof NavigationError)
+   ).subscribe((event) => {
+     // Handle navigation errors
+   });
+   ```
+
+5. **Testing Routes**
+   ```typescript
+   describe('ProductComponent', () => {
+     it('should handle route parameters', () => {
+       TestBed.configureTestingModule({
+         imports: [RouterTestingModule]
+       });
+       
+       const route = TestBed.inject(ActivatedRoute);
+       route.params.next({ id: '123' });
+       
+       expect(component.productId()).toBe('123');
+     });
+   });
+   ```
+
+6. **Performance Tips**
+   - Use lazy loading for large modules
+   - Implement preloading strategies wisely
+   - Cache resolved data when appropriate
+   - Use route reuse strategy for complex views
+
+  Remember: In interviews, focus on:
+- Understanding route configuration and navigation
+- Knowledge of guards and resolvers
+- Experience with lazy loading
+- Handling route parameters and data
+- Testing routing scenarios
+- Performance optimization techniques

@@ -1,0 +1,292 @@
+---
+layout: ../../layouts/Layout.astro
+title: Understanding ng-content in Angular
+---
+
+# Understanding ng-content in Angular
+
+## Question 1: What is ng-content and why is it used?
+
+**Answer:**
+ng-content is a directive that enables content projection in Angular components. It allows you to:
+- Insert external content into a component
+- Create reusable component templates
+- Build flexible and composable components
+- Implement the slot pattern from web components
+
+## Question 2: How do you implement basic and multi-slot content projection?
+
+**Answer:**
+Here are examples of different content projection patterns:
+
+```typescript
+// 1. Basic Content Projection
+@Component({
+  selector: 'app-card',
+  template: `
+    <div class="card">
+      <div class="card-header">
+        <ng-content select="[header]"></ng-content>
+      </div>
+      <div class="card-body">
+        <ng-content></ng-content>
+      </div>
+      <div class="card-footer">
+        <ng-content select="[footer]"></ng-content>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  `]
+})
+export class CardComponent {}
+
+// Usage
+@Component({
+  selector: 'app-user-card',
+  template: `
+    <app-card>
+      <h2 header>User Profile</h2>
+      <div class="content">
+        {{ user.name }}
+      </div>
+      <button footer>Edit Profile</button>
+    </app-card>
+  `
+})
+export class UserCardComponent {}
+
+// 2. Multi-Slot Projection with Types
+@Component({
+  selector: 'app-dashboard-layout',
+  template: `
+    <div class="layout">
+      <header>
+        <ng-content select="app-header"></ng-content>
+      </header>
+      
+      <nav class="sidebar">
+        <ng-content select="app-sidebar"></ng-content>
+      </nav>
+      
+      <main>
+        <ng-content></ng-content>
+      </main>
+      
+      <footer>
+        <ng-content select="app-footer"></ng-content>
+      </footer>
+    </div>
+  `
+})
+export class DashboardLayoutComponent {}
+```
+
+## Question 3: How do you work with projected content programmatically?
+
+**Answer:**
+Here's how to interact with projected content:
+
+```typescript
+@Component({
+  selector: 'app-content-wrapper',
+  template: `
+    <div class="wrapper">
+      <ng-content></ng-content>
+    </div>
+  `
+})
+export class ContentWrapperComponent implements AfterContentInit {
+  // Query all projected content
+  @ContentChildren(ProjectedComponent)
+  projectedComponents!: QueryList<ProjectedComponent>;
+  
+  // Query specific projected content
+  @ContentChild('specificContent')
+  specificContent!: ElementRef;
+  
+  // Content queries with read option
+  @ContentChildren(ProjectedComponent, { read: ElementRef })
+  projectedElements!: QueryList<ElementRef>;
+  
+  ngAfterContentInit() {
+    // Access projected content
+    this.projectedComponents.forEach(component => {
+      console.log('Projected component:', component);
+    });
+    
+    // Listen for changes
+    this.projectedComponents.changes.pipe(
+      takeUntilDestroyed()
+    ).subscribe(changes => {
+      console.log('Projected content changed:', changes);
+    });
+  }
+}
+```
+
+## Question 4: How do you implement conditional content projection?
+
+**Answer:**
+Here's how to handle conditional content projection:
+
+```typescript
+@Component({
+  selector: 'app-conditional-content',
+  template: `
+    <div class="container">
+      @if (hasHeaderContent()) {
+        <header>
+          <ng-content select="[header]"></ng-content>
+        </header>
+      }
+      
+      <main>
+        <ng-content></ng-content>
+      </main>
+      
+      <!-- Conditional Footer -->
+      <footer>
+        @if (hasFooterContent()) {
+          <ng-content select="[footer]"></ng-content>
+        } @else {
+          <default-footer />
+        }
+      </footer>
+    </div>
+  `
+})
+export class ConditionalContentComponent {
+  @ContentChild('header')
+  headerContent!: ElementRef;
+  
+  @ContentChild('footer')
+  footerContent!: ElementRef;
+  
+  hasHeaderContent(): boolean {
+    return !!this.headerContent;
+  }
+  
+  hasFooterContent(): boolean {
+    return !!this.footerContent;
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Content Projection Patterns**
+   ```typescript
+   // Single slot
+   <ng-content></ng-content>
+   
+   // Named slots
+   <ng-content select="[header]"></ng-content>
+   
+   // Type-based selection
+   <ng-content select="app-header"></ng-content>
+   
+   // Class-based selection
+   <ng-content select=".content"></ng-content>
+   ```
+
+2. **Performance Optimization**
+   ```typescript
+   @Component({
+     // Use OnPush for better performance
+     changeDetection: ChangeDetectionStrategy.OnPush,
+     template: `
+       <!-- Use defer for heavy content -->
+       @defer (on viewport) {
+         <ng-content select="[heavy-content]"></ng-content>
+       }
+     `
+   })
+   export class OptimizedComponent {}
+   ```
+
+3. **Content Lifecycle**
+   ```typescript
+   @Component({...})
+   export class ContentAwareComponent implements 
+     AfterContentInit, 
+     AfterContentChecked {
+     
+     ngAfterContentInit() {
+       // Content is initialized
+     }
+     
+     ngAfterContentChecked() {
+       // Content is checked
+     }
+   }
+   ```
+
+4. **Testing Projected Content**
+   ```typescript
+   describe('CardComponent', () => {
+     it('should project content', () => {
+       const fixture = TestBed.createComponent(CardComponent);
+       const compiled = fixture.nativeElement;
+       
+       // Test content projection
+       const header = compiled.querySelector('[header]');
+       expect(header).toBeTruthy();
+     });
+   });
+   ```
+
+5. **Dynamic Content**
+   ```typescript
+   @Component({
+     template: `
+       <ng-container *ngTemplateOutlet="
+         contentTemplate || defaultTemplate;
+         context: { $implicit: data }
+       "></ng-container>
+       
+       <ng-template #defaultTemplate>
+         Default Content
+       </ng-template>
+     `
+   })
+   export class DynamicContentComponent {
+     @ContentChild(TemplateRef)
+     contentTemplate?: TemplateRef<any>;
+   }
+   ```
+
+6. **Common Pitfalls**
+   ```typescript
+   // DON'T: Access content before initialization
+   constructor() {
+     this.content.nativeElement; // Error!
+   }
+   
+   // DO: Wait for content initialization
+   ngAfterContentInit() {
+     this.content.nativeElement; // Safe
+   }
+   ```
+
+Remember: In interviews, focus on:
+- Understanding content projection concepts
+- Implementation patterns
+- Performance implications
+- Testing strategies
+- Lifecycle hooks
+- Common pitfalls
+- Real-world use cases
+
+Key points to emphasize:
+1. Component reusability
+2. Template flexibility
+3. Performance considerations
+4. Content lifecycle
+5. Testing approaches
+6. Dynamic content handling
+7. Best practices

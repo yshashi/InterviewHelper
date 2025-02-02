@@ -1,0 +1,337 @@
+---
+layout: ../../layouts/Layout.astro
+title: Constructor vs ngOnInit in Angular
+---
+
+# Constructor vs ngOnInit in Angular
+
+## Question 1: What are the key differences between Constructor and ngOnInit?
+
+**Answer:**
+Key differences include:
+
+1. **Timing**:
+   - Constructor: Called when class is instantiated
+   - ngOnInit: Called after all properties are initialized
+
+2. **Purpose**:
+   - Constructor: Basic initialization, DI setup
+   - ngOnInit: Complex initialization, data fetching
+
+3. **Access to Properties**:
+   - Constructor: Limited access to properties
+   - ngOnInit: Full access to all properties
+
+## Question 2: How do you use Constructor and ngOnInit in modern Angular?
+
+**Answer:**
+Here are modern implementation patterns:
+
+```typescript
+// Modern Dependency Injection
+@Component({
+  selector: 'app-user',
+  template: `
+    @if (user(); as userData) {
+      <div>{{ userData.name }}</div>
+    }
+  `
+})
+export class UserComponent implements OnInit {
+  // Modern DI using inject()
+  private userService = inject(UserService);
+  private router = inject(Router);
+  private destroy$ = inject(DestroyRef);
+  
+  // Signals for state management
+  user = signal<User | null>(null);
+  loading = signal(false);
+  
+  // Computed values
+  userStatus = computed(() => 
+    this.user()?.status || 'inactive'
+  );
+  
+  constructor() {
+    // Only basic initialization
+    console.log('Component instantiated');
+  }
+  
+  ngOnInit() {
+    // Complex initialization
+    this.loading.set(true);
+    
+    this.userService.getUser().pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe({
+      next: (user) => {
+        this.user.set(user);
+        this.loading.set(false);
+      },
+      error: (error) => {
+        this.handleError(error);
+        this.loading.set(false);
+      }
+    });
+  }
+}
+
+// Service Pattern
+@Injectable({ providedIn: 'root' })
+export class DataService {
+  private http = inject(HttpClient);
+  private errorHandler = inject(ErrorHandler);
+  
+  // State management
+  private dataSubject = signal<Data[]>([]);
+  readonly data = this.dataSubject.asReadonly();
+  
+  constructor() {
+    // Basic service setup
+    this.initializeService();
+  }
+  
+  private initializeService() {
+    // Service-specific initialization
+    console.log('Service initialized');
+  }
+  
+  loadData() {
+    return this.http.get<Data[]>('/api/data').pipe(
+      tap(data => this.dataSubject.set(data)),
+      catchError(error => {
+        this.errorHandler.handleError(error);
+        return EMPTY;
+      })
+    );
+  }
+}
+```
+
+## Question 3: What are the best practices for using Constructor and ngOnInit?
+
+**Answer:**
+Here are best practices with examples:
+
+```typescript
+// 1. Constructor Best Practices
+@Component({
+  selector: 'app-best-practices',
+  template: `
+    @if (isLoading()) {
+      <loading-spinner />
+    } @else {
+      <data-display [data]="data()" />
+    }
+  `
+})
+export class BestPracticesComponent implements OnInit {
+  // 1. Use inject() for DI
+  private service = inject(DataService);
+  private destroy$ = inject(DestroyRef);
+  
+  // 2. Initialize signals and subjects
+  data = signal<Data | null>(null);
+  isLoading = signal(false);
+  private refresh$ = new Subject<void>();
+  
+  constructor() {
+    // 3. Only basic initialization
+    this.setupRefreshLogic();
+  }
+  
+  private setupRefreshLogic() {
+    // 4. Setup streams in constructor
+    this.refresh$.pipe(
+      takeUntilDestroyed(this.destroy$),
+      switchMap(() => this.loadData())
+    ).subscribe();
+  }
+  
+  ngOnInit() {
+    // 5. Complex initialization in ngOnInit
+    this.loadData();
+  }
+  
+  private loadData() {
+    this.isLoading.set(true);
+    return this.service.getData().pipe(
+      tap({
+        next: data => {
+          this.data.set(data);
+          this.isLoading.set(false);
+        },
+        error: error => {
+          this.handleError(error);
+          this.isLoading.set(false);
+        }
+      })
+    );
+  }
+}
+
+// 2. Form Component Pattern
+@Component({
+  selector: 'app-user-form',
+  template: `
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <input formControlName="name" />
+      <input formControlName="email" />
+      <button type="submit">Submit</button>
+    </form>
+  `
+})
+export class UserFormComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private userService = inject(UserService);
+  
+  // Initialize form in constructor
+  form = this.fb.group({
+    name: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]]
+  });
+  
+  ngOnInit() {
+    // Load data and patch form
+    this.userService.getCurrentUser().pipe(
+      take(1)
+    ).subscribe(user => {
+      this.form.patchValue(user);
+    });
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Initialization Patterns**
+   ```typescript
+   @Component({...})
+   export class PatternComponent implements OnInit {
+     // 1. Dependencies via inject()
+     private service = inject(Service);
+     
+     // 2. Signals and state
+     data = signal<Data | null>(null);
+     
+     constructor() {
+       // 3. Basic setup only
+       this.setupStreams();
+     }
+     
+     ngOnInit() {
+       // 4. Complex initialization
+       this.loadData();
+     }
+   }
+   ```
+
+2. **Error Handling**
+   ```typescript
+   @Injectable({ providedIn: 'root' })
+   export class ErrorService {
+     private errorSubject = new Subject<Error>();
+     
+     constructor() {
+       // Setup global error handling
+       this.setupGlobalHandling();
+     }
+     
+     ngOnInit() {
+       // Initialize error listeners
+       this.initializeListeners();
+     }
+   }
+   ```
+
+3. **Testing**
+   ```typescript
+   describe('Component', () => {
+     it('should initialize properly', () => {
+       const component = new Component();
+       
+       // Constructor assertions
+       expect(component).toBeTruthy();
+       
+       // ngOnInit assertions
+       component.ngOnInit();
+       expect(component.data()).toBeDefined();
+     });
+   });
+   ```
+
+4. **Performance**
+   ```typescript
+   @Component({
+     changeDetection: ChangeDetectionStrategy.OnPush
+   })
+   export class OptimizedComponent {
+     constructor() {
+       // Lightweight constructor
+     }
+     
+     ngOnInit() {
+       // Defer heavy operations
+       setTimeout(() => {
+         this.heavyOperation();
+       });
+     }
+   }
+   ```
+
+5. **Common Patterns**
+   ```typescript
+   @Component({...})
+   export class CommonComponent implements OnInit {
+     constructor() {
+       // DO: Basic initialization
+       this.setupConfig();
+     }
+     
+     ngOnInit() {
+       // DO: Complex operations
+       this.loadData();
+       this.setupSubscriptions();
+     }
+   }
+   ```
+
+6. **Best Practices**
+   ```typescript
+   @Component({...})
+   export class BestPracticeComponent implements OnInit {
+     // DO: Use inject()
+     private service = inject(Service);
+     
+     // DO: Initialize simple properties
+     data = signal<Data[]>([]);
+     
+     // DON'T: Heavy operations in constructor
+     constructor() {
+       console.log('Simple initialization');
+     }
+     
+     // DO: Complex operations in ngOnInit
+     ngOnInit() {
+       this.loadData();
+     }
+   }
+   ```
+
+Remember: In interviews, focus on:
+- Timing differences
+- Proper usage
+- Best practices
+- Error handling
+- Testing approaches
+- Performance considerations
+- Common pitfalls
+
+Key points to emphasize:
+1. Constructor for DI and basic setup
+2. ngOnInit for complex initialization
+3. Error handling patterns
+4. Testing strategies
+5. Performance optimization
+6. Best practices
+7. Common use cases

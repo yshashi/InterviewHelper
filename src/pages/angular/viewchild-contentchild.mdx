@@ -1,0 +1,380 @@
+---
+layout: ../../layouts/Layout.astro
+title: ViewChild and ContentChild in Angular
+---
+
+# ViewChild and ContentChild in Angular
+
+## Question 1: What are ViewChild and ContentChild, and how do they differ?
+
+**Answer:**
+ViewChild and ContentChild are decorators for accessing child elements:
+
+- **ViewChild**: Accesses elements/components in the template view
+- **ContentChild**: Accesses projected content elements
+
+Key differences:
+1. ViewChild queries view DOM
+2. ContentChild queries projected content
+3. Different lifecycle timing (AfterViewInit vs AfterContentInit)
+
+## Question 2: How do you implement ViewChild in modern Angular?
+
+**Answer:**
+Here are modern ViewChild implementations:
+
+```typescript
+// Child component
+@Component({
+  selector: 'app-chart',
+  standalone: true,
+  template: `<canvas #chartCanvas></canvas>`
+})
+export class ChartComponent {
+  @ViewChild('chartCanvas')
+  canvas!: ElementRef<HTMLCanvasElement>;
+  
+  // Methods that parent might need
+  drawChart(data: any) {
+    const ctx = this.canvas.nativeElement.getContext('2d');
+    // Chart drawing logic
+  }
+  
+  clear() {
+    const ctx = this.canvas.nativeElement.getContext('2d');
+    ctx?.clearRect(0, 0, this.canvas.nativeElement.width, 
+      this.canvas.nativeElement.height);
+  }
+}
+
+// Parent component
+@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [ChartComponent],
+  template: `
+    <app-chart />
+    <button (click)="updateChart()">Update</button>
+    <button (click)="clearChart()">Clear</button>
+  `
+})
+export class DashboardComponent implements AfterViewInit {
+  @ViewChild(ChartComponent)
+  chartComponent!: ChartComponent;
+  
+  ngAfterViewInit() {
+    // Safe to access chart component
+    this.chartComponent.drawChart(initialData);
+  }
+  
+  updateChart() {
+    this.chartComponent.drawChart(newData);
+  }
+  
+  clearChart() {
+    this.chartComponent.clear();
+  }
+}
+
+// Multiple ViewChild queries
+@Component({
+  selector: 'app-tabs',
+  template: `
+    <div #tabContainer class="tabs">
+      <button 
+        #tabButton
+        *ngFor="let tab of tabs"
+        (click)="selectTab(tab)"
+      >
+        {{ tab.title }}
+      </button>
+    </div>
+  `
+})
+export class TabsComponent implements AfterViewInit {
+  @ViewChild('tabContainer')
+  container!: ElementRef<HTMLDivElement>;
+  
+  @ViewChildren('tabButton')
+  buttons!: QueryList<ElementRef<HTMLButtonElement>>;
+  
+  ngAfterViewInit() {
+    // Access multiple elements
+    this.buttons.forEach(button => {
+      // Initialize buttons
+    });
+    
+    // Listen for changes
+    this.buttons.changes.pipe(
+      takeUntilDestroyed()
+    ).subscribe(() => {
+      // Handle dynamic button changes
+    });
+  }
+}
+```
+
+## Question 3: How do you implement ContentChild in modern Angular?
+
+**Answer:**
+Here's how to work with ContentChild:
+
+```typescript
+// Template component
+@Component({
+  selector: 'app-card',
+  template: `
+    <div class="card">
+      <div class="header">
+        <ng-content select="[header]"></ng-content>
+      </div>
+      <div class="body">
+        <ng-content></ng-content>
+      </div>
+      <div class="footer">
+        <ng-content select="[footer]"></ng-content>
+      </div>
+    </div>
+  `
+})
+export class CardComponent implements AfterContentInit {
+  @ContentChild('header')
+  headerContent!: ElementRef;
+  
+  @ContentChildren(CustomComponent)
+  customComponents!: QueryList<CustomComponent>;
+  
+  ngAfterContentInit() {
+    // Access projected content
+    this.customComponents.forEach(component => {
+      component.initialize();
+    });
+    
+    // Listen for content changes
+    this.customComponents.changes.pipe(
+      takeUntilDestroyed()
+    ).subscribe(() => {
+      // Handle content changes
+    });
+  }
+}
+
+// Usage
+@Component({
+  selector: 'app-user-card',
+  template: `
+    <app-card>
+      <h2 #header>User Profile</h2>
+      <custom-component></custom-component>
+      <button footer>Edit</button>
+    </app-card>
+  `
+})
+export class UserCardComponent {}
+```
+
+## Question 4: How do you handle dynamic content and views?
+
+**Answer:**
+Here's how to work with dynamic content:
+
+```typescript
+@Component({
+  selector: 'app-dynamic-container',
+  template: `
+    <div #container></div>
+    
+    <ng-template #template>
+      <div>Dynamic Content</div>
+    </ng-template>
+  `
+})
+export class DynamicContainerComponent 
+  implements AfterViewInit {
+  
+  @ViewChild('container', { read: ViewContainerRef })
+  container!: ViewContainerRef;
+  
+  @ViewChild('template', { read: TemplateRef })
+  template!: TemplateRef<any>;
+  
+  ngAfterViewInit() {
+    // Create view dynamically
+    const view = this.template.createEmbeddedView({});
+    this.container.insert(view);
+  }
+  
+  // Dynamic component creation
+  createComponent() {
+    const factory = this.cfr.resolveComponentFactory(
+      DynamicComponent
+    );
+    const componentRef = this.container.createComponent(
+      factory
+    );
+    
+    // Access and initialize component
+    componentRef.instance.data = 'Initial Data';
+    componentRef.instance.output.subscribe(
+      data => this.handleOutput(data)
+    );
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Lifecycle Timing**
+   ```typescript
+   @Component({
+     template: `
+       <child-component></child-component>
+       <ng-content></ng-content>
+     `
+   })
+   export class ParentComponent implements 
+     AfterContentInit,
+     AfterViewInit {
+     
+     @ContentChild(ChildComponent)
+     contentChild!: ChildComponent;
+     
+     @ViewChild(ChildComponent)
+     viewChild!: ChildComponent;
+     
+     ngAfterContentInit() {
+       // ContentChild is available
+       this.contentChild.initialize();
+     }
+     
+     ngAfterViewInit() {
+       // ViewChild is available
+       this.viewChild.initialize();
+     }
+   }
+   ```
+
+2. **Static Option**
+   ```typescript
+   @Component({
+     template: `<div #static>Static</div>`
+   })
+   export class Component {
+     // Available in ngOnInit
+     @ViewChild('static', { static: true })
+     staticElement!: ElementRef;
+     
+     // Only available in ngAfterViewInit
+     @ViewChild('dynamic')
+     dynamicElement!: ElementRef;
+   }
+   ```
+
+3. **Error Handling**
+   ```typescript
+   @Component({
+     template: `
+       <div #optional>Optional Content</div>
+     `
+   })
+   export class SafeComponent {
+     @ViewChild('optional')
+     optionalElement?: ElementRef;
+     
+     ngAfterViewInit() {
+       // Safe access
+       if (this.optionalElement) {
+         // Use element
+       }
+     }
+   }
+   ```
+
+4. **Testing**
+   ```typescript
+   describe('Component', () => {
+     it('should access ViewChild', () => {
+       const fixture = TestBed.createComponent(
+         Component
+       );
+       fixture.detectChanges();
+       
+       const component = fixture.componentInstance;
+       expect(component.viewChild).toBeTruthy();
+     });
+   });
+   ```
+
+5. **Performance**
+   ```typescript
+   @Component({
+     template: `
+       @defer (on viewport) {
+         <heavy-component #heavy />
+       }
+     `
+   })
+   export class OptimizedComponent {
+     @ViewChild('heavy')
+     heavyComponent?: HeavyComponent;
+     
+     // Handle null before component loads
+     initialize() {
+       if (this.heavyComponent) {
+         this.heavyComponent.start();
+       }
+     }
+   }
+   ```
+
+6. **Best Practices**
+   ```typescript
+   @Component({
+     template: `
+       <div #container>
+         @for (item of items; track item.id) {
+           <child-component />
+         }
+       </div>
+     `
+   })
+   export class BestPracticesComponent {
+     // Query all children
+     @ViewChildren(ChildComponent)
+     children!: QueryList<ChildComponent>;
+     
+     // Clean up subscriptions
+     private destroy$ = new Subject<void>();
+     
+     ngOnInit() {
+       this.children.changes.pipe(
+         takeUntil(this.destroy$)
+       ).subscribe(() => {
+         // Handle changes
+       });
+     }
+     
+     ngOnDestroy() {
+       this.destroy$.next();
+       this.destroy$.complete();
+     }
+   }
+   ```
+
+Remember: In interviews, focus on:
+- Understanding the differences
+- Lifecycle timing
+- Error handling
+- Performance implications
+- Testing strategies
+- Best practices
+- Real-world scenarios
+
+Key points to emphasize:
+1. ViewChild vs ContentChild differences
+2. Lifecycle hooks timing
+3. Static vs Dynamic queries
+4. Error handling
+5. Performance considerations
+6. Testing approaches
+7. Best practices

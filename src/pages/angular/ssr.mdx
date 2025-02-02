@@ -1,0 +1,258 @@
+---
+layout: ../../layouts/Layout.astro
+title: Implementing Server-Side Rendering in Angular
+---
+
+# How to Implement Server-Side Rendering in Angular
+
+Let me share my approach to implementing Server-Side Rendering (SSR) in Angular using Angular Universal. I'll demonstrate this using real-world examples from enterprise applications I've worked on.
+
+Here's my systematic approach:
+
+```typescript
+// 1. Setup Angular Universal
+// First, add SSR to existing project:
+// ng add @nguniversal/express-engine
+
+// 2. Server-side App Module
+// app.server.module.ts
+@NgModule({
+  imports: [
+    AppModule,
+    ServerModule,
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppServerModule {}
+
+// 3. SSR-aware Service
+@Injectable({ providedIn: 'root' })
+export class PlatformService {
+  private platformId = inject(PLATFORM_ID);
+  
+  isBrowser() {
+    return isPlatformBrowser(this.platformId);
+  }
+  
+  isServer() {
+    return isPlatformServer(this.platformId);
+  }
+}
+
+// 4. SEO Service
+@Injectable({ providedIn: 'root' })
+export class SeoService {
+  private title = inject(Title);
+  private meta = inject(Meta);
+  
+  updateMetadata(metadata: PageMetadata) {
+    // Update title
+    this.title.setTitle(metadata.title);
+    
+    // Update meta tags
+    this.meta.updateTag({
+      name: 'description',
+      content: metadata.description
+    });
+    
+    // Add Open Graph tags
+    this.meta.updateTag({
+      property: 'og:title',
+      content: metadata.title
+    });
+    
+    this.meta.updateTag({
+      property: 'og:description',
+      content: metadata.description
+    });
+  }
+}
+
+// 5. SSR-aware Component
+@Component({
+  selector: 'app-product',
+  template: `
+    @if (product(); as item) {
+      <div class="product">
+        <h1>{{ item.name }}</h1>
+        <img [src]="item.image" [alt]="item.name" />
+        <p>{{ item.description }}</p>
+        <price [value]="item.price" />
+      </div>
+    }
+  `
+})
+export class ProductComponent implements OnInit {
+  private platform = inject(PlatformService);
+  private seo = inject(SeoService);
+  private productService = inject(ProductService);
+  
+  product = signal<Product | null>(null);
+  
+  ngOnInit() {
+    if (this.platform.isServer()) {
+      // Server-side initialization
+      this.initializeServerSide();
+    } else {
+      // Browser-side initialization
+      this.initializeBrowserSide();
+    }
+  }
+  
+  private initializeServerSide() {
+    // Pre-render with initial data
+    this.productService.getProduct().subscribe(product => {
+      this.product.set(product);
+      
+      // Update meta tags for SEO
+      this.seo.updateMetadata({
+        title: product.name,
+        description: product.description
+      });
+    });
+  }
+  
+  private initializeBrowserSide() {
+    // Hydrate with client-side data if needed
+    this.productService.getRealtimeUpdates().subscribe(
+      updates => {
+        this.product.update(p => ({
+          ...p,
+          ...updates
+        }));
+      }
+    );
+  }
+}
+
+// 6. State Transfer
+// app.server.module.ts
+@NgModule({
+  imports: [
+    AppModule,
+    ServerModule,
+    ServerTransferStateModule
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppServerModule {}
+
+// app.browser.module.ts
+@NgModule({
+  imports: [
+    AppModule,
+    BrowserTransferStateModule
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppBrowserModule {}
+
+// 7. Transfer State Service
+@Injectable({ providedIn: 'root' })
+export class TransferStateService {
+  private state = inject(TransferState);
+  private platform = inject(PlatformService);
+  
+  getData<T>(key: string, getter: () => Observable<T>): Observable<T> {
+    const stateKey = makeStateKey<T>(key);
+    
+    if (this.platform.isServer()) {
+      // Server-side: fetch and store
+      return getter().pipe(
+        tap(data => {
+          this.state.set(stateKey, data);
+        })
+      );
+    } else {
+      // Browser-side: get from state or fetch
+      const data = this.state.get(stateKey, null);
+      if (data) {
+        return of(data);
+      }
+      return getter();
+    }
+  }
+}
+
+// 8. API Service with Transfer State
+@Injectable({ providedIn: 'root' })
+export class ApiService {
+  private http = inject(HttpClient);
+  private transfer = inject(TransferStateService);
+  
+  getProduct(id: string): Observable<Product> {
+    return this.transfer.getData(
+      `product-${id}`,
+      () => this.http.get<Product>(`/api/products/${id}`)
+    );
+  }
+}
+```
+
+Real-world optimization example:
+
+```typescript
+// Before optimization
+@Component({
+  template: `
+    <div>{{ data }}</div>
+  `
+})
+class SimpleComponent {
+  ngOnInit() {
+    this.loadData();
+  }
+}
+
+// After optimization with SSR
+@Component({
+  template: `
+    @if (data(); as content) {
+      <div [attr.data-ssr]="isServer()">
+        {{ content }}
+      </div>
+    }
+  `
+})
+class OptimizedComponent {
+  private platform = inject(PlatformService);
+  private transfer = inject(TransferStateService);
+  
+  data = signal<any>(null);
+  isServer = computed(() => this.platform.isServer());
+  
+  ngOnInit() {
+    // Use transfer state to avoid double fetching
+    this.transfer
+      .getData('key', () => this.loadData())
+      .subscribe(data => {
+        this.data.set(data);
+      });
+  }
+}
+```
+
+Key points I emphasize in interviews:
+
+1. **Setup and Configuration**
+   - Angular Universal setup
+   - Server module configuration
+   - Transfer state implementation
+
+2. **Performance Optimization**
+   - Avoid double fetching
+   - Efficient state transfer
+   - Proper hydration
+
+3. **SEO Considerations**
+   - Meta tags management
+   - Title updates
+   - Open Graph tags
+
+4. **Best Practices**
+   - Platform-aware code
+   - State management
+   - Error handling
+   - Performance monitoring
+
+This approach has helped me implement efficient SSR in large Angular applications, improving both performance and SEO.

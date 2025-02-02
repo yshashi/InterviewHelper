@@ -1,0 +1,437 @@
+---
+layout: ../../layouts/Layout.astro
+title: State Management in Angular
+---
+
+# State Management in Angular
+
+## Question 1: What are the different approaches to state management in Angular?
+
+**Answer:**
+Angular offers several state management approaches:
+
+1. **Signals** (New in Angular 17+)
+2. **Services with RxJS**
+3. **NgRx (Redux pattern)**
+4. **NGXS**
+5. **Component State**
+6. **Local Storage/Session Storage**
+
+## Question 2: How do you implement state management using Signals?
+
+**Answer:**
+Here's a modern implementation using Signals:
+
+```typescript
+// user.model.ts
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// user.service.ts
+@Injectable({ providedIn: 'root' })
+export class UserStateService {
+  // State definition
+  private userState = signal<User[]>([]);
+  private selectedUserState = signal<User | null>(null);
+  private loadingState = signal(false);
+  
+  // Computed values
+  readonly users = computed(() => this.userState());
+  readonly selectedUser = computed(() => this.selectedUserState());
+  readonly isLoading = computed(() => this.loadingState());
+  
+  // Actions
+  async loadUsers() {
+    this.loadingState.set(true);
+    try {
+      const users = await this.api.getUsers();
+      this.userState.set(users);
+    } finally {
+      this.loadingState.set(false);
+    }
+  }
+  
+  selectUser(id: string) {
+    const user = this.userState()
+      .find(u => u.id === id);
+    this.selectedUserState.set(user || null);
+  }
+  
+  updateUser(updatedUser: User) {
+    this.userState.update(users => 
+      users.map(user => 
+        user.id === updatedUser.id ? updatedUser : user
+      )
+    );
+  }
+}
+
+// user-list.component.ts
+@Component({
+  selector: 'app-user-list',
+  template: `
+    @if (isLoading()) {
+      <loading-spinner />
+    } @else {
+      <ul>
+        @for (user of users(); track user.id) {
+          <li (click)="selectUser(user.id)">
+            {{ user.name }}
+          </li>
+        }
+      </ul>
+    }
+  `
+})
+export class UserListComponent {
+  private userState = inject(UserStateService);
+  
+  users = this.userState.users;
+  isLoading = this.userState.isLoading;
+  
+  selectUser(id: string) {
+    this.userState.selectUser(id);
+  }
+}
+```
+
+## Question 3: How do you implement state management with NgRx?
+
+**Answer:**
+Here's a comprehensive NgRx implementation:
+
+```typescript
+// State interface
+interface AppState {
+  users: UserState;
+}
+
+interface UserState {
+  users: User[];
+  selectedUser: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// Actions
+const loadUsers = createAction('[Users] Load');
+const loadUsersSuccess = createAction(
+  '[Users] Load Success',
+  props<{ users: User[] }>()
+);
+const loadUsersFailure = createAction(
+  '[Users] Load Failure',
+  props<{ error: string }>()
+);
+
+// can also do like below with latest version of NGRX
+export const userActions = createActions({
+  loadUsers: emptyProps(),
+  loadUsersSuccess: props<{ users: User[] }>(),
+  loadUsersFailure: props<{ error: string }>()
+})
+
+// Reducer
+const initialState: UserState = {
+  users: [],
+  selectedUser: null,
+  loading: false,
+  error: null
+};
+
+export const userReducer = createReducer(
+  initialState,
+  on(loadUsers, state => ({
+    ...state,
+    loading: true
+  })),
+  on(loadUsersSuccess, (state, { users }) => ({
+    ...state,
+    loading: false,
+    users,
+    error: null
+  })),
+  on(loadUsersFailure, (state, { error }) => ({
+    ...state,
+    loading: false,
+    error
+  }))
+);
+
+// Effects
+@Injectable()
+export class UserEffects {
+  loadUsers$ = createEffect(() => 
+    this.actions$.pipe(
+      ofType(loadUsers),
+      switchMap(() => 
+        this.userService.getUsers().pipe(
+          map(users => loadUsersSuccess({ users })),
+          catchError(error => 
+            of(loadUsersFailure({ error: error.message }))
+          )
+        )
+      )
+    )
+  );
+  
+  constructor(
+    private actions$: Actions,
+    private userService: UserService
+  ) {}
+}
+
+// Selectors
+const selectUserState = (state: AppState) => state.users;
+
+export const selectAllUsers = createSelector(
+  selectUserState,
+  state => state.users
+);
+
+export const selectLoading = createSelector(
+  selectUserState,
+  state => state.loading
+);
+
+// Component
+@Component({
+  selector: 'app-user-list',
+  template: `
+    @if (loading$ | async) {
+      <loading-spinner />
+    }
+    
+    @if (error$ | async; as error) {
+      <error-alert [message]="error" />
+    }
+    
+    @if (users$ | async; as users) {
+      <ul>
+        @for (user of users; track user.id) {
+          <li>{{ user.name }}</li>
+        }
+      </ul>
+    }
+  `
+})
+export class UserListComponent {
+  private store = inject(Store);
+  
+  users$ = this.store.select(selectAllUsers);
+  loading$ = this.store.select(selectLoading);
+  error$ = this.store.select(selectError);
+  
+  ngOnInit() {
+    this.store.dispatch(loadUsers());
+  }
+}
+```
+
+## Question 4: How do you handle component-level state?
+
+**Answer:**
+Here's how to manage component state effectively:
+
+```typescript
+@Component({
+  selector: 'app-user-form',
+  template: `
+    <form [formGroup]="form">
+      <input formControlName="name" />
+      <input formControlName="email" />
+      
+      @if (showValidationErrors()) {
+        <div class="errors">
+          @for (error of validationErrors(); track error) {
+            <p class="error">{{ error }}</p>
+          }
+        </div>
+      }
+      
+      <button 
+        [disabled]="isSubmitting()" 
+        (click)="submit()"
+      >
+        Submit
+      </button>
+    </form>
+  `
+})
+export class UserFormComponent {
+  // Form state
+  form = new FormGroup({
+    name: new FormControl(''),
+    email: new FormControl('')
+  });
+  
+  // UI state
+  showValidationErrors = signal(false);
+  validationErrors = signal<string[]>([]);
+  isSubmitting = signal(false);
+  
+  // Computed state
+  isValid = computed(() => 
+    this.form.valid && !this.isSubmitting()
+  );
+  
+  async submit() {
+    if (!this.isValid()) return;
+    
+    this.isSubmitting.set(true);
+    try {
+      await this.userService.save(this.form.value);
+    } catch (error) {
+      this.handleError(error);
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+  
+  private handleError(error: any) {
+    this.showValidationErrors.set(true);
+    this.validationErrors.set(
+      this.extractErrors(error)
+    );
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **State Management Patterns**
+   ```typescript
+   // Service with State Pattern
+   @Injectable({ providedIn: 'root' })
+   export class StateService<T> {
+     private state = signal<T>(initialState);
+     
+     select<K>(selector: (state: T) => K) {
+       return computed(() => selector(this.state()));
+     }
+     
+     update(updater: (state: T) => T) {
+       this.state.update(updater);
+     }
+   }
+   ```
+
+2. **Performance Optimization**
+   ```typescript
+   // Memoization with computed
+   @Injectable()
+   export class OptimizedService {
+     private users = signal<User[]>([]);
+     
+     // Memoized computation
+     readonly activeUsers = computed(() => 
+       this.users().filter(user => user.isActive)
+     );
+     
+     // Derived state
+     readonly userCount = computed(() => 
+       this.users().length
+     );
+   }
+   ```
+
+3. **Testing State**
+   ```typescript
+   describe('UserState', () => {
+     let service: UserStateService;
+     
+     beforeEach(() => {
+       TestBed.configureTestingModule({
+         providers: [UserStateService]
+       });
+       service = TestBed.inject(UserStateService);
+     });
+     
+     it('should update state', () => {
+       service.updateUser(mockUser);
+       expect(service.users()).toContain(mockUser);
+     });
+   });
+   ```
+
+4. **Common Patterns**
+   ```typescript
+   // Command Pattern
+   interface Command {
+     execute(): void;
+     undo(): void;
+   }
+   
+   class UpdateUserCommand implements Command {
+     constructor(
+       private state: UserState,
+       private update: Partial<User>
+     ) {}
+     
+     execute() {
+       this.previousState = this.state.value;
+       this.state.update(this.update);
+     }
+     
+     undo() {
+       this.state.set(this.previousState);
+     }
+   }
+   ```
+
+5. **Error Handling**
+   ```typescript
+   @Injectable()
+   export class ErrorState {
+     private errorState = signal<Error | null>(null);
+     
+     setError(error: Error) {
+       this.errorState.set(error);
+       setTimeout(() => 
+         this.errorState.set(null), 
+         5000
+       );
+     }
+   }
+   ```
+
+6. **Best Practices**
+   ```typescript
+   // Immutable Updates
+   this.state.update(state => ({
+     ...state,
+     users: [...state.users, newUser]
+   }));
+   
+   // State Initialization
+   @Injectable()
+   export class AppInitializer {
+     constructor(private store: Store) {}
+     
+     async initialize() {
+       await this.loadInitialState();
+       this.setupStateSync();
+     }
+   }
+   ```
+
+Remember: In interviews, focus on:
+- Different state management approaches
+- When to use each approach
+- Performance implications
+- Testing strategies
+- Error handling
+- Best practices
+- Real-world scenarios
+
+Key points to emphasize:
+1. Signals vs NgRx vs Services
+2. State immutability
+3. Performance optimization
+4. Testing approaches
+5. Error handling
+6. State synchronization
+7. Best practices

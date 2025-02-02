@@ -1,0 +1,314 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Services
+---
+
+# Angular Services
+
+## Question 1: What are Angular Services and why do we use them?
+
+**Answer:**
+Angular Services are singleton objects that provide shared functionality across components. They are used for:
+- Data sharing between components
+- Business logic encapsulation
+- HTTP communication
+- State management
+- Reusable functionality
+- Cross-cutting concerns
+
+## Question 2: How do you create and use a service in Angular?
+
+**Answer:**
+Here's a modern approach to creating and using services:
+
+```typescript
+// user.service.ts
+import { Injectable, signal, computed } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { map, catchError } from 'rxjs/operators';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UserService {
+  private http = inject(HttpClient);
+  private apiUrl = inject(API_URL);
+  
+  // State management with signals
+  private users = signal<User[]>([]);
+  private loading = signal(false);
+  private error = signal<string | null>(null);
+  
+  // Computed values
+  readonly totalUsers = computed(() => this.users().length);
+  readonly hasError = computed(() => !!this.error());
+  
+  // Methods
+  async loadUsers() {
+    try {
+      this.loading.set(true);
+      const users = await firstValueFrom(
+        this.http.get<User[]>(`${this.apiUrl}/users`)
+      );
+      this.users.set(users);
+    } catch (err) {
+      this.error.set(err.message);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+  
+  getUser(id: string) {
+    return this.http.get<User>(`${this.apiUrl}/users/${id}`).pipe(
+      catchError(error => {
+        this.error.set(error.message);
+        throw error;
+      })
+    );
+  }
+  
+  addUser(user: Omit<User, 'id'>) {
+    return this.http.post<User>(`${this.apiUrl}/users`, user).pipe(
+      map(newUser => {
+        this.users.update(users => [...users, newUser]);
+        return newUser;
+      })
+    );
+  }
+}
+
+// Using the service in a component
+@Component({
+  selector: 'app-user-list',
+  template: `
+    @if (userService.loading()) {
+      <loading-spinner />
+    } @else if (userService.hasError()) {
+      <error-message [message]="userService.error()" />
+    } @else {
+      <div>Total Users: {{ userService.totalUsers() }}</div>
+      @for (user of userService.users(); track user.id) {
+        <user-card [user]="user" />
+      }
+    }
+  `
+})
+export class UserListComponent {
+  userService = inject(UserService);
+  
+  constructor() {
+    // Load users when component initializes
+    this.userService.loadUsers();
+  }
+}
+```
+
+## Question 3: How do you implement caching in services?
+
+**Answer:**
+Here's an example of implementing caching in a service:
+
+```typescript
+@Injectable({
+  providedIn: 'root'
+})
+export class CacheService {
+  private cache = new Map<string, any>();
+  private cacheTime = new Map<string, number>();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  set(key: string, value: any): void {
+    this.cache.set(key, value);
+    this.cacheTime.set(key, Date.now());
+  }
+  
+  get(key: string): any {
+    if (!this.has(key)) return null;
+    
+    const timestamp = this.cacheTime.get(key);
+    if (Date.now() - timestamp! > this.CACHE_DURATION) {
+      this.clear(key);
+      return null;
+    }
+    
+    return this.cache.get(key);
+  }
+  
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+  
+  clear(key?: string): void {
+    if (key) {
+      this.cache.delete(key);
+      this.cacheTime.delete(key);
+    } else {
+      this.cache.clear();
+      this.cacheTime.clear();
+    }
+  }
+}
+
+// Using cache in a data service
+@Injectable({
+  providedIn: 'root'
+})
+export class DataService {
+  private http = inject(HttpClient);
+  private cache = inject(CacheService);
+  
+  getData(id: string) {
+    const cacheKey = `data_${id}`;
+    const cachedData = this.cache.get(cacheKey);
+    
+    if (cachedData) {
+      return of(cachedData);
+    }
+    
+    return this.http.get(`/api/data/${id}`).pipe(
+      tap(data => this.cache.set(cacheKey, data))
+    );
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Service Design Patterns**
+   ```typescript
+   // Singleton Pattern
+   @Injectable({
+     providedIn: 'root'
+   })
+   
+   // Factory Pattern
+   @Injectable()
+   class ServiceFactory {
+     create(config: Config) {
+       return new CustomService(config);
+     }
+   }
+   
+   // Repository Pattern
+   @Injectable()
+   class UserRepository {
+     private endpoint = '/api/users';
+     
+     findAll() { /* ... */ }
+     findOne(id: string) { /* ... */ }
+     create(data: UserDTO) { /* ... */ }
+   }
+   ```
+
+2. **State Management**
+   ```typescript
+   @Injectable({
+     providedIn: 'root'
+   })
+   class StateService {
+     private state = signal<AppState>({});
+     
+     select<T>(selector: (state: AppState) => T) {
+       return computed(() => selector(this.state()));
+     }
+     
+     update(updater: (state: AppState) => AppState) {
+       this.state.update(updater);
+     }
+   }
+   ```
+
+3. **Error Handling**
+   ```typescript
+   @Injectable()
+   class ErrorHandlingService {
+     private errorSubject = new Subject<Error>();
+     errors$ = this.errorSubject.asObservable();
+     
+     handleError(error: Error) {
+       this.errorSubject.next(error);
+       // Log to monitoring service
+       // Show user-friendly message
+     }
+   }
+   ```
+
+4. **Testing Services**
+   ```typescript
+   describe('UserService', () => {
+     let service: UserService;
+     let httpMock: HttpTestingController;
+     
+     beforeEach(() => {
+       TestBed.configureTestingModule({
+         imports: [HttpClientTestingModule],
+         providers: [UserService]
+       });
+       
+       service = TestBed.inject(UserService);
+       httpMock = TestBed.inject(HttpTestingController);
+     });
+     
+     it('should fetch users', () => {
+       service.getUsers().subscribe(users => {
+         expect(users.length).toBe(2);
+       });
+       
+       const req = httpMock.expectOne('/api/users');
+       req.flush([{ id: 1 }, { id: 2 }]);
+     });
+   });
+   ```
+
+5. **Performance Optimization**
+   ```typescript
+   @Injectable()
+   class OptimizedService {
+     // Memoization
+     private memoized = memoize((id: string) => {
+       return this.heavyComputation(id);
+     });
+     
+     // Debouncing
+     private debouncedUpdate = debounceTime(300).pipe(
+       switchMap(() => this.performUpdate())
+     );
+     
+     // Caching with TTL
+     private cache = new Map<string, CacheEntry>();
+   }
+   ```
+
+6. **Service Communication**
+   ```typescript
+   @Injectable()
+   class EventBusService {
+     private events = new Subject<EventData>();
+     
+     emit(event: EventData) {
+       this.events.next(event);
+     }
+     
+     on(eventType: string) {
+       return this.events.pipe(
+         filter(e => e.type === eventType)
+       );
+     }
+   }
+   ```
+
+Remember: In interviews, focus on:
+- Service design patterns
+- State management approaches
+- Error handling strategies
+- Testing methodologies
+- Performance optimization
+- Service communication
+- Dependency injection
+- Real-world use cases

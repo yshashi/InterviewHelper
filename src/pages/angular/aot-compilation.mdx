@@ -1,0 +1,336 @@
+---
+layout: ../../layouts/Layout.astro
+title: AOT (Ahead-of-Time) Compilation in Angular
+---
+
+# AOT (Ahead-of-Time) Compilation in Angular
+
+## Question 1: What is AOT compilation and why is it important?
+
+**Answer:**
+AOT compilation is the process of compiling Angular templates during the build process instead of at runtime. Benefits include:
+
+1. Faster rendering
+2. Smaller bundle size
+3. Earlier error detection
+4. Better security
+5. Reduced server load
+
+## Question 2: How does AOT differ from JIT compilation?
+
+**Answer:**
+Here's a comparison with code examples:
+
+```typescript
+// 1. JIT Compilation
+// main.ts with JIT
+import { platformBrowserDynamic } from 
+  '@angular/platform-browser-dynamic';
+
+platformBrowserDynamic()
+  .bootstrapModule(AppModule)
+  .catch(err => console.error(err));
+
+// 2. AOT Compilation
+// main.ts with AOT
+import { platformBrowser } from 
+  '@angular/platform-browser';
+
+platformBrowser()
+  .bootstrapModule(AppModule)
+  .catch(err => console.error(err));
+
+// 3. Module Configuration
+@NgModule({
+  imports: [BrowserModule],
+  declarations: [AppComponent],
+  bootstrap: [AppComponent]
+})
+export class AppModule {
+  // AOT-compatible static method
+  static forRoot(): ModuleWithProviders<AppModule> {
+    return {
+      ngModule: AppModule,
+      providers: [
+        // AOT-compatible provider configuration
+        { 
+          provide: CONFIG_TOKEN,
+          useValue: environment.config
+        }
+      ]
+    };
+  }
+}
+```
+
+## Question 3: How do you optimize code for AOT compilation?
+
+**Answer:**
+Here are AOT optimization techniques:
+
+```typescript
+// 1. AOT-Compatible DI
+@Injectable({ providedIn: 'root' })
+export class ConfigService {
+  // AOT-compatible injection
+  private http = inject(HttpClient);
+  private config = inject(CONFIG_TOKEN);
+  
+  // AOT-compatible method
+  getConfig<T>(key: keyof Config): T {
+    return this.config[key];
+  }
+}
+
+// 2. AOT-Safe Dynamic Components
+@Component({
+  template: `
+    <ng-container 
+      [ngComponentOutlet]="component"
+      [ngComponentOutletInputs]="inputs"
+    >
+    </ng-container>
+  `
+})
+export class DynamicComponent {
+  // AOT-compatible dynamic component loading
+  component = signal<Type<any>>(DefaultComponent);
+  inputs = signal<Record<string, any>>({});
+  
+  async loadComponent(name: string) {
+    const module = await import(
+      `./components/${name}.component`
+    );
+    this.component.set(module[`${name}Component`]);
+  }
+}
+
+// 3. AOT-Compatible Forms
+@Component({
+  template: `
+    <form [formGroup]="form">
+      <input formControlName="name" />
+      <input formControlName="email" />
+    </form>
+  `
+})
+export class FormComponent {
+  // AOT-compatible form initialization
+  form = new FormGroup({
+    name: new FormControl(''),
+    email: new FormControl('')
+  });
+  
+  // AOT-safe validation
+  private readonly emailValidator = Validators.compose([
+    Validators.required,
+    Validators.email
+  ]);
+}
+```
+
+## Question 4: How do you handle AOT compilation errors?
+
+**Answer:**
+Here's how to handle common AOT errors:
+
+```typescript
+// 1. Type Safety
+interface Config {
+  apiUrl: string;
+  features: string[];
+}
+
+// AOT-safe configuration
+const CONFIG: Config = {
+  apiUrl: 'https://api.example.com',
+  features: ['feature1', 'feature2']
+};
+
+// 2. Function Expressions
+@Component({
+  template: `
+    <!-- AOT-safe event binding -->
+    <button (click)="handleClick($event)">
+      Click
+    </button>
+    
+    <!-- AOT-safe pipe usage -->
+    {{ value | customPipe:parameter }}
+  `
+})
+export class SafeComponent {
+  // AOT-compatible method
+  handleClick(event: MouseEvent): void {
+    console.log('Clicked:', event);
+  }
+}
+
+// 3. Metadata Definition
+@Injectable({ providedIn: 'root' })
+export class MetadataService {
+  // AOT-safe metadata
+  private static readonly CONFIG = {
+    version: '1.0.0'
+  };
+  
+  // AOT-compatible getter
+  get version(): string {
+    return MetadataService.CONFIG.version;
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Build Configuration**
+   ```json
+   {
+     "compilerOptions": {
+       "target": "es2022",
+       "module": "es2022",
+       "strict": true,
+       "noImplicitAny": true,
+       "strictNullChecks": true
+     },
+     "angularCompilerOptions": {
+       "enableIvy": true,
+       "strictTemplates": true,
+       "strictInjectionParameters": true
+     }
+   }
+   ```
+
+2. **Error Handling**
+   ```typescript
+   // AOT-safe error handling
+   @Injectable({ providedIn: 'root' })
+   export class ErrorHandler {
+     handleError(error: Error): void {
+       console.error('Error:', error);
+       
+       // AOT-safe error reporting
+       this.reportError({
+         message: error.message,
+         stack: error.stack,
+         timestamp: new Date().toISOString()
+       });
+     }
+   }
+   ```
+
+3. **Performance Monitoring**
+   ```typescript
+   // AOT-compatible performance tracking
+   @Injectable({ providedIn: 'root' })
+   export class PerformanceTracker {
+     private readonly metrics = new Map<string, number>();
+     
+     track(key: string, duration: number): void {
+       this.metrics.set(key, duration);
+       
+       // AOT-safe reporting
+       this.report({
+         metric: key,
+         value: duration,
+         timestamp: Date.now()
+       });
+     }
+   }
+   ```
+
+4. **Testing**
+   ```typescript
+   // AOT-compatible testing
+   describe('Component', () => {
+     beforeEach(() => {
+       TestBed.configureTestingModule({
+         declarations: [Component],
+         providers: [
+           // AOT-safe provider configuration
+           {
+             provide: Service,
+             useValue: mockService
+           }
+         ]
+       });
+     });
+     
+     it('should compile', () => {
+       const fixture = TestBed.createComponent(
+         Component
+       );
+       expect(fixture.componentInstance)
+         .toBeTruthy();
+     });
+   });
+   ```
+
+5. **Common Patterns**
+   ```typescript
+   // AOT-safe dynamic imports
+   const routes: Routes = [
+     {
+       path: 'feature',
+       loadChildren: () => 
+         import('./feature/feature.module')
+           .then(m => m.FeatureModule)
+     }
+   ];
+   
+   // AOT-compatible providers
+   @NgModule({
+     providers: [
+       {
+         provide: APP_INITIALIZER,
+         useFactory: () => {
+           const config = inject(ConfigService);
+           return () => config.load();
+         },
+         multi: true
+       }
+     ]
+   })
+   export class AppModule {}
+   ```
+
+6. **Best Practices**
+   ```typescript
+   // AOT-safe component
+   @Component({
+     changeDetection: ChangeDetectionStrategy.OnPush,
+     template: `
+       @if (data(); as value) {
+         {{ value | json }}
+       }
+     `
+   })
+   export class OptimizedComponent {
+     // AOT-compatible signals
+     data = signal<unknown>(null);
+     
+     // AOT-safe computed
+     computed = computed(() => {
+       const value = this.data();
+       return value ? process(value) : null;
+     });
+   }
+   ```
+
+Remember: In interviews, focus on:
+- AOT vs JIT differences
+- Performance benefits
+- Common errors
+- Build configuration
+- Testing strategies
+- Best practices
+- Real-world scenarios
+
+Key points to emphasize:
+1. Performance improvements
+2. Bundle size reduction
+3. Error detection
+4. Security benefits
+5. Build process
+6. Testing considerations
+7. Best practices

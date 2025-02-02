@@ -1,0 +1,142 @@
+---
+layout: ../../layouts/Layout.astro
+title: Loading Components After Data Fetch
+---
+
+# How to Ensure a Component Only Loads After Data is Fetched
+
+Let me share my approach to implementing data-dependent component loading in Angular, using real-world examples from enterprise applications.
+
+Here are the key strategies I use:
+
+1. Route Resolvers
+2. Loading Guards
+3. Component Initialization Pattern
+4. Progressive Loading
+
+Here's how I implement each approach:
+
+```typescript
+// 1. Route Resolver Pattern
+interface ProductData {
+  product: Product;
+  reviews: Review[];
+  relatedProducts: Product[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class ProductResolver implements Resolve<ProductData> {
+  private product = inject(ProductService);
+  private reviews = inject(ReviewService);
+  
+  resolve(
+    route: ActivatedRouteSnapshot
+  ): Observable<ProductData> {
+    const id = route.paramMap.get('id')!;
+    
+    return forkJoin({
+      product: this.product.getProduct(id),
+      reviews: this.reviews.getProductReviews(id),
+      relatedProducts: this.product.getRelated(id)
+    }).pipe(
+      timeout(5000), // Timeout after 5s
+      catchError(error => {
+        if (error instanceof TimeoutError) {
+          return of({
+            product: null,
+            reviews: [],
+            relatedProducts: []
+          });
+        }
+        throw error;
+      })
+    );
+  }
+}
+
+// 2. Route Configuration
+const routes: Routes = [
+  {
+    path: 'product/:id',
+    resolve: {
+      data: ProductResolver
+    },
+    component: ProductComponent
+  }
+];
+
+// 3. Progressive Loading Pattern
+@Component({
+  selector: 'app-dashboard',
+  template: `
+    <!-- Critical Data -->
+    @if (criticalData(); as data) {
+      <user-profile [data]="data" />
+    }
+    
+    <!-- Non-Critical Data -->
+    @defer (on viewport) {
+      @if (nonCriticalData(); as data) {
+        <data-section [data]="data" />
+      }
+    }
+  `
+})
+export class DashboardComponent {
+  private data = inject(DataService);
+  
+  criticalData = signal<CriticalData | null>(null);
+  nonCriticalData = signal<NonCriticalData | null>(null);
+  
+  ngOnInit() {
+    // Load critical data first
+    this.loadCriticalData();
+  }
+  
+  private loadCriticalData() {
+    this.data.getCriticalData().pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe(data => {
+      this.criticalData.set(data);
+      
+      // Load non-critical data after
+      this.loadNonCriticalData();
+    });
+  }
+  
+  private loadNonCriticalData() {
+    this.data.getNonCriticalData().pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe(data => {
+      this.nonCriticalData.set(data);
+    });
+  }
+}
+
+```
+
+Key points I emphasize in interviews:
+
+1. **Data Loading Strategies**
+   - Route resolvers
+   - Loading guards
+   - Progressive loading
+   - Error handling
+
+2. **Performance Optimization**
+   - Critical data first
+   - Lazy loading
+   - Caching strategies
+
+3. **User Experience**
+   - Loading states
+   - Error boundaries
+   - Retry mechanisms
+
+4. **Best Practices**
+   - Type safety
+   - Error handling
+   - Resource cleanup
+   - State management
+
+This approach has helped me build robust applications that load data efficiently while providing a great user experience.

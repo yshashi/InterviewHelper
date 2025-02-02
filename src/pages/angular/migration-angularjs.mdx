@@ -1,0 +1,306 @@
+---
+layout: ../../layouts/Layout.astro
+title: Migrating from AngularJS to Angular
+---
+
+# How to Migrate an AngularJS Project to Angular
+Note: First of all it is a complete rewrite, not just a migration as per my previous experience.
+
+Let me share my systematic approach to migrating large AngularJS applications to modern Angular, based on the research I've led.
+
+Here's my step-by-step migration strategy:
+
+```typescript
+// 1. Hybrid Application Setup
+// app.module.ts
+import { UpgradeModule } from '@angular/upgrade/static';
+
+@NgModule({
+  imports: [
+    BrowserModule,
+    UpgradeModule
+  ],
+  declarations: [
+    // Angular components
+  ]
+})
+export class AppModule {
+  constructor(private upgrade: UpgradeModule) {}
+  
+  ngDoBootstrap() {
+    // Bootstrap hybrid app
+    this.upgrade.bootstrap(
+      document.body, 
+      ['legacyApp']
+    );
+  }
+}
+
+// 2. Service Migration Pattern
+// Before (AngularJS)
+angular.module('legacyApp').service('UserService', 
+  function($http) {
+    this.getUser = function(id) {
+      return $http.get('/api/users/' + id);
+    };
+  }
+);
+
+// After (Angular)
+@Injectable({ providedIn: 'root' })
+export class UserService {
+  private http = inject(HttpClient);
+  
+  getUser(id: string): Observable<User> {
+    return this.http.get<User>(`/api/users/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+  
+  private handleError(error: any) {
+    console.error('API Error:', error);
+    return throwError(() => 
+      new Error('Failed to fetch user')
+    );
+  }
+}
+
+// 3. Component Migration Pattern
+// Before (AngularJS)
+angular.module('legacyApp').component('userProfile', {
+  bindings: {
+    user: '<',
+    onUpdate: '&'
+  },
+  controller: function() {
+    this.updateUser = function() {
+      this.onUpdate({ user: this.user });
+    };
+  },
+  template: `
+    <div class="user-profile">
+      <h2>{{$ctrl.user.name}}</h2>
+      <button ng-click="$ctrl.updateUser()">
+        Update
+      </button>
+    </div>
+  `
+});
+
+// After (Angular)
+@Component({
+  selector: 'app-user-profile',
+  template: `
+    @if (user(); as userData) {
+      <div class="user-profile">
+        <h2>{{ userData.name }}</h2>
+        <button (click)="updateUser()">
+          Update
+        </button>
+      </div>
+    }
+  `
+})
+export class UserProfileComponent {
+  user = input<User>();
+  update = output<User>();
+  
+  updateUser() {
+    if (this.user()) {
+      this.update.emit(this.user());
+    }
+  }
+}
+
+// 4. Directive Migration
+// Before (AngularJS)
+angular.module('legacyApp').directive('tooltip', 
+  function() {
+    return {
+      restrict: 'A',
+      scope: {
+        tooltipText: '@'
+      },
+      link: function(scope, element) {
+        element.on('mouseenter', function() {
+          // Show tooltip
+        });
+      }
+    };
+  }
+);
+
+// After (Angular)
+@Directive({
+  selector: '[appTooltip]',
+  standalone: true
+})
+export class TooltipDirective {
+  @Input('appTooltip') tooltipText!: string;
+  
+  private element = inject(ElementRef);
+  private renderer = inject(Renderer2);
+  
+  @HostListener('mouseenter')
+  onMouseEnter() {
+    this.showTooltip();
+  }
+  
+  private showTooltip() {
+    // Modern implementation
+  }
+}
+
+// 5. Route Migration
+// Before (AngularJS)
+angular.module('legacyApp').config(
+  function($routeProvider) {
+    $routeProvider
+      .when('/users', {
+        template: '<user-list></user-list>',
+        controller: 'UserListCtrl'
+      });
+  }
+);
+
+// After (Angular)
+const routes: Routes = [
+  {
+    path: 'users',
+    component: UserListComponent,
+    resolve: {
+      users: UserResolver
+    }
+  }
+];
+
+// 6. HTTP Migration
+// Before (AngularJS)
+function LegacyService($http) {
+  this.getData = function() {
+    return $http.get('/api/data')
+      .then(function(response) {
+        return response.data;
+      });
+  };
+}
+
+// After (Angular)
+@Injectable({ providedIn: 'root' })
+class ModernService {
+  private http = inject(HttpClient);
+  
+  getData(): Observable<any> {
+    return this.http.get('/api/data').pipe(
+      map(response => response),
+      catchError(this.handleError)
+    );
+  }
+}
+
+// 7. State Management Migration
+// Before (AngularJS)
+angular.module('legacyApp').factory('StateService',
+  function() {
+    var data = {};
+    
+    return {
+      set: function(key, value) {
+        data[key] = value;
+      },
+      get: function(key) {
+        return data[key];
+      }
+    };
+  }
+);
+
+// After (Angular)
+@Injectable({ providedIn: 'root' })
+class StateService {
+  private state = signal<AppState>({});
+  
+  // Computed values
+  userData = computed(() => this.state().user);
+  settings = computed(() => this.state().settings);
+  
+  // Actions
+  updateUser(user: User) {
+    this.state.update(state => ({
+      ...state,
+      user
+    }));
+  }
+}
+```
+
+Migration Strategy Steps:
+
+1. **Preparation Phase**
+```typescript
+// 1. Setup Hybrid App
+@NgModule({
+  imports: [
+    BrowserModule,
+    UpgradeModule,
+    HttpClientModule
+  ],
+  providers: [
+    // Provide both Angular and AngularJS services
+    {
+      provide: 'legacyService',
+      useFactory: (i: any) => i.get('legacyService'),
+      deps: ['$injector']
+    }
+  ]
+})
+export class AppModule {
+  constructor(private upgrade: UpgradeModule) {}
+}
+
+// 2. Create Migration Plan
+interface MigrationStep {
+  component: string;
+  dependencies: string[];
+  priority: number;
+  status: 'pending' | 'in-progress' | 'completed';
+}
+
+const migrationPlan: MigrationStep[] = [
+  {
+    component: 'UserService',
+    dependencies: ['HttpClient'],
+    priority: 1,
+    status: 'pending'
+  },
+  // ... more steps
+];
+```
+
+Key points I emphasize in interviews:
+
+1. **Migration Strategy**
+   - Incremental approach
+   - Hybrid application phase
+   - Bottom-up migration
+   - Testing strategy
+
+2. **Common Challenges**
+   - Dependency injection differences
+   - Lifecycle hooks changes
+   - Routing updates
+   - State management
+
+3. **Best Practices**
+   - Type safety
+   - Modern patterns
+   - Performance improvements
+   - Testing coverage
+
+4. **Risk Mitigation**
+   - Feature parity
+   - Regression testing
+   - Rollback strategy
+   - Performance monitoring
+
+This approach has helped me successfully migrate several large AngularJS applications to modern Angular while maintaining business continuity.

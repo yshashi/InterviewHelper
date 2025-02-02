@@ -1,0 +1,272 @@
+---
+layout: ../../layouts/Layout.astro
+title: Lazy Loading in Angular
+---
+
+# Lazy Loading in Angular
+
+## Question 1: What is lazy loading and why is it important?
+
+**Answer:**
+Lazy loading is a design pattern that defers the loading of modules until they're actually needed. Benefits include:
+- Reduced initial bundle size
+- Faster initial load time
+- Better resource utilization
+- Improved application performance
+
+## Question 2: How do you implement lazy loading in Angular 17+?
+
+**Answer:**
+Here's a modern implementation using standalone components and functional guards:
+
+```typescript
+// app.routes.ts
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: 'admin',
+    canActivate: [authGuard],
+    loadChildren: () => 
+      import('./features/admin/admin.routes')
+        .then(m => m.ADMIN_ROUTES)
+  },
+  {
+    path: 'products',
+    loadChildren: () => 
+      import('./features/products/products.routes')
+        .then(m => m.PRODUCT_ROUTES)
+  }
+];
+
+// features/admin/admin.routes.ts
+export const ADMIN_ROUTES: Routes = [
+  {
+    path: '',
+    loadComponent: () => 
+      import('./admin.component')
+        .then(m => m.AdminComponent)
+  },
+  {
+    path: 'users',
+    loadComponent: () => 
+      import('./users/users.component')
+        .then(m => m.UsersComponent)
+  }
+];
+
+// features/admin/admin.component.ts
+@Component({
+  selector: 'app-admin',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  template: `
+    <nav>
+      <a routerLink="users">Users</a>
+      <a routerLink="settings">Settings</a>
+    </nav>
+    <router-outlet></router-outlet>
+  `
+})
+export class AdminComponent {}
+```
+
+## Question 3: How do you implement preloading strategies?
+
+**Answer:**
+Here's how to implement custom preloading:
+
+```typescript
+// custom-preloading.strategy.ts
+@Injectable({ providedIn: 'root' })
+export class CustomPreloadingStrategy implements PreloadAllModules {
+  preload(route: Route, load: () => Observable<any>): Observable<any> {
+    if (route.data?.['preload'] === true) {
+      console.log('Preloading:', route.path);
+      return load();
+    }
+    return of(null);
+  }
+}
+
+// app.config.ts
+import { provideRouter, withPreloading } from '@angular/router';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(
+      routes,
+      withPreloading(CustomPreloadingStrategy)
+    )
+  ]
+};
+
+// Route configuration with preload flag
+{
+  path: 'products',
+  loadChildren: () => import('./products/products.routes'),
+  data: { preload: true }
+}
+```
+
+## Question 4: How do you optimize lazy loading performance?
+
+**Answer:**
+Here are optimization techniques:
+
+```typescript
+// 1. Route-level code splitting
+const routes: Routes = [
+  {
+    path: 'dashboard',
+    loadComponent: () => 
+      import('./dashboard/dashboard.component')
+        .then(m => m.DashboardComponent),
+    // Preconnect to API endpoint
+    data: { 
+      preconnect: 'https://api.example.com'
+    }
+  }
+];
+
+// 2. Component-level code splitting
+@Component({
+  selector: 'app-dashboard',
+  template: `
+    @if (showChart) {
+      @defer (on viewport) {
+        <heavy-chart [data]="chartData" />
+      }
+    }
+  `
+})
+export class DashboardComponent {
+  // Load heavy components only when needed
+  showChart = signal(false);
+}
+
+// 3. Asset preloading service
+@Injectable({ providedIn: 'root' })
+export class AssetPreloadingService {
+  private preloadedModules = new Set<string>();
+
+  preloadRoute(route: string) {
+    if (this.preloadedModules.has(route)) return;
+
+    const moduleLoader = this.getModuleLoader(route);
+    if (moduleLoader) {
+      moduleLoader().then(() => {
+        this.preloadedModules.add(route);
+      });
+    }
+  }
+
+  private getModuleLoader(route: string) {
+    // Map routes to their module loaders
+    const moduleMap: Record<string, () => Promise<any>> = {
+      'products': () => import('./products/products.routes'),
+      'admin': () => import('./admin/admin.routes')
+    };
+    return moduleMap[route];
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Module Organization**
+   ```typescript
+   // Feature module structure
+   feature/
+   ├── components/
+   │   ├── list.component.ts
+   │   └── detail.component.ts
+   ├── services/
+   │   └── feature.service.ts
+   ├── feature.routes.ts
+   └── feature.component.ts
+   ```
+
+2. **Performance Monitoring**
+   ```typescript
+   // Route load time tracking
+   @Injectable()
+   export class RouteTimingInterceptor {
+     intercept(route: Route, loader: () => Observable<any>) {
+       const startTime = performance.now();
+       
+       return from(loader()).pipe(
+         tap(() => {
+           const loadTime = performance.now() - startTime;
+           console.log(`Route ${route.path} loaded in ${loadTime}ms`);
+         })
+       );
+     }
+   }
+   ```
+
+3. **Error Handling**
+   ```typescript
+   loadChildren: () => 
+     import('./feature/feature.routes')
+       .then(m => m.FEATURE_ROUTES)
+       .catch(err => {
+         console.error('Failed to load module:', err);
+         // Redirect to error page
+         return ERROR_ROUTES;
+       })
+   ```
+
+4. **Bundle Analysis**
+   ```bash
+   # Use source-map-explorer to analyze bundles
+   ng build --source-map
+   source-map-explorer dist/main.js
+   ```
+
+5. **Testing Lazy Routes**
+   ```typescript
+   describe('LazyLoadedModule', () => {
+     it('should load module', fakeAsync(() => {
+       TestBed.configureTestingModule({
+         imports: [RouterTestingModule.withRoutes(routes)]
+       });
+       
+       router.navigate(['/lazy']);
+       tick();
+       
+       expect(location.path()).toBe('/lazy');
+     }));
+   });
+   ```
+
+6. **Common Pitfalls**
+   ```typescript
+   // DON'T: Circular dependencies
+   // feature1.routes.ts
+   loadChildren: () => import('./feature2/feature2.routes')
+   // feature2.routes.ts
+   loadChildren: () => import('./feature1/feature1.routes')
+   
+   // DO: Proper module separation
+   loadChildren: () => import('./shared/shared.routes')
+   ```
+
+Remember: In interviews, focus on:
+- Understanding lazy loading benefits
+- Implementation patterns
+- Preloading strategies
+- Performance optimization
+- Bundle analysis
+- Testing approaches
+- Common pitfalls
+- Real-world scenarios
+
+Key points to emphasize:
+1. Impact on initial load time
+2. Bundle size optimization
+3. Route-level vs component-level lazy loading
+4. Preloading strategies
+5. Performance monitoring
+6. Error handling
+7. Testing considerations

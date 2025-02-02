@@ -1,0 +1,274 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Lifecycle Hooks
+---
+
+# Angular Lifecycle Hooks
+NOTE: Demonstrated Example is mostly for older versions of Angular (v16 and below), so be careful while answering, will come up with latest samples in another section.
+
+## Question 1: What are lifecycle hooks and why are they important?
+
+**Answer:**
+Lifecycle hooks are interfaces that allow you to tap into different stages of a component's lifecycle. They're important for:
+- Initializing component data
+- Handling changes to inputs
+- Cleaning up resources
+- Performing actions at specific moments
+- Optimizing performance
+
+Here's the sequence of lifecycle hooks:
+1. ngOnChanges
+2. ngOnInit
+3. ngDoCheck
+4. ngAfterContentInit
+5. ngAfterContentChecked
+6. ngAfterViewInit
+7. ngAfterViewChecked
+8. ngOnDestroy
+
+## Question 2: How do you use ngOnInit and ngOnDestroy?
+
+**Answer:**
+Here's a comprehensive example:
+
+```typescript
+import { 
+  Component, 
+  OnInit, 
+  OnDestroy,
+  input,
+  effect,
+  inject
+} from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
+
+@Component({
+  selector: 'app-user-profile',
+  template: `
+    <div *ngIf="user()">
+      <h1>{{ user().name }}</h1>
+      <div>Last Updated: {{ lastUpdated() }}</div>
+    </div>
+  `
+})
+export class UserProfileComponent implements OnInit, OnDestroy {
+  private userService = inject(UserService);
+  private destroy$ = new Subject<void>();
+  
+  // Inputs
+  userId = input.required<string>();
+  
+  // Properties
+  user = signal<User | null>(null);
+  lastUpdated = signal<Date>(new Date());
+  
+  // Effects
+  constructor() {
+    // Setup effects
+    effect(() => {
+      // This effect runs whenever userId changes
+      this.loadUser(this.userId());
+    });
+  }
+  
+  ngOnInit() {
+    // Initialize component
+    console.log('Component initialized');
+    
+    // Setup subscriptions
+    this.userService.userUpdates
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.user.set(user);
+        this.lastUpdated.set(new Date());
+      });
+      
+    // Load initial data
+    this.loadUser(this.userId());
+  }
+  
+  ngOnDestroy() {
+    // Cleanup subscriptions
+    this.destroy$.next();
+    this.destroy$.complete();
+    
+    // Clear intervals/timeouts
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+    }
+    
+    // Cleanup other resources
+    this.userService.disconnect();
+  }
+  
+  private loadUser(id: string) {
+    this.userService.getUser(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (user) => this.user.set(user),
+        error: (error) => console.error('Failed to load user:', error)
+      });
+  }
+}
+```
+
+## Question 3: What are the other important lifecycle hooks and their use cases?
+
+**Answer:**
+Here are examples of other lifecycle hooks:
+
+```typescript
+@Component({
+  selector: 'app-data-display',
+  template: `
+    <div>{{ data() }}</div>
+    <ng-content></ng-content>
+  `
+})
+export class DataDisplayComponent implements 
+  OnChanges, 
+  DoCheck,
+  AfterContentInit,
+  AfterViewInit {
+  
+  // Input with change detection
+  data = input<string>();
+  
+  ngOnChanges(changes: SimpleChanges) {
+    // Respond to input changes
+    if (changes['data']) {
+      console.log(
+        'Previous:', changes['data'].previousValue,
+        'Current:', changes['data'].currentValue
+      );
+    }
+  }
+  
+  ngDoCheck() {
+    // Custom change detection
+    console.log('Change detection run');
+  }
+  
+  ngAfterContentInit() {
+    // Content (ng-content) has been initialized
+    console.log('Content initialized');
+  }
+  
+  ngAfterViewInit() {
+    // View and child views are initialized
+    console.log('View initialized');
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **Initialization Best Practices**
+   ```typescript
+   @Component({...})
+   export class MyComponent implements OnInit {
+     // Do this
+     constructor(private service: MyService) {
+       // Only dependency injection and simple initializations
+     }
+     
+     ngOnInit() {
+       // Complex initializations
+       // HTTP calls
+       // Subscriptions
+     }
+   }
+   ```
+
+2. **Cleanup Patterns**
+   ```typescript
+   export class MyComponent implements OnDestroy {
+     private destroy$ = new Subject<void>();
+     
+     ngOnInit() {
+       // Pattern 1: Using takeUntil
+       this.service.data$
+         .pipe(takeUntil(this.destroy$))
+         .subscribe();
+         
+       // Pattern 2: Store subscription
+       this.subscription = this.service.data$
+         .subscribe();
+     }
+     
+     ngOnDestroy() {
+       // Cleanup pattern 1
+       this.destroy$.next();
+       this.destroy$.complete();
+       
+       // Cleanup pattern 2
+       this.subscription?.unsubscribe();
+     }
+   }
+   ```
+
+3. **Change Detection Optimization**
+   ```typescript
+   @Component({
+     changeDetection: ChangeDetectionStrategy.OnPush
+   })
+   export class OptimizedComponent implements DoCheck {
+     ngDoCheck() {
+       // Only runs when:
+       // - Input references change
+       // - Events occur
+       // - Async operations complete
+     }
+   }
+   ```
+
+4. **View/Content Initialization**
+   ```typescript
+   export class MyComponent implements AfterViewInit, AfterContentInit {
+     @ViewChild('myElement') element!: ElementRef;
+     
+     ngAfterViewInit() {
+       // Safe to access view elements
+       this.element.nativeElement.focus();
+     }
+     
+     ngAfterContentInit() {
+       // Safe to access ng-content
+       this.contentChildren.forEach(child => {
+         // Process projected content
+       });
+     }
+   }
+   ```
+
+5. **Testing Lifecycle Hooks**
+   ```typescript
+   describe('MyComponent', () => {
+     it('should initialize properly', () => {
+       const component = new MyComponent();
+       
+       // Spy on methods
+       spyOn(component, 'ngOnInit');
+       
+       // Trigger lifecycle
+       component.ngOnInit();
+       
+       expect(component.ngOnInit).toHaveBeenCalled();
+     });
+   });
+   ```
+
+6. **Common Pitfalls**
+   - Never make HTTP calls in constructor
+   - Always implement OnDestroy when having subscriptions
+   - Be careful with async operations in ngOnInit
+   - Don't modify view in ngAfterViewInit
+   - Remember that ngOnChanges won't fire for object mutations
+
+Remember: In interviews, focus on:
+- Understanding the lifecycle sequence
+- Proper initialization patterns
+- Cleanup and memory management
+- Change detection optimization
+- Testing lifecycle methods
+- Common pitfalls and solutions

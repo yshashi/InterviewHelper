@@ -1,0 +1,375 @@
+---
+layout: ../../layouts/Layout.astro
+title: Template-Driven vs Reactive Forms in Angular
+---
+
+# Template-Driven vs Reactive Forms in Angular
+
+## Question 1: What are the key differences between Template-Driven and Reactive Forms?
+
+**Answer:**
+The main differences are:
+
+1. **Setup and Configuration**
+   - Template-Driven Forms: Simpler setup, more HTML-centric
+   - Reactive Forms: More explicit setup, TypeScript-centric
+
+2. **Form Building**
+   - Template-Driven: Forms built using directives in template
+   - Reactive: Forms built programmatically in component class
+
+3. **Data Flow**
+   - Template-Driven: Two-way binding with [(ngModel)]
+   - Reactive: Reactive patterns with observables
+
+4. **Validation**
+   - Template-Driven: HTML5 validation attributes
+   - Reactive: Custom validation functions
+
+5. **Testing**
+   - Template-Driven: More challenging to test
+   - Reactive: Easier to test due to synchronous nature
+
+## Question 2: How do you implement Template-Driven Forms?
+
+**Answer:**
+Here's a complete example of a Template-Driven Form:
+
+```typescript
+// user-form.component.ts
+import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-user-form',
+  standalone: true,
+  imports: [FormsModule],
+  template: `
+    <form #userForm="ngForm" (ngSubmit)="onSubmit(userForm)">
+      <!-- Name field with validation -->
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          #name="ngModel"
+          [(ngModel)]="user.name"
+          required
+          minlength="3"
+          class="form-control"
+          [class.is-invalid]="name.invalid && name.touched"
+        >
+        @if (name.invalid && name.touched) {
+          <div class="invalid-feedback">
+            @if (name.errors?.['required']) {
+              Name is required
+            }
+            @if (name.errors?.['minlength']) {
+              Name must be at least 3 characters
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Email field with pattern validation -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          #email="ngModel"
+          [(ngModel)]="user.email"
+          required
+          pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+          class="form-control"
+          [class.is-invalid]="email.invalid && email.touched"
+        >
+        @if (email.invalid && email.touched) {
+          <div class="invalid-feedback">
+            Please enter a valid email
+          </div>
+        }
+      </div>
+
+      <button 
+        type="submit" 
+        [disabled]="userForm.invalid"
+        class="btn btn-primary"
+      >
+        Submit
+      </button>
+    </form>
+  `
+})
+export class UserFormComponent {
+  user = {
+    name: '',
+    email: ''
+  };
+
+  onSubmit(form: NgForm) {
+    if (form.valid) {
+      console.log('Form submitted', this.user);
+    }
+  }
+}
+```
+
+## Question 3: How do you implement Reactive Forms?
+
+**Answer:**
+Here's a comprehensive example of a Reactive Form:
+
+```typescript
+// user-form.component.ts
+import { Component, OnInit } from '@angular/core';
+import { 
+  FormBuilder, 
+  FormGroup, 
+  Validators, 
+  ReactiveFormsModule 
+} from '@angular/forms';
+
+@Component({
+  selector: 'app-user-form',
+  standalone: true,
+  imports: [ReactiveFormsModule],
+  template: `
+    <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+      <!-- Name field -->
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input
+          id="name"
+          type="text"
+          formControlName="name"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('name')"
+        >
+        @if (isFieldInvalid('name')) {
+          <div class="invalid-feedback">
+            @if (userForm.get('name')?.errors?.['required']) {
+              Name is required
+            }
+            @if (userForm.get('name')?.errors?.['minlength']) {
+              Name must be at least 3 characters
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Email field -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('email')"
+        >
+        @if (isFieldInvalid('email')) {
+          <div class="invalid-feedback">
+            @if (userForm.get('email')?.errors?.['required']) {
+              Email is required
+            }
+            @if (userForm.get('email')?.errors?.['email']) {
+              Please enter a valid email
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Password with custom validator -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('password')"
+        >
+        @if (isFieldInvalid('password')) {
+          <div class="invalid-feedback">
+            Password must contain at least 8 characters, 
+            one uppercase letter, and one number
+          </div>
+        }
+      </div>
+
+      <button 
+        type="submit" 
+        [disabled]="userForm.invalid"
+        class="btn btn-primary"
+      >
+        Submit
+      </button>
+    </form>
+  `
+})
+export class UserFormComponent implements OnInit {
+  userForm!: FormGroup;
+
+  constructor(private fb: FormBuilder) {}
+
+  ngOnInit() {
+    this.userForm = this.fb.group({
+      name: ['', [
+        Validators.required,
+        Validators.minLength(3)
+      ]],
+      email: ['', [
+        Validators.required,
+        Validators.email
+      ]],
+      password: ['', [
+        Validators.required,
+        this.passwordValidator()
+      ]]
+    });
+
+    // Subscribe to form changes
+    this.userForm.valueChanges.subscribe(value => {
+      console.log('Form value changed:', value);
+    });
+  }
+
+  passwordValidator() {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      const hasNumber = /[0-9]/.test(value);
+      const hasUpperCase = /[A-Z]/.test(value);
+      const isLengthValid = value?.length >= 8;
+
+      const valid = hasNumber && hasUpperCase && isLengthValid;
+      return valid ? null : { invalidPassword: true };
+    };
+  }
+
+  isFieldInvalid(fieldName: string): boolean {
+    const field = this.userForm.get(fieldName);
+    return field ? field.invalid && field.touched : false;
+  }
+
+  onSubmit() {
+    if (this.userForm.valid) {
+      console.log('Form submitted', this.userForm.value);
+    } else {
+      this.markFormGroupTouched(this.userForm);
+    }
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup) {
+    Object.values(formGroup.controls).forEach(control => {
+      control.markAsTouched();
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **When to Use Each Type**
+   - Template-Driven Forms:
+     - Simple forms
+     - Basic validation
+     - Quick to implement
+   - Reactive Forms:
+     - Complex forms
+     - Dynamic form fields
+     - Custom validation
+     - Unit testing requirements
+
+2. **Performance Considerations**
+   ```typescript
+   // Reactive Forms: Better performance with large forms
+   // Use form builder for better performance
+   this.form = this.fb.group({
+     // form controls
+   });
+
+   // Template-Driven: Can impact performance with many fields
+   // Use trackBy for better performance in lists
+   @for (item of items; track item.id) {
+     <input [(ngModel)]="item.value" name="item-{{item.id}}">
+   }
+   ```
+
+3. **Advanced Form Features**
+   ```typescript
+   // Dynamic form controls
+   addControl() {
+     const control = new FormControl('');
+     (this.form.get('items') as FormArray).push(control);
+   }
+
+   // Custom async validator
+   emailExistsValidator(http: HttpClient) {
+     return (control: AbstractControl): Promise<ValidationErrors | null> => {
+       return http.get(`/api/check-email/${control.value}`)
+         .toPromise()
+         .then(exists => exists ? { emailTaken: true } : null);
+     };
+   }
+   ```
+
+4. **Form State Management**
+   ```typescript
+   // Reactive Forms state tracking
+   this.form.statusChanges.subscribe(status => {
+     console.log('Form status:', status);
+   });
+
+   this.form.valueChanges.subscribe(value => {
+     console.log('Form value:', value);
+   });
+   ```
+
+5. **Testing Strategies**
+   ```typescript
+   // Testing Reactive Forms
+   describe('UserFormComponent', () => {
+     it('should validate form', () => {
+       component.userForm.controls['email'].setValue('invalid');
+       expect(component.userForm.valid).toBeFalsy();
+       
+       component.userForm.controls['email'].setValue('valid@email.com');
+       expect(component.userForm.valid).toBeTruthy();
+     });
+   });
+   ```
+
+6. **Error Handling Best Practices**
+   ```typescript
+   // Centralized error messages
+   const errorMessages = {
+     required: 'This field is required',
+     email: 'Please enter a valid email',
+     minlength: (params: any) => 
+       `Minimum length is ${params.requiredLength} characters`
+   };
+
+   getErrorMessage(control: AbstractControl): string {
+     for (const errorName in control.errors) {
+       if (control.errors[errorName]) {
+         return errorMessages[errorName];
+       }
+     }
+     return '';
+   }
+   ```
+
+Remember: In interviews, emphasize:
+- Understanding of both form types and their use cases
+- Knowledge of form validation strategies
+- Experience with complex form scenarios
+- Understanding of reactive programming concepts
+- Testing approaches for forms
+- Performance implications
+- Error handling strategies

@@ -1,0 +1,196 @@
+---
+layout: ../../layouts/Layout.astro
+title: Troubleshooting ngOnInit Issues
+---
+
+# What to Do When ngOnInit Is Not Executing
+
+Let me share my troubleshooting approach when dealing with ngOnInit issues, based on real scenarios I've encountered in enterprise applications.
+
+Common causes I've encountered:
+1. Component not properly declared/imported
+2. Lifecycle hooks not implemented correctly
+3. Route configuration issues
+4. Dependency injection problems
+5. Component initialization errors
+
+Here's my systematic approach:
+
+```typescript
+// 1. Proper Component Setup
+@Component({
+  selector: 'app-problematic',
+  template: `<div>{{ data() }}</div>`,
+  standalone: true
+})
+export class ProblematicComponent implements OnInit {
+  private logger = inject(LoggingService);
+  
+  data = signal<any>(null);
+  
+  // Add debugging logs
+  constructor() {
+    this.logger.debug('Constructor called');
+  }
+  
+  ngOnInit() {
+    this.logger.debug('ngOnInit called');
+    this.loadData();
+  }
+  
+  private loadData() {
+    try {
+      // Implementation
+    } catch (error) {
+      this.logger.error('Failed to load data', error);
+    }
+  }
+}
+
+// 2. Route Configuration Check
+const routes: Routes = [
+  {
+    path: 'feature',
+    loadChildren: () => import('./feature/feature.routes')
+  }
+];
+
+// feature.routes.ts
+export const FEATURE_ROUTES: Routes = [
+  {
+    path: '',
+    component: FeatureComponent,
+    resolve: {
+      data: FeatureResolver
+    }
+  }
+];
+
+// 3. Resolver Implementation
+@Injectable({ providedIn: 'root' })
+export class FeatureResolver implements Resolve<any> {
+  resolve(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Observable<any> {
+    return this.dataService.getData().pipe(
+      catchError(error => {
+        console.error('Resolver failed', error);
+        return of(null);
+      })
+    );
+  }
+}
+
+// 4. Component with Proper Error Handling
+@Component({
+  selector: 'app-feature',
+  template: `
+    @if (error()) {
+      <error-alert [message]="error()" />
+    }
+    
+    @if (data(); as componentData) {
+      <div>{{ componentData.title }}</div>
+    }
+  `
+})
+export class FeatureComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private logger = inject(LoggingService);
+  private destroy$ = inject(DestroyRef);
+  
+  data = signal<any>(null);
+  error = signal<string | null>(null);
+  
+  constructor() {
+    this.logger.debug(
+      'FeatureComponent constructor',
+      { timestamp: new Date() }
+    );
+  }
+  
+  ngOnInit() {
+    this.logger.debug(
+      'FeatureComponent ngOnInit',
+      { timestamp: new Date() }
+    );
+    
+    // Get resolved data
+    this.route.data.pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe({
+      next: (data) => {
+        this.data.set(data);
+        this.logger.debug('Data loaded', data);
+      },
+      error: (err) => {
+        this.error.set('Failed to load data');
+        this.logger.error('Data loading failed', err);
+      }
+    });
+  }
+}
+
+// 5. Debugging Service
+@Injectable({ providedIn: 'root' })
+export class DebuggingService {
+  private logger = inject(LoggingService);
+  
+  trackComponentLifecycle(
+    component: any,
+    componentName: string
+  ) {
+    return {
+      onConstruct: () => {
+        this.logger.debug(`${componentName} constructed`, {
+          timestamp: new Date(),
+          component
+        });
+      },
+      
+      onInit: () => {
+        this.logger.debug(`${componentName} initialized`, {
+          timestamp: new Date(),
+          component
+        });
+      },
+      
+      onDestroy: () => {
+        this.logger.debug(`${componentName} destroyed`, {
+          timestamp: new Date(),
+          component
+        });
+      }
+    };
+  }
+}
+```
+
+Key points I emphasize in interviews:
+
+1. **Systematic Debugging**
+   - Check component declaration
+   - Verify module imports
+   - Review route configuration
+   - Check dependency injection
+
+2. **Common Issues**
+   - Incorrect module setup
+   - Missing implementations
+   - Route configuration errors
+   - Dependency injection problems
+
+3. **Best Practices**
+   - Implement proper error handling
+   - Add debugging logs
+   - Use lifecycle hooks correctly
+   - Follow Angular best practices
+
+4. **Prevention**
+   - Use TypeScript strictly
+   - Implement proper testing
+   - Follow component lifecycle
+   - Add error boundaries
+
+This approach has helped me quickly identify and resolve ngOnInit issues in large Angular applications.

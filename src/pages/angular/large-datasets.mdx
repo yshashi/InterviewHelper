@@ -1,0 +1,316 @@
+---
+layout: ../../layouts/Layout.astro
+title: Handling Large Datasets in Angular
+---
+
+# How to Handle Large Datasets in Angular Without Compromising Performance
+
+Let me walk you through my approach to handling large datasets efficiently in Angular applications. The key is to use a combination of techniques:
+
+1. Virtual Scrolling
+2. Data Pagination
+3. Lazy Loading
+4. Efficient State Management
+5. Web Workers for Heavy Computations
+
+Here's how I implement these strategies:
+
+```typescript
+// 1. Virtual Scrolling Implementation
+@Component({
+  selector: 'app-virtual-list',
+  template: `
+    <cdk-virtual-scroll-viewport
+      [itemSize]="50"
+      class="viewport"
+    >
+      @for (item of items(); track trackById) {
+        <div 
+          class="item" 
+          [style.height.px]="50"
+        >
+          <item-card [data]="item" />
+        </div>
+      }
+    </cdk-virtual-scroll-viewport>
+  `,
+  styles: [`
+    .viewport {
+      height: 500px;
+      width: 100%;
+      overflow-y: auto;
+    }
+    .item {
+      display: flex;
+      align-items: center;
+    }
+  `],
+  standalone: true,
+  imports: [ScrollingModule]
+})
+export class VirtualListComponent {
+  private dataService = inject(DataService);
+  
+  // Use signals for reactive updates
+  items = signal<ListItem[]>([]);
+  loading = signal(false);
+  
+  // Track items by ID for efficiency
+  trackById(index: number, item: ListItem) {
+    return item.id;
+  }
+  
+  // Load data in chunks
+  loadChunk(startIndex: number, count: number) {
+    this.loading.set(true);
+    
+    return this.dataService.getItems(
+      startIndex,
+      count
+    ).pipe(
+      tap(newItems => {
+        this.items.update(items => [
+          ...items,
+          ...newItems
+        ]);
+      }),
+      finalize(() => this.loading.set(false))
+    );
+  }
+}
+
+// 2. Efficient Data Service
+@Component({
+  selector: 'app-data-grid',
+  template: `
+    <div class="grid-container">
+      <!-- Toolbar with filters -->
+      <div class="toolbar">
+        <input 
+          [formControl]="searchControl"
+          placeholder="Search..."
+        />
+        <select [formControl]="sortControl">
+          <option value="name">Name</option>
+          <option value="date">Date</option>
+        </select>
+      </div>
+      
+      <!-- Virtual scrolling grid -->
+      <cdk-virtual-scroll-viewport
+        [itemSize]="50"
+        class="viewport"
+      >
+        @for (row of filteredData(); track trackById) {
+          <div class="grid-row">
+            @for (col of columns; track col) {
+              <div class="grid-cell">
+                {{ row[col] }}
+              </div>
+            }
+          </div>
+        }
+      </cdk-virtual-scroll-viewport>
+      
+      <!-- Loading indicator -->
+      @if (loading()) {
+        <div class="loader">Loading...</div>
+      }
+      
+      <!-- Pagination -->
+      <app-paginator
+        [total]="totalItems()"
+        [pageSize]="pageSize()"
+        [currentPage]="currentPage()"
+        (pageChange)="onPageChange($event)"
+      />
+    </div>
+  `
+})
+export class DataGridComponent {
+  private worker = inject(WorkerService);
+  private destroy$ = inject(DestroyRef);
+  
+  // Form controls
+  searchControl = new FormControl('');
+  sortControl = new FormControl('name');
+  
+  // Pagination state
+  currentPage = signal(0);
+  pageSize = signal(50);
+  totalItems = signal(0);
+  
+  // Data state
+  rawData = signal<any[]>([]);
+  loading = signal(false);
+  
+  // Computed filtered data
+  filteredData = computed(() => {
+    const data = this.rawData();
+    const search = this.searchControl.value?.toLowerCase();
+    const sort = this.sortControl.value;
+    
+    // Use worker for heavy computations
+    return this.worker.filterAndSort(
+      data,
+      search,
+      sort
+    );
+  });
+  
+  constructor() {
+    // Handle search and sort changes
+    merge(
+      this.searchControl.valueChanges,
+      this.sortControl.valueChanges
+    ).pipe(
+      debounceTime(300),
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe(() => {
+      this.currentPage.set(0);
+      this.loadData();
+    });
+  }
+  
+  loadData() {
+    this.loading.set(true);
+    
+    const params = {
+      page: this.currentPage(),
+      pageSize: this.pageSize(),
+      search: this.searchControl.value,
+      sort: this.sortControl.value
+    };
+    
+    this.dataService.getData(params).pipe(
+      tap(response => {
+        this.rawData.set(response.data);
+        this.totalItems.set(response.total);
+      }),
+      finalize(() => this.loading.set(false))
+    ).subscribe();
+  }
+}
+
+// 3. Web Worker for Heavy Computations
+// data.worker.ts
+self.addEventListener('message', ({ data }) => {
+  const { items, search, sort } = data;
+  
+  // Filter data
+  let filtered = search ? 
+    items.filter(item => 
+      item.name.toLowerCase().includes(search)
+    ) : items;
+  
+  // Sort data
+  filtered.sort((a, b) => {
+    const aVal = a[sort];
+    const bVal = b[sort];
+    return aVal < bVal ? -1 : 1;
+  });
+  
+  self.postMessage({ filtered });
+});
+
+// 4. Worker Service
+@Injectable({ providedIn: 'root' })
+export class WorkerService {
+  private worker: Worker;
+  
+  constructor() {
+    this.worker = new Worker(
+      new URL('./data.worker', import.meta.url)
+    );
+  }
+  
+  filterAndSort(
+    items: any[],
+    search: string,
+    sort: string
+  ): Observable<any[]> {
+    return new Observable(observer => {
+      this.worker.postMessage({ items, search, sort });
+      
+      const handler = ({ data }: MessageEvent) => {
+        observer.next(data.filtered);
+        observer.complete();
+      };
+      
+      this.worker.addEventListener('message', handler);
+      
+      return () => {
+        this.worker.removeEventListener('message', handler);
+      };
+    });
+  }
+}
+```
+
+Real-world optimization example:
+
+```typescript
+// Before optimization
+@Component({
+  template: `
+    <div *ngFor="let item of items">
+      {{ computeValue(item) }}
+    </div>
+  `
+})
+
+// After optimization
+@Component({
+  template: `
+    <cdk-virtual-scroll-viewport [itemSize]="50">
+      @for (item of visibleItems(); track trackById) {
+        {{ cachedValues()[item.id] }}
+      }
+    </cdk-virtual-scroll-viewport>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class OptimizedComponent {
+  private cache = new Map<string, any>();
+  
+  // Computed cache
+  cachedValues = computed(() => {
+    const values = {};
+    for (const item of this.visibleItems()) {
+      if (!this.cache.has(item.id)) {
+        this.cache.set(
+          item.id,
+          this.computeValue(item)
+        );
+      }
+      values[item.id] = this.cache.get(item.id);
+    }
+    return values;
+  });
+}
+```
+
+Key points I emphasize in interviews:
+
+1. **Virtual Scrolling**
+   - Essential for large lists
+   - Maintains performance
+   - Reduces memory usage
+
+2. **Data Management**
+   - Efficient pagination
+   - Caching strategies
+   - Background processing
+
+3. **Performance Optimization**
+   - OnPush change detection
+   - Computed values
+   - Proper tracking
+
+4. **Best Practices**
+   - Use proper data structures
+   - Implement caching
+   - Optimize computations
+   - Monitor performance
+
+This approach has helped me handle datasets with millions of records while maintaining smooth performance and good user experience.

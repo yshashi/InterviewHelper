@@ -1,0 +1,269 @@
+---
+layout: ../../layouts/Layout.astro
+title: Dependency Injection in Angular
+---
+
+# Dependency Injection in Angular
+
+## Question 1: What is Dependency Injection and how does Angular implement it?
+
+**Answer:**
+Dependency Injection (DI) is a design pattern where dependencies are provided to a class instead of being created inside it. Angular's DI system:
+- Manages service instances
+- Handles dependency hierarchy
+- Provides dependency configuration
+- Enables testing through mock injection
+
+Here's how it works:
+
+```typescript
+// Basic service
+@Injectable({
+  providedIn: 'root' // Application-wide singleton
+})
+export class UserService {
+  constructor(
+    private http: HttpClient,
+    @Inject(API_URL) private apiUrl: string
+  ) {}
+}
+
+// Modern injection with inject function
+export class ModernComponent {
+  private userService = inject(UserService);
+  private apiUrl = inject(API_URL);
+}
+```
+
+## Question 2: How do you configure providers and injection tokens?
+
+**Answer:**
+Here are different ways to configure providers:
+
+```typescript
+// 1. Value Provider
+export const API_URL = new InjectionToken<string>('API_URL');
+
+// app.config.ts
+export const appConfig: ApplicationConfig = {
+  providers: [
+    { provide: API_URL, useValue: 'https://api.example.com' }
+  ]
+};
+
+// 2. Class Provider
+@Injectable()
+class ProductService {}
+
+@Injectable()
+class MockProductService extends ProductService {}
+
+providers: [
+  { 
+    provide: ProductService,
+    useClass: environment.production ? ProductService : MockProductService
+  }
+]
+
+// 3. Factory Provider
+const loggerFactory = (http: HttpClient) => {
+  return new LoggerService(http, environment.logLevel);
+};
+
+providers: [
+  {
+    provide: LoggerService,
+    useFactory: loggerFactory,
+    deps: [HttpClient]
+  }
+]
+
+// 4. Existing Provider (Alias)
+providers: [
+  { 
+    provide: AbstractLogger,
+    useExisting: LoggerService
+  }
+]
+```
+
+## Question 3: How do you handle hierarchical injection and module providers?
+
+**Answer:**
+Here's how to work with different injection levels:
+
+```typescript
+// 1. Component-level provider
+@Component({
+  selector: 'app-user',
+  providers: [UserService] // New instance for this component
+})
+export class UserComponent {
+  constructor(private userService: UserService) {}
+}
+
+// 2. Module-level provider
+@NgModule({
+  providers: [
+    UserService,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    }
+  ]
+})
+export class UserModule {}
+
+// 3. Lazy-loaded module
+@NgModule({
+  providers: [
+    // Services here get their own instances
+    LazyLoadedService
+  ]
+})
+export class LazyModule {}
+
+// 4. Component with viewProviders
+@Component({
+  selector: 'app-parent',
+  viewProviders: [SpecialService] // Only for view children
+})
+export class ParentComponent {}
+```
+
+## Question 4: How do you handle optional dependencies and forward refs?
+
+**Answer:** In Angular services, optional dependencies are handled using the @Optional() decorator, allowing a service to be injected only if available, preventing errors if it's missing. Forward references are managed using forwardRef() to resolve circular dependencies, ensuring Angular can instantiate classes that reference each other before their actual definitions.
+```typescript
+// Optional dependencies
+@Injectable()
+export class FlexibleService {
+  constructor(
+    @Optional() private logger?: LoggerService,
+    @Self() private config?: ConfigService,
+    @SkipSelf() private parentConfig?: ConfigService,
+    @Host() private hostService?: HostService
+  ) {}
+}
+
+// Forward references
+@Component({
+  providers: [
+    { 
+      provide: PARENT_TOKEN,
+      useExisting: forwardRef(() => ParentComponent)
+    }
+  ]
+})
+export class ParentComponent {}
+```
+
+## Interview Tips 💡
+
+1. **Provider Patterns**
+   ```typescript
+   // Environment-based provider
+   const getProvider = () => {
+     return {
+       provide: DataService,
+       useClass: environment.mock ? 
+         MockDataService : 
+         RealDataService
+     };
+   };
+
+   // Multi provider
+   {
+     provide: VALIDATORS,
+     useClass: EmailValidator,
+     multi: true
+   }
+   ```
+
+2. **Testing with DI**
+   ```typescript
+   describe('MyComponent', () => {
+     let component: MyComponent;
+     let userService: jasmine.SpyObj<UserService>;
+
+     beforeEach(() => {
+       userService = jasmine.createSpyObj('UserService', ['getUser']);
+       
+       TestBed.configureTestingModule({
+         providers: [
+           { provide: UserService, useValue: userService }
+         ]
+       });
+     });
+   });
+   ```
+
+3. **Resolution Modifiers**
+   ```typescript
+   class MyComponent {
+     // Get service from parent
+     @SkipSelf() parentService: ParentService;
+     
+     // Optional dependency
+     @Optional() config?: Config;
+     
+     // Only from host element
+     @Host() hostService: HostService;
+   }
+   ```
+
+4. **Performance Optimization**
+   ```typescript
+   // Tree-shakeable provider
+   @Injectable({
+     providedIn: 'root',
+     useFactory: () => {
+       return new Service(inject(Dependencies));
+     }
+   })
+   export class OptimizedService {}
+   ```
+
+5. **Error Handling**
+   ```typescript
+   // Custom error handler
+   @Injectable()
+   export class CustomErrorHandler implements ErrorHandler {
+     handleError(error: Error) {
+       // Custom error handling
+     }
+   }
+
+   providers: [
+     { provide: ErrorHandler, useClass: CustomErrorHandler }
+   ]
+   ```
+
+6. **Dependency Resolution**
+   ```typescript
+   // Resolution tree
+   @Injectable()
+   class Service {
+     constructor(
+       @Inject('config') config: Config,
+       @SkipSelf() parent: ParentService,
+       @Optional() logger?: Logger
+     ) {
+       // Resolution order:
+       // 1. Check current injector for 'config' token
+       // 2. Look for ParentService in parent injectors
+       // 3. Try to resolve Logger, but don't throw if missing
+     }
+   }
+   ```
+
+Remember: In interviews, focus on:
+- Understanding DI principles
+- Knowledge of provider types
+- Injection hierarchy
+- Testing with DI
+- Performance implications
+- Error handling
+- Resolution modifiers
+- Real-world scenarios

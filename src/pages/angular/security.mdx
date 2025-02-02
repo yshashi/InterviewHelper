@@ -1,0 +1,256 @@
+---
+layout: ../../layouts/Layout.astro
+title: Angular Security Implementation
+---
+
+# How to Secure an Angular Application from XSS and CSRF
+
+Let me walk you through my approach to implementing security in Angular applications. I'll focus on the most critical vulnerabilities: XSS and CSRF.
+
+First, let's understand what we're protecting against:
+1. XSS (Cross-Site Scripting)
+2. CSRF (Cross-Site Request Forgery)
+3. Data Injection
+4. Unauthorized Access
+
+Here's how I implement comprehensive security:
+
+```typescript
+// 1. XSS Protection Service
+@Injectable({ providedIn: 'root' })
+export class SecurityService {
+  private sanitizer = inject(DomSanitizer);
+  
+  sanitizeHtml(content: string): SafeHtml {
+    // First, validate content structure
+    if (this.containsScriptTags(content)) {
+      console.warn('Attempted XSS injection detected');
+      return '';
+    }
+    
+    return this.sanitizer.bypassSecurityTrustHtml(
+      this.cleanHtml(content)
+    );
+  }
+  
+  sanitizeUrl(url: string): SafeUrl {
+    if (!this.isValidUrl(url)) {
+      console.warn('Invalid URL detected');
+      return '';
+    }
+    
+    return this.sanitizer.bypassSecurityTrustUrl(url);
+  }
+  
+  private containsScriptTags(content: string): boolean {
+    return /<script\b[^>]*>([\s\S]*?)<\/script>/gi
+      .test(content);
+  }
+  
+  private cleanHtml(html: string): string {
+    return html.replace(
+      /<script\b[^>]*>([\s\S]*?)<\/script>/gi,
+      ''
+    );
+  }
+  
+  private isValidUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      return ['http:', 'https:'].includes(parsed.protocol);
+    } catch {
+      return false;
+    }
+  }
+}
+
+// 2. CSRF Protection
+@Injectable()
+export class CsrfInterceptor implements HttpInterceptor {
+  intercept(
+    req: HttpRequest<any>,
+    next: HttpHandler
+  ): Observable<HttpEvent<any>> {
+    // Skip for GET requests and non-relative URLs
+    if (req.method === 'GET' || /^https?:\/\//i.test(req.url)) {
+      return next.handle(req);
+    }
+    
+    // Add CSRF token
+    const token = this.getToken();
+    if (token) {
+      req = req.clone({
+        headers: req.headers.set(
+          'X-CSRF-TOKEN',
+          token
+        )
+      });
+    }
+    
+    return next.handle(req).pipe(
+      catchError(error => {
+        if (error.status === 403) {
+          // Handle CSRF token validation failure
+          this.refreshToken();
+        }
+        throw error;
+      })
+    );
+  }
+  
+  private getToken(): string {
+    return document.cookie.match(
+      /XSRF-TOKEN=(.*?);/
+    )?.[1] || '';
+  }
+  
+  private refreshToken() {
+    // Implement token refresh logic
+  }
+}
+
+// 3. Secure Component Implementation
+@Component({
+  selector: 'app-secure-content',
+  template: `
+    <!-- Safe HTML binding -->
+    <div [innerHTML]="sanitizedContent()"></div>
+    
+    <!-- Safe URL binding -->
+    <iframe [src]="sanitizedUrl()" />
+    
+    <!-- Safe attribute binding -->
+    <div [attr.data-content]="sanitizedAttr()"></div>
+    
+    <!-- Form with CSRF protection -->
+    <form #form="ngForm" (ngSubmit)="onSubmit()">
+      <input 
+        type="hidden"
+        [value]="csrfToken"
+      />
+      <input 
+        name="data"
+        [(ngModel)]="data"
+        required
+      />
+      <button type="submit">Submit</button>
+    </form>
+  `
+})
+export class SecureComponent {
+  private security = inject(SecurityService);
+  
+  // Use signals for reactive updates
+  private content = signal<string>('');
+  private url = signal<string>('');
+  
+  // Computed safe values
+  sanitizedContent = computed(() => 
+    this.security.sanitizeHtml(this.content())
+  );
+  
+  sanitizedUrl = computed(() => 
+    this.security.sanitizeUrl(this.url())
+  );
+  
+  sanitizedAttr = computed(() => 
+    encodeURIComponent(this.content())
+  );
+  
+  onSubmit() {
+    // Form submission with CSRF token
+  }
+}
+
+// 4. Content Security Policy
+@Injectable({ providedIn: 'root' })
+export class CspService {
+  private policies = {
+    'default-src': ["'self'"],
+    'script-src': ["'self'", "'strict-dynamic'"],
+    'style-src': ["'self'", "'unsafe-inline'"],
+    'img-src': ["'self'", 'data:', 'https:'],
+    'connect-src': ["'self'", 'https://api.example.com'],
+    'frame-src': ["'none'"],
+    'object-src': ["'none'"],
+    'base-uri': ["'self'"]
+  };
+  
+  getCspHeader(): string {
+    return Object.entries(this.policies)
+      .map(([key, values]) => 
+        `${key} ${values.join(' ')}`
+      )
+      .join('; ');
+  }
+}
+```
+
+Real-world implementation example:
+
+```typescript
+// Secure API Service
+@Injectable({ providedIn: 'root' })
+export class SecureApiService {
+  private security = inject(SecurityService);
+  private http = inject(HttpClient);
+  
+  submitData(data: any) {
+    // 1. Sanitize input
+    const cleanData = this.sanitizeInput(data);
+    
+    // 2. Add security headers
+    const headers = this.getSecurityHeaders();
+    
+    // 3. Make secure request
+    return this.http.post('/api/data', cleanData, { headers })
+      .pipe(
+        // 4. Sanitize response
+        map(response => this.sanitizeOutput(response)),
+        // 5. Handle security errors
+        catchError(error => this.handleSecurityError(error))
+      );
+  }
+  
+  private sanitizeInput(data: any) {
+    // Implement input sanitization
+    return data;
+  }
+  
+  private getSecurityHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': this.getCsrfToken(),
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff'
+    });
+  }
+}
+```
+
+Key points I emphasize in interviews:
+
+1. **Built-in Angular Security**
+   - Automatic XSS protection
+   - Context-aware sanitization
+   - Template syntax security
+
+2. **Additional Protections**
+   - CSRF tokens
+   - Content Security Policy
+   - Secure headers
+   - Input validation
+
+3. **Best Practices**
+   - Always sanitize user input
+   - Use HttpOnly cookies
+   - Implement proper CORS
+   - Regular security audits
+
+4. **Common Pitfalls**
+   - Bypassing built-in sanitization
+   - Insecure localStorage usage
+   - Missing CSRF protection
+   - Weak input validation
+
+This approach has helped me build secure Angular applications that protect against common vulnerabilities while maintaining good performance and user experience.

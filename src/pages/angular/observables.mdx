@@ -1,0 +1,291 @@
+---
+layout: ../../layouts/Layout.astro
+title: Observables vs Promises in Angular
+---
+
+# Observables vs Promises in Angular
+
+## Question 1: What are the key differences between Observables and Promises?
+
+**Answer:**
+Key differences include:
+
+1. **Execution**
+   - Promises: Execute immediately when created
+   - Observables: Lazy, only execute when subscribed to
+
+2. **Values**
+   - Promises: Resolve once with a single value
+   - Observables: Can emit multiple values over time
+
+3. **Cancellation**
+   - Promises: Cannot be cancelled
+   - Observables: Can be cancelled by unsubscribing
+
+4. **Operations**
+   - Promises: Limited operations (then, catch, finally)
+   - Observables: Rich set of operators for data transformation
+
+## Question 2: How do you use Observables and Promises in Angular applications?
+
+**Answer:**
+Here's a comprehensive comparison:
+
+```typescript
+// Service demonstrating both approaches
+@Injectable({
+  providedIn: 'root'
+})
+export class DataService {
+  private http = inject(HttpClient);
+  private apiUrl = inject(API_URL);
+
+  // Promise-based approach
+  async getUserPromise(id: string): Promise<User> {
+    try {
+      const response = await fetch(`${this.apiUrl}/users/${id}`);
+      if (!response.ok) throw new Error('User not found');
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      throw error;
+    }
+  }
+
+  // Observable-based approach
+  getUserObservable(id: string): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/users/${id}`).pipe(
+      tap(user => console.log('User fetched:', user)),
+      catchError(error => {
+        console.error('Error fetching user:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Real-time updates (only possible with Observables)
+  getUserUpdates(id: string): Observable<User> {
+    return new Observable<User>(observer => {
+      // WebSocket connection
+      const ws = new WebSocket(`${this.wsUrl}/users/${id}`);
+      
+      ws.onmessage = event => {
+        observer.next(JSON.parse(event.data));
+      };
+      
+      ws.onerror = error => {
+        observer.error(error);
+      };
+      
+      // Cleanup on unsubscribe
+      return () => ws.close();
+    });
+  }
+}
+
+// Component using both approaches
+@Component({
+  selector: 'app-user',
+  template: `
+    <!-- Promise approach -->
+    @if (userFromPromise) {
+      <div>{{ userFromPromise.name }}</div>
+    }
+
+    <!-- Observable approach -->
+    @if (user$ | async; as user) {
+      <div>{{ user.name }}</div>
+    }
+
+    <!-- Real-time updates -->
+    @if (userUpdates$ | async; as user) {
+      <div>Last updated: {{ user.lastUpdate | date:'medium' }}</div>
+    }
+  `
+})
+export class UserComponent {
+  private dataService = inject(DataService);
+  
+  // Promise approach
+  userFromPromise?: User;
+  
+  // Observable approach
+  user$ = this.dataService.getUserObservable('123');
+  
+  // Real-time updates
+  userUpdates$ = this.dataService.getUserUpdates('123').pipe(
+    shareReplay(1)  // Share the connection
+  );
+  
+  async ngOnInit() {
+    // Promise usage
+    try {
+      this.userFromPromise = await this.dataService.getUserPromise('123');
+    } catch (error) {
+      console.error('Failed to load user:', error);
+    }
+  }
+}
+```
+
+## Question 3: How do you convert between Promises and Observables?
+
+**Answer:**
+Here are conversion patterns:
+
+```typescript
+@Injectable({
+  providedIn: 'root'
+})
+export class ConversionService {
+  // Convert Promise to Observable
+  promiseToObservable<T>(promise: Promise<T>): Observable<T> {
+    return from(promise);
+  }
+  
+  // Convert Observable to Promise
+  observableToPromise<T>(observable: Observable<T>): Promise<T> {
+    return firstValueFrom(observable);
+  }
+  
+  // Example usage
+  async getData() {
+    // Promise to Observable
+    const promise = fetch('/api/data');
+    const observable$ = from(promise);
+    
+    // Observable to Promise
+    const httpObservable$ = this.http.get('/api/data');
+    const result = await firstValueFrom(httpObservable$);
+    
+    // Handle multiple emissions
+    const values = await lastValueFrom(observable$);
+  }
+}
+```
+
+## Interview Tips 💡
+
+1. **When to Use Each**
+   ```typescript
+   // Use Promises when:
+   async function singleOperation() {
+     const result = await somePromise;
+     return process(result);
+   }
+   
+   // Use Observables when:
+   const stream$ = someObservable$.pipe(
+     // Multiple values over time
+     // Cancellation needed
+     // Complex transformations required
+   );
+   ```
+
+2. **Error Handling Patterns**
+   ```typescript
+   // Promise error handling
+   async function handlePromise() {
+     try {
+       const result = await promise;
+       return result;
+     } catch (error) {
+       handleError(error);
+     }
+   }
+   
+   // Observable error handling
+   observable$.pipe(
+     catchError(error => {
+       handleError(error);
+       return EMPTY;
+     }),
+     retry(3)
+   );
+   ```
+
+3. **Memory Management**
+   ```typescript
+   export class Component implements OnDestroy {
+     private destroy$ = new Subject<void>();
+     
+     ngOnInit() {
+       // Auto-cleanup subscriptions
+       this.data$.pipe(
+         takeUntil(this.destroy$)
+       ).subscribe();
+     }
+     
+     ngOnDestroy() {
+       this.destroy$.next();
+       this.destroy$.complete();
+     }
+   }
+   ```
+
+4. **Performance Considerations**
+   ```typescript
+   // Share expensive Observable operations
+   const sharedData$ = this.getData().pipe(
+     shareReplay(1)
+   );
+   
+   // Cache Promise results
+   const cachedPromise = (async () => {
+     const result = await expensiveOperation();
+     return result;
+   })();
+   ```
+
+5. **Testing Strategies**
+   ```typescript
+   describe('DataComponent', () => {
+     // Testing Promise
+     it('should load data from promise', async () => {
+       const result = await component.loadDataPromise();
+       expect(result).toBeDefined();
+     });
+     
+     // Testing Observable
+     it('should stream data', (done) => {
+       component.data$.subscribe(data => {
+         expect(data).toBeDefined();
+         done();
+       });
+     });
+   });
+   ```
+
+6. **Common Pitfalls**
+   ```typescript
+   // Memory leak - No unsubscribe
+   ngOnInit() {
+     this.data$.subscribe(); // Bad
+     
+     // Good - with cleanup
+     this.data$.pipe(
+       takeUntil(this.destroy$)
+     ).subscribe();
+   }
+   
+   // Promise not handled
+   somePromise(); // Bad
+   
+   // Good - handle or await
+   await somePromise();
+   
+   // Multiple subscriptions
+   const data$ = this.getData().pipe(
+     share() // Share subscription
+   );
+   ```
+
+Remember: In interviews, focus on:
+- Understanding fundamental differences
+- Knowing when to use each
+- Memory management
+- Error handling
+- Performance implications
+- Testing approaches
+- Common pitfalls and solutions
+- Real-world scenarios where one is better than the other

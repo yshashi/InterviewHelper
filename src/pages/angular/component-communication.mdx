@@ -1,0 +1,262 @@
+---
+layout: ../../layouts/Layout.astro
+title: Sharing Data Between Sibling Components
+---
+
+# How to Share Data Between Sibling Components
+
+Let me share my approach to implementing component communication in Angular, particularly between sibling components. I'll demonstrate this using a real-world example from an e-commerce dashboard.
+
+There are several methods I use depending on the scenario:
+
+1. Shared Service with Signals
+2. State Management (NgRx/Signal Store)
+3. Event Bus Pattern
+4. Parent Component Communication
+
+Here's how I implement each approach:
+
+```typescript
+// 1. Shared Service with Signals
+@Injectable({ providedIn: 'root' })
+export class SharedDataService {
+  // State management using signals
+  private cartItems = signal<CartItem[]>([]);
+  private wishlistItems = signal<Product[]>([]);
+  
+  // Computed values
+  totalCartItems = computed(() => 
+    this.cartItems().reduce((sum, item) => sum + item.quantity, 0)
+  );
+  
+  wishlistCount = computed(() => 
+    this.wishlistItems().length
+  );
+  
+  // Methods to update state
+  addToCart(item: CartItem) {
+    this.cartItems.update(items => [...items, item]);
+  }
+  
+  addToWishlist(product: Product) {
+    this.wishlistItems.update(items => [...items, product]);
+  }
+}
+
+// 2. Cart Component (Sibling 1)
+@Component({
+  selector: 'app-cart',
+  template: `
+    <div class="cart">
+      <h2>Cart ({{ shared.totalCartItems() }})</h2>
+      @for (item of cartItems(); track item.id) {
+        <cart-item 
+          [item]="item"
+          (remove)="removeItem($event)"
+        />
+      }
+    </div>
+  `
+})
+export class CartComponent {
+  private shared = inject(SharedDataService);
+  
+  // Expose signals to template
+  cartItems = this.shared.cartItems;
+  
+  removeItem(itemId: string) {
+    this.shared.removeFromCart(itemId);
+  }
+}
+
+// 3. Wishlist Component (Sibling 2)
+@Component({
+  selector: 'app-wishlist',
+  template: `
+    <div class="wishlist">
+      <h2>Wishlist ({{ shared.wishlistCount() }})</h2>
+      @for (product of wishlistItems(); track product.id) {
+        <product-card 
+          [product]="product"
+          (addToCart)="moveToCart($event)"
+        />
+      }
+    </div>
+  `
+})
+export class WishlistComponent {
+  private shared = inject(SharedDataService);
+  
+  // Expose signals to template
+  wishlistItems = this.shared.wishlistItems;
+  
+  moveToCart(product: Product) {
+    this.shared.addToCart({
+      id: product.id,
+      quantity: 1,
+      price: product.price
+    });
+    this.shared.removeFromWishlist(product.id);
+  }
+}
+
+// 4. Event Bus Pattern
+@Injectable({ providedIn: 'root' })
+export class EventBusService {
+  private events = new Subject<EventData>();
+  
+  emit(event: EventData) {
+    this.events.next(event);
+  }
+  
+  on(eventType: string): Observable<EventData> {
+    return this.events.pipe(
+      filter(event => event.type === eventType)
+    );
+  }
+}
+
+// 5. Using Event Bus
+@Component({
+  selector: 'app-product-list',
+  template: `
+    @for (product of products(); track product.id) {
+      <product-card 
+        [product]="product"
+        (addToCart)="notifyProductAdded($event)"
+      />
+    }
+  `
+})
+export class ProductListComponent {
+  private eventBus = inject(EventBusService);
+  
+  notifyProductAdded(product: Product) {
+    this.eventBus.emit({
+      type: 'PRODUCT_ADDED',
+      payload: product
+    });
+  }
+}
+
+// 6. Header Component (Listening to Events)
+@Component({
+  selector: 'app-header',
+  template: `
+    <header>
+      <cart-icon [count]="cartCount()" />
+      <notifications [message]="latestNotification()" />
+    </header>
+  `
+})
+export class HeaderComponent implements OnInit {
+  private eventBus = inject(EventBusService);
+  private destroy$ = inject(DestroyRef);
+  
+  cartCount = signal(0);
+  latestNotification = signal<string | null>(null);
+  
+  ngOnInit() {
+    // Listen to product added events
+    this.eventBus.on('PRODUCT_ADDED').pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe(event => {
+      this.cartCount.update(count => count + 1);
+      this.showNotification(
+        `Added ${event.payload.name} to cart`
+      );
+    });
+  }
+  
+  private showNotification(message: string) {
+    this.latestNotification.set(message);
+    setTimeout(() => {
+      this.latestNotification.set(null);
+    }, 3000);
+  }
+}
+```
+
+Real-world example of component communication:
+
+```typescript
+// Before: Tightly coupled components
+@Component({
+  template: `
+    <div>
+      {{ data }}
+      <button (click)="updateSibling()">Update</button>
+    </div>
+  `
+})
+class ComponentA {
+  @Output() update = new EventEmitter<string>();
+  
+  updateSibling() {
+    this.update.emit('new data');
+  }
+}
+
+// After: Using shared service and signals
+@Injectable({ providedIn: 'root' })
+class SharedState {
+  private state = signal<AppState>({
+    data: null,
+    loading: false,
+    error: null
+  });
+  
+  // Computed values
+  data = computed(() => this.state().data);
+  loading = computed(() => this.state().loading);
+  error = computed(() => this.state().error);
+  
+  // Actions
+  updateData(newData: any) {
+    this.state.update(state => ({
+      ...state,
+      data: newData
+    }));
+  }
+}
+
+@Component({
+  template: `
+    @if (state.loading()) {
+      <loading-spinner />
+    }
+    
+    @if (state.data(); as data) {
+      <data-display [data]="data" />
+    }
+  `
+})
+class ComponentB {
+  state = inject(SharedState);
+}
+```
+
+Key points I emphasize in interviews:
+
+1. **Service-based Communication**
+   - Centralized state management
+   - Reactive updates with signals
+   - Clean component separation
+
+2. **Event Bus Pattern**
+   - Decoupled communication
+   - Type-safe events
+   - Easy to debug
+
+3. **State Management**
+   - Predictable updates
+   - Single source of truth
+   - Performance optimization
+
+4. **Best Practices**
+   - Unsubscribe from observables
+   - Use proper typing
+   - Implement error handling
+   - Maintain clean architecture
+
+This approach has helped me build maintainable applications with clear communication patterns between components.

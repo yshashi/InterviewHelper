@@ -1,0 +1,299 @@
+---
+layout: ../../layouts/Layout.astro
+title: Handling Multiple API Calls in Angular
+---
+
+# How to Handle Multiple API Calls Simultaneously in Angular
+
+In enterprise applications, we often need to handle multiple API calls efficiently. Let me share my approach using a real-world example from an e-commerce dashboard I developed.
+
+The dashboard needed to:
+1. Load user profile
+2. Fetch recent orders
+3. Get product recommendations
+4. Load cart items
+5. Check user permissions
+
+Here's how I implemented it:
+
+```typescript
+// 1. API Service with Advanced Error Handling
+@Injectable({ providedIn: 'root' })
+export class DashboardService {
+  private http = inject(HttpClient);
+  private errorHandler = inject(ErrorHandlingService);
+  
+  // Fetch all required data
+  loadDashboardData(userId: string): Observable<DashboardData> {
+    // Define all API calls
+    const profile$ = this.getUserProfile(userId).pipe(
+      catchError(error => {
+        this.errorHandler.handleError(error);
+        return of(null);
+      })
+    );
+    
+    const orders$ = this.getRecentOrders(userId).pipe(
+      catchError(error => {
+        this.errorHandler.handleError(error);
+        return of([]);
+      })
+    );
+    
+    const recommendations$ = this.getRecommendations(userId).pipe(
+      catchError(error => {
+        this.errorHandler.handleError(error);
+        return of([]);
+      })
+    );
+    
+    const cart$ = this.getCartItems(userId).pipe(
+      catchError(error => {
+        this.errorHandler.handleError(error);
+        return of([]);
+      })
+    );
+    
+    const permissions$ = this.getUserPermissions(userId).pipe(
+      catchError(error => {
+        this.errorHandler.handleError(error);
+        return of({});
+      })
+    );
+    
+    // Combine all calls
+    return forkJoin({
+      profile: profile$,
+      orders: orders$,
+      recommendations: recommendations$,
+      cart: cart$,
+      permissions: permissions$
+    }).pipe(
+      timeout(30000), // 30-second timeout
+      retry(2), // Retry failed requests
+      catchError(error => {
+        if (error instanceof TimeoutError) {
+          this.errorHandler.handleTimeout();
+        }
+        throw error;
+      })
+    );
+  }
+  
+  // Individual API calls with caching
+  private getUserProfile(userId: string) {
+    return this.http.get<UserProfile>(
+      `/api/users/${userId}`
+    ).pipe(
+      shareReplay(1) // Cache the response
+    );
+  }
+  
+  private getRecentOrders(userId: string) {
+    return this.http.get<Order[]>(
+      `/api/users/${userId}/orders`
+    ).pipe(
+      map(orders => orders.slice(0, 5))
+    );
+  }
+  
+  // ... other API methods
+}
+
+// 2. Dashboard Component Implementation
+@Component({
+  selector: 'app-dashboard',
+  template: `
+    @if (loading()) {
+      <loading-spinner />
+    }
+    
+    @if (error()) {
+      <error-alert [message]="error()" />
+    }
+    
+    @if (dashboardData(); as data) {
+      <!-- User Profile -->
+      @if (data.profile) {
+        <user-profile [data]="data.profile" />
+      }
+      
+      <!-- Recent Orders -->
+      @if (data.orders.length) {
+        <recent-orders [orders]="data.orders" />
+      }
+      
+      <!-- Recommendations -->
+      @if (data.recommendations.length) {
+        <product-recommendations 
+          [products]="data.recommendations" 
+        />
+      }
+      
+      <!-- Cart Items -->
+      @if (data.cart.length) {
+        <shopping-cart [items]="data.cart" />
+      }
+    }
+  `
+})
+export class DashboardComponent {
+  private service = inject(DashboardService);
+  private destroy$ = inject(DestroyRef);
+  
+  // State management with signals
+  loading = signal(true);
+  error = signal<string | null>(null);
+  dashboardData = signal<DashboardData | null>(null);
+  
+  ngOnInit() {
+    // Get user ID from auth service
+    const userId = this.auth.getCurrentUserId();
+    
+    // Load all dashboard data
+    this.service.loadDashboardData(userId).pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe({
+      next: (data) => {
+        this.loading.set(false);
+        this.dashboardData.set(data);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(
+          'Failed to load dashboard data. Please try again.'
+        );
+      }
+    });
+  }
+}
+
+// 3. Progressive Loading Strategy
+@Injectable({ providedIn: 'root' })
+export class ProgressiveLoadingService {
+  loadCriticalData(userId: string): Observable<CriticalData> {
+    // Load critical data first (profile & permissions)
+    return forkJoin({
+      profile: this.getUserProfile(userId),
+      permissions: this.getUserPermissions(userId)
+    });
+  }
+  
+  loadNonCriticalData(userId: string): Observable<NonCriticalData> {
+    // Load non-critical data after
+    return forkJoin({
+      orders: this.getRecentOrders(userId),
+      recommendations: this.getRecommendations(userId)
+    });
+  }
+}
+
+// 4. Parallel vs Sequential Loading
+@Component({
+  template: `
+    @if (criticalData(); as data) {
+      <critical-content [data]="data" />
+      
+      @defer (on viewport) {
+        <non-critical-content />
+      }
+    }
+  `
+})
+export class OptimizedDashboardComponent {
+  private loading = inject(ProgressiveLoadingService);
+  
+  criticalData = signal<CriticalData | null>(null);
+  
+  ngOnInit() {
+    const userId = this.auth.getCurrentUserId();
+    
+    // Load critical data immediately
+    this.loading.loadCriticalData(userId).pipe(
+      takeUntilDestroyed(this.destroy$)
+    ).subscribe(data => {
+      this.criticalData.set(data);
+      
+      // Load non-critical data when critical content is visible
+      this.loading.loadNonCriticalData(userId).pipe(
+        takeUntilDestroyed(this.destroy$)
+      ).subscribe(nonCritical => {
+        // Update UI progressively
+      });
+    });
+  }
+}
+```
+
+Real-world optimization example:
+
+```typescript
+// Before optimization
+ngOnInit() {
+  const userId = this.auth.getCurrentUserId();
+  
+  this.http.get(`/api/profile/${userId}`).subscribe();
+  this.http.get(`/api/orders/${userId}`).subscribe();
+  this.http.get(`/api/recommendations/${userId}`).subscribe();
+}
+
+// After optimization
+ngOnInit() {
+  const userId = this.auth.getCurrentUserId();
+  
+  // 1. Combine related calls
+  const userProfile$ = this.http.get(`/api/profile/${userId}`).pipe(
+    shareReplay(1) // Cache the result
+  );
+  
+  const userOrders$ = this.http.get(`/api/orders/${userId}`).pipe(
+    shareReplay(1)
+  );
+  
+  // 2. Use combineLatest for dependent data
+  combineLatest({
+    profile: userProfile$,
+    orders: userOrders$
+  }).pipe(
+    switchMap(({ profile, orders }) => {
+      // Use profile and orders to get personalized recommendations
+      return this.http.get(
+        `/api/recommendations/${userId}`,
+        { params: { 
+          categories: orders.map(o => o.category),
+          preferences: profile.preferences
+        }}
+      );
+    }),
+    retry(3),
+    takeUntilDestroyed(this.destroy$)
+  ).subscribe(recommendations => {
+    // Handle all data
+  });
+}
+```
+
+Key points I emphasize in interviews:
+
+1. **Error Handling**
+   - Handle individual API failures
+   - Implement retry logic
+   - Provide fallback data
+
+2. **Performance**
+   - Use appropriate RxJS operators
+   - Implement caching
+   - Progressive loading
+
+3. **User Experience**
+   - Show loading states
+   - Handle errors gracefully
+   - Load critical data first
+
+4. **Best Practices**
+   - Proper error handling
+   - Resource cleanup
+   - Caching strategies
+   - Type safety
+
+This approach has helped me build robust enterprise applications that handle multiple API calls efficiently while maintaining good user experience.
