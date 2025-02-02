@@ -1,0 +1,123 @@
+---
+layout: ../../../layouts/Layout.astro
+title: 'Describe how do you configure and access Route Parameters?'
+---
+
+### Describe how do you configure and access Route Parameters for the below route config ?
+
+**Key Points**
+
+* Route parameters are defined in the route configuration using a colon (:) syntax
+* You can have multiple parameters in a single route
+* Parameters can be made optional or given default values
+
+
+```typescript
+const routes: Routes = [
+  { path: 'user/:id', component: UserComponent }
+];
+```
+
+**Accessing route Parameters**
+
+I will use `ActivatedRoute` to access route parameters
+
+Using snapshot:
+
+UseCase - When parameters won't change during component lifetime
+
+```typescript
+export class UserComponent implements OnInit {
+  constructor(private route: ActivatedRoute) {}
+
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
+  }
+}
+```
+
+Using paramMap:
+
+`ParamMap` is for handling route parameters defined in the `path configuration`
+
+
+UseCase - Retrieves dynamic parameters for routes. When parameters might change without component destruction (like in child routes or query param updates)
+
+```typescript
+export class UserComponent implements OnInit {
+  constructor(private route: ActivatedRoute) {}
+
+  ngOnInit() {
+    // Using observable
+    this.route.paramMap.subscribe(params => {
+      const id = params['id'];
+    });
+  }
+}
+```
+
+Using Params:
+
+```typescript
+export class UserComponent implements OnInit {
+  constructor(private route: ActivatedRoute) {}
+
+  ngOnInit() {
+    this.route.params.subscribe(params => {
+      const id = params['id'];
+    });
+  }
+}
+```
+______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+## FollowUp Questions
+
+**How do you handle query paramters ?**
+
+**Using `queryParamMap`:**
+
+`QueryParamMap` is for retrieving `optional parameters that appear after the ?` in the URL
+
+**Handling Single Query Parameter**
+
+```typescript
+
+// URL: /users?filter=active
+
+@Component({/*...*/})
+export class UsersComponent {
+  constructor(private route: ActivatedRoute) {
+    this.route.queryParamMap.subscribe(params => {
+      const filter = params.get('filter') || 'all'; // Default value if not provided
+    });
+  }
+}
+
+```
+
+**Handling Multiple Query Parameters:**
+
+```typescript
+// URL: /users?sortBy=name&filter=active
+
+@Component({/*...*/})
+export class UsersComponent {
+  constructor(private route: ActivatedRoute) {
+    this.route.queryParamMap.subscribe(params => {
+      const sortBy = params.get('sortBy');    // "name"
+      const filter = params.get('filter');    // "active"
+    });
+  }
+}
+
+```
+
+**You should be able to asnwer below questons if asked!!**
+
+`The best way to explain with an example.`
+
+* "What's the difference between paramMap and queryParamMap?"
+* "How would you handle optional parameters?"
+* "When would you use snapshot vs observable approach?"
+* "How do you pass multiple parameters and access?"
