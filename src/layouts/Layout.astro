@@ -18,13 +18,14 @@ interface Props {
 
 const {
   title: propTitle,
-  description = "Comprehensive interview preparation platform with in-depth explanations, practical examples, and best practices for various technologies.",
+  description: propDescription,
   image = "https://res.cloudinary.com/dmcpsaspr/image/upload/w_1000,ar_16:9,c_fill,g_auto,e_sharpen/v1738256893/InterviewHelper/logo.webp",
   canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
+  frontmatter
 } = Astro.props;
 
-// Get title from frontmatter or props
-const pageTitle = Astro.props.frontmatter?.title || propTitle || 'Interview Helper';
+const pageTitle = frontmatter?.title || propTitle || 'Interview Helper';
+const description = frontmatter?.description || propDescription || "Master modern web development interviews with our comprehensive guide. Get expert insights on Angular, React, Node.js, .NET, TypeScript, and more.";
 // Construct meta title
 const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Preparation Guide`;
 ---
