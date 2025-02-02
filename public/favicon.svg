@@ -1,7 +1,7 @@
 <svg width="200" height="200" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" fill="none">
   <polygon points="128,20 236,80 208,216 128,256 48,216 20,80" 
            fill="url(#gradient)" stroke="white" stroke-width="10" stroke-linejoin="round"/>
-  <text x="50%" y="90%" font-size="260" font-weight="bold" text-anchor="middle"
+  <text x="50%" y="85%" font-size="220" font-weight="bold" text-anchor="middle"
         fill="white" font-family="Arial, sans-serif" letter-spacing="2">
     H
   </text>
