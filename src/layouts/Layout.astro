@@ -115,7 +115,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
       let sidebarOverlay = document.getElementById('sidebar-overlay');
 
       function initializeMobileMenu() {
-        // Refresh element references
         mobileMenuButton = document.getElementById('mobile-menu-button');
         sidebar = document.getElementById('sidebar');
         sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -145,7 +144,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
           }
         }
 
-        // Add click event listeners
         oldButton?.addEventListener('click', (e) => {
           e.stopPropagation();
           toggleSidebar();
@@ -173,7 +171,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
         });
       }
 
-      // Initialize immediately
       initializeMobileMenu();
       
       // Re-initialize after navigation
@@ -181,7 +178,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
         setTimeout(initializeMobileMenu, 0);
       });
       
-      // Handle clicks on links
       document.addEventListener('click', (e) => {
         const link = (e.target as HTMLElement).closest('a');
         if (link && link.href && link.href.startsWith(window.location.origin)) {
@@ -189,7 +185,6 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
         }
       });
 
-      // Handle resize events
       window.addEventListener('resize', () => {
         if (window.innerWidth >= 1024) {
           sidebar?.classList.remove('-translate-x-full');
