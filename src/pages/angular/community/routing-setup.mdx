@@ -1,0 +1,156 @@
+---
+layout: ../../../layouts/Layout.astro
+title: 'How do you setup routing in Angular Applications ?'
+---
+
+## How do you setup routing in Angular Applications ?
+
+Start answering with below key points.
+
+**Key Points:**
+- Angular Router is a service that provides navigation and URL manipulation capabilities
+- Enables creation of Single Page Applications (SPAs)
+- Allows navigation between different components without page reload
+
+### Steps
+
+**1. Create a Routing Module**
+
+
+I am using Home About Components are created already
+
+A typical routing module structure would look like below:
+
+```typescript
+// app-routing.module.ts
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { HomeComponent } from './home.component';
+import { AboutComponent } from './about.component';
+
+// route definitions
+const routes: Routes = [
+  { path: '', component: HomeComponent },
+  { path: 'about', component: AboutComponent }
+];
+
+// register routes using forRoot from RouterModule 
+// and export the RouterModule to make it available acrros the app
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+```
+
+**2. Import in App Module**
+
+Import the created AppRoutingModule in imports array section of AppModule 
+( Use the term `Root` instead of AppModule because AppModule can also be termed as `RootModule`)
+
+Similarly AppRoutingModule module can also be termed as `RootRoutingModule`
+
+Code structure would like below:
+
+```typescript
+// app.module.ts
+@NgModule({
+  imports: [
+    BrowserModule,
+    AppRoutingModule  // Import here
+  ],
+  // ...
+})
+```
+
+**3. Add Router Outlet in AppComponent**
+
+AppComponent can also be termed as `RootComponent`
+
+`Hint`: RouterOutlet is a Directive
+
+```html
+<!-- app.component.html -->
+<router-outlet></router-outlet>
+```
+These are the steps I would follow to set up the routing in an Angular Application.
+
+
+### Follow-up Questions:
+
+**Can you explain about the significance of RouterOutlet**
+
+The Angular RouterOutlet directive serves as a placeholder that Angular fills dynamically based on the current route
+
+**Explain how does this work**
+
+lets assume  the route definition of a home component is defined as below:
+
+```typescript
+const routes: Routes = [
+  { path: 'home', component: HomeComponent },
+];
+```
+
+Here, `'home'` is the path for `HomeComponent`
+
+So, when the browser URL for an application becomes `http://localhost:4200/home` the router matches that URL to the route path `home` and displays the HomeComponent as a sibling element to the `RouterOutlet` that you've placed in the host component's template.
+
+______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+
+
+
+## Practical Demonstration
+
+**Be prepared to show:**
+
+```typescript
+// Basic routing setup
+const routes: Routes = [
+  { path: '', component: HomeComponent },
+  { path: 'about', component: AboutComponent },
+  { 
+    path: 'user/:id', 
+    component: UserComponent,
+    
+  },
+  { path: '**', redirectTo: '' }
+];
+
+// Component with navigation
+@Component({
+  template: `
+    <nav>
+      <a routerLink="/">Home</a>
+      <a routerLink="/about">About</a>
+    </nav>
+    <router-outlet></router-outlet>
+  `
+})
+export class AppComponent {
+  constructor(private router: Router) {}
+
+  navigateToUser(id: string) {
+    this.router.navigate(['/user', id]);
+  }
+}
+```
+
+### Best Practices to Mention
+
+1. **Route Organization**
+   - Keep routes organized by feature
+   - Use proper naming conventions
+   - Consider user experience in URL structure
+
+2. **Parameter Handling**
+   - Use observables for dynamic updates
+   - Handle missing parameters gracefully
+   - Validate parameters when necessary
+
+3. **Navigation**
+   - Use RouterLink for template-based navigation
+   - Use Router service for programmatic navigation
+   - Implement proper error handling

@@ -81,8 +81,7 @@ const menuItems = [
             title: "Intermediate Questions",
             items: [
               {
-                title:
-                  "Angular's new control flow?",
+                title: "What is angular's new control flow?",
                 path: "/angular/control-flow",
               },
               {
@@ -101,7 +100,11 @@ const menuItems = [
               },
               {
                 title: "How does Angular handle routing?",
-                path: "/angular/routing",
+                path: "/angular/intermediate/routing",
+              },
+              {
+                title: "Can you talk about wildcard routes and use-cases",
+                path: "/angular/intermediate/routing-wildcard-routes",
               },
               {
                 title:
@@ -131,16 +134,8 @@ const menuItems = [
             title: "Advanced Questions",
             items: [
               {
-                title: "Explain the concept of lazy loading in Angular?",
-                path: "/angular/lazy-loading",
-              },
-              {
-                title: "What is ng-content, and how is it used?",
-                path: "/angular/ng-content",
-              },
-              {
-                title: "What are Angular Guards? Explain the different types.",
-                path: "/angular/guards",
+                title: "Explain about Content Projection in Angular?",
+                path: "/angular/advanced/content-projection",
               },
               {
                 title: "How do you manage state in an Angular application?",
@@ -180,6 +175,11 @@ const menuItems = [
           {
             title: "Scenario-Based Questions",
             items: [
+              {
+                title: " Can you explain what do understand by this route configuration in Angular?",
+                path: "/angular/scenario/route-configuration",
+              },
+
               {
                 title: "How would you debug a slow Angular app?",
                 path: "/angular/debugging",
@@ -223,6 +223,37 @@ const menuItems = [
                   "What steps would you take to migrate an AngularJS project to Angular?",
                 path: "/angular/migration-angularjs",
               },
+            ],
+          },
+          {
+            title: "Community Q&A",
+            items: [
+              {
+                title: "Explain how do you setup the Routing in Angular?",
+                path: "/angular/community/routing-setup",
+              },
+              {
+                title: "Describe how do you configure and access Route Parameters?",
+                path: "/angular/community/routing-parameters",
+              },
+              {
+                title: "Explain how can you achieve page navigation in Angular?",
+                path: "/angular/community/routing-navigation",
+              },              
+              {
+                title: "Explain the concept of lazy loading in Angular?",
+                path: "/angular/community/routing-lazy-loading",
+              },
+              {
+                title:
+                  "Explain the diference between forRoot and forChild in Angular?",
+                path: "/angular/community/routing-forroot-vs-forchild",
+              },
+
+              {
+                title: "What are Angular Guards? Explain the different types.",
+                path: "/angular/community/routing-guards-traditional",
+              }
             ],
           },
         ],
@@ -410,7 +441,8 @@ const menuItems = [
                                 <a
                                   href={subSubItem.path}
                                   class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
-                                    (currentPath.includes(subSubItem.path) || currentPath === subSubItem.path)
+                                    currentPath.includes(subSubItem.path) ||
+                                    currentPath === subSubItem.path
                                       ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
                                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   }`}
@@ -424,7 +456,8 @@ const menuItems = [
                           <a
                             href={subItem.path}
                             class={`block px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm transition-colors duration-200 ${
-                              (currentPath.includes(subItem.path) || currentPath === subItem.path)
+                              currentPath.includes(subItem.path) ||
+                              currentPath === subItem.path
                                 ? "text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20"
                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                             }`}

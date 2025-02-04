@@ -1,0 +1,188 @@
+---
+layout: ../../../layouts/Layout.astro
+title: "What are Route Guards, Explain with use-cases?"
+---
+
+### Q3: What are Route Guards, Explain with use-cases?
+
+**Answer:**
+
+- `Use:` Controls access to routes
+
+- Types: `CanActivate`, `CanActivateChild` `CanDeactivate`, `CanLoad`, `Resolve`
+Common usecases:
+* `CanActivate` - Authentication (E.g: AuthGuard),
+* `CanActivateChild` - Authentication for chidren routes  
+* `CanDeactivate` - unsaved changes,
+* `CanLoad` - For protecting lazy-loaded modules
+* `Resolve` - Data fetching before route gets activated ( E.g. fetching user permissions and activating a specific functionality)
+
+
+**CanActivate Implementation:**
+
+```typescript
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate {
+  canActivate(route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): boolean {
+    return this.isAuthenticated();
+  }
+
+  // method which returns , lets say true
+  isAuthenticated() {
+    return true; //data will be fetched generally from an api
+  }
+}
+```
+**Aapplying AuthGuard on a route**
+```typescript
+const routes: Routes = [
+  {
+    path: "admin",
+    component: AdminComponent,
+    canActivate: [AuthGuard],
+  },
+];
+```
+
+**CanActivateChild Implementation**:
+
+```typescript
+@Injectable({
+  providedIn: 'root'
+})
+export class ReportsGuard implements CanActivateChild {
+  canActivateChild(route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): boolean {
+    return this.isAuthenticated();
+  }
+
+  // method which returns , lets say true
+  isAuthenticated() {
+    return true; //data will be fetched generally from an api
+  }
+}
+
+```
+
+**Applying AuthGuard on a route:**
+```typescript
+const routes: Routes = [
+  {
+    path: "admin",
+    component: AdminComponent,
+    canActivateChild: [ReportsGuard]
+    children : [
+      {
+        path: "reports",        
+        component: ReportsComponent
+
+      },
+      ..... // other routes
+    ]
+  },
+];
+```
+
+**CanLoad Implementation:**
+
+```typescript
+import { Injectable } from '@angular/core';
+import { CanLoad, Route, Router, UrlSegment } from '@angular/router';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AdminGuard implements CanLoad {
+
+  constructor(private router: Router) {}
+
+  canLoad(
+    route: Route,
+    segments: UrlSegment[]
+  ): boolean | Observable<boolean> {
+    const isLoggedIn = this.isAmdinUser();
+
+    if (!isLoggedIn) {
+      this.router.navigate(['/login']); // Redirect if not authenticated
+      return false;
+    }
+
+    return true; // Allow loading the module
+  }
+
+  private isAmdinUser(): boolean {
+    // Simulating role check (replace with actual logic)
+    return localStorage.getItem('userRole')  === 'Admin';;
+  }
+}
+
+```
+**Applying canLoad on route:**
+
+```typescript
+// app.routing.module.ts
+const routes: Routes = [
+  {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule),
+    canLoad: [AdminGuard] // Prevents loading if the user is not authenticated
+  }
+];
+
+```
+
+**Resolver Implementation:**
+
+```typescript
+import { Injectable } from '@angular/core';
+import {
+  Router, Resolve,
+  RouterStateSnapshot,
+  ActivatedRouteSnapshot
+} from '@angular/router';
+import { Observable, of } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class RoleResolver implements Resolve<boolean> {
+  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
+    return of(true);
+  }
+}
+```
+
+**Applying Resolver:**
+
+```typescript
+  const routes: Routes = [
+    {
+      path: 'dashboard',
+      component: DashboardComponent,
+      resolve: { role: RoleResolver } // Attach the resolver
+    }
+  ];
+```
+
+**Access Resolvers Data in components:**
+
+```typescript
+constructor(private route: ActivatedRoute) {}
+
+  ngOnInit() {
+    const role = this.route.snapshot.data['role']; // Get resolved data
+    this.canAdd = role === 'Admin'; // perform actions
+  }
+```
+
+
+**Summary**
+
+* `canActivate` applies on a SingleRoute
+* `canActivateChild` protects child routes under a parent
+* `canLoad` protect modules which are lazy loadChildren
+* `resolve` - to fetch roles data / permissions to restrict an action in UI 

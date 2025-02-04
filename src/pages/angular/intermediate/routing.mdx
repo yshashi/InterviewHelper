@@ -1,0 +1,80 @@
+---
+layout: ../../../layouts/Layout.astro
+title: "How Does Angular Handle Routing"
+
+---
+
+
+
+## How Does Angular Handle Routing?
+
+Angular handles routing using the **Angular Router**, which is a built-in module that enables navigation between different views or components in a Single Page Application (SPA).
+
+## 1. Defining Routes
+Routes are configured using the `RouterModule.forRoot()` (for the main module) or `RouterModule.forChild()` (for feature modules). Each route is an object with at least a `path` and a corresponding `component`.
+
+```typescript
+
+import { Routes, RouterModule } from '@angular/router';  
+import { HomeComponent } from './home.component';  
+import { AboutComponent } from './about.component';  
+
+const routes: Routes = [  
+  { path: 'home', component: HomeComponent },  
+  { path: 'about', component: AboutComponent },  
+  { path: '', redirectTo: '/home', pathMatch: 'full' },  
+  { path: '**', component: PageNotFoundComponent } // Wildcard route  
+];  
+
+export const AppRoutingModule = RouterModule.forRoot(routes);
+
+```
+
+## 2. Router Outlet & Navigation
+The `<router-outlet></router-outlet>` directive acts as a placeholder where the routed component will be rendered.
+
+```html
+
+<nav>
+  <a routerLink="/home">Home</a>
+  <a routerLink="/about">About</a>
+</nav>
+<router-outlet></router-outlet>
+
+```
+
+## 3. Programmatic Navigation
+Navigation can be triggered programmatically using the `Router` service.
+
+```typescript
+
+import { Router } from '@angular/router';
+
+constructor(private router: Router) {}
+
+navigateToHome() {
+  this.router.navigate(['/home']);
+}
+
+```
+
+## 4. Route Parameters & Query Params
+- **Route Parameters**: Used to pass dynamic values in the URL.
+
+```typescript
+
+{ path: 'user/:id', component: UserComponent }
+this.route.snapshot.paramMap.get('id'); // Fetching the parameter
+
+```
+
+- **Query Parameters**: Used for optional parameters.
+
+```typescript
+
+this.router.navigate(['/home'], { queryParams: { key: 'value' } });
+this.route.snapshot.queryParamMap.get('key'); // Fetching query params
+
+```
+
+

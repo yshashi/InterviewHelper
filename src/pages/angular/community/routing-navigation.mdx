@@ -1,0 +1,274 @@
+---
+layout: ../../../layouts/Layout.astro
+title: 'Explain how do you navigate from  one view to another view?'
+---
+
+## Explain how do you navigate from  one view to another view ?
+
+Consider you have configured routes like below:
+
+```typescript
+const routes: Routes = [
+
+  // Basic route without parameters
+  { path: 'home', component: HomeComponent },
+
+  // Basic route parameter
+  { path: 'user/:id', component: UserComponent },
+  
+  // Multiple route parameters
+  { path: 'product/:category/:id', component: ProductComponent },
+
+  // query params route
+  { path: 'search', component: SearchComponent }
+
+];
+```
+There are two ways:
+
+1.Using Template Navigation
+
+    * routerLink directive
+
+```typescript
+// Template navigation
+<!-- app.component.html --> 
+<a [routerLink]="['/user', userId]">View User</a>
+<a [routerLink]="['/product', category, productId]">View Product</a>
+```
+
+2. Using Programmatic Navigation:
+
+    * Router service provides `navigate`, `navigateByUrl` methods
+
+```typescript
+// app.component.ts
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-root'
+})
+export class AppComponent {
+  constructor(private router: Router) {}
+
+  // Programmatic navigation
+  navigateToHome(userId: string) {
+    this.router.navigate(['/home']);
+    // OR
+    this.router.navigateByUrl('/home');
+  }
+
+  navigateToUser(userId: string) {
+    this.router.navigate(['/user', userId]);
+  }
+
+  // Navigation with multiple parameters
+  navigateToProduct(category: string, productId: string) {
+    this.router.navigate(['/product', category, productId]);
+  }
+}
+```
+
+## Follwup questions 
+
+### What is the difference between navigate, navigateByUrl ? And When do you use each ?
+
+**navigate**:
+*Takes an array of path segments
+
+**UseCases**
+* When working with route parameters
+* When you need relative navigation
+* When handling complex navigation scenarios
+* When you need to preserve or merge query parameters
+
+```typescript
+constructor(private router: Router, private route: ActivatedRoute) {}
+
+  // navigate() Examples
+  navigateWithParams() {
+    // Navigate with route parameters
+    this.router.navigate(['/users', 123]);
+    
+    // Navigate with query parameters
+    this.router.navigate(['/search'], {
+      queryParams: { q: 'term', page: 1 }
+    });
+    
+    // Navigate with complex configuration
+    this.router.navigate(['/products'], {
+      queryParams: { category: 'electronics' },
+      queryParamsHandling: 'merge',
+      fragment: 'top',
+      relativeTo: this.route,
+      replaceUrl: true
+    });
+
+    // Relative navigation
+    this.router.navigate(['../sibling'], {
+      relativeTo: this.route
+    });
+  }
+
+```
+
+**navigateByUrl:**
+*Takes a complete URL string 
+*Better performance for simple navigation
+
+**UseCases:** 
+* For simple, absolute navigation
+* When you want to ensure exact URL matching
+
+```typescript
+// navigateByUrl() Examples
+
+constructor(private router: Router, private route: ActivatedRoute) {}
+
+  navigateByUrlExamples() {
+    // Basic navigation
+    this.router.navigateByUrl('/users');
+    
+    // With query parameters
+    this.router.navigateByUrl('/search?q=term&page=1');
+    
+    // With fragment
+    this.router.navigateByUrl('/products#top');
+    
+    // Complete URL with multiple segments
+    this.router.navigateByUrl('/users/123/profile?tab=settings#photos');
+  }
+```
+
+Common Interview Questions:
+
+"Why would you choose navigate over navigateByUrl?"
+
+When you need relative navigation
+When working with route parameters
+When you need to preserve query parameters
+When you need complex navigation options
+
+
+"When is navigateByUrl the better choice?"
+
+When you have a complete URL string
+For simple, absolute navigation
+When you want exact URL matching
+When handling external URLs or deep links
+
+
+"How do you handle relative navigation?"
+
+* navigate supports relative paths using `relativeTo`
+* `navigateByUrl` doesn't support relative navigation
+
+______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+### Can you explain about navigation with query parameters 
+
+**Using Template Navigation:**
+
+```typescript
+// Navigation examples in templates
+<!-- app.component.html -->
+<!-- Route Parameter navigation -->
+<a [routerLink]="['/user', userId]">View User</a>
+
+<!-- Query Parameter navigation -->
+<a [routerLink]="['/search']" 
+   [queryParams]="{ q: 'searchTerm', page: 1, sort: 'name' }">
+   Search
+</a>
+
+<!-- Combined Route and Query Parameters -->
+<a [routerLink]="['/product', category, productId]"
+   [queryParams]="{ size: 'L', color: 'blue' }">
+   View Product
+</a>
+```
+
+**Programmatic Navigation:**
+
+1. With query params
+
+```typescript
+// app.componet.ts
+
+
+ constructor(
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+
+  // Method to update query parameters
+  updateSearch(newQuery: string) {
+    this.router.navigate(
+      [], // Current route 
+      {
+        relativeTo: this.route,
+        queryParams: { q: newQuery },
+        queryParamsHandling: 'merge' // Keeps other query params
+      }
+    );
+  }
+
+  // Method to update multiple query parameters
+  updateFilters(page: number, sortBy: string) {
+    this.router.navigate(
+      [],
+      {
+        relativeTo: this.route,
+        queryParams: { page, sort: sortBy },
+        queryParamsHandling: 'merge'
+      }
+    );
+  }
+```
+
+2. with route param and query parameters
+
+```typescript
+// Programmatic navigation with route and query parameters
+// app.component.ts
+export class AppComponent {
+  constructor(private router: Router) {}
+
+  // Navigate with query parameters
+  search(term: string) {
+    this.router.navigate(
+      ['/search'],
+      {
+        queryParams: {
+          q: term,
+          page: 1,
+          sort: 'name'
+        }
+      }
+    );
+  }
+
+  // Preserve existing query parameters while routing to other pages 
+  gotToNewPage(newPage: number) {
+    this.router.navigate(
+      ['/search'],
+      {
+        queryParams: { page: newPage },
+        queryParamsHandling: 'preserve' // or 'merge'
+      }
+    );
+  }
+}
+```
+
+
+
+
+______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+Common Interview Questions about Query Parameters:
+
+"When would you use query parameters instead of route parameters?"
+`Answer`: Query parameters are better for optional, non-hierarchical data like filters, search terms, or pagination.
+"How do you preserve query parameters when navigating?"
+`Answer`: Use queryParamsHandling: 'preserve' or 'merge' in navigation options.

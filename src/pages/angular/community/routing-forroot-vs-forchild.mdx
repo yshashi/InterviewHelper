@@ -1,0 +1,20 @@
+---
+layout: ../../../layouts/Layout.astro
+title: What is the difference between RouterModule.forRoot() and forChild() ?
+---
+
+
+## Explain the difference between RouterModule.forRoot() and forChild()?
+**Answer:**
+
+`forRoot()`: 
+* Used in the main app routing module
+* Creates a singleton router service
+* Contains global router configuration
+* Used only once in the application
+
+`forChild()`: 
+* Used in feature modules
+* Doesn't create new router service instance
+* Registers additional routes
+* Can be used multiple times
