@@ -231,7 +231,6 @@ Here's a comprehensive form validation error handling approach:
 
 ```typescript
 // 1. Custom Validators
-@Injectable({ providedIn: 'root' })
 export class CustomValidators {
   static passwordStrength(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
