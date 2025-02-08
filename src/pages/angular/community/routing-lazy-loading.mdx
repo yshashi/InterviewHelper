@@ -1,0 +1,71 @@
+---
+layout: ../../../layouts/Layout.astro
+title: "Explain lazy-loading in Angular?"
+---
+
+## Explain the concept of lazy loading in Angular?
+
+**Key Points:**
+
+- `Lazy loading` in Angular is a technique used to improve application performance by loading feature modules `on demand` instead of at the `initial load`
+- This helps in reducing the initial bundle size, leading to faster application startup times
+
+**How It Works?**
+
+- In Angular, lazy loading is implemented using the `Router`.
+- Instead of eagerly importing modules in `AppModule`, we define routes that load modules only when the user navigates to a specific path
+
+**Configure Lazy Loading in Routing:**
+
+```typescript
+// In app-routing.module.ts:
+const routes: Routes = [
+  {
+    path: "feature",
+    loadChildren: () =>
+      import("./feature/feature.module").then((m) => m.FeatureModule),
+  },
+];
+```
+Here, the `loadChildren` property dynamically imports `FeatureModule` only when the user navigates to `/feature`.
+
+
+**Feature Routing Module:**
+
+```typescript
+// feature-routing.module.ts
+const routes: Routes = [
+  { path: '', component: FeatureComponent } // Default route for the module
+];
+
+```
+
+**Advantages:**
+
+* Faster Initial Load Time
+* Optimized Performance
+* Better User Experience
+
+______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+
+### Follow-Up Quesitons:
+
+**How does lazy loading differ from eager loading?**
+
+* Lazy loading loads modules on demand, while eager loading loads all modules at the start.
+
+**How does Angular manage lazy-loaded modules?**
+
+* Angular uses the `NgModules` and the `RouterModule` to handle lazy-loaded modules separately from the main bundle.
+
+**Can standalone components be lazy-loaded?**
+
+* Yes, since Angular `v17`, standalone components can be lazy-loaded using loadComponent.
+
+```typescript
+{ path: 'dashboard', loadComponent: () => import('./dashboard.component').then(m => m.DashboardComponent) }
+
+```
+
+

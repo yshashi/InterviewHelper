@@ -1,0 +1,21 @@
+---
+layout: ../../../layouts/Layout.astro
+title: 'Can you talk about wildcard routes and use-cases?'
+---
+
+## Can you talk about wildcard routes and use-cases?
+
+**Key points**
+
+- Always place wildcard route last
+- Matches any undefined URL
+- `UseCase:` For handling page-not-found scenarios (if you wanted the user to be navigated to access-denied / page-not-found pages if not having proper access)
+
+**Code Snippet:**
+
+```typescript
+const routes: Routes = [
+  // Other routes...
+  { path: '**', component: NotFoundComponent }
+];
+```

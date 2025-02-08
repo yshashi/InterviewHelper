@@ -1,0 +1,48 @@
+---
+layout: ../../../layouts/Layout.astro
+title: 'You might have come across this code. Can you explain what do understand by this?'
+---
+
+# Can you explain what do you understand by below route configuration?
+
+Code Snippet:
+
+```typescript
+
+const routes: Routes = [
+  { path: 'home', component: HomeComponent },             // Route 1
+  { path: 'products/:id', component: ProductComponent },  // Route 2
+  { path: '', redirectTo: '/home', pathMatch: 'full' },  // Route 3
+  { path: '**', component: PageNotFoundComponent }        // Route 4
+];
+
+```
+
+Answer By Starting like this: This is an Angular routing configuration that defines how different URLs should be handled in an Angular application.
+
+And elaborate each route definition:
+
+**1.`{ path: 'home', component: HomeComponent }`**
+
+- When user visits /home, the HomeComponent will be displayed
+- For example: http://yourapp.com/home
+
+**2. `{ path: 'products/:id', component: ProductComponent }`**
+
+- This is a dynamic route with a parameter `:id`
+- The `:id` is a placeholder that can be any value
+- For example: `http://yourapp.com/products/1` or `http://yourapp.com/products/xyz`
+- The `ProductComponent` can access this `ID` value in its code
+
+**3. `{ path: '', redirectTo: '/home', pathMatch: 'full' }`**
+
+- This handles the `empty` path (root URL)
+- When someone visits just `http://yourapp.com`, they'll be redirected to `/home`
+- `pathMatch: 'full'` means the `redirect` only happens for the exact `empty` path`
+
+**4. `{ path: '**', component: PageNotFoundComponent }`**
+
+- This is a `wildcard` route that catches all URLs that don't match any other routes
+- If someone visits a non-existent route, they'll see the `PageNotFoundComponent`
+- The `**` means `"match anything"`
+- This should always be the `last` route in the array
