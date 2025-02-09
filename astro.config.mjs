@@ -22,5 +22,10 @@ export default defineConfig({
   ],
   build: {
     format: 'directory'
+  },
+  vite: {
+    build: {
+      copyPublicDir: true
+    }
   }
 });
