@@ -38,22 +38,20 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script is:inline>
       window.addEventListener('DOMContentLoaded', (event) => {
-        const isDev = window.location.port === '4321' || window.location.port === '4322';
-        const basePath = isDev ? 'dist' : '';
 
         const script1 = document.createElement('script');
-        script1.src = basePath + '/pagefind/pagefind.js';
+        script1.src = '/pagefind/pagefind.js';
         script1.type = "module";
         document.head.appendChild(script1);
 
         const script2 = document.createElement('script');
-        script2.src = basePath + '/pagefind/pagefind-ui.js';
+        script2.src = '/pagefind/pagefind-ui.js';
         script2.type = "module";
         document.head.appendChild(script2);
 
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = basePath + '/pagefind/pagefind-ui.css';
+        link.href = '/pagefind/pagefind-ui.css';
         document.head.appendChild(link);
       });
     </script>
