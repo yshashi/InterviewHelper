@@ -39,7 +39,7 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
     <script is:inline>
       window.addEventListener('DOMContentLoaded', (event) => {
         const isDev = window.location.port === '4321' || window.location.port === '4322';
-        const basePath = 'dist';
+        const basePath = isDev ? 'dist' : '';
 
         const script1 = document.createElement('script');
         script1.src = basePath + '/pagefind/pagefind.js';
