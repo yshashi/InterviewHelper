@@ -37,21 +37,18 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script is:inline>
-      window.addEventListener('DOMContentLoaded', (event) => {
-        const script1 = document.createElement('script');
-        script1.src = '/pagefind/pagefind.js';
-        document.head.appendChild(script1);
-
-        const script2 = document.createElement('script');
-        script2.src = '/pagefind/pagefind-ui.js';
-        document.head.appendChild(script2);
+      window.addEventListener('load', function() {
+        const baseUrl = window.location.origin;
+        const script = document.createElement('script');
+        script.src = baseUrl + '/pagefind/pagefind-ui.js';
+        document.head.appendChild(script);
 
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '/pagefind/pagefind-ui.css';
+        link.href = baseUrl + '/pagefind/pagefind-ui.css';
         document.head.appendChild(link);
 
-        script2.onload = function() {
+        script.onload = function() {
           new PagefindUI({ element: "#search" });
         };
       });
