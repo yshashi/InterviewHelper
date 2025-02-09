@@ -17,17 +17,10 @@ export default defineConfig({
     mdx(),
     tailwind(),
     react(),
-    sitemap({
-      changefreq: 'weekly',
-      priority: 0.7,
-      lastmod: new Date(),
-    }),
-    compress({
-      CSS: true,
-      HTML: true,
-      JavaScript: true,
-      Image: false,
-      SVG: false,
-    })
-  ]
+    compress(),
+    sitemap()
+  ],
+  build: {
+    format: 'directory'
+  }
 });

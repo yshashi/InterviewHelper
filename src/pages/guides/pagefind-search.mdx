@@ -1,0 +1,206 @@
+---
+layout: ../../layouts/Layout.astro
+title: 'Implementing Pagefind Search in Astro'
+description: 'A comprehensive guide to implementing Pagefind search in your Astro project'
+---
+
+# Implementing Pagefind Search in Astro
+
+This guide will walk you through implementing Pagefind search functionality in your Astro project step by step.
+
+## What is Pagefind?
+
+Pagefind is a static search library that helps you add search functionality to static websites. It's particularly well-suited for Astro projects because:
+- It's fast and lightweight
+- Works with static sites
+- Provides a good out-of-the-box UI
+- Supports multiple languages
+
+## Prerequisites
+
+- An existing Astro project
+- Basic knowledge of Astro components and layouts
+
+## Step 1: Install Pagefind
+
+First, you'll need to install Pagefind. Add it to your build script in `package.json`:
+
+```json
+{
+  "scripts": {
+    "build": "astro build && pagefind --site dist"
+  }
+}
+```
+
+## Step 2: Create Search Component
+
+Create a new file `src/components/Search.astro` with the following content:
+
+```astro
+---
+---
+<div id="search"></div>
+
+<style>
+  /* Light mode styles */
+  :root {
+    --pagefind-ui-scale: 0.8;
+    --pagefind-ui-primary: #034ad8;
+    --pagefind-ui-text: #393939;
+    --pagefind-ui-background: #ffffff;
+    --pagefind-ui-border: #eeeeee;
+    --pagefind-ui-tag: #eeeeee;
+  }
+
+  /* Dark mode styles */
+  :root[data-theme="dark"] {
+    --pagefind-ui-primary: #6c7ee5;
+    --pagefind-ui-text: #ffffff;
+    --pagefind-ui-background: #152028;
+    --pagefind-ui-border: #374151;
+    --pagefind-ui-tag: #818cf8;
+  }
+
+  .pagefind-ui .pagefind-ui__search-input {
+    @apply w-full px-4 py-2 text-sm bg-white dark:bg-gray-800 
+           border border-gray-300 dark:border-gray-700 rounded-lg 
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 
+           dark:focus:ring-indigo-400;
+  }
+
+  .pagefind-ui .pagefind-ui__result {
+    @apply border-t border-gray-200 dark:border-gray-700 pt-4 mt-4;
+  }
+
+  .pagefind-ui .pagefind-ui__result-title {
+    @apply text-lg font-medium text-gray-900 dark:text-white;
+  }
+
+  .pagefind-ui .pagefind-ui__result-excerpt {
+    @apply mt-1 text-sm text-gray-600 dark:text-gray-300;
+  }
+</style>
+
+<script>
+  window.addEventListener('load', () => {
+    const initializeSearch = () => {
+      if (window.PagefindUI) {
+        new window.PagefindUI({
+          element: '#search',
+          showImages: false,
+          resetStyles: false
+        });
+      } else {
+        setTimeout(initializeSearch, 100);
+      }
+    };
+    initializeSearch();
+  });
+</script>
+```
+
+## Step 3: Update Layout Component
+
+Modify your `src/layouts/Layout.astro` to include Pagefind scripts and styles:
+
+```astro
+---
+// Your existing layout frontmatter
+---
+<html>
+  <head>
+    <!-- Your existing head content -->
+    <script is:inline>
+      window.addEventListener('DOMContentLoaded', (event) => {
+        const script1 = document.createElement('script');
+        script1.src = '/pagefind/pagefind.js';
+        document.head.appendChild(script1);
+
+        const script2 = document.createElement('script');
+        script2.src = '/pagefind/pagefind-ui.js';
+        document.head.appendChild(script2);
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '/pagefind/pagefind-ui.css';
+        document.head.appendChild(link);
+      });
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+## Step 4: Add Search Component to Pages
+
+Add the Search component to any page where you want the search functionality:
+
+```astro
+---
+import Search from '../components/Search.astro';
+---
+<div class="search-container">
+  <Search />
+</div>
+```
+
+## Step 5: Build and Test
+
+1. Run the build command:
+```bash
+npm run build
+```
+
+2. This will:
+   - Build your Astro site
+   - Generate the search index
+   - Create necessary search files in the `dist/pagefind` directory
+
+3. Start your dev server and test the search functionality:
+```bash
+npm run dev
+```
+
+## Troubleshooting
+
+If the search isn't working, check these common issues:
+
+1. **Scripts Not Loading**: Make sure the paths to Pagefind scripts and styles are correct in your Layout component.
+
+2. **Build Issues**: Ensure the build command includes both Astro build and Pagefind index generation.
+
+3. **Styling Conflicts**: If the search UI looks broken, try adjusting the CSS variables and styles in the Search component.
+
+4. **Content Not Indexed**: Make sure your content is properly structured with HTML elements that Pagefind can index.
+
+## Advanced Configuration
+
+You can customize Pagefind's behavior with additional options:
+
+```javascript
+new window.PagefindUI({
+  element: '#search',
+  showImages: false,
+  resetStyles: false,
+  bundleDirectory: '/pagefind',
+  baseUrl: '/',
+  showSubResults: true
+});
+```
+
+## Best Practices
+
+1. **Performance**: Load Pagefind scripts asynchronously to prevent blocking page rendering.
+
+2. **Accessibility**: Ensure your search component is keyboard accessible and works with screen readers.
+
+3. **Styling**: Use CSS variables to maintain consistent theming with your site's design.
+
+4. **Error Handling**: Implement retry logic for script loading and initialization.
+
+## Conclusion
+
+Pagefind provides a powerful search solution for Astro sites. By following these steps, you can add fast, efficient search functionality to your static site. Remember to rebuild your site whenever you update content to ensure the search index stays current.

@@ -1,0 +1,103 @@
+---
+---
+
+<div class="relative">
+  <div id="search" class="pagefind-ui" data-pagefind-ui></div>
+</div>
+
+<style is:global>
+  .pagefind-ui {
+    --pagefind-ui-primary: #4f46e5;
+    --pagefind-ui-text: #374151;
+    --pagefind-ui-background: #ffffff;
+    --pagefind-ui-border: #e5e7eb;
+    --pagefind-ui-tag: #4f46e5;
+  }
+
+  .dark .pagefind-ui {
+    --pagefind-ui-text: #f3f4f6;
+    --pagefind-ui-background: #1f2937;
+    --pagefind-ui-border: #374151;
+    --pagefind-ui-tag: #818cf8;
+  }
+  .pagefind-ui__form.svelte-e9gkc3:before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background: linear-gradient(to bottom, #ffffff 0%, #f3f4f6 100%);
+  }
+
+  .pagefind-ui .pagefind-ui__search-input {
+    @apply w-full px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400;
+  }
+
+  .pagefind-ui .pagefind-ui__results-area {
+    @apply mt-2;
+  }
+
+  .pagefind-ui .pagefind-ui__result {
+    @apply p-4 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  .pagefind-ui .pagefind-ui__result-title {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+
+  .pagefind-ui .pagefind-ui__result-excerpt {
+    @apply mt-1 text-sm text-gray-600 dark:text-gray-300;
+  }
+</style>
+
+<script>
+  declare global {
+    interface Window {
+      PagefindUI: any;
+    }
+  }
+
+  window.addEventListener('load', () => {
+    const initializeSearch = () => {
+      if (window.PagefindUI) {
+        new window.PagefindUI({
+          element: '#search',
+          showImages: false,
+          resetStyles: false,
+          baseUrl: '/',
+          bundleDirectory: window.location.port === '4322' || window.location.port === '4321' ? '/dist/pagefind' : '/pagefind'
+        });
+      } else {
+        setTimeout(initializeSearch, 100);
+      }
+    };
+    initializeSearch();
+  });
+</script>
+
+<style>
+  .search-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  #search-results {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  #search-results::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #search-results::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #search-results::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+  }
+</style>

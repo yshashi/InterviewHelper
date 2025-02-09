@@ -1,6 +1,7 @@
 ---
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
+import Search from '../components/Search.astro';
 import Analytics from '@vercel/analytics/astro';
 
 interface Props {
@@ -35,6 +36,25 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script is:inline>
+      window.addEventListener('DOMContentLoaded', (event) => {
+        const isDev = window.location.port === '4322' || window.location.port === '4321';
+        const basePath = isDev ? '/dist' : '';
+        
+        const script1 = document.createElement('script');
+        script1.src = basePath + '/pagefind/pagefind.js';
+        document.head.appendChild(script1);
+
+        const script2 = document.createElement('script');
+        script2.src = basePath + '/pagefind/pagefind-ui.js';
+        document.head.appendChild(script2);
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = basePath + '/pagefind/pagefind-ui.css';
+        document.head.appendChild(link);
+      });
+    </script>
     <link rel="icon" type="image/png" href="/favicon.png" />
 
     <Analytics />
@@ -94,6 +114,9 @@ const metaTitle = `${pageTitle} | Interview Helper - Your Tech Interview Prepara
       <!-- Main content -->
       <main class="flex-1 min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900 w-full lg:ml-[280px]">
         <div class="container mx-auto p-6 max-w-[1200px] transition-opacity duration-200">
+          <div class="mb-6">
+            <Search />
+          </div>
           <slot />
         </div>
       </main>
