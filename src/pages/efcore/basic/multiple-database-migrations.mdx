@@ -1,0 +1,73 @@
+---
+layout: ../../../layouts/Layout.astro
+title: EF Core Migrations for Multiple Databases
+---
+
+## Interview Question
+Does Entity Framework Core support creating migrations for multiple databases?
+
+## Answer
+Yes, EF Core supports creating and managing migrations for multiple databases. There are two main approaches:
+
+### 1. Using Multiple DbContext Classes
+```csharp
+// First DbContext for Orders database
+public class OrdersContext : DbContext
+{
+    public OrdersContext(DbContextOptions<OrdersContext> options)
+        : base(options) { }
+        
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer("Server=.;Database=Orders;Trusted_Connection=True;");
+    }
+}
+
+// Second DbContext for Products database
+public class ProductsContext : DbContext
+{
+    public ProductsContext(DbContextOptions<ProductsContext> options)
+        : base(options) { }
+        
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer("Server=.;Database=Products;Trusted_Connection=True;");
+    }
+}
+
+// Creating migrations for each context
+// dotnet ef migrations add InitialCreate --context OrdersContext
+// dotnet ef migrations add InitialCreate --context ProductsContext
+```
+
+### 2. Using Migration History Table
+```csharp
+public class MultiDbContext : DbContext
+{
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // Configure based on environment/tenant
+        var dbConnection = GetDatabaseConnection(); // Your logic here
+        optionsBuilder.UseSqlServer(dbConnection);
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Specify different migration history table for each database
+        modelBuilder.HasDefaultSchema("schema_name");
+        modelBuilder.HasHistoryTable("__EFMigrationsHistory", "schema_name");
+    }
+}
+```
+
+## Key Points 💡
+- Each DbContext can target a different database
+- Use `--context` flag to specify which context to use for migrations
+- Migrations are stored separately for each context
+- Can use different schemas within same database
+- Migration history tables can be customized
+
+## Common Follow-up Questions
+1. How do you handle transactions across multiple databases?
+2. How do you ensure migration consistency across databases?
+3. What are the best practices for managing multiple database connections?

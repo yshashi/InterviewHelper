@@ -1,0 +1,81 @@
+---
+layout: ../../../layouts/Layout.astro
+title: Default lifetime of DbContext in DI
+---
+
+## Interview Question
+What is the default lifetime of DbContext in Dependency Injection and why is it chosen as the default?
+
+## Answer
+The default lifetime of DbContext in Entity Framework Core is **Scoped**. This means:
+
+- A new instance is created once per request in web applications
+- The same instance is shared within that request
+- Different requests get different instances
+
+```csharp
+// Default registration
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// Equivalent to:
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString),
+    ServiceLifetime.Scoped);
+```
+
+### Why Scoped is the Default Choice
+
+1. **Resource Management**
+   - Automatic cleanup after each request
+   - Prevents memory leaks from entity tracking
+   - Efficient connection management
+
+2. **Thread Safety**
+   - Each request has its own DbContext
+   - Safe for parallel request processing
+   - Prevents concurrent access issues
+
+### Common Pitfall to Watch Out For
+
+```csharp
+// ❌ WRONG: Never inject DbContext into Singleton services
+public class SingletonService
+{
+    private readonly ApplicationDbContext _context; // This will cause issues!
+    
+    public SingletonService(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+}
+
+// ✅ CORRECT: Use scope creation in Singleton services
+public class SingletonService
+{
+    private readonly IServiceProvider _serviceProvider;
+    
+    public SingletonService(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+    
+    public async Task DoWorkAsync()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        // Use context here
+    }
+}
+```
+
+## Interview Tips 💡
+- Emphasize that Scoped lifetime aligns with web request lifecycle
+- Mention the importance of proper disposal in long-running operations
+- Be ready to explain why Singleton lifetime should be avoided
+- Know how to handle DbContext in background services
+
+## Common Follow-up Questions
+1. How would you handle DbContext in a background service?
+2. What are the implications of using Transient vs Scoped lifetime?
+3. How do you properly dispose of DbContext when manually creating instances?

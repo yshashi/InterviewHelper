@@ -1,0 +1,46 @@
+---
+layout: ../../../layouts/Layout.astro
+title: Creating Multiple Entities in EF Core
+---
+
+## Interview Question
+How can you create multiple new entities in Entity Framework Core?
+
+## Answer
+EF Core provides several methods to create multiple entities efficiently. Here are the main approaches:
+
+### 1. Using AddRange Method
+```csharp
+using (var context = new ApplicationDbContext())
+{
+    var customers = new List<Customer>
+    {
+        new Customer { Name = "John Doe", Email = "john@example.com" },
+        new Customer { Name = "Jane Doe", Email = "jane@example.com" }
+    };
+    
+    context.Customers.AddRange(customers);
+    await context.SaveChangesAsync();
+}
+```
+
+### 2. Bulk Insert with Third-Party Libraries
+```csharp
+// Using EFCore.BulkExtensions
+using (var context = new ApplicationDbContext())
+{
+    var customers = GetCustomerList(); // Your list of customers
+    await context.BulkInsertAsync(customers);
+}
+```
+
+## Key Points 💡
+- `AddRange` is best for small to medium sets of data
+- Use bulk insert libraries for large datasets
+- Always use transactions for multiple inserts
+- Consider batching for very large datasets
+
+## Common Follow-up Questions
+1. How does bulk insert performance compare to AddRange?
+2. How can you handle errors during multiple entity creation?
+3. What's the best way to track the status of bulk operations?

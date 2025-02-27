@@ -1,0 +1,67 @@
+---
+layout: ../../../layouts/Layout.astro
+title: Creating Database using Entity Framework Core
+---
+
+## Interview Question
+How can you create a database using Entity Framework Core?
+
+## Answer
+There are three main approaches to create a database using Entity Framework Core:
+
+### 1. Using EF Core Migrations
+```csharp
+// 1. Create a migration
+dotnet ef migrations add InitialCreate
+
+// 2. Apply the migration to create/update database
+dotnet ef database update
+```
+
+### 2. Using EnsureCreated()
+```csharp
+using var context = new ApplicationDbContext();
+// Creates database if it doesn't exist
+context.Database.EnsureCreated();
+```
+
+### 3. Programmatically with DbContext
+```csharp
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Customer> Customers { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configure your model here
+        modelBuilder.Entity<Customer>()
+            .HasKey(c => c.Id);
+            
+        // Seed initial data
+        modelBuilder.Entity<Customer>().HasData(
+            new Customer { Id = 1, Name = "John Doe" }
+        );
+    }
+}
+
+// In Program.cs or Startup.cs
+public void Configure(IApplicationBuilder app)
+{
+    using (var scope = app.ApplicationServices.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate(); // This will create the database
+    }
+}
+```
+
+## Key Points to Remember 💡
+- Migrations are recommended for production environments
+- `EnsureCreated()` is good for testing or prototypes
+- Always use transactions for data seeding
+- Migrations track schema changes over time
+
+## Common Follow-up Questions
+1. What's the difference between `EnsureCreated()` and Migrations?
+2. How do you handle database schema changes?
+3. How can you seed initial data to the database?

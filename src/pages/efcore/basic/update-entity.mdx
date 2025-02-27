@@ -1,0 +1,57 @@
+---
+layout: ../../../layouts/Layout.astro
+title: Updating Entities in EF Core
+---
+
+## Interview Question
+How can you update an existing entity in Entity Framework Core?
+
+## Answer
+There are several ways to update entities in EF Core. Here are the main approaches:
+
+### 1. Track and Update
+```csharp
+using (var context = new ApplicationDbContext())
+{
+    var customer = await context.Customers.FindAsync(1);
+    customer.Name = "Updated Name";
+    await context.SaveChangesAsync();
+}
+```
+
+### 2. Update Without Querying
+```csharp
+using (var context = new ApplicationDbContext())
+{
+    var customer = new Customer 
+    { 
+        Id = 1, 
+        Name = "Updated Name" 
+    };
+    context.Customers.Update(customer);
+    await context.SaveChangesAsync();
+}
+```
+
+### 3. Updating Specific Properties
+```csharp
+using (var context = new ApplicationDbContext())
+{
+    var customer = new Customer { Id = 1 };
+    context.Customers.Attach(customer);
+    context.Entry(customer).Property(x => x.Name).IsModified = true;
+    customer.Name = "Updated Name";
+    await context.SaveChangesAsync();
+}
+```
+
+## Key Points 💡
+- First approach is best when you need to validate existing data
+- Second approach is efficient when you know the entity exists
+- Third approach is best for partial updates
+- Always consider concurrency handling
+
+## Common Follow-up Questions
+1. How do you handle concurrency conflicts?
+2. What's the difference between Update and Attach?
+3. How can you update multiple entities efficiently?

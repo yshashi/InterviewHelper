@@ -1,0 +1,87 @@
+---
+layout: ../../../layouts/Layout.astro
+title: Database Seeding in EF Core
+---
+
+## Interview Question
+How can you seed a database with initial data in Entity Framework Core?
+
+## Answer
+EF Core provides several approaches to seed database data. Here are the main methods:
+
+### 1. Using Model Builder
+```csharp
+public class ApplicationDbContext : DbContext
+{
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Category>().HasData(
+            new Category { Id = 1, Name = "Electronics" },
+            new Category { Id = 2, Name = "Books" }
+        );
+    }
+}
+```
+
+### 2. Using Migrations
+```csharp
+public partial class SeedData : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.InsertData(
+            table: "Categories",
+            columns: new[] { "Id", "Name" },
+            values: new object[] { 1, "Electronics" }
+        );
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DeleteData(
+            table: "Categories",
+            keyColumn: "Id",
+            keyValue: 1
+        );
+    }
+}
+```
+
+### 3. Using Extension Method
+```csharp
+public static class DbInitializer
+{
+    public static void Initialize(ApplicationDbContext context)
+    {
+        if (!context.Categories.Any())
+        {
+            var categories = new[]
+            {
+                new Category { Name = "Electronics" },
+                new Category { Name = "Books" }
+            };
+            
+            context.Categories.AddRange(categories);
+            context.SaveChanges();
+        }
+    }
+}
+
+// In Program.cs
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    DbInitializer.Initialize(context);
+}
+```
+
+## Key Points 💡
+- ModelBuilder.HasData is best for reference data
+- Migrations are good for version-controlled data
+- Extension methods are flexible for development data
+- Always handle existing data scenarios
+
+## Common Follow-up Questions
+1. How do you handle seeding data in production vs development?
+2. How can you seed related entities maintaining referential integrity?
+3. What's the best practice for seeding large amounts of data?

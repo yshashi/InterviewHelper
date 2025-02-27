@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Layout.astro
+title: Deleting Entities in EF Core
+---
+
+## Interview Question
+How can you delete an existing entity in Entity Framework Core?
+
+## Answer
+EF Core provides multiple ways to delete entities. Here are the main approaches:
+
+### 1. Find and Delete
+```csharp
+using (var context = new ApplicationDbContext())
+{
+    var customer = await context.Customers.FindAsync(1);
+    context.Customers.Remove(customer);
+    await context.SaveChangesAsync();
+}
+```
+
+### 2. Delete Without Loading
+```csharp
+using (var context = new ApplicationDbContext())
+{
+    var customer = new Customer { Id = 1 };
+    context.Customers.Remove(customer);
+    // or context.Entry(customer).State = EntityState.Deleted;
+    await context.SaveChangesAsync();
+}
+```
+
+### 3. Bulk Delete
+```csharp
+using (var context = new ApplicationDbContext())
+{
+    // Delete multiple entities
+    await context.Customers
+        .Where(c => c.LastLoginDate < DateTime.Now.AddYears(-1))
+        .ExecuteDeleteAsync(); // Requires EF Core 7.0+
+}
+```
+
+## Key Points 💡
+- First approach is safer as it verifies entity exists
+- Second approach is more efficient for known entities
+- Use bulk delete for removing multiple entities
+- Consider soft delete pattern for audit trails
+
+## Common Follow-up Questions
+1. What is soft delete and when should you use it?
+2. How do you handle cascade deletes?
+3. How can you implement delete with concurrency checks?
