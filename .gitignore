@@ -24,3 +24,5 @@ pnpm-debug.log*
 
 src/mcq_generator/questions/
 src/mcq_generator/debug.ipynb
+public/questions
+public/pagefind
