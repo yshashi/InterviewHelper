@@ -22,7 +22,8 @@ try {
     questions = questionsModule.default;
   } catch (srcError) {
     // If that fails, try to load from public directory
-    const publicQuestionsFile = `/questions/${getQuestionFileName(topic)}`;
+    // after build it get stored inside the dist so use the dist path
+    const publicQuestionsFile = `/dist/questions/${getQuestionFileName(topic)}`;
     console.log(publicQuestionsFile);
     const response = await fetch(publicQuestionsFile);
     
