@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What does the standalone component represent in Angular's architecture?",
+    "options": {
+      "A": "A shift towards NgModules",
+      "B": "A shift away from NgModules",
+      "C": "A shift towards traditional observables",
+      "D": "A shift away from traditional observables"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of signals in Angular?",
+    "options": {
+      "A": "To manage state and side effects",
+      "B": "To manage NgModules",
+      "C": "To manage standalone components",
+      "D": "To manage traditional observables"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the benefits of modern Angular architecture?",
+    "options": {
+      "A": "More boilerplate code",
+      "B": "Less intuitive state management",
+      "C": "Less efficient change detection",
+      "D": "Better TypeScript integration"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is one of the tips for discussing modern Angular architecture in an interview?",
+    "options": {
+      "A": "Explain the move from standalone to NgModules",
+      "B": "Discuss the benefits of traditional observables over signals",
+      "C": "Share experiences migrating to standalone components",
+      "D": "Explain when to use NgModules vs. standalone components"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'user' signal in the UserProfileComponent?",
+    "options": {
+      "A": "To manage the user's profile",
+      "B": "To manage the user's avatar",
+      "C": "To manage the user's name",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'count' signal in the CounterComponent?",
+    "options": {
+      "A": "To manage the count of users",
+      "B": "To manage the count of clicks",
+      "C": "To manage the count of standalone components",
+      "D": "To manage the count of NgModules"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of the 'userState' signal in the UserStore?",
+    "options": {
+      "A": "To manage the state of the user",
+      "B": "To manage the state of the store",
+      "C": "To manage the state of the application",
+      "D": "To manage the state of the component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'cache' signal in the DataService?",
+    "options": {
+      "A": "To manage the cache of the service",
+      "B": "To manage the cache of the application",
+      "C": "To manage the cache of the component",
+      "D": "To manage the cache of the user"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the benefits of using signals in Angular?",
+    "options": {
+      "A": "Less efficient change detection",
+      "B": "More boilerplate code",
+      "C": "Fine-grained reactivity",
+      "D": "Less intuitive state management"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is one of the tips for discussing the future of Angular in an interview?",
+    "options": {
+      "A": "Discuss Angular's roadmap",
+      "B": "Mention upcoming drawbacks",
+      "C": "Consider migration away from Angular",
+      "D": "Discuss the move from standalone to NgModules"
+    },
+    "correct_answer": "A"
+  }
+]

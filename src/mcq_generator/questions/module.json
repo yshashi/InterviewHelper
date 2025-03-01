@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is an Angular module (NgModule)?",
+    "options": {
+      "A": "A container for organizing related components, directives, pipes, and services",
+      "B": "A function that controls the behavior of the application",
+      "C": "A class that encapsulates the application's logic",
+      "D": "A service that provides data to the application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "Why is an Angular module important?",
+    "options": {
+      "A": "It helps organize code into cohesive blocks",
+      "B": "It controls the user interface of the application",
+      "C": "It provides data to the application",
+      "D": "It handles user input and updates the application state"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the different types of Angular Modules?",
+    "options": {
+      "A": "Root Module, Feature Module, Shared Module, Core Module",
+      "B": "Root Module, Component Module, Service Module, Core Module",
+      "C": "Root Module, Directive Module, Pipe Module, Core Module",
+      "D": "Root Module, Function Module, Class Module, Core Module"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you handle module dependencies and imports in Angular?",
+    "options": {
+      "A": "By using the 'imports' array in the @NgModule decorator",
+      "B": "By using the 'dependencies' array in the @NgModule decorator",
+      "C": "By using the 'imports' keyword in the class definition",
+      "D": "By using the 'dependencies' keyword in the class definition"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you optimize module loading and performance in Angular?",
+    "options": {
+      "A": "By using lazy loading and preloading strategies",
+      "B": "By using the 'optimize' keyword in the @NgModule decorator",
+      "C": "By using the 'performance' keyword in the class definition",
+      "D": "By using the 'optimize' array in the @NgModule decorator"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are common module patterns and best practices in Angular?",
+    "options": {
+      "A": "Feature Module Pattern and Shared Module Pattern",
+      "B": "Root Module Pattern and Core Module Pattern",
+      "C": "Service Module Pattern and Directive Module Pattern",
+      "D": "Pipe Module Pattern and Component Module Pattern"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What's the difference between BrowserModule and CommonModule?",
+    "options": {
+      "A": "BrowserModule is for the root module and provides browser-specific services, while CommonModule provides common directives and pipes",
+      "B": "BrowserModule provides common directives and pipes, while CommonModule is for the root module and provides browser-specific services",
+      "C": "BrowserModule is for feature modules and provides browser-specific services, while CommonModule is for the root module and provides common directives and pipes",
+      "D": "BrowserModule is for feature modules and provides common directives and pipes, while CommonModule is for the root module and provides browser-specific services"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you prevent a module from being imported multiple times?",
+    "options": {
+      "A": "Use the constructor guard pattern in core modules",
+      "B": "Use the 'preventMultipleImports' keyword in the @NgModule decorator",
+      "C": "Use the 'singleton' keyword in the class definition",
+      "D": "Use the 'preventMultipleImports' array in the @NgModule decorator"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are forRoot() and forChild() methods?",
+    "options": {
+      "A": "They're module patterns for configuring providers",
+      "B": "They're module patterns for configuring components",
+      "C": "They're module patterns for configuring directives",
+      "D": "They're module patterns for configuring pipes"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you share services between modules?",
+    "options": {
+      "A": "Use providedIn: 'root' for singleton services or declare in CoreModule",
+      "B": "Use providedIn: 'shared' for singleton services or declare in SharedModule",
+      "C": "Use providedIn: 'root' for shared services or declare in RootModule",
+      "D": "Use providedIn: 'shared' for shared services or declare in SharedModule"
+    },
+    "correct_answer": "A"
+  }
+]
