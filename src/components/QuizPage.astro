@@ -21,7 +21,7 @@ try {
   try {
     const srcQuestionsFile = isDev 
       ? `../mcq_generator/questions/${getQuestionFileName(topic)}` 
-      : `/questions/${getQuestionFileName(topic)}`;
+      : `/dist/questions/${getQuestionFileName(topic)}`;
     const questionsModule = await import(srcQuestionsFile, { assert: { type: 'json' } });
     questions = questionsModule.default;
   } catch (srcError) {
