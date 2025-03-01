@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is RxJS and why is it used in Angular?",
+    "options": {
+      "A": "RxJS is a library for reactive programming using observables. It's used in Angular for handling asynchronous data streams, event handling, HTTP requests, state management, component communication, and side effect management.",
+      "B": "RxJS is a library for reactive programming using observables. It's used in Angular for handling synchronous data streams, event handling, HTTP requests, state management, component communication, and side effect management.",
+      "C": "RxJS is a library for reactive programming using observables. It's used in Angular for handling asynchronous data streams, event handling, FTP requests, state management, component communication, and side effect management.",
+      "D": "RxJS is a library for reactive programming using observables. It's used in Angular for handling asynchronous data streams, event handling, HTTP requests, state management, component communication, and side effect management."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key RxJS operators and how do you use them?",
+    "options": {
+      "A": "The key RxJS operators include map, filter, switchMap, debounceTime, distinctUntilChanged, catchError, tap, mergeMap, concatMap, takeUntil, of, from, Subject, BehaviorSubject, combineLatest, and forkJoin. They are used for transforming and filtering data, combining streams, and making parallel requests.",
+      "B": "The key RxJS operators include map, filter, switchMap, debounceTime, distinctUntilChanged, catchError, tap, mergeMap, concatMap, takeUntil, of, from, Subject, BehaviorSubject, combineLatest, and forkJoin. They are used for transforming and filtering data, combining streams, and making serial requests.",
+      "C": "The key RxJS operators include map, filter, switchMap, debounceTime, distinctUntilChanged, catchError, tap, mergeMap, concatMap, takeUntil, of, from, Subject, BehaviorSubject, combineLatest, and forkJoin. They are used for transforming and filtering data, combining streams, and making parallel requests.",
+      "D": "The key RxJS operators include map, filter, switchMap, debounceTime, distinctUntilChanged, catchError, tap, mergeMap, concatMap, takeUntil, of, from, Subject, BehaviorSubject, combineLatest, and forkJoin. They are used for transforming and filtering data, combining streams, and making parallel requests."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you handle errors and retries with RxJS?",
+    "options": {
+      "A": "Errors and retries can be handled with RxJS by using the retry and catchError operators. The retry operator can be used to retry failed requests, while the catchError operator can be used to handle errors.",
+      "B": "Errors and retries can be handled with RxJS by using the retry and catchError operators. The retry operator can be used to retry successful requests, while the catchError operator can be used to handle errors.",
+      "C": "Errors and retries can be handled with RxJS by using the retry and catchError operators. The retry operator can be used to retry failed requests, while the catchError operator can be used to handle successes.",
+      "D": "Errors and retries can be handled with RxJS by using the retry and catchError operators. The retry operator can be used to retry failed requests, while the catchError operator can be used to handle errors."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you manage state with RxJS?",
+    "options": {
+      "A": "State can be managed with RxJS by using a BehaviorSubject to hold the state and selectors to select parts of the state. Actions can be used to update the state.",
+      "B": "State can be managed with RxJS by using a BehaviorSubject to hold the state and selectors to select parts of the state. Actions can be used to delete the state.",
+      "C": "State can be managed with RxJS by using a BehaviorSubject to hold the state and selectors to select parts of the state. Actions can be used to update the state.",
+      "D": "State can be managed with RxJS by using a BehaviorSubject to hold the state and selectors to select parts of the state. Actions can be used to update the state."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a common RxJS pattern for caching?",
+    "options": {
+      "A": "A common RxJS pattern for caching involves using a ReplaySubject to hold the cached data and the mergeMap operator to return the cached data if it exists or fetch fresh data if it doesn't.",
+      "B": "A common RxJS pattern for caching involves using a ReplaySubject to hold the cached data and the mergeMap operator to return the cached data if it doesn't exist or fetch fresh data if it does.",
+      "C": "A common RxJS pattern for caching involves using a ReplaySubject to hold the cached data and the mergeMap operator to return the cached data if it exists or fetch fresh data if it doesn't.",
+      "D": "A common RxJS pattern for caching involves using a ReplaySubject to hold the cached data and the mergeMap operator to return the cached data if it exists or fetch fresh data if it doesn't."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a common RxJS pattern for performance optimization?",
+    "options": {
+      "A": "A common RxJS pattern for performance optimization involves sharing expensive operations using the shareReplay operator and cancelling previous requests using the switchMap operator.",
+      "B": "A common RxJS pattern for performance optimization involves sharing expensive operations using the shareReplay operator and cancelling previous requests using the mergeMap operator.",
+      "C": "A common RxJS pattern for performance optimization involves sharing expensive operations using the shareReplay operator and cancelling previous requests using the switchMap operator.",
+      "D": "A common RxJS pattern for performance optimization involves sharing expensive operations using the shareReplay operator and cancelling previous requests using the switchMap operator."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you test RxJS?",
+    "options": {
+      "A": "RxJS can be tested by using the catchError operator to catch and test errors.",
+      "B": "RxJS can be tested by using the catchError operator to catch and test successes.",
+      "C": "RxJS can be tested by using the catchError operator to catch and test errors.",
+      "D": "RxJS can be tested by using the catchError operator to catch and test errors."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you prevent memory leaks with RxJS?",
+    "options": {
+      "A": "Memory leaks can be prevented with RxJS by using the takeUntil operator to unsubscribe from observables when a component is destroyed.",
+      "B": "Memory leaks can be prevented with RxJS by using the takeUntil operator to subscribe to observables when a component is destroyed.",
+      "C": "Memory leaks can be prevented with RxJS by using the takeUntil operator to unsubscribe from observables when a component is destroyed.",
+      "D": "Memory leaks can be prevented with RxJS by using the takeUntil operator to unsubscribe from observables when a component is destroyed."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you recover from errors with RxJS?",
+    "options": {
+      "A": "Errors can be recovered from with RxJS by using the retryWhen operator to retry the request after a delay when an error occurs.",
+      "B": "Errors can be recovered from with RxJS by using the retryWhen operator to retry the request immediately when an error occurs.",
+      "C": "Errors can be recovered from with RxJS by using the retryWhen operator to retry the request after a delay when an error occurs.",
+      "D": "Errors can be recovered from with RxJS by using the retryWhen operator to retry the request after a delay when an error occurs."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you create custom operators with RxJS?",
+    "options": {
+      "A": "Custom operators can be created with RxJS by using the tap operator to log the next value, error, and completion of an observable.",
+      "B": "Custom operators can be created with RxJS by using the tap operator to log the previous value, error, and completion of an observable.",
+      "C": "Custom operators can be created with RxJS by using the tap operator to log the next value, error, and completion of an observable.",
+      "D": "Custom operators can be created with RxJS by using the tap operator to log the next value, error, and completion of an observable."
+    },
+    "correct_answer": "A"
+  }
+]

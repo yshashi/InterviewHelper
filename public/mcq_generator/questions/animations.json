@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What are Angular animations?",
+    "options": {
+      "A": "A system for implementing animations declaratively",
+      "B": "A system for implementing animations procedurally",
+      "C": "A system for implementing animations in CSS",
+      "D": "A system for implementing animations in JavaScript"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "Which of the following is not a key concept in Angular animations?",
+    "options": {
+      "A": "State and transition animations",
+      "B": "Keyframe animations",
+      "C": "Group animations",
+      "D": "Loop animations"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'trigger' function in Angular animations?",
+    "options": {
+      "A": "To start the animation",
+      "B": "To define the animation",
+      "C": "To stop the animation",
+      "D": "To loop the animation"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What does the 'state' function do in Angular animations?",
+    "options": {
+      "A": "Defines the end state of the animation",
+      "B": "Defines the start state of the animation",
+      "C": "Defines the different states an element can be in and their styles",
+      "D": "Defines the current state of the animation"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'animate' function in Angular animations?",
+    "options": {
+      "A": "To define the duration and timing function of the animation",
+      "B": "To define the start and end states of the animation",
+      "C": "To define the keyframes of the animation",
+      "D": "To define the trigger of the animation"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a keyframe animation in Angular?",
+    "options": {
+      "A": "An animation that is defined by a set of keyframes",
+      "B": "An animation that is defined by a single keyframe",
+      "C": "An animation that is defined by a set of states",
+      "D": "An animation that is defined by a set of triggers"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a group animation in Angular?",
+    "options": {
+      "A": "An animation that is applied to a group of elements",
+      "B": "An animation that is defined by a group of keyframes",
+      "C": "An animation that is defined by a group of states",
+      "D": "An animation that is defined by a group of triggers"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a reusable animation in Angular?",
+    "options": {
+      "A": "An animation that can be used in multiple components",
+      "B": "An animation that can be used multiple times in the same component",
+      "C": "An animation that can be used in multiple states",
+      "D": "An animation that can be used in multiple keyframes"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a route animation in Angular?",
+    "options": {
+      "A": "An animation that is triggered when the route changes",
+      "B": "An animation that is triggered when the route is loaded",
+      "C": "An animation that is triggered when the route is unloaded",
+      "D": "An animation that is triggered when the route is updated"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'transition' function in Angular animations?",
+    "options": {
+      "A": "To define the start and end states of the animation",
+      "B": "To define the duration and timing function of the animation",
+      "C": "To define the keyframes of the animation",
+      "D": "To define the conditions under which the animation will start"
+    },
+    "correct_answer": "D"
+  }
+]

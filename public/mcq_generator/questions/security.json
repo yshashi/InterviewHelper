@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What are the most critical vulnerabilities the text focuses on?",
+    "options": {
+      "A": "XSS and CSRF",
+      "B": "Data Injection and Unauthorized Access",
+      "C": "CSRF and Data Injection",
+      "D": "XSS and Unauthorized Access"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does XSS stand for?",
+    "options": {
+      "A": "Cross-Site Scripting",
+      "B": "Cross-Site Security",
+      "C": "Cross-Site Service",
+      "D": "Cross-Site Server"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does CSRF stand for?",
+    "options": {
+      "A": "Cross-Site Request Forgery",
+      "B": "Cross-Site Request Format",
+      "C": "Cross-Site Response Forgery",
+      "D": "Cross-Site Response Format"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'sanitizeHtml' function in the 'SecurityService' class?",
+    "options": {
+      "A": "To validate the structure of the content",
+      "B": "To remove script tags from the content",
+      "C": "To bypass security and trust the HTML content",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'CsrfInterceptor' class?",
+    "options": {
+      "A": "To add CSRF token to the request headers",
+      "B": "To handle CSRF token validation failure",
+      "C": "To skip GET requests and non-relative URLs",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'CspService' class?",
+    "options": {
+      "A": "To implement Content Security Policy",
+      "B": "To sanitize user input",
+      "C": "To implement CSRF protection",
+      "D": "To sanitize URLs"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the key points emphasized in interviews according to the text?",
+    "options": {
+      "A": "Bypassing built-in sanitization",
+      "B": "Using localStorage securely",
+      "C": "Ignoring CSRF protection",
+      "D": "Weak output validation"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the best practices mentioned in the text?",
+    "options": {
+      "A": "Always sanitize user input",
+      "B": "Use localStorage for sensitive data",
+      "C": "Ignore CORS implementation",
+      "D": "Avoid regular security audits"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the additional protections mentioned in the text?",
+    "options": {
+      "A": "CSRF tokens",
+      "B": "Insecure headers",
+      "C": "Weak input validation",
+      "D": "Bypassing built-in sanitization"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the built-in Angular Security features mentioned in the text?",
+    "options": {
+      "A": "Automatic XSS protection",
+      "B": "Manual XSS protection",
+      "C": "Context-unaware sanitization",
+      "D": "Template syntax insecurity"
+    },
+    "correct_answer": "A"
+  }
+]

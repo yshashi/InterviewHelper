@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is Dependency Injection (DI)?",
+    "options": {
+      "A": "A design pattern where dependencies are created inside a class",
+      "B": "A design pattern where dependencies are provided to a class instead of being created inside it",
+      "C": "A design pattern where dependencies are removed from a class",
+      "D": "A design pattern where dependencies are hidden from a class"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What does Angular's DI system manage?",
+    "options": {
+      "A": "Service instances",
+      "B": "Dependency hierarchy",
+      "C": "Dependency configuration",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the @Injectable decorator in Angular?",
+    "options": {
+      "A": "To mark a class as available to an injector for instantiation",
+      "B": "To mark a class as unavailable to an injector for instantiation",
+      "C": "To mark a class as a singleton",
+      "D": "To mark a class as a component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the inject function in Angular?",
+    "options": {
+      "A": "To create a new instance of a service",
+      "B": "To destroy an instance of a service",
+      "C": "To get an instance of a service",
+      "D": "To update an instance of a service"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is a Value Provider in Angular?",
+    "options": {
+      "A": "A provider that uses a factory function to create an instance",
+      "B": "A provider that uses a class to create an instance",
+      "C": "A provider that uses an existing instance",
+      "D": "A provider that uses a value to create an instance"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is a Class Provider in Angular?",
+    "options": {
+      "A": "A provider that uses a factory function to create an instance",
+      "B": "A provider that uses a class to create an instance",
+      "C": "A provider that uses an existing instance",
+      "D": "A provider that uses a value to create an instance"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is a Factory Provider in Angular?",
+    "options": {
+      "A": "A provider that uses a factory function to create an instance",
+      "B": "A provider that uses a class to create an instance",
+      "C": "A provider that uses an existing instance",
+      "D": "A provider that uses a value to create an instance"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is an Existing Provider in Angular?",
+    "options": {
+      "A": "A provider that uses a factory function to create an instance",
+      "B": "A provider that uses a class to create an instance",
+      "C": "A provider that uses an existing instance",
+      "D": "A provider that uses a value to create an instance"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the @Optional() decorator in Angular?",
+    "options": {
+      "A": "To mark a dependency as optional",
+      "B": "To mark a dependency as required",
+      "C": "To mark a dependency as a singleton",
+      "D": "To mark a dependency as a component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the forwardRef() function in Angular?",
+    "options": {
+      "A": "To resolve circular dependencies",
+      "B": "To create circular dependencies",
+      "C": "To remove circular dependencies",
+      "D": "To hide circular dependencies"
+    },
+    "correct_answer": "A"
+  }
+]

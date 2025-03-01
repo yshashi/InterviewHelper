@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What are Decorators in Angular?",
+    "options": {
+      "A": "Special declarations that modify classes, methods, properties, or parameters at design time",
+      "B": "A type of function that modifies classes, methods, properties, or parameters at runtime",
+      "C": "A type of class that modifies other classes, methods, properties, or parameters",
+      "D": "A type of service that modifies classes, methods, properties, or parameters"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the uses of Decorators in Angular?",
+    "options": {
+      "A": "Configuring components, services, and modules",
+      "B": "Implementing dependency injection",
+      "C": "Managing metadata",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What do Class Decorators do in Angular?",
+    "options": {
+      "A": "Define the metadata for classes",
+      "B": "Determine how classes should be processed, instantiated, and used",
+      "C": "Modify or enhance class members",
+      "D": "A and B"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What do Property and Method Decorators do in Angular?",
+    "options": {
+      "A": "Modify or enhance class members",
+      "B": "Used for data binding, event handling, and accessing child elements",
+      "C": "Define the metadata for classes",
+      "D": "A and B"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What do Parameter Decorators do in Angular?",
+    "options": {
+      "A": "Used in constructor parameters to modify how dependencies are injected",
+      "B": "Allow for custom injection behavior and optional dependencies",
+      "C": "Modify or enhance class members",
+      "D": "A and B"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "How can you create Custom Decorators in Angular?",
+    "options": {
+      "A": "By adding reusable behavior or metadata to classes, properties, methods, or parameters",
+      "B": "By modifying existing decorators",
+      "C": "By creating a new class",
+      "D": "By creating a new service"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What's the difference between @Injectable() and @Component()?",
+    "options": {
+      "A": "@Injectable() marks a class as available for dependency injection, while @Component() defines a UI component with its template and styles",
+      "B": "@Injectable() defines a UI component with its template and styles, while @Component() marks a class as available for dependency injection",
+      "C": "@Injectable() and @Component() both mark a class as available for dependency injection",
+      "D": "@Injectable() and @Component() both define a UI component with its template and styles"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you handle decorator inheritance in Angular?",
+    "options": {
+      "A": "Decorators are inherited but can be overridden in child classes",
+      "B": "Decorators cannot be inherited",
+      "C": "Decorators can be inherited but cannot be overridden in child classes",
+      "D": "Decorators are not related to inheritance"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the performance implications of decorators in Angular?",
+    "options": {
+      "A": "Decorators are processed at runtime, so complex decorators can impact performance",
+      "B": "Decorators are processed at compile time, so they do not impact performance",
+      "C": "Decorators do not have any performance implications",
+      "D": "The performance implications of decorators depend on the size of the application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you test components with decorators in Angular?",
+    "options": {
+      "A": "By using TestBed to properly configure decorators in tests",
+      "B": "By using the Angular CLI",
+      "C": "By manually testing each component",
+      "D": "Decorators cannot be tested"
+    },
+    "correct_answer": "A"
+  }
+]

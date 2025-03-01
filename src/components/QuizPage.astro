@@ -14,9 +14,22 @@ const getQuestionFileName = (topic: string) => {
 let questions = [];
 
 try {
-  const questionsFile = `../mcq_generator/questions/${getQuestionFileName(topic)}`;
-  const questionsModule = await import(questionsFile, { assert: { type: 'json' } });
-  questions = questionsModule.default;
+  // First try to load from src directory
+  try {
+    const srcQuestionsFile = `../mcq_generator/questions/${getQuestionFileName(topic)}`;
+    const questionsModule = await import(srcQuestionsFile, { assert: { type: 'json' } });
+    questions = questionsModule.default;
+  } catch (srcError) {
+    // If that fails, try to load from public directory
+    const publicQuestionsFile = `/mcq_generator/questions/${getQuestionFileName(topic)}`;
+    const response = await fetch(publicQuestionsFile);
+    
+    if (response.ok) {
+      questions = await response.json();
+    } else {
+      throw new Error(`Failed to fetch questions from public directory`);
+    }
+  }
 } catch (error) {
   console.warn(`Questions file for topic '${topic}' not found. Using empty questions array.`);
   questions = [];

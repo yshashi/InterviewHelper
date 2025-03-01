@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is Data Binding in Angular?",
+    "options": {
+      "A": "A mechanism for synchronizing data between the component class and its template",
+      "B": "A method for storing data in a database",
+      "C": "A way to style components",
+      "D": "A tool for debugging"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How many types of Data Binding are there in Angular?",
+    "options": {
+      "A": "Two",
+      "B": "Three",
+      "C": "Four",
+      "D": "Five"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is Interpolation in Angular?",
+    "options": {
+      "A": "Two-way data binding",
+      "B": "One-way data binding from class to template",
+      "C": "One-way data binding from template to class",
+      "D": "Event binding"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the difference between Property Binding and Interpolation?",
+    "options": {
+      "A": "Property Binding is two-way, while Interpolation is one-way",
+      "B": "Property Binding binds a property of a DOM element to a component property using [], while Interpolation inserts a component property value into the template using {{ }}",
+      "C": "There is no difference",
+      "D": "Interpolation is used for styling, while Property Binding is used for data synchronization"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is Event Binding in Angular?",
+    "options": {
+      "A": "A way to bind data from class to template",
+      "B": "A way to bind data from template to class",
+      "C": "A way to listen for and respond to user actions by binding a DOM event to a component method",
+      "D": "A way to bind data in both directions"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is Two-way Binding in Angular?",
+    "options": {
+      "A": "A way to bind data from class to template",
+      "B": "A way to bind data from template to class",
+      "C": "A way to listen for and respond to user actions by binding a DOM event to a component method",
+      "D": "A way to keep the component property and the view in sync by combining Property Binding and Event Binding"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are Template Reference Variables in Angular?",
+    "options": {
+      "A": "Variables used to reference DOM elements or Angular components/directives in a template",
+      "B": "Variables used to store data",
+      "C": "Variables used to style components",
+      "D": "Variables used for debugging"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between [attr.] and [prop.] bindings?",
+    "options": {
+      "A": "[attr.] binds to HTML attributes, while [prop.] binds to DOM properties",
+      "B": "[attr.] binds to DOM properties, while [prop.] binds to HTML attributes",
+      "C": "There is no difference",
+      "D": "[attr.] and [prop.] are the same thing"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you handle null or undefined values in data binding?",
+    "options": {
+      "A": "By using the safe navigation operator (?.) or nullish coalescing operator (??)",
+      "B": "By using the null operator (null)",
+      "C": "By using the undefined operator (undefined)",
+      "D": "By using the nullish operator (nullish)"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you optimize data binding for performance?",
+    "options": {
+      "A": "By using OnPush change detection, avoiding complex expressions in templates, and minimizing bindings",
+      "B": "By using more bindings",
+      "C": "By using complex expressions in templates",
+      "D": "By using the default change detection strategy"
+    },
+    "correct_answer": "A"
+  }
+]

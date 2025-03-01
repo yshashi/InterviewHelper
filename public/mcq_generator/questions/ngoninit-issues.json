@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is the first common cause of ngOnInit issues mentioned in the text?",
+    "options": {
+      "A": "Component not properly declared/imported",
+      "B": "Lifecycle hooks not implemented correctly",
+      "C": "Route configuration issues",
+      "D": "Dependency injection problems"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'loadData' function in the 'ProblematicComponent'?",
+    "options": {
+      "A": "To inject dependencies",
+      "B": "To handle route configuration",
+      "C": "To load data and handle any errors",
+      "D": "To initialize the component"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What does the 'FeatureResolver' class do?",
+    "options": {
+      "A": "It handles route configuration",
+      "B": "It implements lifecycle hooks",
+      "C": "It resolves data for a route and handles any errors",
+      "D": "It initializes the component"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'DebuggingService' class?",
+    "options": {
+      "A": "To handle route configuration",
+      "B": "To track the lifecycle of a component and log events",
+      "C": "To resolve data for a route",
+      "D": "To initialize the component"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the first step in the systematic debugging approach?",
+    "options": {
+      "A": "Check component declaration",
+      "B": "Verify module imports",
+      "C": "Review route configuration",
+      "D": "Check dependency injection"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the best practices mentioned in the text?",
+    "options": {
+      "A": "Ignore error handling",
+      "B": "Avoid using lifecycle hooks",
+      "C": "Add debugging logs",
+      "D": "Avoid TypeScript"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is one of the prevention methods mentioned in the text?",
+    "options": {
+      "A": "Avoid testing",
+      "B": "Ignore component lifecycle",
+      "C": "Use TypeScript strictly",
+      "D": "Avoid error boundaries"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'ngOnInit' method in the 'FeatureComponent' class?",
+    "options": {
+      "A": "To load resolved data and handle any errors",
+      "B": "To inject dependencies",
+      "C": "To handle route configuration",
+      "D": "To initialize the component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is one of the common issues mentioned in the text?",
+    "options": {
+      "A": "Incorrect module setup",
+      "B": "Missing route configuration",
+      "C": "Dependency injection success",
+      "D": "Proper error handling"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'constructor' method in the 'ProblematicComponent' class?",
+    "options": {
+      "A": "To load data",
+      "B": "To add debugging logs",
+      "C": "To handle route configuration",
+      "D": "To inject dependencies"
+    },
+    "correct_answer": "B"
+  }
+]

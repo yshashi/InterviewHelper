@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is the purpose of @Input() and @Output() decorators in Angular?",
+    "options": {
+      "A": "They are used for styling components",
+      "B": "They are used for component communication",
+      "C": "They are used for data storage",
+      "D": "They are used for error handling"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What does @Input() decorator allow in Angular?",
+    "options": {
+      "A": "A child component to pass data to a parent component",
+      "B": "A parent component to pass data to a child component",
+      "C": "Data storage in a component",
+      "D": "Error handling in a component"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What does @Output() decorator enable in Angular?",
+    "options": {
+      "A": "A parent component to send data back to the child through event emission",
+      "B": "A child component to send data back to the parent through event emission",
+      "C": "Data storage in a component",
+      "D": "Error handling in a component"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is a good practice when using @Input() and @Output() decorators?",
+    "options": {
+      "A": "Use required inputs when the component cannot function without them",
+      "B": "Avoid using default values for optional inputs",
+      "C": "Avoid using transform functions for input preprocessing",
+      "D": "Name outputs with generic event names"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does @Input() represent in terms of data flow?",
+    "options": {
+      "A": "Upward data flow (child \u2192 parent)",
+      "B": "Downward data flow (parent \u2192 child)",
+      "C": "Data storage in a component",
+      "D": "Error handling in a component"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What does @Output() represent in terms of data flow?",
+    "options": {
+      "A": "Upward data flow (child \u2192 parent)",
+      "B": "Downward data flow (parent \u2192 child)",
+      "C": "Data storage in a component",
+      "D": "Error handling in a component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a common pitfall when using @Input() decorator?",
+    "options": {
+      "A": "@Input() properties are undefined during construction",
+      "B": "@Input() properties are always defined",
+      "C": "@Input() properties can be used for error handling",
+      "D": "@Input() properties can be used for data storage"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a performance consideration when using @Input() and @Output() decorators?",
+    "options": {
+      "A": "Avoid using OnPush change detection strategy",
+      "B": "Avoid optimizing event emission",
+      "C": "Ignore the impact of excessive property bindings",
+      "D": "Understand the impact of excessive property bindings"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is a real-world scenario consideration when using @Input() and @Output() decorators?",
+    "options": {
+      "A": "Be prepared to discuss component communication patterns",
+      "B": "Avoid handling complex data structures",
+      "C": "Avoid using services vs @Input()/@Output()",
+      "D": "Ignore component communication patterns"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is an advanced feature of @Input() decorator?",
+    "options": {
+      "A": "Mention Angular 17's required inputs feature",
+      "B": "Avoid discussing transform functions for input preprocessing",
+      "C": "Ignore signal inputs and their benefits",
+      "D": "Avoid using Angular 17's required inputs feature"
+    },
+    "correct_answer": "A"
+  }
+]

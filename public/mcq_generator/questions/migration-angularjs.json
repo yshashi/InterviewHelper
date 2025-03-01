@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is the first step in the migration strategy from AngularJS to Angular?",
+    "options": {
+      "A": "Service Migration Pattern",
+      "B": "Hybrid Application Setup",
+      "C": "Component Migration Pattern",
+      "D": "Directive Migration"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of the 'UpgradeModule' in Angular?",
+    "options": {
+      "A": "To upgrade the version of Angular",
+      "B": "To facilitate the migration from AngularJS to Angular",
+      "C": "To improve the performance of the application",
+      "D": "To update the UI components"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the 'ngDoBootstrap' method used for in Angular?",
+    "options": {
+      "A": "To initialize the application",
+      "B": "To upgrade the application",
+      "C": "To migrate the services",
+      "D": "To migrate the components"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the '@Injectable' decorator in Angular?",
+    "options": {
+      "A": "To make a class available for dependency injection",
+      "B": "To upgrade a service",
+      "C": "To migrate a component",
+      "D": "To initialize an application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the '@Component' decorator in Angular?",
+    "options": {
+      "A": "To define a class as a component",
+      "B": "To upgrade a component",
+      "C": "To migrate a service",
+      "D": "To initialize an application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the '@Directive' decorator in Angular?",
+    "options": {
+      "A": "To define a class as a directive",
+      "B": "To upgrade a directive",
+      "C": "To migrate a component",
+      "D": "To initialize an application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'Routes' interface in Angular?",
+    "options": {
+      "A": "To define the routes of the application",
+      "B": "To upgrade the routes",
+      "C": "To migrate the components",
+      "D": "To initialize an application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'HttpClient' service in Angular?",
+    "options": {
+      "A": "To make HTTP requests",
+      "B": "To upgrade the HTTP service",
+      "C": "To migrate the components",
+      "D": "To initialize an application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'signal' function in Angular?",
+    "options": {
+      "A": "To emit events",
+      "B": "To upgrade the state management",
+      "C": "To manage the state of the application",
+      "D": "To initialize an application"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'MigrationStep' interface in Angular?",
+    "options": {
+      "A": "To define the steps of the migration",
+      "B": "To upgrade the migration plan",
+      "C": "To manage the state of the application",
+      "D": "To initialize an application"
+    },
+    "correct_answer": "A"
+  }
+]

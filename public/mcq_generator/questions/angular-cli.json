@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is Angular CLI?",
+    "options": {
+      "A": "A development tool for Angular applications",
+      "B": "A programming language",
+      "C": "A web framework",
+      "D": "A database management system"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of Angular CLI?",
+    "options": {
+      "A": "To automate common development tasks in Angular applications",
+      "B": "To design user interfaces",
+      "C": "To manage databases",
+      "D": "To deploy applications"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you generate various application elements with Angular CLI?",
+    "options": {
+      "A": "Using the `ng generate` command",
+      "B": "Using the `ng create` command",
+      "C": "Using the `ng new` command",
+      "D": "Using the `ng init` command"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you configure Angular CLI?",
+    "options": {
+      "A": "Through the `angular.json` file and command-line options",
+      "B": "Through the `angular.config` file",
+      "C": "Through the `angular.ini` file",
+      "D": "Through the `angular.settings` file"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What command does Angular CLI provide for running a development server?",
+    "options": {
+      "A": "`ng serve`",
+      "B": "`ng run`",
+      "C": "`ng start`",
+      "D": "`ng launch`"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you optimize builds with Angular CLI?",
+    "options": {
+      "A": "By using various build optimization options",
+      "B": "By using the `ng optimize` command",
+      "C": "By using the `ng improve` command",
+      "D": "By using the `ng enhance` command"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What's the difference between `ng serve` and `ng build`?",
+    "options": {
+      "A": "`ng serve` runs a development server with live reload, while `ng build` creates production-ready files",
+      "B": "`ng serve` creates production-ready files, while `ng build` runs a development server with live reload",
+      "C": "`ng serve` and `ng build` both run a development server with live reload",
+      "D": "`ng serve` and `ng build` both create production-ready files"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you handle environment-specific configuration in Angular CLI?",
+    "options": {
+      "A": "By using environment files and file replacements in `angular.json`",
+      "B": "By using the `ng environment` command",
+      "C": "By using the `ng config` command",
+      "D": "By using the `ng settings` command"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you customize the build process in Angular CLI?",
+    "options": {
+      "A": "By using builders and custom configurations",
+      "B": "By using the `ng customize` command",
+      "C": "By using the `ng modify` command",
+      "D": "By using the `ng adjust` command"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can you manage multiple projects in a workspace with Angular CLI?",
+    "options": {
+      "A": "By using the projects section in `angular.json`",
+      "B": "By using the `ng manage` command",
+      "C": "By using the `ng control` command",
+      "D": "By using the `ng handle` command"
+    },
+    "correct_answer": "A"
+  }
+]

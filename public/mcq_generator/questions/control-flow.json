@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is the new control flow syntax introduced in Angular 17?",
+    "options": {
+      "A": "It replaces traditional structural directives (*ngIf, *ngFor, *ngSwitch).",
+      "B": "It replaces traditional data binding syntax.",
+      "C": "It replaces traditional event handling syntax.",
+      "D": "It replaces traditional component declaration syntax."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key benefits of the new control flow syntax in Angular 17?",
+    "options": {
+      "A": "Better type safety and error messages, improved performance, more intuitive syntax, built-in empty state handling.",
+      "B": "Better type safety and error messages, improved performance, more intuitive syntax, built-in state management.",
+      "C": "Better type safety and error messages, improved performance, more intuitive syntax, built-in dependency injection.",
+      "D": "Better type safety and error messages, improved performance, more intuitive syntax, built-in routing."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How does the new @if syntax differ from *ngIf?",
+    "options": {
+      "A": "It uses a more readable block syntax.",
+      "B": "It uses a more complex block syntax.",
+      "C": "It uses a more readable inline syntax.",
+      "D": "It uses a more complex inline syntax."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What advantages does the new @for syntax offer over *ngFor?",
+    "options": {
+      "A": "Better performance, built-in empty state handling, simpler tracking syntax, better type checking.",
+      "B": "Better performance, built-in state management, simpler tracking syntax, better type checking.",
+      "C": "Better performance, built-in dependency injection, simpler tracking syntax, better type checking.",
+      "D": "Better performance, built-in routing, simpler tracking syntax, better type checking."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How does the new @switch syntax improve upon the old ngSwitch syntax?",
+    "options": {
+      "A": "It provides a cleaner way to handle multiple conditions.",
+      "B": "It provides a more complex way to handle multiple conditions.",
+      "C": "It provides a cleaner way to handle single conditions.",
+      "D": "It provides a more complex way to handle single conditions."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some key performance optimization techniques with the new control flow?",
+    "options": {
+      "A": "Proper tracking in @for and efficient error handling.",
+      "B": "Proper tracking in @for and efficient state management.",
+      "C": "Proper tracking in @for and efficient dependency injection.",
+      "D": "Proper tracking in @for and efficient routing."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some best practices when using the new control flow?",
+    "options": {
+      "A": "Always use track in @for loops, implement empty state handling, keep nesting levels manageable, use type-safe conditions, combine with signals for reactive updates.",
+      "B": "Always use track in @for loops, implement state management, keep nesting levels manageable, use type-safe conditions, combine with signals for reactive updates.",
+      "C": "Always use track in @for loops, implement dependency injection, keep nesting levels manageable, use type-safe conditions, combine with signals for reactive updates.",
+      "D": "Always use track in @for loops, implement routing, keep nesting levels manageable, use type-safe conditions, combine with signals for reactive updates."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "Can you mix old and new syntax in Angular 17?",
+    "options": {
+      "A": "Yes, you can use both in a template.",
+      "B": "No, you should use either the old or new syntax within a template, not both.",
+      "C": "Yes, but it's not recommended.",
+      "D": "No, but there are exceptions."
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "Is the new syntax mandatory in Angular 17+?",
+    "options": {
+      "A": "Yes, it's mandatory for all projects.",
+      "B": "No, but it's recommended for new projects and features.",
+      "C": "Yes, but there are exceptions.",
+      "D": "No, it's optional for all projects."
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "How does the new control flow syntax work with async data?",
+    "options": {
+      "A": "It doesn't work with async data.",
+      "B": "It works seamlessly with signals and observables using the async pipe.",
+      "C": "It works with async data, but requires additional configuration.",
+      "D": "It works with async data, but requires additional libraries."
+    },
+    "correct_answer": "B"
+  }
+]
