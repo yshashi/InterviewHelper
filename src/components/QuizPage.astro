@@ -14,24 +14,19 @@ const getQuestionFileName = (topic: string) => {
 let questions = [];
 
 try {
-  // First try to load from src directory
+  // Check if we're in development or production mode
+  const isDev = import.meta.env.DEV;
+  
+  // First try to load from src directory (works in dev mode)
   try {
-    const srcQuestionsFile = `../mcq_generator/questions/${getQuestionFileName(topic)}`;
-    console.log(srcQuestionsFile);
+    const srcQuestionsFile = isDev 
+      ? `../mcq_generator/questions/${getQuestionFileName(topic)}` 
+      : `/questions/${getQuestionFileName(topic)}`;
     const questionsModule = await import(srcQuestionsFile, { assert: { type: 'json' } });
     questions = questionsModule.default;
   } catch (srcError) {
-    // If that fails, try to load from public directory
-    // after build it get stored inside the dist so use the dist path
-    const publicQuestionsFile = `/dist/questions/${getQuestionFileName(topic)}`;
-    console.log(publicQuestionsFile);
-    const response = await fetch(publicQuestionsFile);
-    
-    if (response.ok) {
-      questions = await response.json();
-    } else {
-      throw new Error(`Failed to fetch questions from public directory`);
-    }
+    console.warn(`Failed to load from src`);
+    questions = [];
   }
 } catch (error) {
   console.warn(`Questions file for topic '${topic}' not found. Using empty questions array.`);
