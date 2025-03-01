@@ -22,7 +22,7 @@ try {
     questions = questionsModule.default;
   } catch (srcError) {
     // If that fails, try to load from public directory
-    const publicQuestionsFile = `../../public/questions/${getQuestionFileName(topic)}`;
+    const publicQuestionsFile = `/questions/${getQuestionFileName(topic)}`;
     console.log(publicQuestionsFile);
     const response = await fetch(publicQuestionsFile);
     
