@@ -223,20 +223,11 @@ class MCQGenerator:
             return []
     
     def save_to_file(self, questions: List[Dict[str, Any]], filename: str = "mcqs.json") -> None:
-        """Save the generated questions to JSON files in both src and public directories."""
+        """Save the generated questions to a JSON file."""
         try:
-            src_path = os.path.join(os.path.dirname(__file__), "questions", os.path.basename(filename))
-            os.makedirs(os.path.dirname(src_path), exist_ok=True)
-            with open(src_path, 'w') as f:
+            with open(filename, 'w') as f:
                 json.dump(questions, f, indent=2)
-            print(f"MCQs saved to {src_path}")
-            
-            public_dir = os.path.join(os.path.dirname(__file__), "../..", "public", "mcq_generator", "questions")
-            os.makedirs(public_dir, exist_ok=True)
-            public_path = os.path.join(public_dir, os.path.basename(filename))
-            with open(public_path, 'w') as f:
-                json.dump(questions, f, indent=2)
-            print(f"MCQs saved to {public_path}")
+            print(f"MCQs saved to {filename}")
         except Exception as e:
             print(f"Error saving to file: {e}")
 
@@ -291,7 +282,7 @@ def main():
                     for option, text in q['options'].items():
                         print(f"  {option}. {text}")
                     print(f"Correct answer: {q['correct_answer']}")
-            generator.save_to_file(questions, f"{Path(file_data['path']).stem}.json")
+            generator.save_to_file(questions, f"questions/{Path(file_data['path']).stem}.json")
 
 if __name__ == "__main__":
     main()
