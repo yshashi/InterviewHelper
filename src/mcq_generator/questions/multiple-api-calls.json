@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What are the five tasks the dashboard needed to perform?",
+    "options": {
+      "A": "Load user profile, Fetch recent orders, Get product recommendations, Load cart items, Check user permissions",
+      "B": "Load user profile, Fetch recent orders, Get product recommendations, Load cart items, Check user history",
+      "C": "Load user profile, Fetch recent orders, Get product recommendations, Load cart items, Check user feedback",
+      "D": "Load user profile, Fetch recent orders, Get product recommendations, Load cart items, Check user reviews"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'catchError' function in the API Service?",
+    "options": {
+      "A": "To handle any errors that occur during the API calls",
+      "B": "To catch and store the data returned by the API calls",
+      "C": "To catch and display the data returned by the API calls",
+      "D": "To handle the data returned by the API calls"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does the 'forkJoin' function do in the API Service?",
+    "options": {
+      "A": "It combines all the API calls",
+      "B": "It forks the API calls into separate threads",
+      "C": "It joins the API calls into a single thread",
+      "D": "It forks and then joins the API calls"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'shareReplay' function in the API Service?",
+    "options": {
+      "A": "To share the data returned by the API calls",
+      "B": "To replay the API calls",
+      "C": "To cache the response",
+      "D": "To share and replay the API calls"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'ProgressiveLoadingService'?",
+    "options": {
+      "A": "To load critical data first and non-critical data after",
+      "B": "To load non-critical data first and critical data after",
+      "C": "To load all data simultaneously",
+      "D": "To load all data sequentially"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'OptimizedDashboardComponent'?",
+    "options": {
+      "A": "To load critical data immediately and non-critical data when critical content is visible",
+      "B": "To load non-critical data immediately and critical data when non-critical content is visible",
+      "C": "To load all data immediately",
+      "D": "To load all data when all content is visible"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'combineLatest' function in the optimization example?",
+    "options": {
+      "A": "To combine related calls",
+      "B": "To use profile and orders to get personalized recommendations",
+      "C": "To handle all data",
+      "D": "To combine unrelated calls"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What are the four key points emphasized in interviews?",
+    "options": {
+      "A": "Error Handling, Performance, User Experience, Best Practices",
+      "B": "Error Handling, Performance, User Feedback, Best Practices",
+      "C": "Error Handling, Performance, User Reviews, Best Practices",
+      "D": "Error Handling, Performance, User History, Best Practices"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'retry' function in the optimization example?",
+    "options": {
+      "A": "To retry the API calls if they fail",
+      "B": "To retry the API calls if they succeed",
+      "C": "To retry the API calls a specified number of times",
+      "D": "To retry the API calls indefinitely"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'takeUntilDestroyed' function in the optimization example?",
+    "options": {
+      "A": "To take the data until the component is destroyed",
+      "B": "To take the data until the component is created",
+      "C": "To take the data until the component is updated",
+      "D": "To take the data until the component is loaded"
+    },
+    "correct_answer": "A"
+  }
+]
