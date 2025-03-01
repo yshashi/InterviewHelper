@@ -22,6 +22,9 @@ const filename = pathSegments[pathSegments.length - 1];
       <div class="mt-12 p-6 bg-gray-50 dark:bg-angular-dark-lighter rounded-lg border border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-bold mb-4">Test Your Knowledge</h2>
         <p class="mb-6">Take a quick quiz to test your understanding of this topic.</p>
+        <p>pathname {pathname}</p>
+        <p>pathSegments {pathSegments}</p>
+        <p>filename {filename}</p>
         {filename && <QuizPage topic={filename} />}
       </div>
 
