@@ -8,6 +8,7 @@ const { frontmatter } = Astro.props;
 // Extract the filename from the current URL path
 const pathname = Astro.url.pathname;
 const pathSegments = pathname.split('/');
+/// Todo: need to make this dynamic
 const filename = pathSegments[2];
 ---
 
