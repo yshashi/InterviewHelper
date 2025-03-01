@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What are the layers involved in Angular error handling?",
+    "options": {
+      "A": "Global Error Handling, HTTP Error Interceptors, RxJS Error Handling, Component-Level Error Boundaries, Form Validation Errors, Logging and Monitoring",
+      "B": "Global Error Handling, HTTP Error Interceptors, RxJS Error Handling, Component-Level Error Boundaries, Form Validation Errors",
+      "C": "Global Error Handling, HTTP Error Interceptors, RxJS Error Handling, Component-Level Error Boundaries",
+      "D": "Global Error Handling, HTTP Error Interceptors, RxJS Error Handling"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the GlobalErrorHandler class in Angular?",
+    "options": {
+      "A": "To handle all errors globally in the application",
+      "B": "To handle HTTP errors",
+      "C": "To handle form validation errors",
+      "D": "To handle component-level errors"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the ErrorInterceptor class in Angular?",
+    "options": {
+      "A": "To handle all errors globally in the application",
+      "B": "To handle HTTP errors",
+      "C": "To handle form validation errors",
+      "D": "To handle component-level errors"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of the ErrorBoundaryComponent class in Angular?",
+    "options": {
+      "A": "To handle all errors globally in the application",
+      "B": "To handle HTTP errors",
+      "C": "To handle form validation errors",
+      "D": "To handle component-level errors"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the UserFormComponent class in Angular?",
+    "options": {
+      "A": "To handle all errors globally in the application",
+      "B": "To handle HTTP errors",
+      "C": "To handle form validation errors",
+      "D": "To handle component-level errors"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the MonitoringService class in Angular?",
+    "options": {
+      "A": "To monitor and log errors",
+      "B": "To handle HTTP errors",
+      "C": "To handle form validation errors",
+      "D": "To handle component-level errors"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the PerformantErrorHandler class in Angular?",
+    "options": {
+      "A": "To handle all errors globally in the application",
+      "B": "To handle HTTP errors",
+      "C": "To handle form validation errors",
+      "D": "To optimize performance by batching error processing"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the SecureErrorHandler class in Angular?",
+    "options": {
+      "A": "To handle all errors globally in the application",
+      "B": "To handle HTTP errors",
+      "C": "To sanitize error messages and remove sensitive data",
+      "D": "To handle component-level errors"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What are the key points to emphasize in interviews regarding error handling in Angular?",
+    "options": {
+      "A": "Comprehensive error handling, User-friendly error messages, Security considerations, Performance optimization, Testing approaches, Monitoring and logging, Best practices",
+      "B": "Comprehensive error handling, User-friendly error messages, Security considerations, Performance optimization, Testing approaches, Monitoring and logging",
+      "C": "Comprehensive error handling, User-friendly error messages, Security considerations, Performance optimization, Testing approaches",
+      "D": "Comprehensive error handling, User-friendly error messages, Security considerations, Performance optimization"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the CustomValidators class in Angular?",
+    "options": {
+      "A": "To handle all errors globally in the application",
+      "B": "To handle HTTP errors",
+      "C": "To handle form validation errors",
+      "D": "To create custom form validation rules"
+    },
+    "correct_answer": "D"
+  }
+]

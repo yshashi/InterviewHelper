@@ -1,0 +1,102 @@
+[
+  {
+    "question": "When do Promises execute?",
+    "options": {
+      "A": "When subscribed to",
+      "B": "Immediately when created",
+      "C": "When cancelled",
+      "D": "When multiple values are emitted"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is a key difference between Observables and Promises in terms of values?",
+    "options": {
+      "A": "Promises can emit multiple values over time",
+      "B": "Observables resolve once with a single value",
+      "C": "Promises resolve once with a single value",
+      "D": "Observables and Promises both emit multiple values over time"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "Can Promises be cancelled?",
+    "options": {
+      "A": "Yes",
+      "B": "No",
+      "C": "Only if they are not yet resolved",
+      "D": "Only if they are not yet executed"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "Which one has a rich set of operators for data transformation?",
+    "options": {
+      "A": "Promises",
+      "B": "Observables",
+      "C": "Both Promises and Observables",
+      "D": "Neither Promises nor Observables"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "How can you convert a Promise to an Observable in Angular?",
+    "options": {
+      "A": "Using the 'from' function",
+      "B": "Using the 'toPromise' function",
+      "C": "Using the 'toObservable' function",
+      "D": "Using the 'promiseToObservable' function"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "When should you use Promises?",
+    "options": {
+      "A": "When cancellation is needed",
+      "B": "When multiple values over time are needed",
+      "C": "When complex transformations are required",
+      "D": "When a single operation is performed"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is a common pitfall with Observables?",
+    "options": {
+      "A": "Memory leak due to no unsubscribe",
+      "B": "Multiple values over time",
+      "C": "Limited operations",
+      "D": "Execution when created"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a performance consideration for Observables?",
+    "options": {
+      "A": "Sharing expensive Observable operations",
+      "B": "Caching Promise results",
+      "C": "Using Promises for single operations",
+      "D": "Using Observables for complex transformations"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a testing strategy for Promises?",
+    "options": {
+      "A": "Testing data streaming",
+      "B": "Testing data loading from promise",
+      "C": "Testing multiple subscriptions",
+      "D": "Testing memory leaks"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What should you focus on in interviews regarding Observables and Promises?",
+    "options": {
+      "A": "Understanding fundamental differences",
+      "B": "Knowing when to use each",
+      "C": "Memory management",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is the purpose of Angular Pipes?",
+    "options": {
+      "A": "To change the underlying data",
+      "B": "To transform and format data in templates without changing the underlying data",
+      "C": "To create new data",
+      "D": "To delete data"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What are some of the uses of Angular Pipes?",
+    "options": {
+      "A": "Transform data display format",
+      "B": "Perform data conversions",
+      "C": "Format dates, numbers, and text",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are some of the built-in pipes in Angular?",
+    "options": {
+      "A": "Date Pipe",
+      "B": "Currency Pipe",
+      "C": "Uppercase/Lowercase Pipes",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "How do you create a custom pipe in Angular?",
+    "options": {
+      "A": "By using the @Pipe decorator",
+      "B": "By using the @Component decorator",
+      "C": "By using the @NgModule decorator",
+      "D": "By using the @Directive decorator"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between pure and impure pipes?",
+    "options": {
+      "A": "Pure pipes run on every change detection cycle, impure pipes only when input value reference changes",
+      "B": "Impure pipes run on every change detection cycle, pure pipes only when input value reference changes",
+      "C": "There is no difference",
+      "D": "Pure pipes are used for transforming data, impure pipes for formatting data"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What are some performance considerations when using pipes?",
+    "options": {
+      "A": "Pure pipes are more performant as they only run on reference changes",
+      "B": "Impure pipes are more performant as they run on every change detection cycle",
+      "C": "There is no difference in performance between pure and impure pipes",
+      "D": "Pipes do not affect performance"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some common use cases for pipes?",
+    "options": {
+      "A": "Date formatting",
+      "B": "Number and currency formatting",
+      "C": "Text transformation",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is a parameterized pipe?",
+    "options": {
+      "A": "A pipe that takes additional parameters to control its behavior",
+      "B": "A pipe that does not take any parameters",
+      "C": "A pipe that only takes one parameter",
+      "D": "A pipe that can only be used in a specific component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of error handling in pipes?",
+    "options": {
+      "A": "To prevent the application from crashing when a pipe fails",
+      "B": "To display an error message to the user",
+      "C": "To log errors for debugging purposes",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the benefit of the Async pipe for memory management?",
+    "options": {
+      "A": "It automatically subscribes and unsubscribes from Observables",
+      "B": "It reduces the memory footprint of the application",
+      "C": "It increases the speed of the application",
+      "D": "It does not have any benefits for memory management"
+    },
+    "correct_answer": "A"
+  }
+]

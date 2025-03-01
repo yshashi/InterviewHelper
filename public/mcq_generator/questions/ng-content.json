@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is ng-content in Angular?",
+    "options": {
+      "A": "A directive that enables content projection in Angular components",
+      "B": "A function that allows you to insert external content into a component",
+      "C": "A method to create reusable component templates",
+      "D": "A way to implement the slot pattern from web components"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does ng-content allow you to do?",
+    "options": {
+      "A": "Insert external content into a component",
+      "B": "Create reusable component templates",
+      "C": "Build flexible and composable components",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "How do you implement basic content projection in Angular?",
+    "options": {
+      "A": "Using the @Component decorator",
+      "B": "Using the ng-content directive",
+      "C": "Using the @ContentChildren decorator",
+      "D": "Using the @ContentChild decorator"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "How do you work with projected content programmatically in Angular?",
+    "options": {
+      "A": "Using the @ContentChildren decorator",
+      "B": "Using the @ContentChild decorator",
+      "C": "Using the ngAfterContentInit lifecycle hook",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "How do you implement conditional content projection in Angular?",
+    "options": {
+      "A": "Using the @ContentChild decorator",
+      "B": "Using the ngIf directive",
+      "C": "Using the ng-content directive",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the ngAfterContentInit lifecycle hook in Angular?",
+    "options": {
+      "A": "To initialize the content",
+      "B": "To check the content",
+      "C": "To project the content",
+      "D": "To destroy the content"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the ngAfterContentChecked lifecycle hook in Angular?",
+    "options": {
+      "A": "To initialize the content",
+      "B": "To check the content",
+      "C": "To project the content",
+      "D": "To destroy the content"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of the @ContentChild decorator in Angular?",
+    "options": {
+      "A": "To query all projected content",
+      "B": "To query specific projected content",
+      "C": "To project the content",
+      "D": "To destroy the content"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of the @ContentChildren decorator in Angular?",
+    "options": {
+      "A": "To query all projected content",
+      "B": "To query specific projected content",
+      "C": "To project the content",
+      "D": "To destroy the content"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is a common pitfall when working with ng-content in Angular?",
+    "options": {
+      "A": "Accessing content before initialization",
+      "B": "Not using the @ContentChild decorator",
+      "C": "Not using the @ContentChildren decorator",
+      "D": "Not using the ng-content directive"
+    },
+    "correct_answer": "A"
+  }
+]

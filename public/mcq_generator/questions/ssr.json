@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is the purpose of Angular Universal in the context of the text?",
+    "options": {
+      "A": "To implement Server-Side Rendering (SSR)",
+      "B": "To manage meta tags",
+      "C": "To handle errors",
+      "D": "To monitor performance"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the role of the 'PlatformService' in the provided code?",
+    "options": {
+      "A": "To determine if the code is running on the server or the browser",
+      "B": "To manage the state of the application",
+      "C": "To handle API requests",
+      "D": "To update the page metadata for SEO"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does the 'SeoService' do in the provided code?",
+    "options": {
+      "A": "It handles API requests",
+      "B": "It determines if the code is running on the server or the browser",
+      "C": "It updates the page metadata for SEO",
+      "D": "It manages the state of the application"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'TransferStateService' in the provided code?",
+    "options": {
+      "A": "To manage the state of the application",
+      "B": "To handle API requests",
+      "C": "To update the page metadata for SEO",
+      "D": "To determine if the code is running on the server or the browser"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the role of the 'ApiService' in the provided code?",
+    "options": {
+      "A": "To handle API requests",
+      "B": "To manage the state of the application",
+      "C": "To update the page metadata for SEO",
+      "D": "To determine if the code is running on the server or the browser"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'initializeServerSide' method in the 'ProductComponent'?",
+    "options": {
+      "A": "To fetch product data and update meta tags for SEO",
+      "B": "To handle API requests",
+      "C": "To manage the state of the application",
+      "D": "To determine if the code is running on the server or the browser"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'initializeBrowserSide' method in the 'ProductComponent'?",
+    "options": {
+      "A": "To fetch product data and update meta tags for SEO",
+      "B": "To handle API requests",
+      "C": "To hydrate with client-side data if needed",
+      "D": "To determine if the code is running on the server or the browser"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'ServerTransferStateModule' and 'BrowserTransferStateModule' in the provided code?",
+    "options": {
+      "A": "To handle API requests",
+      "B": "To manage the state of the application",
+      "C": "To update the page metadata for SEO",
+      "D": "To facilitate state transfer between server and browser"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'OptimizedComponent' in the provided code?",
+    "options": {
+      "A": "To avoid double fetching of data",
+      "B": "To handle API requests",
+      "C": "To update the page metadata for SEO",
+      "D": "To determine if the code is running on the server or the browser"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key points emphasized in interviews according to the text?",
+    "options": {
+      "A": "Setup and Configuration, Performance Optimization, SEO Considerations, Best Practices",
+      "B": "API handling, Error handling, Performance monitoring, State management",
+      "C": "Meta tags management, Title updates, Open Graph tags, Platform-aware code",
+      "D": "Angular Universal setup, Server module configuration, Transfer state implementation, Efficient state transfer"
+    },
+    "correct_answer": "A"
+  }
+]

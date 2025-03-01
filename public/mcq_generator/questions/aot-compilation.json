@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What is AOT compilation in Angular?",
+    "options": {
+      "A": "AOT compilation is the process of compiling Angular templates during the build process instead of at runtime.",
+      "B": "AOT compilation is the process of compiling Angular templates at runtime instead of during the build process.",
+      "C": "AOT compilation is the process of compiling Angular templates during the testing process instead of at runtime.",
+      "D": "AOT compilation is the process of compiling Angular templates during the deployment process instead of at runtime."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the benefits of AOT compilation?",
+    "options": {
+      "A": "Faster rendering, Smaller bundle size, Earlier error detection, Better security, Reduced server load",
+      "B": "Slower rendering, Larger bundle size, Later error detection, Worse security, Increased server load",
+      "C": "Faster rendering, Larger bundle size, Earlier error detection, Better security, Reduced server load",
+      "D": "Slower rendering, Smaller bundle size, Later error detection, Worse security, Increased server load"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How does AOT differ from JIT compilation?",
+    "options": {
+      "A": "AOT compilation happens during the build process, while JIT compilation happens at runtime.",
+      "B": "AOT compilation happens at runtime, while JIT compilation happens during the build process.",
+      "C": "AOT compilation happens during the testing process, while JIT compilation happens at runtime.",
+      "D": "AOT compilation happens during the deployment process, while JIT compilation happens at runtime."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some AOT optimization techniques?",
+    "options": {
+      "A": "AOT-Compatible DI, AOT-Safe Dynamic Components, AOT-Compatible Forms",
+      "B": "JIT-Compatible DI, JIT-Safe Dynamic Components, JIT-Compatible Forms",
+      "C": "AOT-Compatible DI, JIT-Safe Dynamic Components, AOT-Compatible Forms",
+      "D": "JIT-Compatible DI, AOT-Safe Dynamic Components, JIT-Compatible Forms"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you handle common AOT errors?",
+    "options": {
+      "A": "Type Safety, Function Expressions, Metadata Definition",
+      "B": "Type Safety, Function Expressions, Metadata Definition, AOT-Compatible DI",
+      "C": "Type Safety, Function Expressions, Metadata Definition, AOT-Safe Dynamic Components",
+      "D": "Type Safety, Function Expressions, Metadata Definition, AOT-Compatible Forms"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some key points to emphasize in interviews about AOT?",
+    "options": {
+      "A": "Performance improvements, Bundle size reduction, Error detection, Security benefits, Build process, Testing considerations, Best practices",
+      "B": "Performance improvements, Bundle size increase, Error detection, Security benefits, Build process, Testing considerations, Best practices",
+      "C": "Performance improvements, Bundle size reduction, Error detection, Security risks, Build process, Testing considerations, Best practices",
+      "D": "Performance improvements, Bundle size reduction, Error detection, Security benefits, Build process, Testing considerations, Worst practices"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between the import statements in JIT and AOT compilation?",
+    "options": {
+      "A": "In JIT, 'platformBrowserDynamic' is imported from '@angular/platform-browser-dynamic', while in AOT, 'platformBrowser' is imported from '@angular/platform-browser'.",
+      "B": "In JIT, 'platformBrowser' is imported from '@angular/platform-browser', while in AOT, 'platformBrowserDynamic' is imported from '@angular/platform-browser-dynamic'.",
+      "C": "In JIT, 'platformBrowserDynamic' is imported from '@angular/platform-browser', while in AOT, 'platformBrowser' is imported from '@angular/platform-browser-dynamic'.",
+      "D": "In JIT, 'platformBrowser' is imported from '@angular/platform-browser-dynamic', while in AOT, 'platformBrowserDynamic' is imported from '@angular/platform-browser'."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'forRoot' method in the AppModule?",
+    "options": {
+      "A": "It provides AOT-compatible provider configuration.",
+      "B": "It provides JIT-compatible provider configuration.",
+      "C": "It provides AOT-compatible component configuration.",
+      "D": "It provides JIT-compatible component configuration."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'getConfig' method in the ConfigService?",
+    "options": {
+      "A": "It provides an AOT-compatible method to get the configuration.",
+      "B": "It provides a JIT-compatible method to get the configuration.",
+      "C": "It provides an AOT-compatible method to set the configuration.",
+      "D": "It provides a JIT-compatible method to set the configuration."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'loadComponent' method in the DynamicComponent?",
+    "options": {
+      "A": "It provides an AOT-compatible method to dynamically load components.",
+      "B": "It provides a JIT-compatible method to dynamically load components.",
+      "C": "It provides an AOT-compatible method to statically load components.",
+      "D": "It provides a JIT-compatible method to statically load components."
+    },
+    "correct_answer": "A"
+  }
+]

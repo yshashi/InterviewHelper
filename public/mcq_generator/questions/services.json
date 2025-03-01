@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What are Angular Services used for?",
+    "options": {
+      "A": "Data sharing between components",
+      "B": "HTTP communication",
+      "C": "State management",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'Injectable' decorator in Angular?",
+    "options": {
+      "A": "It allows the service to be used in other components",
+      "B": "It makes the service a singleton",
+      "C": "It provides the service with HTTP communication capabilities",
+      "D": "It allows the service to manage state"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'loadUsers' method in the UserService?",
+    "options": {
+      "A": "It adds a new user to the list of users",
+      "B": "It retrieves the list of users from the API",
+      "C": "It deletes a user from the list of users",
+      "D": "It updates a user in the list of users"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of the 'CacheService' in Angular?",
+    "options": {
+      "A": "It provides shared functionality across components",
+      "B": "It encapsulates business logic",
+      "C": "It stores data temporarily to improve performance",
+      "D": "It manages state across components"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'StateService' in Angular?",
+    "options": {
+      "A": "It provides shared functionality across components",
+      "B": "It encapsulates business logic",
+      "C": "It stores data temporarily to improve performance",
+      "D": "It manages state across components"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'ErrorHandlingService' in Angular?",
+    "options": {
+      "A": "It provides shared functionality across components",
+      "B": "It handles errors and logs them to a monitoring service",
+      "C": "It stores data temporarily to improve performance",
+      "D": "It manages state across components"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of the 'EventBusService' in Angular?",
+    "options": {
+      "A": "It provides a way for services to communicate with each other",
+      "B": "It handles errors and logs them to a monitoring service",
+      "C": "It stores data temporarily to improve performance",
+      "D": "It manages state across components"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'OptimizedService' in Angular?",
+    "options": {
+      "A": "It provides shared functionality across components",
+      "B": "It handles errors and logs them to a monitoring service",
+      "C": "It improves performance through techniques like memoization and caching",
+      "D": "It manages state across components"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'UserService' in Angular?",
+    "options": {
+      "A": "It provides shared functionality across components",
+      "B": "It handles errors and logs them to a monitoring service",
+      "C": "It stores data temporarily to improve performance",
+      "D": "It manages users and their data"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'DataService' in Angular?",
+    "options": {
+      "A": "It provides shared functionality across components",
+      "B": "It handles errors and logs them to a monitoring service",
+      "C": "It retrieves and caches data from an API",
+      "D": "It manages state across components"
+    },
+    "correct_answer": "C"
+  }
+]

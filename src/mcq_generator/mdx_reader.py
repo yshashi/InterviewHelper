@@ -223,11 +223,20 @@ class MCQGenerator:
             return []
     
     def save_to_file(self, questions: List[Dict[str, Any]], filename: str = "mcqs.json") -> None:
-        """Save the generated questions to a JSON file."""
+        """Save the generated questions to JSON files in both src and public directories."""
         try:
-            with open(filename, 'w') as f:
+            src_path = os.path.join(os.path.dirname(__file__), "questions", os.path.basename(filename))
+            os.makedirs(os.path.dirname(src_path), exist_ok=True)
+            with open(src_path, 'w') as f:
                 json.dump(questions, f, indent=2)
-            print(f"MCQs saved to {filename}")
+            print(f"MCQs saved to {src_path}")
+            
+            public_dir = os.path.join(os.path.dirname(__file__), "../..", "public", "mcq_generator", "questions")
+            os.makedirs(public_dir, exist_ok=True)
+            public_path = os.path.join(public_dir, os.path.basename(filename))
+            with open(public_path, 'w') as f:
+                json.dump(questions, f, indent=2)
+            print(f"MCQs saved to {public_path}")
         except Exception as e:
             print(f"Error saving to file: {e}")
 
@@ -265,28 +274,24 @@ def main():
     # print(mdx_files_data)
 
     for index,file_data in tqdm(enumerate(mdx_files_data)):
-        if not os.path.exists(f"questions/{Path(file_data['path']).parent.stem}_{Path(file_data['path']).stem}.json"):
-            if index%20==0 and index!=0:
-                print("Sleeping")
-                time.sleep(60) 
-            print(f"\nFile: {file_data['path']}")
-            print(f"Metadata: {file_data['metadata']}")
-
-            if file_data['content']:
-                # print(mcqs)
-                questions = generator.generate_mcqs(file_data['content'], num_questions=10)
-                # Print the generated questions
-                if questions:
-                    print("\nGenerated MCQs:")
-                    for i, q in enumerate(questions, 1):
-                        print(f"\nQuestion {i}: {q['question']}")
-                        for option, text in q['options'].items():
-                            print(f"{option}.{text}")
-                        print(f"Correct answer: {q['correct_answer']}")
-                generator.save_to_file(questions, f"questions/{Path(file_data['path']).parent.stem}_{Path(file_data['path']).stem}.json")
-        else:
-            print("Path exists:",Path(file_data['path']).stem,Path(file_data['path']).parent.stem)
-            # break
+        if index%20==0 and index !=0:
+            print("Sleeping")
+            time.sleep(60) 
+        print(f"\nFile: {file_data['path']}")
+        print(f"Metadata: {file_data['metadata']}")
+        if file_data['content']:
+            # print(mcqs)
+            questions = generator.generate_mcqs(file_data['content'], num_questions=10)
+    
+    # Print the generated questions
+            if questions:
+                print("\nGenerated MCQs:")
+                for i, q in enumerate(questions, 1):
+                    print(f"\nQuestion {i}: {q['question']}")
+                    for option, text in q['options'].items():
+                        print(f"  {option}. {text}")
+                    print(f"Correct answer: {q['correct_answer']}")
+            generator.save_to_file(questions, f"{Path(file_data['path']).stem}.json")
 
 if __name__ == "__main__":
     main()
