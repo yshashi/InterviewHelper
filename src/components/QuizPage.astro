@@ -1,0 +1,47 @@
+---
+import QuizComponent from './QuizComponent';
+
+const { topic } = Astro.props;
+
+// Function to convert topic name to filename format
+const getQuestionFileName = (topic: string) => {
+  // Remove .mdx extension if present
+  const baseName = topic.replace(/\.mdx$/, '');
+  return baseName + '.json';
+};
+
+// Dynamically import the questions based on the topic
+let questions = [];
+
+try {
+  const questionsFile = `../mcq_generator/questions/${getQuestionFileName(topic)}`;
+  const questionsModule = await import(questionsFile, { assert: { type: 'json' } });
+  questions = questionsModule.default;
+} catch (error) {
+  console.warn(`Questions file for topic '${topic}' not found. Using empty questions array.`);
+  questions = [];
+}
+
+const formatTopicName = (topic: string) => {
+  // Remove .mdx extension if present
+  const baseName = topic.replace(/\.mdx$/, '');
+  
+  // Convert kebab-case to Title Case
+  return baseName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const topicName = formatTopicName(topic);
+---
+
+<div class="quiz-container">
+  <QuizComponent client:load questions={questions} topicName={topicName} />
+</div>
+
+<style>
+  .quiz-container {
+    margin-top: 2rem;
+  }
+</style>
