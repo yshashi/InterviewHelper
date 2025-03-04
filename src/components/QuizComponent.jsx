@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 export default function QuizComponent({ topicKey, topicName }) {
+  // Use useRef to track if component is mounted to prevent hydration issues
+  const isMounted = useRef(false);
+  
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -11,9 +14,18 @@ export default function QuizComponent({ topicKey, topicName }) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [answers, setAnswers] = useState([]);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   const fetchQuestions = useCallback(async () => {
-    if (!topicKey) return;
+    if (!topicKey || !isMounted.current) return;
     
     setLoading(true);
     setError(null);
@@ -26,35 +38,47 @@ export default function QuizComponent({ topicKey, topicName }) {
       }
       
       const data = await response.json();
-      setQuestions(data.questions || []);
+      if (isMounted.current) {
+        setQuestions(data.questions || []);
+      }
     } catch (err) {
       console.error('Error fetching questions:', err);
-      setError(err.message);
+      if (isMounted.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   }, [topicKey]);
 
   useEffect(() => {
-    if (topicKey && !quizStarted) {
+    if (isClient && topicKey && !quizStarted) {
       fetchQuestions();
     }
-  }, [topicKey, quizStarted, fetchQuestions]);
+  }, [isClient, topicKey, quizStarted, fetchQuestions]);
 
   useEffect(() => {
+    if (!isClient) return;
+    
     let timer;
     if (quizStarted && !showResults && timeLeft > 0) {
       timer = setTimeout(() => {
-        setTimeLeft(timeLeft - 1);
+        if (isMounted.current) {
+          setTimeLeft(prev => prev - 1);
+        }
       }, 1000);
     } else if (timeLeft === 0 && !showResults && currentQuestionIndex < questions.length - 1) {
       handleNextQuestion();
-    } else if (timeLeft === 0 && currentQuestionIndex === questions.length - 1) {
+    } else if (timeLeft === 0 && currentQuestionIndex === questions.length - 1 && isMounted.current) {
       setShowResults(true);
     }
 
-    return () => clearTimeout(timer);
-  }, [timeLeft, quizStarted, showResults, currentQuestionIndex, questions.length]);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isClient, timeLeft, quizStarted, showResults, currentQuestionIndex, questions.length]);
 
   const startQuiz = () => {
     setQuizStarted(true);
@@ -65,12 +89,14 @@ export default function QuizComponent({ topicKey, topicName }) {
     setSelectedOption(option);
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = useCallback(() => {
+    if (!questions.length || currentQuestionIndex >= questions.length) return;
+    
     // Record the answer
     const currentQuestion = questions[currentQuestionIndex];
     const isCorrect = selectedOption === currentQuestion.correct_answer;
     
-    setAnswers([...answers, {
+    setAnswers(prev => [...prev, {
       question: currentQuestion.question,
       selectedOption,
       correctOption: currentQuestion.correct_answer,
@@ -78,17 +104,17 @@ export default function QuizComponent({ topicKey, topicName }) {
     }]);
 
     if (isCorrect) {
-      setScore(score + 1);
+      setScore(prev => prev + 1);
     }
 
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex(prev => prev + 1);
       setSelectedOption(null);
       setTimeLeft(60); // Reset timer for next question
     } else {
       setShowResults(true);
     }
-  };
+  }, [questions, currentQuestionIndex, selectedOption]);
 
   const resetQuiz = () => {
     setCurrentQuestionIndex(0);
@@ -100,6 +126,19 @@ export default function QuizComponent({ topicKey, topicName }) {
     setQuizStarted(false);
   };
 
+  // Render a consistent initial state for server-side rendering
+  if (!isClient) {
+    return (
+      <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
+        <p className="mb-6 text-gray-600 dark:text-gray-300">
+          Loading quiz...
+        </p>
+      </div>
+    );
+  }
+  
+  // Client-side rendering from here
   if (!quizStarted) {
     if (loading) {
       return (

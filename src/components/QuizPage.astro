@@ -3,7 +3,7 @@ import QuizComponent from './QuizComponent';
 
 const { topic } = Astro.props;
 
-const generateTopicKey = (topic: string) => {
+const generateTopicKey = () => {
   const pathname = Astro.url.pathname;
   const isDev = Astro.url.host.includes('localhost');
   const segments = pathname.split('/').slice(1);
@@ -20,11 +20,13 @@ const formatTopicName = (topic: string) => {
     .join(' ');
 };
 
+// Generate these values once during server-side rendering
+const topicKey = generateTopicKey();
 const topicName = formatTopicName(topic);
 ---
 
 <div class="quiz-container">
-  <QuizComponent client:load topicKey={generateTopicKey(topic)} topicName={topicName} />
+  <QuizComponent client:only="react" topicKey={topicKey} topicName={topicName} />
 </div>
 
 <style>
