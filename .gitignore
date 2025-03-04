@@ -21,3 +21,6 @@ pnpm-debug.log*
 .DS_Store
 .github
 .vercel
+
+src/mcq_generator/questions/
+src/mcq_generator/debug.ipynb

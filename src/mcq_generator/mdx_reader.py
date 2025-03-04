@@ -257,32 +257,36 @@ def main():
     # Set the directory containing your MDX files
     mdx_directory = "..\pages"  # Change this to your local directory
     api_key = load_api_key()
-    # print("api key:",api_key)
     generator = MCQGenerator(api_key)
     reader = LocalMDXReader(mdx_directory)    # Get all MDX files and their content
     mdx_files_data = reader.process_all_mdx_files()
     
     print("\n==== MDX File Details ====")
     # print(mdx_files_data)
+
     for index,file_data in tqdm(enumerate(mdx_files_data)):
-        if index%20==0 and index !=0:
-            print("Sleeping")
-            time.sleep(60) 
-        print(f"\nFile: {file_data['path']}")
-        print(f"Metadata: {file_data['metadata']}")
-        if file_data['content']:
-            # print(mcqs)
-            questions = generator.generate_mcqs(file_data['content'], num_questions=10)
-    
-    # Print the generated questions
-            if questions:
-                print("\nGenerated MCQs:")
-                for i, q in enumerate(questions, 1):
-                    print(f"\nQuestion {i}: {q['question']}")
-                    for option, text in q['options'].items():
-                        print(f"  {option}. {text}")
-                    print(f"Correct answer: {q['correct_answer']}")
-            generator.save_to_file(questions, f"questions/{Path(file_data['path']).stem}.json")
+        if not os.path.exists(f"questions/{Path(file_data['path']).parent.stem}_{Path(file_data['path']).stem}.json"):
+            if index%20==0 and index!=0:
+                print("Sleeping")
+                time.sleep(60) 
+            print(f"\nFile: {file_data['path']}")
+            print(f"Metadata: {file_data['metadata']}")
+
+            if file_data['content']:
+                # print(mcqs)
+                questions = generator.generate_mcqs(file_data['content'], num_questions=10)
+                # Print the generated questions
+                if questions:
+                    print("\nGenerated MCQs:")
+                    for i, q in enumerate(questions, 1):
+                        print(f"\nQuestion {i}: {q['question']}")
+                        for option, text in q['options'].items():
+                            print(f"{option}.{text}")
+                        print(f"Correct answer: {q['correct_answer']}")
+                generator.save_to_file(questions, f"questions/{Path(file_data['path']).parent.stem}_{Path(file_data['path']).stem}.json")
+        else:
+            print("Path exists:",Path(file_data['path']).stem,Path(file_data['path']).parent.stem)
+            # break
 
 if __name__ == "__main__":
     main()
