@@ -133,4 +133,4 @@ def main(folder_path):
 
 
 if __name__ == "__main__":
-    main(r'C:\Users\avinish verma\Documents\GitHub\InterviewHelper\src\mcq_generator\questions')
+    main(r'src\mcq_generator\questions')
