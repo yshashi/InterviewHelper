@@ -50,23 +50,6 @@ def connect_to_mongodb():
         print(f"Error connecting to MongoDB: {e}")
         return None
 
-# connection_string = "mongodb+srv://shubhamagnihotri1997:6mdzpEupHVolqgiL@cluster0.fnvsr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-# DB_NAME = "interview_helper"
-# COLLECTION_NAME = "mcqs"
-# MONGO_URI = connection_string
-
-# def connect_to_mongodb():
-#     """Connect to MongoDB and return the client and collection."""
-#     try:
-#         client = MongoClient(MONGO_URI)
-#         db = client[DB_NAME]
-#         collection = db[COLLECTION_NAME]
-#         print("Connected to MongoDB successfully!")
-#         return client, collection
-#     except Exception as e:
-#         print(f"Error connecting to MongoDB: {e}")
-#         return None, None
-
 def get_json_files(folder_path):
     """Retrieve all JSON files in the given folder."""
     return glob.glob(os.path.join(folder_path, "*.json"))
@@ -89,15 +72,6 @@ def process_data(filename, data):
         question["source_file"] = filename  # Store file name for reference
         processed_data.append(question)
     return processed_data
-
-# def push_to_mongodb(collection, data, filename):
-#     """Insert data into MongoDB collection."""
-#     if data:
-#         try:
-#             collection.insert_many(data)
-#             print(f"Inserted {len(data)} questions from {filename} into MongoDB.")
-#         except Exception as e:
-#             print(f"Error inserting data from {filename}: {e}")
 
 def push_to_mongodb(collection, data, filename):
     """Insert or update data in MongoDB collection."""
@@ -153,9 +127,9 @@ def main(folder_path):
             push_to_mongodb(collection,output_data, filename)
             # break
 
-    # # Close MongoDB connection
-    # client.close()
-    # print("MongoDB connection closed.")
+    # Close MongoDB connection
+    client.close()
+    print("MongoDB connection closed.")
 
 
 if __name__ == "__main__":
