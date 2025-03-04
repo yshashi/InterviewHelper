@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export default function QuizComponent({ topicKey, topicName }) {
   const [questions, setQuestions] = useState([]);
@@ -11,14 +11,8 @@ export default function QuizComponent({ topicKey, topicName }) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [answers, setAnswers] = useState([]);
   const [quizStarted, setQuizStarted] = useState(false);
-
-  useEffect(() => {
-    if (topicKey && !quizStarted) {
-      fetchQuestions();
-    }
-  }, [topicKey]);
-
-  const fetchQuestions = async () => {
+  
+  const fetchQuestions = useCallback(async () => {
     if (!topicKey) return;
     
     setLoading(true);
@@ -39,7 +33,13 @@ export default function QuizComponent({ topicKey, topicName }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [topicKey]);
+
+  useEffect(() => {
+    if (topicKey && !quizStarted) {
+      fetchQuestions();
+    }
+  }, [topicKey, quizStarted, fetchQuestions]);
 
   useEffect(() => {
     let timer;

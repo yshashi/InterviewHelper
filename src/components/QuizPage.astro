@@ -5,7 +5,9 @@ const { topic } = Astro.props;
 
 const generateTopicKey = (topic: string) => {
   const pathname = Astro.url.pathname;
+  const isDev = Astro.url.host.includes('localhost');
   const segments = pathname.split('/').slice(1);
+  if (!isDev) segments.pop();
   return segments.join('_');
 }
 
