@@ -3,41 +3,15 @@ import QuizComponent from './QuizComponent';
 
 const { topic } = Astro.props;
 
-// Function to convert topic name to filename format
-const getQuestionFileName = (topic: string) => {
-  // Remove .mdx extension if present
-  const baseName = topic.replace(/\.mdx$/, '');
-  return baseName + '.json';
-};
-
-// Dynamically import the questions based on the topic
-let questions = [];
-
-try {
-  // Check if we're in development or production mode
-  const isDev = import.meta.env.DEV;
-  
-  // First try to load from src directory (works in dev mode)
-  try {
-    const srcQuestionsFile = isDev 
-      ? `../mcq_generator/questions/${getQuestionFileName(topic)}` 
-      : `/dist/questions/${getQuestionFileName(topic)}`;
-    const questionsModule = await import(srcQuestionsFile, { assert: { type: 'json' } });
-    questions = questionsModule.default;
-  } catch (srcError) {
-    console.warn(`Failed to load from src`);
-    questions = [];
-  }
-} catch (error) {
-  console.warn(`Questions file for topic '${topic}' not found. Using empty questions array.`);
-  questions = [];
+const generateTopicKey = (topic: string) => {
+  const pathname = Astro.url.pathname;
+  const segments = pathname.split('/').slice(1);
+  return segments.join('_');
 }
 
 const formatTopicName = (topic: string) => {
   // Remove .mdx extension if present
   const baseName = topic.replace(/\.mdx$/, '');
-  
-  // Convert kebab-case to Title Case
   return baseName
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -48,7 +22,7 @@ const topicName = formatTopicName(topic);
 ---
 
 <div class="quiz-container">
-  <QuizComponent client:load questions={questions} topicName={topicName} />
+  <QuizComponent client:load topicKey={generateTopicKey(topic)} topicName={topicName} />
 </div>
 
 <style>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
-export default function QuizComponent({ questions, topicName }) {
+export default function QuizComponent({ topicKey, topicName }) {
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [score, setScore] = useState(0);
@@ -8,6 +11,35 @@ export default function QuizComponent({ questions, topicName }) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [answers, setAnswers] = useState([]);
   const [quizStarted, setQuizStarted] = useState(false);
+
+  useEffect(() => {
+    if (topicKey && !quizStarted) {
+      fetchQuestions();
+    }
+  }, [topicKey]);
+
+  const fetchQuestions = async () => {
+    if (!topicKey) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`https://api.interviewhelper.in/api/mcq/${topicKey}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch questions: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setQuestions(data.questions || []);
+    } catch (err) {
+      console.error('Error fetching questions:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let timer;
@@ -69,6 +101,37 @@ export default function QuizComponent({ questions, topicName }) {
   };
 
   if (!quizStarted) {
+    if (loading) {
+      return (
+        <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
+          <p className="mb-6 text-gray-600 dark:text-gray-300">
+            Loading questions...
+          </p>
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-angular-primary"></div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (error) {
+      return (
+        <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
+          <p className="mb-6 text-red-600 dark:text-red-400">
+            Error loading questions: {error}
+          </p>
+          <button
+            onClick={fetchQuestions}
+            className="px-6 py-2 text-white rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    
     if (!questions || questions.length === 0) {
       return (
         <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
