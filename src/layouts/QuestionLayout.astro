@@ -51,7 +51,7 @@ const { frontmatter } = Astro.props;
         <h2 class="text-2xl font-bold mb-4">Was this helpful?</h2>
         <div class="flex flex-wrap gap-4">
           <button
-            class="px-6 py-2 bg-angular-primary text-white rounded-lg hover:bg-angular-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-angular-primary focus:ring-offset-2 dark:focus:ring-offset-angular-dark"
+            class="px-6 py-2 bg-angular-primary text-white rounded-lg hover:bg-angular-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-angular-dark"
             id="helpful-yes"
           >
             Yes, this helped!
@@ -66,38 +66,17 @@ const { frontmatter } = Astro.props;
         
         <div class="mt-6 hidden" id="feedback-form">
           <textarea
-            class="w-full p-3 border border-gray-300 rounded-lg bg-white dark:bg-angular-dark-lighter dark:border-gray-600 dark:text-angular-text-dark focus:ring-2 focus:ring-angular-primary focus:border-transparent"
+            class="w-full p-3 border border-gray-300 rounded-lg bg-white dark:bg-angular-dark-lighter dark:border-gray-600 dark:text-angular-text-dark focus:ring-2 focus:ring-angular-tertiary focus:border-transparent"
             rows="4"
             placeholder="How can we improve this answer? Your feedback helps us make better content."
           ></textarea>
           <button
-            class="mt-4 px-6 py-2 bg-angular-primary text-white rounded-lg hover:bg-angular-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-angular-primary focus:ring-offset-2 dark:focus:ring-offset-angular-dark"
+            class="mt-4 px-6 py-2 bg-angular-primary text-white rounded-lg hover:bg-angular-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-angular-dark"
           >
             Submit Feedback
           </button>
         </div>
       </div>
-
-      <nav class="mt-12 flex flex-wrap justify-between gap-4">
-        <a
-          href="#"
-          class="flex items-center px-4 py-2 text-angular-primary hover:text-angular-secondary transition-colors"
-        >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          Previous Question
-        </a>
-        <a
-          href="#"
-          class="flex items-center px-4 py-2 text-angular-primary hover:text-angular-secondary transition-colors"
-        >
-          Next Question
-          <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </a>
-      </nav>
     </div>
   </article>
 </Layout>
