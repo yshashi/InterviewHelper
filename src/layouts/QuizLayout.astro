@@ -1,0 +1,98 @@
+---
+import Layout from './Layout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import QuizPage from '../components/QuizPage.astro';
+
+const { frontmatter } = Astro.props;
+const pathname = Astro.url.pathname;
+const pathSegments = pathname.split('/');
+const filename = pathSegments[2];
+---
+
+<Layout title={frontmatter.title}>
+  <Sidebar slot="sidebar" />
+  
+  <article class="max-w-4xl mx-auto px-4 py-8">
+    <div class="prose dark:prose-invert prose-lg max-w-none">
+      <slot />
+
+      <!-- Quiz Component -->
+      <div class="mt-12 p-6 bg-gray-50 dark:bg-angular-dark-lighter rounded-lg border border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-bold mb-4">Test Your Knowledge</h2>
+        <p class="mb-6">Take a quick quiz to test your understanding of this topic.</p>
+        {filename && <QuizPage topic={filename} />}
+      </div>
+
+      <!-- Related Questions -->
+      {frontmatter.related && (
+        <div class="mt-12 p-6 bg-gray-50 dark:bg-angular-dark-lighter rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 class="text-2xl font-bold mb-4">Related Questions</h2>
+          <ul class="space-y-2">
+            {frontmatter.related.map((item: any) => (
+              <li>
+                <a
+                  href={item.url}
+                  class="text-angular-primary hover:text-angular-secondary transition-colors"
+                >
+                  {item.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div class="mt-12 p-6 bg-gray-50 dark:bg-angular-dark-lighter rounded-lg border border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-bold mb-4">Was this helpful?</h2>
+        <div class="flex flex-wrap gap-4">
+          <button
+            class="px-6 py-2 text-white rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:bg-gradient-to-t transition-colors focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-angular-dark"
+            id="helpful-yes"
+          >
+            Yes, this helped!
+          </button>
+          <button
+            class="px-6 py-2 text-white rounded-lg bg-gradient-to-r from-gray-500 to-gray-600 hover:bg-gradient-to-t transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 dark:focus:ring-offset-angular-dark"
+            id="helpful-no"
+          >
+            No, I need more info
+          </button>
+        </div>
+        
+        <div class="mt-6 hidden" id="feedback-form">
+          <textarea
+            class="w-full p-3 border border-gray-300 rounded-lg bg-white dark:bg-angular-dark-lighter dark:border-gray-600 dark:text-angular-text-dark focus:ring-2 focus:ring-angular-tertiary focus:border-transparent"
+            rows="4"
+            placeholder="How can we improve this answer? Your feedback helps us make better content."
+          ></textarea>
+          <button
+            class="mt-4 px-6 py-2 text-white rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:bg-gradient-to-t transition-colors focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-angular-dark"
+          >
+            Submit Feedback
+          </button>
+        </div>
+      </div>
+    </div>
+  </article>
+</Layout>
+
+<script>
+  const helpfulYes = document.getElementById('helpful-yes');
+  const helpfulNo = document.getElementById('helpful-no');
+  const feedbackForm = document.getElementById('feedback-form');
+
+  helpfulYes?.addEventListener('click', () => {
+    const button = helpfulYes as HTMLButtonElement;
+    const originalText = button.textContent;
+    button.textContent = 'Thank you for your feedback!';
+    button.disabled = true;
+    button.classList.add('bg-green-600', 'hover:bg-green-700');
+    
+    helpfulNo?.classList.add('hidden');
+  });
+
+  helpfulNo?.addEventListener('click', () => {
+    feedbackForm?.classList.remove('hidden');
+    feedbackForm?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+</script>

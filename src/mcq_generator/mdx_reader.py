@@ -257,13 +257,13 @@ def main():
     # Set the directory containing your MDX files
     mdx_directory = "..\pages"  # Change this to your local directory
     api_key = load_api_key()
-    # print("api key:",api_key)
     generator = MCQGenerator(api_key)
     reader = LocalMDXReader(mdx_directory)    # Get all MDX files and their content
     mdx_files_data = reader.process_all_mdx_files()
     
     print("\n==== MDX File Details ====")
     # print(mdx_files_data)
+
     for index,file_data in tqdm(enumerate(mdx_files_data)):
         if index%20==0 and index !=0:
             print("Sleeping")

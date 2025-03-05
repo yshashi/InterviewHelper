@@ -1,1 +1,2 @@
 openai==1.65.1
+pymongo[srv]==4.11.1
