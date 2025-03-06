@@ -129,7 +129,7 @@ export default function QuizComponent({ topicKey, topicName }) {
   // Render a consistent initial state for server-side rendering
   if (!isClient) {
     return (
-      <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="my-4 sm:my-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
         <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
         <p className="mb-6 text-gray-600 dark:text-gray-300">
           Loading quiz...
@@ -142,7 +142,7 @@ export default function QuizComponent({ topicKey, topicName }) {
   if (!quizStarted) {
     if (loading) {
       return (
-        <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="my-4 sm:my-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
           <p className="mb-6 text-gray-600 dark:text-gray-300">
             Loading questions...
@@ -156,7 +156,7 @@ export default function QuizComponent({ topicKey, topicName }) {
     
     if (error) {
       return (
-        <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="my-4 sm:my-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
           <p className="mb-6 text-red-600 dark:text-red-400">
             Error loading questions: {error}
@@ -173,7 +173,7 @@ export default function QuizComponent({ topicKey, topicName }) {
     
     if (!questions || questions.length === 0) {
       return (
-        <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="my-4 sm:my-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
           <p className="mb-6 text-gray-600 dark:text-gray-300">
             Quiz content for this topic is currently being developed. Check back soon!
@@ -183,7 +183,7 @@ export default function QuizComponent({ topicKey, topicName }) {
     }
     
     return (
-      <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="my-4 sm:my-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
         <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
         <p className="mb-6 text-gray-600 dark:text-gray-300">
           Test your knowledge with {questions.length} questions. You'll have 60 seconds to answer each question.
@@ -202,13 +202,13 @@ export default function QuizComponent({ topicKey, topicName }) {
     const percentage = Math.round((score / questions.length) * 100);
     
     return (
-      <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz Results</h2>
+      <div className="my-4 sm:my-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-3 lg:mb-4 text-gray-800 dark:text-white">Quiz Results</h2>
         
-        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div className="mb-3 sm:mb-4 lg:mb-6 p-2.5 sm:p-3 lg:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Your Score:</span>
-            <span className="text-xl font-bold text-angular-primary">{score} / {questions.length}</span>
+            <span className="text-sm sm:text-base lg:text-lg font-medium text-gray-700 dark:text-gray-300">Your Score:</span>
+            <span className="text-base sm:text-lg lg:text-xl font-bold text-angular-primary">{score} / {questions.length}</span>
           </div>
           
           <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-4 mb-2">
@@ -223,22 +223,22 @@ export default function QuizComponent({ topicKey, topicName }) {
           <p className="text-sm text-gray-600 dark:text-gray-400 text-right">{percentage}%</p>
         </div>
         
-        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Question Summary</h3>
+        <h3 className="text-base sm:text-lg lg:text-xl font-semibold mb-2 sm:mb-3 lg:mb-4 text-gray-800 dark:text-white">Question Summary</h3>
         
         <div className="space-y-4 mb-6">
           {answers.map((answer, index) => (
             <div 
               key={index} 
-              className={`p-4 rounded-lg ${
+              className={`p-2.5 sm:p-3 lg:p-4 rounded-lg ${
                 answer.isCorrect ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 
                 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
               }`}
             >
-              <p className="font-medium text-gray-800 dark:text-white mb-2">
+              <p className="font-medium text-gray-800 dark:text-white mb-2 text-sm sm:text-base">
                 {index + 1}. {answer.question}
               </p>
               
-              <div className="flex flex-col space-y-1 text-sm">
+              <div className="flex flex-col space-y-1 text-xs sm:text-sm">
                 <p className="text-gray-700 dark:text-gray-300">
                   Your answer: <span className={answer.isCorrect ? 'text-green-600 dark:text-green-400 font-medium' : 'text-red-600 dark:text-red-400 font-medium'}>
                     {answer.selectedOption ? questions[index].options[answer.selectedOption] : 'No answer'}
@@ -259,7 +259,7 @@ export default function QuizComponent({ topicKey, topicName }) {
         
         <button
           onClick={resetQuiz}
-          className="px-6 py-3 text-white rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          className="w-full sm:w-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base text-white rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-gray-800"
         >
           Retake Quiz
         </button>
@@ -269,7 +269,7 @@ export default function QuizComponent({ topicKey, topicName }) {
 
   if (!questions || questions.length === 0 || currentQuestionIndex >= questions.length) {
     return (
-      <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="my-4 sm:my-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
         <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz: {topicName}</h2>
         <p className="mb-6 text-gray-600 dark:text-gray-300">
           Quiz content for this topic is currently being developed. Check back soon!
@@ -283,24 +283,24 @@ export default function QuizComponent({ topicKey, topicName }) {
   return (
     <div className="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+        <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-800 dark:text-white">
           Question {currentQuestionIndex + 1} of {questions.length}
         </h2>
         
         <div className="flex items-center">
-          <div className={`w-12 h-12 flex items-center justify-center rounded-full border-4 ${
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-full border-4 ${
             timeLeft > 30 ? 'border-green-500 text-green-500' : 
             timeLeft > 10 ? 'border-yellow-500 text-yellow-500' : 
             'border-red-500 text-red-500'
           }`}>
-            <span className="text-lg font-bold">{timeLeft}</span>
+            <span className="text-base sm:text-lg font-bold">{timeLeft}</span>
           </div>
         </div>
       </div>
       
       <div className="mb-8">
-        <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-white">
-          {currentQuestion.question}
+        <h3 className="text-sm sm:text-base lg:text-lg font-medium mb-2 sm:mb-3 lg:mb-4 text-gray-800 dark:text-white">
+          <span className="text-sm sm:text-base lg:text-lg">{currentQuestion.question}</span>
         </h3>
         
         <div className="space-y-3">
@@ -308,7 +308,7 @@ export default function QuizComponent({ topicKey, topicName }) {
             <button
               key={key}
               onClick={() => handleOptionSelect(key)}
-              className={`w-full p-4 text-left rounded-lg transition-colors ${
+              className={`w-full p-2.5 sm:p-3 lg:p-4 text-left rounded-lg transition-colors text-xs sm:text-sm lg:text-base ${
                 selectedOption === key 
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
                   : 'bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
@@ -333,7 +333,7 @@ export default function QuizComponent({ topicKey, topicName }) {
         <button
           onClick={handleNextQuestion}
           disabled={selectedOption === null}
-          className={`px-6 py-2 rounded-lg transition-colors ${
+          className={`w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg transition-colors text-sm sm:text-base ${
             selectedOption === null
               ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               : 'text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-angular-tertiary focus:ring-offset-2 dark:focus:ring-offset-gray-800'
