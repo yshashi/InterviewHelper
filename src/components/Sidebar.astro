@@ -265,26 +265,190 @@ const menuItems = [
         title: "React",
         icon: "fab fa-react",
         items: [
+      {
+        title: "Basic Questions",
+        items: [
           {
-            title: "Core Concepts",
-            items: [
-              { title: "Components & Props", path: "/react/components-props" },
-              { title: "Hooks in Depth", path: "/react/hooks" },
-              { title: "Context API", path: "/react/context-api" },
-            ],
+            title: "What is React, and how does it differ from other JavaScript frameworks?",
+            path: "/react/basic/what-is-react"
           },
           {
-            title: "Advanced Patterns",
-            items: [
-              {
-                title: "Performance Patterns",
-                path: "/react/performance-patterns",
-              },
-              { title: "Custom Hooks", path: "/react/custom-hooks" },
-              { title: "Error Boundaries", path: "/react/error-boundaries" },
-            ],
+            title: "What are the key features of React?",
+            path: "/react/basic/key-features"
           },
-        ],
+          {
+            title: "What is JSX, and how does it work in React?",
+            path: "/react/basic/what-is-jsx"
+          },
+          {
+            title: "What is the Virtual DOM, and how does React use it?",
+            path: "/react/basic/virtual-dom"
+          },
+          {
+            title: "What are React components, and how do you create one?",
+            path: "/react/basic/react-components"
+          },
+          {
+            title: "What is the difference between functional and class components in React?",
+            path: "/react/basic/functional-vs-class-components"
+          },
+          {
+            title: "What are props in React, and how are they used?",
+            path: "/react/basic/props-in-react"
+          },
+          {
+            title: "What is state in React, and how do you manage it in a functional component?",
+            path: "/react/basic/state-in-react"
+          },
+          {
+            title: "What is the purpose of the useState hook in React?",
+            path: "/react/basic/usestate-hook"
+          },
+          {
+            title: "What are React lifecycle methods in class components?",
+            path: "/react/basic/lifecycle-methods"
+          },
+          {
+            title: "What is the difference between controlled and uncontrolled components in React?",
+            path: "/react/basic/controlled-vs-uncontrolled-components"
+          },
+          {
+            title: "What is the purpose of keys in React lists?",
+            path: "/react/basic/keys-in-lists"
+          },
+          {
+            title: "How do you handle events in React?",
+            path: "/react/basic/handling-events"
+          },
+          {
+            title: "What is conditional rendering in React, and how can you implement it?",
+            path: "/react/basic/conditional-rendering"
+          }
+        ]
+      },
+      {
+        title: "Intermediate Questions",
+        items: [
+          {
+            title: "What are React Hooks, and why were they introduced?",
+            path: "/react/intermediate/react-hooks"
+          },
+          {
+            title: "Explain the useEffect hook and its common use cases.",
+            path: "/react/intermediate/useeffect-hook"
+          },
+          {
+            title: "What is the difference between useEffect and useLayoutEffect?",
+            path: "/react/intermediate/useeffect-vs-uselayouteffect"
+          },
+          {
+            title: "How can you create a custom hook in React?",
+            path: "/react/intermediate/custom-hook"
+          },
+          {
+            title: "What is the Context API, and how do you use it to manage state?",
+            path: "/react/intermediate/context-api"
+          },
+          {
+            title: "What is the purpose of the useReducer hook, and how does it compare to useState?",
+            path: "/react/intermediate/usereducer-hook"
+          },
+          {
+            title: "How do you handle forms in React with controlled components?",
+            path: "/react/intermediate/handling-forms"
+          },
+          {
+            title: "What are React Fragments, and why are they useful?",
+            path: "/react/intermediate/react-fragments"
+          },
+          {
+            title: "What is prop drilling, and how can you avoid it?",
+            path: "/react/intermediate/prop-drilling"
+          },
+          {
+            title: "What is the difference between lifting state up and using Context in React?",
+            path: "/react/intermediate/lifting-state-vs-context"
+          },
+          {
+            title: "How do you optimize rendering in React using React.memo?",
+            path: "/react/intermediate/react-memo"
+          },
+          {
+            title: "What are higher-order components (HOCs) in React?",
+            path: "/react/intermediate/higher-order-components"
+          },
+          {
+            title: "What is the purpose of the useCallback hook, and when should you use it?",
+            path: "/react/intermediate/usecallback-hook"
+          },
+          {
+            title: "What is the difference between useMemo and useCallback?",
+            path: "/react/intermediate/usememo-vs-usecallback"
+          }
+        ]
+      },
+      {
+        title: "Advanced Questions",
+        items: [
+          {
+            title: "How does React's reconciliation process work under the hood?",
+            path: "/react/advanced/reconciliation-process"
+          },
+          {
+            title: "What are Concurrent Mode and Suspense in React, and how do they improve performance?",
+            path: "/react/advanced/concurrent-mode-and-suspense"
+          },
+          {
+            title: "How can you implement code-splitting in a React application?",
+            path: "/react/advanced/code-splitting"
+          },
+          {
+            title: "What are Error Boundaries in React, and how do you implement them?",
+            path: "/react/advanced/error-boundaries"
+          },
+          {
+            title: "How do you manage global state in a large React application?",
+            path: "/react/advanced/global-state-management"
+          },
+          {
+            title: "What is server-side rendering (SSR) in React, and how can you implement it with Next.js?",
+            path: "/react/advanced/server-side-rendering"
+          },
+          {
+            title: "What are the differences between client-side rendering (CSR) and server-side rendering (SSR)?",
+            path: "/react/advanced/csr-vs-ssr"
+          },
+          {
+            title: "How can you improve the performance of a React application with lazy loading?",
+            path: "/react/advanced/lazy-loading"
+          },
+          {
+            title: "What is the purpose of the useTransition hook in React 18?",
+            path: "/react/advanced/usetransition-hook"
+          },
+          {
+            title: "How does React handle batching of state updates, and how can you control it?",
+            path: "/react/advanced/state-update-batching"
+          },
+          {
+            title: "What are React Portals, and when should you use them?",
+            path: "/react/advanced/react-portals"
+          },
+          {
+            title: "How can you integrate React with Redux for state management?",
+            path: "/react/advanced/react-with-redux"
+          },
+          {
+            title: "What is the difference between Redux Toolkit and traditional Redux?",
+            path: "/react/advanced/redux-toolkit-vs-traditional"
+          },
+          {
+            title: "How do you test React components using Jest and React Testing Library?",
+            path: "/react/advanced/testing-react-components"
+          }
+        ]
+      }
+    ]
       },
     ],
   },
@@ -296,10 +460,10 @@ const menuItems = [
         title: ".NET",
         icon: "fas fa-cube",
         items: [
-      {
-        title: "Basic Questions",
-        items: [
           {
+            title: "Basic Questions",
+            items: [
+              {
             title: "What is .NET, and what are its key components?",
             path: "/dotnet/basic/what-is-dotnet"
           },
