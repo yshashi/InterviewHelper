@@ -1,0 +1,131 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Working with Database Views in Entity Framework Core
+---
+
+## Interview Question
+How to call a database view in EF Core?
+
+## Answer
+Entity Framework Core provides several ways to work with database views, allowing you to map them to entity types just like tables.
+
+### 1. Mapping a View Using Entity Type Configuration
+
+The most common approach is to create an entity class and map it to a view using the Fluent API:
+
+```csharp
+// Entity class representing the view
+public class ProductSummary
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; }
+    public string CategoryName { get; set; }
+    public decimal UnitPrice { get; set; }
+    public int UnitsInStock { get; set; }
+    public decimal TotalValue { get; set; }
+}
+
+// DbContext configuration
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<ProductSummary> ProductSummaries { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Map the entity to a database view
+        modelBuilder.Entity<ProductSummary>(entity =>
+        {
+            entity.HasNoKey(); // Views often don't have primary keys
+            entity.ToView("vw_ProductSummary"); // Name of the view in the database
+            
+            // Optionally configure properties
+            entity.Property(e => e.TotalValue).HasColumnType("money");
+        });
+    }
+}
+```
+
+### 2. Creating the View in a Migration
+
+You can create the view as part of your database migrations:
+
+```csharp
+public partial class CreateProductSummaryView : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql(@"
+            CREATE VIEW vw_ProductSummary AS
+            SELECT 
+                p.Id AS ProductId,
+                p.Name AS ProductName,
+                c.Name AS CategoryName,
+                p.UnitPrice,
+                p.UnitsInStock,
+                p.UnitPrice * p.UnitsInStock AS TotalValue
+            FROM Products p
+            JOIN Categories c ON p.CategoryId = c.Id
+        ");
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql("DROP VIEW vw_ProductSummary");
+    }
+}
+```
+
+### 3. Using Raw SQL to Query a View
+
+If you prefer not to create an entity for the view, you can use raw SQL:
+
+```csharp
+public async Task<List<ProductSummary>> GetProductSummariesAsync()
+{
+    return await _context.ProductSummaries
+        .FromSqlRaw("SELECT * FROM vw_ProductSummary")
+        .ToListAsync();
+}
+
+// Or with parameters
+public async Task<List<ProductSummary>> GetProductSummariesByCategoryAsync(string categoryName)
+{
+    return await _context.ProductSummaries
+        .FromSqlRaw("SELECT * FROM vw_ProductSummary WHERE CategoryName = {0}", categoryName)
+        .ToListAsync();
+}
+```
+
+### 4. Using Keyless Entity Types for Views
+
+For EF Core 5.0+, you can explicitly mark the entity as keyless:
+
+```csharp
+[Keyless]
+public class ProductSummary
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; }
+    public string CategoryName { get; set; }
+    public decimal UnitPrice { get; set; }
+    public int UnitsInStock { get; set; }
+    public decimal TotalValue { get; set; }
+}
+```
+
+## Key Points 💡
+- Database views provide a way to encapsulate complex queries
+- Views can improve performance for frequently used complex queries
+- EF Core supports mapping entities to views using the ToView() method
+- Views are typically mapped as keyless entity types since they often lack primary keys
+- You can use migrations to create and manage database views
+- Views can be queried using LINQ just like regular tables
+- Views are read-only in EF Core
+- Consider using views for reporting and analytics scenarios
+- Views can help abstract complex data relationships from your application code
+
+## Common Follow-up Questions
+1. What are the performance implications of using views versus direct queries?
+2. How do you handle views with parameters in EF Core?
+3. Can you update data through a view in EF Core?
+4. How do you handle views that join multiple tables with different primary keys?

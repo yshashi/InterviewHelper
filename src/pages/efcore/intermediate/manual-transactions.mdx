@@ -1,0 +1,351 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Manual Database Transactions in Entity Framework Core
+---
+
+## Interview Question
+How to manually create a database transaction in EF Core?
+
+## Answer
+Entity Framework Core provides several ways to manually create and manage database transactions, giving you fine-grained control over transaction boundaries and behavior.
+
+### 1. Using DbContext.Database.BeginTransaction
+
+The most straightforward approach is to use the `BeginTransaction` method:
+
+```csharp
+public async Task TransferFunds(int fromAccountId, int toAccountId, decimal amount)
+{
+    using var transaction = await _context.Database.BeginTransactionAsync();
+    
+    try
+    {
+        // Debit one account
+        var fromAccount = await _context.Accounts.FindAsync(fromAccountId);
+        fromAccount.Balance -= amount;
+        
+        // Credit another account
+        var toAccount = await _context.Accounts.FindAsync(toAccountId);
+        toAccount.Balance += amount;
+        
+        // Record the transaction
+        _context.Transfers.Add(new Transfer
+        {
+            FromAccountId = fromAccountId,
+            ToAccountId = toAccountId,
+            Amount = amount,
+            TransferDate = DateTime.UtcNow
+        });
+        
+        // Save all changes in one transaction
+        await _context.SaveChangesAsync();
+        
+        // Commit the transaction
+        await transaction.CommitAsync();
+    }
+    catch (Exception)
+    {
+        // Rollback the transaction on error
+        await transaction.RollbackAsync();
+        throw;
+    }
+}
+```
+
+### 2. Using TransactionScope (System.Transactions)
+
+For distributed transactions or when working with multiple contexts:
+
+```csharp
+public async Task ProcessOrderWithInventory(Order order)
+{
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    
+    try
+    {
+        // Save order in one context
+        using (var orderContext = new OrderDbContext(_connectionString))
+        {
+            orderContext.Orders.Add(order);
+            await orderContext.SaveChangesAsync();
+        }
+        
+        // Update inventory in another context
+        using (var inventoryContext = new InventoryDbContext(_connectionString))
+        {
+            foreach (var item in order.Items)
+            {
+                var product = await inventoryContext.Products.FindAsync(item.ProductId);
+                product.StockQuantity -= item.Quantity;
+            }
+            
+            await inventoryContext.SaveChangesAsync();
+        }
+        
+        // Complete the transaction
+        scope.Complete();
+    }
+    catch
+    {
+        // Transaction will automatically abort if scope.Complete() is not called
+        throw;
+    }
+}
+```
+
+### 3. Specifying Isolation Level
+
+You can specify the transaction isolation level for more control:
+
+```csharp
+public async Task ProcessConcurrentOrder(int productId, int quantity)
+{
+    // Use Serializable for highest isolation
+    using var transaction = await _context.Database.BeginTransactionAsync(
+        IsolationLevel.Serializable);
+    
+    try
+    {
+        var product = await _context.Products.FindAsync(productId);
+        
+        if (product.StockQuantity >= quantity)
+        {
+            product.StockQuantity -= quantity;
+            
+            // Create order
+            var order = new Order
+            {
+                ProductId = productId,
+                Quantity = quantity,
+                OrderDate = DateTime.UtcNow
+            };
+            
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+            
+            await transaction.CommitAsync();
+            return true;
+        }
+        
+        await transaction.RollbackAsync();
+        return false;
+    }
+    catch
+    {
+        await transaction.RollbackAsync();
+        throw;
+    }
+}
+```
+
+### 4. Using an Existing Database Connection
+
+You can also create a transaction from an existing database connection:
+
+```csharp
+public async Task ImportDataWithExistingConnection(List<Product> products)
+{
+    // Open a connection manually
+    var connection = new SqlConnection(_connectionString);
+    await connection.OpenAsync();
+    
+    // Begin a transaction on the connection
+    using var dbTransaction = connection.BeginTransaction();
+    
+    try
+    {
+        // Tell EF Core to use the existing connection and transaction
+        _context.Database.UseTransaction(dbTransaction);
+        
+        // Perform operations
+        _context.Products.AddRange(products);
+        await _context.SaveChangesAsync();
+        
+        // Commit the transaction
+        dbTransaction.Commit();
+    }
+    catch
+    {
+        dbTransaction.Rollback();
+        throw;
+    }
+    finally
+    {
+        // Close the connection
+        connection.Close();
+    }
+}
+```
+
+### Real-World Example: Order Processing System
+
+```csharp
+public class OrderProcessingService
+{
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<OrderProcessingService> _logger;
+    
+    public OrderProcessingService(
+        ApplicationDbContext context,
+        ILogger<OrderProcessingService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+    
+    public async Task<OrderResult> PlaceOrderAsync(OrderRequest request)
+    {
+        // Start a transaction with a reasonable isolation level
+        using var transaction = await _context.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted);
+            
+        try
+        {
+            // 1. Validate customer
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Id == request.CustomerId);
+                
+            if (customer == null)
+            {
+                return new OrderResult { Success = false, Message = "Customer not found" };
+            }
+            
+            // 2. Check customer's credit limit
+            if (customer.CreditLimit < request.TotalAmount)
+            {
+                return new OrderResult { Success = false, Message = "Insufficient credit" };
+            }
+            
+            // 3. Check inventory for all products
+            var productIds = request.Items.Select(i => i.ProductId).ToList();
+            var products = await _context.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p);
+                
+            foreach (var item in request.Items)
+            {
+                if (!products.TryGetValue(item.ProductId, out var product))
+                {
+                    return new OrderResult 
+                    { 
+                        Success = false, 
+                        Message = $"Product {item.ProductId} not found" 
+                    };
+                }
+                
+                if (product.StockQuantity < item.Quantity)
+                {
+                    return new OrderResult 
+                    { 
+                        Success = false, 
+                        Message = $"Insufficient stock for product {product.Name}" 
+                    };
+                }
+            }
+            
+            // 4. Create the order
+            var order = new Order
+            {
+                CustomerId = request.CustomerId,
+                OrderDate = DateTime.UtcNow,
+                Status = OrderStatus.Pending,
+                TotalAmount = request.TotalAmount,
+                ShippingAddress = request.ShippingAddress,
+                Items = request.Items.Select(i => new OrderItem
+                {
+                    ProductId = i.ProductId,
+                    Quantity = i.Quantity,
+                    UnitPrice = products[i.ProductId].Price,
+                    Subtotal = i.Quantity * products[i.ProductId].Price
+                }).ToList()
+            };
+            
+            _context.Orders.Add(order);
+            
+            // 5. Update inventory
+            foreach (var item in request.Items)
+            {
+                var product = products[item.ProductId];
+                product.StockQuantity -= item.Quantity;
+                
+                // Create inventory transaction record
+                _context.InventoryTransactions.Add(new InventoryTransaction
+                {
+                    ProductId = item.ProductId,
+                    Quantity = -item.Quantity,
+                    TransactionType = InventoryTransactionType.OrderPlaced,
+                    ReferenceId = order.Id.ToString(),
+                    TransactionDate = DateTime.UtcNow
+                });
+            }
+            
+            // 6. Update customer's credit
+            customer.UsedCredit += request.TotalAmount;
+            
+            // 7. Save all changes
+            await _context.SaveChangesAsync();
+            
+            // 8. Create payment record
+            if (request.PaymentMethod == PaymentMethod.CreditCard)
+            {
+                // Process payment (in real world, call payment gateway)
+                var payment = new Payment
+                {
+                    OrderId = order.Id,
+                    Amount = request.TotalAmount,
+                    PaymentMethod = request.PaymentMethod,
+                    PaymentDate = DateTime.UtcNow,
+                    Status = PaymentStatus.Completed
+                };
+                
+                _context.Payments.Add(payment);
+                order.Status = OrderStatus.Paid;
+                
+                await _context.SaveChangesAsync();
+            }
+            
+            // 9. Commit the transaction
+            await transaction.CommitAsync();
+            
+            _logger.LogInformation("Order {OrderId} placed successfully", order.Id);
+            
+            return new OrderResult
+            {
+                Success = true,
+                OrderId = order.Id,
+                Message = "Order placed successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            // Rollback the transaction
+            await transaction.RollbackAsync();
+            
+            _logger.LogError(ex, "Error placing order");
+            
+            return new OrderResult
+            {
+                Success = false,
+                Message = "An error occurred while processing your order"
+            };
+        }
+    }
+}
+```
+
+## Key Points 💡
+- Transactions ensure that multiple database operations succeed or fail as a unit
+- EF Core automatically creates a transaction for each SaveChanges call
+- Manual transactions are needed when multiple SaveChanges calls must be atomic
+- Always use the `using` statement to ensure proper disposal of transaction resources
+- Always handle exceptions and explicitly call Rollback in catch blocks
+- Consider the appropriate isolation level for your use case
+- TransactionScope is useful for distributed transactions across multiple resources
+- Be aware of transaction timeouts for long-running operations
+- Transactions can cause blocking and deadlocks if not managed properly
+
+## Common Follow-up Questions
+1. What are the performance implications of using transactions?
+2. How do you handle distributed transactions across multiple databases?
+3. What isolation level would you choose for a high-concurrency application?
+4. How do you test code that uses transactions?

@@ -1,0 +1,77 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Deleting Entities Without Selecting Them First
+---
+
+## Interview Question
+How can you delete an existing entity without selecting it from the database?
+
+## Answer
+Entity Framework Core provides several approaches to delete entities without first retrieving them from the database, which can significantly improve performance.
+
+### 1. Using Remove with a Stub Entity
+
+```csharp
+public async Task DeleteProduct(int productId)
+{
+    // Create a stub entity with just the primary key
+    var product = new Product { Id = productId };
+    
+    // Attach and remove
+    _context.Products.Attach(product);
+    _context.Products.Remove(product);
+    
+    // Save changes
+    await _context.SaveChangesAsync();
+}
+```
+
+### 2. Using ExecuteDeleteAsync (EF Core 7.0+)
+
+```csharp
+public async Task DeleteProductWithExecuteDelete(int productId)
+{
+    // Delete directly without tracking
+    await _context.Products
+        .Where(p => p.Id == productId)
+        .ExecuteDeleteAsync();
+}
+```
+
+### 3. Using Raw SQL for Performance-Critical Deletes
+
+```csharp
+public async Task DeleteProductWithRawSql(int productId)
+{
+    await _context.Database.ExecuteSqlRawAsync(
+        "DELETE FROM Products WHERE Id = {0}", productId);
+}
+```
+
+### 4. Bulk Delete with LINQ and ExecuteDeleteAsync (EF Core 7.0+)
+
+```csharp
+public async Task DeleteExpiredProducts()
+{
+    // Delete all expired products in one operation
+    await _context.Products
+        .Where(p => p.ExpiryDate < DateTime.UtcNow)
+        .ExecuteDeleteAsync();
+}
+```
+
+## Key Points 💡
+- Deleting without selecting first reduces database roundtrips
+- `ExecuteDeleteAsync()` (EF Core 7+) is the most efficient method
+- For older EF Core versions, use `Attach()` and `Remove()`
+- Raw SQL can be used for complex or bulk deletes
+- Consider using transactions for operations that delete multiple related entities
+- Be aware of foreign key constraints and cascading deletes
+- These methods bypass change tracking and validation logic
+- Consider soft deletion for entities that might need to be recovered
+
+## Common Follow-up Questions
+1. How do these methods handle cascade deletes?
+2. What happens if the entity doesn't exist when using these methods?
+3. How would you implement an audit trail for deleted entities?
+4. What are the performance implications of bulk deletes on large tables?

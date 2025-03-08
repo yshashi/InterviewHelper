@@ -1,0 +1,105 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Creating a Pooled DbContext in Entity Framework Core
+---
+
+## Interview Question
+Name 2 ways how to create a Pooled DbContext.
+
+## Answer
+There are two primary ways to create a pooled DbContext in Entity Framework Core:
+
+### 1. Using AddDbContextPool in Dependency Injection
+
+The most common approach is to use the `AddDbContextPool` extension method when configuring services:
+
+```csharp
+// In Program.cs or Startup.cs
+public void ConfigureServices(IServiceCollection services)
+{
+    services.AddDbContextPool<ApplicationDbContext>(options =>
+        options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")),
+        poolSize: 64); // Optional: specify pool size (default is 1024)
+}
+```
+
+This registers your DbContext as a pooled service in the dependency injection container. When a DbContext is requested, it's taken from the pool rather than being newly created.
+
+### 2. Using DbContextOptionsBuilder.EnablePooling
+
+For scenarios where you're manually creating DbContext instances, you can enable pooling through the options builder:
+
+```csharp
+// Configure the DbContextOptions with pooling enabled
+var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
+    .UseSqlServer(connectionString)
+    .EnablePooling(); // Enable pooling for manually created contexts
+
+// Create a DbContextOptions instance
+var options = optionsBuilder.Options;
+
+// Later, when creating contexts manually:
+using (var context = new ApplicationDbContext(options))
+{
+    // The context will be pooled when disposed
+}
+```
+
+### Real-World Example: ASP.NET Core Web Application
+
+```csharp
+// Program.cs in a modern ASP.NET Core 6+ application
+var builder = WebApplication.CreateBuilder(args);
+
+// Method 1: Add pooled DbContext to services
+builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add controllers and other services
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// Configure middleware
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+
+// ApplicationDbContext.cs
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+    
+    public DbSet<Customer> Customers { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    
+    // No need for OnConfiguring when using pooling through DI
+}
+```
+
+## Key Points 💡
+- `AddDbContextPool` is the preferred method for ASP.NET Core applications
+- Pooling works best with short-lived contexts (like web requests)
+- DbContext must have a constructor that accepts DbContextOptions
+- Pooled contexts cannot have constructor parameters injected from scoped or transient services
+- The default pool size (1024) is suitable for most applications
+- Pooling can reduce memory pressure and improve performance by 30-40%
+
+## Common Follow-up Questions
+1. What happens if all contexts in the pool are in use?
+2. How does pooling affect the DbContext's lifetime in dependency injection?
+3. Are there any scenarios where pooling might degrade performance?
+4. How does DbContext pooling interact with database connection pooling?

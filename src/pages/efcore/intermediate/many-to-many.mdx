@@ -1,0 +1,468 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Many-to-Many Relationships in Entity Framework Core
+---
+
+## Interview Question
+How do you create a many-to-many relationship in Entity Framework Core?
+
+## Answer
+A many-to-many relationship in Entity Framework Core represents a relationship where each entity in one table can be related to multiple entities in another table, and vice versa. This type of relationship requires a join table (also called a junction table or bridge table) to connect the two entities.
+
+### Implementing Many-to-Many Relationships
+
+There are two main approaches to implementing many-to-many relationships in EF Core:
+
+#### 1. Using Skip Navigation (EF Core 5.0+)
+
+In EF Core 5.0 and later, you can define many-to-many relationships without explicitly defining a join entity:
+
+```csharp
+// Model classes
+public class Student
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    // Collection navigation property
+    public ICollection<Course> Courses { get; set; }
+}
+
+public class Course
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    
+    // Collection navigation property
+    public ICollection<Student> Students { get; set; }
+}
+
+// DbContext configuration
+public class SchoolDbContext : DbContext
+{
+    public DbSet<Student> Students { get; set; }
+    public DbSet<Course> Courses { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Student>()
+            .HasMany(s => s.Courses)
+            .WithMany(c => c.Students)
+            .UsingEntity(j => j.ToTable("StudentCourses"));
+    }
+}
+```
+
+#### 2. Using an Explicit Join Entity
+
+For more control or when using older versions of EF Core, you can define an explicit join entity:
+
+```csharp
+// Model classes
+public class Author
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    // Collection navigation property to join entity
+    public ICollection<BookAuthor> BookAuthors { get; set; }
+}
+
+public class Book
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    
+    // Collection navigation property to join entity
+    public ICollection<BookAuthor> BookAuthors { get; set; }
+}
+
+// Join entity
+public class BookAuthor
+{
+    // Composite key consisting of both foreign keys
+    public int AuthorId { get; set; }
+    public int BookId { get; set; }
+    
+    // Additional properties for the relationship
+    public int Order { get; set; }  // e.g., order of authors on the book cover
+    
+    // Navigation properties to both entities
+    public Author Author { get; set; }
+    public Book Book { get; set; }
+}
+
+// DbContext configuration
+public class LibraryDbContext : DbContext
+{
+    public DbSet<Author> Authors { get; set; }
+    public DbSet<Book> Books { get; set; }
+    public DbSet<BookAuthor> BookAuthors { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BookAuthor>()
+            .HasKey(ba => new { ba.AuthorId, ba.BookId });
+            
+        modelBuilder.Entity<BookAuthor>()
+            .HasOne(ba => ba.Author)
+            .WithMany(a => a.BookAuthors)
+            .HasForeignKey(ba => ba.AuthorId);
+            
+        modelBuilder.Entity<BookAuthor>()
+            .HasOne(ba => ba.Book)
+            .WithMany(b => b.BookAuthors)
+            .HasForeignKey(ba => ba.BookId);
+    }
+}
+```
+
+### Working with Many-to-Many Relationships
+
+#### Using Skip Navigation (EF Core 5.0+)
+
+```csharp
+// Creating related entities
+var student = new Student { Name = "John Doe" };
+var course1 = new Course { Title = "Mathematics" };
+var course2 = new Course { Title = "Physics" };
+
+student.Courses = new List<Course> { course1, course2 };
+
+_context.Students.Add(student);
+await _context.SaveChangesAsync();
+
+// Loading related entities
+var studentWithCourses = await _context.Students
+    .Include(s => s.Courses)
+    .FirstOrDefaultAsync(s => s.Id == studentId);
+
+// Adding a relationship
+var student = await _context.Students.FindAsync(studentId);
+var course = await _context.Courses.FindAsync(courseId);
+
+if (student != null && course != null)
+{
+    if (student.Courses == null)
+        student.Courses = new List<Course>();
+        
+    student.Courses.Add(course);
+    await _context.SaveChangesAsync();
+}
+
+// Removing a relationship
+var student = await _context.Students
+    .Include(s => s.Courses)
+    .FirstOrDefaultAsync(s => s.Id == studentId);
+    
+if (student != null)
+{
+    var course = student.Courses.FirstOrDefault(c => c.Id == courseId);
+    if (course != null)
+    {
+        student.Courses.Remove(course);
+        await _context.SaveChangesAsync();
+    }
+}
+```
+
+#### Using an Explicit Join Entity
+
+```csharp
+// Creating related entities
+var author = new Author { Name = "J.R.R. Tolkien" };
+var book1 = new Book { Title = "The Hobbit" };
+var book2 = new Book { Title = "The Lord of the Rings" };
+
+_context.Authors.Add(author);
+_context.Books.Add(book1);
+_context.Books.Add(book2);
+await _context.SaveChangesAsync();
+
+// Creating relationships
+_context.BookAuthors.Add(new BookAuthor 
+{ 
+    AuthorId = author.Id, 
+    BookId = book1.Id, 
+    Order = 1 
+});
+
+_context.BookAuthors.Add(new BookAuthor 
+{ 
+    AuthorId = author.Id, 
+    BookId = book2.Id, 
+    Order = 1 
+});
+
+await _context.SaveChangesAsync();
+
+// Loading related entities
+var authorWithBooks = await _context.Authors
+    .Include(a => a.BookAuthors)
+    .ThenInclude(ba => ba.Book)
+    .FirstOrDefaultAsync(a => a.Id == authorId);
+
+// Accessing related entities
+if (authorWithBooks != null)
+{
+    foreach (var bookAuthor in authorWithBooks.BookAuthors)
+    {
+        Console.WriteLine($"Book: {bookAuthor.Book.Title}, Order: {bookAuthor.Order}");
+    }
+}
+
+// Removing a relationship
+var bookAuthor = await _context.BookAuthors
+    .FirstOrDefaultAsync(ba => ba.AuthorId == authorId && ba.BookId == bookId);
+    
+if (bookAuthor != null)
+{
+    _context.BookAuthors.Remove(bookAuthor);
+    await _context.SaveChangesAsync();
+}
+```
+
+### Real-World Example: Product Tagging System
+
+```csharp
+// Entity classes
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public decimal Price { get; set; }
+    public int StockQuantity { get; set; }
+    
+    // Navigation property for many-to-many relationship
+    public ICollection<ProductTag> ProductTags { get; set; } = new List<ProductTag>();
+}
+
+public class Tag
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Slug { get; set; }
+    
+    // Navigation property for many-to-many relationship
+    public ICollection<ProductTag> ProductTags { get; set; } = new List<ProductTag>();
+}
+
+// Join entity with additional properties
+public class ProductTag
+{
+    public int ProductId { get; set; }
+    public Product Product { get; set; }
+    
+    public int TagId { get; set; }
+    public Tag Tag { get; set; }
+    
+    // Additional properties
+    public DateTime AddedAt { get; set; }
+    public string AddedBy { get; set; }
+    public bool IsFeatured { get; set; }
+}
+
+// DbContext configuration
+public class EcommerceDbContext : DbContext
+{
+    public EcommerceDbContext(DbContextOptions<EcommerceDbContext> options)
+        : base(options)
+    {
+    }
+    
+    public DbSet<Product> Products { get; set; }
+    public DbSet<Tag> Tags { get; set; }
+    public DbSet<ProductTag> ProductTags { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configure many-to-many relationship
+        modelBuilder.Entity<ProductTag>()
+            .HasKey(pt => new { pt.ProductId, pt.TagId });
+            
+        modelBuilder.Entity<ProductTag>()
+            .HasOne(pt => pt.Product)
+            .WithMany(p => p.ProductTags)
+            .HasForeignKey(pt => pt.ProductId);
+            
+        modelBuilder.Entity<ProductTag>()
+            .HasOne(pt => pt.Tag)
+            .WithMany(t => t.ProductTags)
+            .HasForeignKey(pt => pt.TagId);
+            
+        // Configure unique constraint on Tag.Slug
+        modelBuilder.Entity<Tag>()
+            .HasIndex(t => t.Slug)
+            .IsUnique();
+    }
+}
+
+// Product service implementation
+public class ProductService
+{
+    private readonly EcommerceDbContext _context;
+    
+    public ProductService(EcommerceDbContext context)
+    {
+        _context = context;
+    }
+    
+    public async Task<Product> CreateProductAsync(ProductCreateDto dto, string userId)
+    {
+        var product = new Product
+        {
+            Name = dto.Name,
+            Description = dto.Description,
+            Price = dto.Price,
+            StockQuantity = dto.StockQuantity
+        };
+        
+        _context.Products.Add(product);
+        await _context.SaveChangesAsync();
+        
+        // Add tags
+        if (dto.TagIds != null && dto.TagIds.Any())
+        {
+            await AddProductTagsAsync(product.Id, dto.TagIds, userId);
+        }
+        
+        return product;
+    }
+    
+    public async Task<bool> AddProductTagsAsync(int productId, IEnumerable<int> tagIds, string userId)
+    {
+        var product = await _context.Products.FindAsync(productId);
+        if (product == null)
+            return false;
+            
+        var now = DateTime.UtcNow;
+        
+        foreach (var tagId in tagIds)
+        {
+            // Check if tag exists
+            var tagExists = await _context.Tags.AnyAsync(t => t.Id == tagId);
+            if (!tagExists)
+                continue;
+                
+            // Check if relationship already exists
+            var exists = await _context.ProductTags
+                .AnyAsync(pt => pt.ProductId == productId && pt.TagId == tagId);
+                
+            if (!exists)
+            {
+                _context.ProductTags.Add(new ProductTag
+                {
+                    ProductId = productId,
+                    TagId = tagId,
+                    AddedAt = now,
+                    AddedBy = userId,
+                    IsFeatured = false
+                });
+            }
+        }
+        
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    
+    public async Task<bool> RemoveProductTagAsync(int productId, int tagId)
+    {
+        var productTag = await _context.ProductTags
+            .FirstOrDefaultAsync(pt => pt.ProductId == productId && pt.TagId == tagId);
+            
+        if (productTag == null)
+            return false;
+            
+        _context.ProductTags.Remove(productTag);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    
+    public async Task<List<ProductDto>> GetProductsByTagAsync(string tagSlug)
+    {
+        return await _context.ProductTags
+            .Where(pt => pt.Tag.Slug == tagSlug)
+            .Select(pt => new ProductDto
+            {
+                Id = pt.Product.Id,
+                Name = pt.Product.Name,
+                Price = pt.Product.Price,
+                IsFeatured = pt.IsFeatured
+            })
+            .ToListAsync();
+    }
+    
+    public async Task<List<TagDto>> GetProductTagsAsync(int productId)
+    {
+        return await _context.ProductTags
+            .Where(pt => pt.ProductId == productId)
+            .Select(pt => new TagDto
+            {
+                Id = pt.Tag.Id,
+                Name = pt.Tag.Name,
+                Slug = pt.Tag.Slug,
+                IsFeatured = pt.IsFeatured
+            })
+            .ToListAsync();
+    }
+    
+    public async Task<bool> SetTagAsFeaturedAsync(int productId, int tagId, bool isFeatured)
+    {
+        var productTag = await _context.ProductTags
+            .FirstOrDefaultAsync(pt => pt.ProductId == productId && pt.TagId == tagId);
+            
+        if (productTag == null)
+            return false;
+            
+        productTag.IsFeatured = isFeatured;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+}
+
+// DTOs
+public class ProductCreateDto
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public decimal Price { get; set; }
+    public int StockQuantity { get; set; }
+    public List<int> TagIds { get; set; }
+}
+
+public class ProductDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public bool IsFeatured { get; set; }
+}
+
+public class TagDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Slug { get; set; }
+    public bool IsFeatured { get; set; }
+}
+```
+
+## Key Points 💡
+- Many-to-many relationships connect multiple records in one table to multiple records in another table
+- In EF Core 5.0+, you can use skip navigation properties to define many-to-many relationships without an explicit join entity
+- For more control or in older EF Core versions, define an explicit join entity with foreign keys to both related entities
+- The join entity can include additional properties to store information about the relationship
+- Use `HasMany` and `WithMany` in the Fluent API to configure many-to-many relationships with skip navigation
+- Use composite keys in the join entity consisting of both foreign keys
+- Many-to-many relationships are useful for:
+  - Tagging systems (Products-Tags)
+  - User roles and permissions (Users-Roles)
+  - Course enrollments (Students-Courses)
+  - Social connections (Users-Users)
+
+## Common Follow-up Questions
+1. What's the difference between using skip navigation and an explicit join entity?
+2. How do you handle additional properties in a many-to-many relationship?
+3. What are the performance considerations when working with many-to-many relationships?
+4. How do you efficiently query entities across many-to-many relationships?

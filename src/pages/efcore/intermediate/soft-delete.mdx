@@ -1,0 +1,315 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Implementing Soft Deletion in Entity Framework Core
+---
+
+## Interview Question
+How to implement soft deletion in EF Core?
+
+## Answer
+Soft deletion is a pattern where records are marked as deleted instead of being physically removed from the database. This approach allows for data recovery and maintains referential integrity while preserving historical data.
+
+### Implementation Approaches
+
+### 1. Using a Deleted Flag
+
+The simplest approach is to add an `IsDeleted` flag to your entities:
+
+```csharp
+public abstract class BaseEntity
+{
+    public int Id { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class Customer : BaseEntity
+{
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public List<Order> Orders { get; set; }
+}
+```
+
+### 2. Using Query Filters to Automatically Filter Deleted Records
+
+EF Core's Global Query Filters allow you to automatically filter out soft-deleted entities:
+
+```csharp
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Customer> Customers { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Apply filter to all entities that implement ISoftDeletable
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes()
+            .Where(t => typeof(ISoftDeletable).IsAssignableFrom(t.ClrType)))
+        {
+            var parameter = Expression.Parameter(entityType.ClrType, "e");
+            var property = Expression.PropertyOrField(parameter, nameof(ISoftDeletable.IsDeleted));
+            var falseConstant = Expression.Constant(false);
+            var expression = Expression.Equal(property, falseConstant);
+            var lambda = Expression.Lambda(expression, parameter);
+
+            modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+        }
+    }
+}
+
+public interface ISoftDeletable
+{
+    bool IsDeleted { get; set; }
+}
+
+public abstract class BaseEntity : ISoftDeletable
+{
+    public int Id { get; set; }
+    public bool IsDeleted { get; set; }
+}
+```
+
+### 3. Overriding SaveChanges to Handle Soft Deletion
+
+```csharp
+public class ApplicationDbContext : DbContext
+{
+    // DbSets...
+    
+    public override int SaveChanges()
+    {
+        SoftDeleteEntities();
+        return base.SaveChanges();
+    }
+    
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        SoftDeleteEntities();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+    
+    private void SoftDeleteEntities()
+    {
+        var entries = ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Deleted && 
+                        e.Entity is ISoftDeletable);
+                        
+        foreach (var entry in entries)
+        {
+            entry.State = EntityState.Modified;
+            ((ISoftDeletable)entry.Entity).IsDeleted = true;
+        }
+    }
+}
+```
+
+### 4. Adding Deletion Metadata
+
+For more comprehensive soft deletion, you might want to track when and by whom an entity was deleted:
+
+```csharp
+public interface ISoftDeletable
+{
+    bool IsDeleted { get; set; }
+    DateTime? DeletedAt { get; set; }
+    string DeletedBy { get; set; }
+}
+
+public abstract class AuditableEntity : ISoftDeletable
+{
+    public int Id { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public string DeletedBy { get; set; }
+    
+    // Other audit fields
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; }
+    public DateTime? LastModifiedAt { get; set; }
+    public string LastModifiedBy { get; set; }
+}
+```
+
+### Real-World Example: E-commerce Application
+
+```csharp
+// Domain entities
+public class Product : AuditableEntity
+{
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public string Description { get; set; }
+    public int CategoryId { get; set; }
+    public Category Category { get; set; }
+}
+
+public class Category : AuditableEntity
+{
+    public string Name { get; set; }
+    public ICollection<Product> Products { get; set; }
+}
+
+// DbContext implementation
+public class ECommerceDbContext : DbContext
+{
+    private readonly ICurrentUserService _currentUserService;
+    
+    public ECommerceDbContext(
+        DbContextOptions<ECommerceDbContext> options,
+        ICurrentUserService currentUserService) : base(options)
+    {
+        _currentUserService = currentUserService;
+    }
+    
+    public DbSet<Product> Products { get; set; }
+    public DbSet<Category> Categories { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Apply global query filter for soft delete
+        modelBuilder.Entity<Product>().HasQueryFilter(p => !p.IsDeleted);
+        modelBuilder.Entity<Category>().HasQueryFilter(c => !c.IsDeleted);
+        
+        // Configure relationships
+        modelBuilder.Entity<Product>()
+            .HasOne(p => p.Category)
+            .WithMany(c => c.Products)
+            .HasForeignKey(p => p.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete
+    }
+    
+    public override int SaveChanges()
+    {
+        ApplyAuditingAndSoftDelete();
+        return base.SaveChanges();
+    }
+    
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyAuditingAndSoftDelete();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+    
+    private void ApplyAuditingAndSoftDelete()
+    {
+        var now = DateTime.UtcNow;
+        var currentUser = _currentUserService.GetCurrentUserId() ?? "system";
+        
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = now;
+                    entry.Entity.CreatedBy = currentUser;
+                    break;
+                    
+                case EntityState.Modified:
+                    entry.Entity.LastModifiedAt = now;
+                    entry.Entity.LastModifiedBy = currentUser;
+                    break;
+                    
+                case EntityState.Deleted:
+                    entry.State = EntityState.Modified;
+                    entry.Entity.IsDeleted = true;
+                    entry.Entity.DeletedAt = now;
+                    entry.Entity.DeletedBy = currentUser;
+                    break;
+            }
+        }
+    }
+    
+    // Method to get unfiltered data (including deleted records)
+    public IQueryable<T> GetAllIncludingDeleted<T>() where T : AuditableEntity
+    {
+        return Set<T>().IgnoreQueryFilters();
+    }
+    
+    // Method to permanently delete a record
+    public void PermanentlyDelete<T>(T entity) where T : AuditableEntity
+    {
+        Set<T>().Remove(entity);
+    }
+    
+    // Method to restore a soft-deleted entity
+    public void RestoreDeleted<T>(T entity) where T : AuditableEntity
+    {
+        entity.IsDeleted = false;
+        entity.DeletedAt = null;
+        entity.DeletedBy = null;
+    }
+}
+
+// Usage in a service
+public class ProductService
+{
+    private readonly ECommerceDbContext _context;
+    
+    public ProductService(ECommerceDbContext context)
+    {
+        _context = context;
+    }
+    
+    public async Task<List<Product>> GetProductsAsync()
+    {
+        // Only returns non-deleted products due to query filter
+        return await _context.Products.ToListAsync();
+    }
+    
+    public async Task<List<Product>> GetAllProductsIncludingDeletedAsync()
+    {
+        // Returns all products including deleted ones
+        return await _context.GetAllIncludingDeleted<Product>().ToListAsync();
+    }
+    
+    public async Task DeleteProductAsync(int productId)
+    {
+        var product = await _context.Products.FindAsync(productId);
+        if (product != null)
+        {
+            // This will soft delete due to SaveChanges override
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+        }
+    }
+    
+    public async Task RestoreProductAsync(int productId)
+    {
+        var product = await _context.GetAllIncludingDeleted<Product>()
+            .FirstOrDefaultAsync(p => p.Id == productId);
+            
+        if (product != null && product.IsDeleted)
+        {
+            _context.RestoreDeleted(product);
+            await _context.SaveChangesAsync();
+        }
+    }
+    
+    public async Task PermanentlyDeleteProductAsync(int productId)
+    {
+        var product = await _context.GetAllIncludingDeleted<Product>()
+            .FirstOrDefaultAsync(p => p.Id == productId);
+            
+        if (product != null)
+        {
+            _context.PermanentlyDelete(product);
+            await _context.SaveChangesAsync();
+        }
+    }
+}
+```
+
+## Key Points 💡
+- Soft deletion preserves data for auditing, recovery, and historical analysis
+- Global Query Filters automatically exclude deleted records from queries
+- Override SaveChanges to intercept delete operations and convert them to soft deletes
+- Consider adding metadata like DeletedAt and DeletedBy for better auditing
+- Use IgnoreQueryFilters() when you need to see deleted records
+- Be careful with unique constraints that might conflict with soft-deleted records
+- Consider the performance impact of keeping large amounts of deleted data
+
+## Common Follow-up Questions
+1. How do you handle unique constraints with soft-deleted records?
+2. What's the impact of soft deletion on database performance?
+3. How would you implement data archiving for soft-deleted records?
+4. How do you handle cascade delete behavior with soft deletion?

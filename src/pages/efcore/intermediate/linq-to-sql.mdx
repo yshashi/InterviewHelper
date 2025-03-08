@@ -1,0 +1,103 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How EF Core Translates LINQ to SQL Commands
+---
+
+## Interview Question
+Explain how Entity Framework Core translates LINQ queries to SQL commands.
+
+## Answer
+Entity Framework Core translates LINQ queries to SQL commands through a sophisticated process involving several layers of query compilation and execution:
+
+### 1. Query Expression Tree Building
+When you write a LINQ query, it's initially represented as an expression tree rather than being executed immediately:
+
+```csharp
+var query = context.Products
+                  .Where(p => p.Price > 50)
+                  .OrderBy(p => p.Name);
+```
+
+At this point, no SQL has been generated or executed. EF Core has merely captured your intent as an expression tree.
+
+### 2. Query Provider Processing
+The query provider in EF Core processes this expression tree through several stages:
+
+#### a. Query Model Creation
+The expression tree is converted into a query model that's easier for EF Core to manipulate:
+
+```csharp
+// Behind the scenes, EF Core converts the LINQ expression to a query model
+// that represents the operations to perform (filtering, ordering, etc.)
+```
+
+#### b. Query Compilation
+The query model is then compiled into a SQL command:
+
+```csharp
+// Simplified representation of what happens internally
+var sqlCommand = "SELECT p.Id, p.Name, p.Price FROM Products p WHERE p.Price > @p0 ORDER BY p.Name";
+```
+
+### 3. Query Execution
+The SQL command is only executed when you enumerate the query results:
+
+```csharp
+// This is when the SQL is actually executed
+foreach (var product in query)
+{
+    // Process each product
+}
+
+// Or when using methods that force execution
+var results = query.ToList();
+var firstProduct = query.FirstOrDefault();
+```
+
+### 4. Real-World Example: Complex Query Translation
+
+```csharp
+// LINQ query with multiple operations
+var complexQuery = context.Orders
+    .Where(o => o.OrderDate > DateTime.Now.AddDays(-30))
+    .Include(o => o.Customer)
+    .Include(o => o.OrderItems)
+        .ThenInclude(i => i.Product)
+    .Where(o => o.OrderItems.Any(i => i.Quantity > 5))
+    .OrderByDescending(o => o.TotalAmount)
+    .Select(o => new {
+        OrderId = o.Id,
+        CustomerName = o.Customer.Name,
+        Items = o.OrderItems.Count,
+        Total = o.TotalAmount
+    });
+
+// EF Core will translate this to a complex SQL query with JOINs, 
+// subqueries, and projections
+```
+
+### 5. Query Translation Debugging
+You can inspect the actual SQL generated using logging:
+
+```csharp
+// In your DbContext configuration
+protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+{
+    optionsBuilder
+        .UseSqlServer(connectionString)
+        .LogTo(Console.WriteLine);
+}
+```
+
+## Key Points 💡
+- LINQ queries are translated to SQL at execution time, not when defined
+- The translation happens through expression tree analysis
+- EF Core optimizes the SQL generation based on the provider (SQL Server, PostgreSQL, etc.)
+- Complex LINQ operations like GroupBy, Join, and aggregations have direct SQL equivalents
+- Not all .NET methods can be translated to SQL - attempting to use these will throw runtime exceptions
+
+## Common Follow-up Questions
+1. How can you handle LINQ expressions that can't be translated to SQL?
+2. What's the difference between IQueryable and IEnumerable in the context of LINQ-to-SQL translation?
+3. How does EF Core handle navigation properties and eager loading in LINQ queries?
+4. What performance considerations should be kept in mind when writing LINQ queries that will be translated to SQL?

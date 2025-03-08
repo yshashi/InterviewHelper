@@ -1,0 +1,146 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Using Scoped DbContext in a Singleton Service
+---
+
+## Interview Question
+How can you use a Scoped DbContext in a Singleton Service?
+
+## Answer
+Using a scoped DbContext in a singleton service requires special handling because of the lifetime mismatch. Here are the recommended approaches:
+
+### 1. Using IDbContextFactory
+The recommended approach is to use `IDbContextFactory<T>` which allows you to create and dispose DbContext instances on demand:
+
+```csharp
+// Register the factory in your DI container
+services.AddDbContextFactory<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// Singleton service implementation
+public class LongRunningService
+{
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+
+    public LongRunningService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    {
+        _contextFactory = contextFactory;
+    }
+
+    public async Task DoSomethingAsync()
+    {
+        // Create a new context instance when needed
+        using var context = _contextFactory.CreateDbContext();
+        
+        // Use the context
+        var results = await context.Products.ToListAsync();
+        
+        // Context is disposed at the end of the using block
+    }
+}
+```
+
+### 2. Using IServiceScopeFactory
+Another approach is to create a service scope for each operation:
+
+```csharp
+public class BackgroundService : IHostedService
+{
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    public BackgroundService(IServiceScopeFactory scopeFactory)
+    {
+        _scopeFactory = scopeFactory;
+    }
+
+    public async Task ProcessDataAsync()
+    {
+        // Create a new scope for each operation
+        using var scope = _scopeFactory.CreateScope();
+        
+        // Get the DbContext from the scope
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        
+        // Use the context
+        var entities = await dbContext.Entities.ToListAsync();
+        
+        // Process entities...
+    }
+}
+```
+
+### 3. Real-World Example: Background Processing Service
+
+```csharp
+public class QueueProcessingService : BackgroundService
+{
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly ILogger<QueueProcessingService> _logger;
+
+    public QueueProcessingService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        ILogger<QueueProcessingService> logger)
+    {
+        _contextFactory = contextFactory;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Queue processing service starting");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                // Create a fresh DbContext for each processing cycle
+                using var context = _contextFactory.CreateDbContext();
+                
+                // Process pending items
+                var pendingItems = await context.QueueItems
+                    .Where(q => q.Status == QueueItemStatus.Pending)
+                    .Take(10)
+                    .ToListAsync(stoppingToken);
+                
+                foreach (var item in pendingItems)
+                {
+                    // Process item
+                    item.Status = QueueItemStatus.Processing;
+                    await context.SaveChangesAsync(stoppingToken);
+                    
+                    // Do actual processing...
+                    await ProcessItemAsync(item, stoppingToken);
+                    
+                    item.Status = QueueItemStatus.Completed;
+                    await context.SaveChangesAsync(stoppingToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing queue items");
+            }
+
+            await Task.Delay(5000, stoppingToken);
+        }
+    }
+
+    private async Task ProcessItemAsync(QueueItem item, CancellationToken cancellationToken)
+    {
+        // Processing logic
+    }
+}
+```
+
+## Key Points 💡
+- Never inject a scoped DbContext directly into a singleton service
+- DbContextFactory is the preferred approach since EF Core 5.0
+- Always dispose of DbContext instances when finished with them
+- Each DbContext instance should have a short lifetime
+- Be aware of connection pooling and how it affects performance
+- Consider using async methods to avoid blocking threads
+
+## Common Follow-up Questions
+1. What are the potential issues with keeping a DbContext alive for too long?
+2. How does DbContext pooling differ from using a DbContextFactory?
+3. What are the performance implications of creating a new DbContext for each operation?
+4. How would you handle transactions that span multiple operations in a singleton service?

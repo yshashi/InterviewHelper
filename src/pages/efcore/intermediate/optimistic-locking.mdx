@@ -1,0 +1,346 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Implementing Optimistic Locking in Entity Framework Core
+---
+
+## Interview Question
+How to implement Optimistic Locking in EF Core?
+
+## Answer
+Optimistic locking is a concurrency control strategy that allows multiple users to access the same record for edits without locking the record. It operates on the assumption that conflicts are rare, and verifies that no other user has modified the data before committing changes.
+
+### 1. Using Concurrency Tokens
+
+The simplest approach is to use a concurrency token (timestamp/rowversion):
+
+```csharp
+public class Customer
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    
+    [Timestamp]
+    public byte[] RowVersion { get; set; }
+}
+```
+
+With Fluent API:
+
+```csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<Customer>()
+        .Property(c => c.RowVersion)
+        .IsRowVersion();
+}
+```
+
+### 2. Using Specific Properties as Concurrency Tokens
+
+You can also mark specific properties as concurrency tokens:
+
+```csharp
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    
+    [ConcurrencyCheck]
+    public DateTime LastUpdated { get; set; }
+}
+```
+
+With Fluent API:
+
+```csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<Product>()
+        .Property(p => p.LastUpdated)
+        .IsConcurrencyToken();
+}
+```
+
+### 3. Handling Concurrency Conflicts
+
+```csharp
+public async Task<bool> UpdateProductAsync(Product product)
+{
+    try
+    {
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    catch (DbUpdateConcurrencyException ex)
+    {
+        // Get the entity that caused the concurrency exception
+        var entry = ex.Entries.Single();
+        var databaseValues = await entry.GetDatabaseValuesAsync();
+        
+        if (databaseValues == null)
+        {
+            // The entity was deleted by another user
+            return false;
+        }
+        
+        // Option 1: Keep the user's changes and overwrite the database values
+        // entry.OriginalValues.SetValues(databaseValues);
+        
+        // Option 2: Show the user the current database values and their changes
+        var databaseProduct = (Product)databaseValues.ToObject();
+        
+        // Option 3: Merge the changes
+        // product.Name = databaseProduct.Name; // Keep database value
+        // product.Price = product.Price; // Keep user's value
+        
+        // Option 4: Reload the entity and abandon the user's changes
+        // entry.Reload();
+        
+        return false;
+    }
+}
+```
+
+### Real-World Example: Document Management System
+
+```csharp
+public class Document
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Content { get; set; }
+    public string Author { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastModified { get; set; }
+    public int Version { get; set; }
+    
+    [Timestamp]
+    public byte[] RowVersion { get; set; }
+}
+
+public class DocumentDbContext : DbContext
+{
+    public DocumentDbContext(DbContextOptions<DocumentDbContext> options)
+        : base(options)
+    {
+    }
+    
+    public DbSet<Document> Documents { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Document>()
+            .Property(d => d.RowVersion)
+            .IsRowVersion();
+            
+        // Additional concurrency token for version number
+        modelBuilder.Entity<Document>()
+            .Property(d => d.Version)
+            .IsConcurrencyToken();
+    }
+}
+
+public class DocumentService
+{
+    private readonly DocumentDbContext _context;
+    private readonly ILogger<DocumentService> _logger;
+    
+    public DocumentService(
+        DocumentDbContext context,
+        ILogger<DocumentService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+    
+    public async Task<Document> GetDocumentAsync(int id)
+    {
+        return await _context.Documents.FindAsync(id);
+    }
+    
+    public async Task<(bool Success, string ErrorMessage, Document UpdatedDocument)> 
+        UpdateDocumentAsync(Document document)
+    {
+        try
+        {
+            // Increment version number
+            document.Version++;
+            document.LastModified = DateTime.UtcNow;
+            
+            _context.Documents.Update(document);
+            await _context.SaveChangesAsync();
+            
+            return (true, null, document);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning("Concurrency conflict detected for document {DocumentId}", document.Id);
+            
+            var entry = ex.Entries.Single();
+            var databaseValues = await entry.GetDatabaseValuesAsync();
+            
+            if (databaseValues == null)
+            {
+                return (false, "The document was deleted by another user.", null);
+            }
+            
+            var databaseDocument = (Document)databaseValues.ToObject();
+            
+            // Create a merged document with conflict information
+            var conflictDocument = new Document
+            {
+                Id = document.Id,
+                Title = document.Title,
+                Content = $"CONFLICT DETECTED\n\n" +
+                          $"YOUR VERSION:\n{document.Content}\n\n" +
+                          $"CURRENT VERSION (by {databaseDocument.Author}):\n{databaseDocument.Content}",
+                Author = document.Author,
+                CreatedAt = document.CreatedAt,
+                LastModified = DateTime.UtcNow,
+                Version = databaseDocument.Version,
+                RowVersion = databaseDocument.RowVersion
+            };
+            
+            return (false, 
+                $"The document was modified by {databaseDocument.Author} at {databaseDocument.LastModified}. " +
+                $"Current version: {databaseDocument.Version}", 
+                conflictDocument);
+        }
+    }
+    
+    public async Task<(bool Success, Document Document)> ResolveConflictAsync(
+        int documentId, string resolvedContent, byte[] rowVersion)
+    {
+        var document = await _context.Documents.FindAsync(documentId);
+        
+        if (document == null)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            // Set the original values to match what we expect in the database
+            var entry = _context.Entry(document);
+            entry.Property(d => d.RowVersion).OriginalValue = rowVersion;
+            
+            // Update with resolved content
+            document.Content = resolvedContent;
+            document.LastModified = DateTime.UtcNow;
+            document.Version++; // Increment version
+            
+            await _context.SaveChangesAsync();
+            return (true, document);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Still have a conflict
+            return (false, null);
+        }
+    }
+    
+    // Create a document history entry when updating
+    public async Task<bool> CreateDocumentVersionAsync(Document document)
+    {
+        // Create a history record before updating
+        var documentHistory = new DocumentHistory
+        {
+            DocumentId = document.Id,
+            Title = document.Title,
+            Content = document.Content,
+            Version = document.Version,
+            ModifiedBy = document.Author,
+            ModifiedAt = document.LastModified
+        };
+        
+        _context.DocumentHistories.Add(documentHistory);
+        await _context.SaveChangesAsync();
+        
+        return true;
+    }
+}
+
+// Client-side handling (e.g., in a controller)
+public class DocumentController : Controller
+{
+    private readonly DocumentService _documentService;
+    
+    public DocumentController(DocumentService documentService)
+    {
+        _documentService = documentService;
+    }
+    
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var document = await _documentService.GetDocumentAsync(id);
+        if (document == null)
+        {
+            return NotFound();
+        }
+        
+        return View(document);
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> Edit(Document document)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(document);
+        }
+        
+        var result = await _documentService.UpdateDocumentAsync(document);
+        
+        if (result.Success)
+        {
+            return RedirectToAction("Details", new { id = document.Id });
+        }
+        else
+        {
+            // Show conflict resolution UI
+            ViewBag.ErrorMessage = result.ErrorMessage;
+            return View("ResolveConflict", result.UpdatedDocument);
+        }
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> ResolveConflict(Document document, string resolvedContent)
+    {
+        var result = await _documentService.ResolveConflictAsync(
+            document.Id, resolvedContent, document.RowVersion);
+            
+        if (result.Success)
+        {
+            return RedirectToAction("Details", new { id = document.Id });
+        }
+        else
+        {
+            ViewBag.ErrorMessage = "The document was modified again. Please try once more.";
+            return View();
+        }
+    }
+}
+```
+
+## Key Points 💡
+- Optimistic locking assumes conflicts are rare and only checks at save time
+- Rowversion/timestamp is the most efficient mechanism for SQL Server
+- Concurrency tokens can be any property or combination of properties
+- EF Core automatically includes concurrency tokens in WHERE clauses
+- DbUpdateConcurrencyException is thrown when a concurrency conflict occurs
+- You can resolve conflicts by:
+  - Client wins (overwrite database values)
+  - Database wins (discard client changes)
+  - Merge changes (combine both sets of changes)
+  - Present both versions to the user for manual resolution
+- Consider storing version history for important data
+- Optimistic locking is more scalable than pessimistic locking for most web applications
+
+## Common Follow-up Questions
+1. When would you choose optimistic locking over pessimistic locking?
+2. How does optimistic locking affect database performance?
+3. How would you implement optimistic locking with a non-relational database?
+4. What strategies can you use to minimize concurrency conflicts?

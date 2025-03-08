@@ -1,0 +1,107 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: DbContext Pooling in Entity Framework Core
+---
+
+## Interview Question
+Explain how Pooling works in Entity Framework Core.
+
+## Answer
+DbContext pooling is a performance optimization technique in EF Core that reuses DbContext instances instead of creating new ones for each request.
+
+### How DbContext Pooling Works
+
+1. **Pool Creation**:
+   When your application starts, EF Core creates a pool of DbContext instances.
+
+2. **Context Lifecycle**:
+   ```
+   Request → Get context from pool → Use context → Reset context → Return to pool
+   ```
+
+3. **Context Reset**:
+   When a DbContext is returned to the pool, EF Core:
+   - Clears the change tracker
+   - Resets internal state
+   - Keeps the database connection in the pool
+
+### Implementation in Code
+
+```csharp
+// In Program.cs or Startup.cs
+services.AddDbContextPool<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString),
+    poolSize: 128); // Optional: configure pool size (default is 1024)
+```
+
+### How Reset Works Internally
+
+```csharp
+// Simplified representation of what happens internally
+protected internal virtual void ResetState()
+{
+    // Clear the change tracker
+    ChangeTracker.Clear();
+    
+    // Reset database-related state
+    _database.ResetState();
+    
+    // Reset service properties
+    _disposed = false;
+    
+    // Reset internal caches
+    _initializedForModel = false;
+    _initializedForModelAndServices = false;
+}
+```
+
+### Real-World Example: Web API with High Throughput
+
+```csharp
+// Program.cs in an ASP.NET Core Web API
+var builder = WebApplication.CreateBuilder(args);
+
+// Add pooled DbContext
+builder.Services.AddDbContextPool<OrderDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
+
+// Add controllers
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// OrdersController.cs
+[ApiController]
+[Route("api/[controller]")]
+public class OrdersController : ControllerBase
+{
+    private readonly OrderDbContext _context;
+
+    public OrdersController(OrderDbContext context)
+    {
+        _context = context; // This comes from the pool
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
+    {
+        return await _context.Orders.ToListAsync();
+    } 
+    
+    // When request completes, context is returned to pool
+}
+```
+
+## Key Points 💡
+- Pooling reduces the overhead of creating new DbContext instances
+- Best for high-throughput scenarios (web APIs, microservices)
+- Typical performance improvement: 30-40% in request throughput
+- Default pool size is 1024 instances
+- Not compatible with DbContext constructors that have scoped/transient dependencies
+- Only beneficial for short-lived contexts (like web requests)
+
+## Common Follow-up Questions
+1. What are the limitations of DbContext pooling?
+2. How does pooling affect memory usage in your application?
+3. When would you choose not to use DbContext pooling?
+4. How does DbContext pooling interact with connection pooling?

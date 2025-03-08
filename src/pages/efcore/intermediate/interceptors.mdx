@@ -1,0 +1,271 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: EF Core Interceptors
+---
+
+## Interview Question
+What are EF Core Interceptors used for?
+
+## Answer
+EF Core Interceptors provide a way to intercept, monitor, and modify operations performed by Entity Framework Core before they're executed against the database.
+
+### Purpose of Interceptors
+
+Interceptors allow you to implement cross-cutting concerns without modifying your application's core data access logic. They're particularly useful for:
+
+1. **Logging and diagnostics**
+2. **Auditing database operations**
+3. **Modifying commands before execution**
+4. **Implementing multi-tenancy**
+5. **Setting session-level database configurations**
+
+### Types of Interceptors
+
+#### 1. DbCommandInterceptor
+Intercepts database commands before and after execution:
+
+```csharp
+public class CommandLoggingInterceptor : DbCommandInterceptor
+{
+    private readonly ILogger<CommandLoggingInterceptor> _logger;
+
+    public CommandLoggingInterceptor(ILogger<CommandLoggingInterceptor> logger)
+    {
+        _logger = logger;
+    }
+
+    public override InterceptionResult<DbDataReader> ReaderExecuting(
+        DbCommand command, 
+        CommandEventData eventData, 
+        InterceptionResult<DbDataReader> result)
+    {
+        _logger.LogInformation("Executing command: {CommandText}", command.CommandText);
+        return result;
+    }
+
+    public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+        DbCommand command, 
+        CommandEventData eventData, 
+        InterceptionResult<DbDataReader> result, 
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Executing command: {CommandText}", command.CommandText);
+        return ValueTask.FromResult(result);
+    }
+}
+```
+
+#### 2. SaveChangesInterceptor
+Intercepts SaveChanges operations:
+
+```csharp
+public class AuditSaveChangesInterceptor : SaveChangesInterceptor
+{
+    public override InterceptionResult<int> SavingChanges(
+        DbContextEventData eventData, 
+        InterceptionResult<int> result)
+    {
+        AddAuditData(eventData.Context);
+        return result;
+    }
+
+    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+        DbContextEventData eventData, 
+        InterceptionResult<int> result, 
+        CancellationToken cancellationToken = default)
+    {
+        AddAuditData(eventData.Context);
+        return ValueTask.FromResult(result);
+    }
+
+    private void AddAuditData(DbContext context)
+    {
+        var entries = context.ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
+        var currentUser = GetCurrentUser(); // From your auth system
+        var timestamp = DateTime.UtcNow;
+
+        foreach (var entry in entries)
+        {
+            if (entry.Entity is IAuditable auditableEntity)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    auditableEntity.CreatedBy = currentUser;
+                    auditableEntity.CreatedAt = timestamp;
+                }
+
+                auditableEntity.LastModifiedBy = currentUser;
+                auditableEntity.LastModifiedAt = timestamp;
+            }
+        }
+    }
+
+    private string GetCurrentUser()
+    {
+        // Get current user from your authentication system
+        return "system"; // Placeholder
+    }
+}
+```
+
+#### 3. ConnectionInterceptor
+Intercepts database connection operations:
+
+```csharp
+public class ConnectionInterceptor : DbConnectionInterceptor
+{
+    public override InterceptionResult ConnectionOpening(
+        DbConnection connection, 
+        ConnectionEventData eventData, 
+        InterceptionResult result)
+    {
+        // Set connection-specific settings
+        if (connection is SqlConnection sqlConnection)
+        {
+            // Example: Set application name
+            var builder = new SqlConnectionStringBuilder(connection.ConnectionString)
+            {
+                ApplicationName = "MyApplication"
+            };
+            
+            connection.ConnectionString = builder.ConnectionString;
+        }
+        
+        return result;
+    }
+}
+```
+
+#### 4. TransactionInterceptor
+Intercepts database transaction operations:
+
+```csharp
+public class TransactionInterceptor : DbTransactionInterceptor
+{
+    private readonly ILogger<TransactionInterceptor> _logger;
+
+    public TransactionInterceptor(ILogger<TransactionInterceptor> logger)
+    {
+        _logger = logger;
+    }
+
+    public override InterceptionResult TransactionStarting(
+        DbTransaction transaction, 
+        TransactionEventData eventData, 
+        InterceptionResult result)
+    {
+        _logger.LogInformation("Starting transaction at {Time}", DateTime.UtcNow);
+        return result;
+    }
+
+    public override void TransactionCommitted(
+        DbTransaction transaction, 
+        TransactionEndEventData eventData)
+    {
+        _logger.LogInformation("Transaction committed at {Time}", DateTime.UtcNow);
+    }
+
+    public override void TransactionRolledBack(
+        DbTransaction transaction, 
+        TransactionEndEventData eventData)
+    {
+        _logger.LogWarning("Transaction rolled back at {Time}", DateTime.UtcNow);
+    }
+}
+```
+
+### Real-World Example: Multi-Tenant Application
+
+```csharp
+// Multi-tenant command interceptor
+public class MultiTenantCommandInterceptor : DbCommandInterceptor
+{
+    private readonly ICurrentTenantProvider _tenantProvider;
+
+    public MultiTenantCommandInterceptor(ICurrentTenantProvider tenantProvider)
+    {
+        _tenantProvider = tenantProvider;
+    }
+
+    public override InterceptionResult<DbDataReader> ReaderExecuting(
+        DbCommand command, 
+        CommandEventData eventData, 
+        InterceptionResult<DbDataReader> result)
+    {
+        ApplyTenantFilter(command);
+        return result;
+    }
+
+    public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+        DbCommand command, 
+        CommandEventData eventData, 
+        InterceptionResult<DbDataReader> result, 
+        CancellationToken cancellationToken = default)
+    {
+        ApplyTenantFilter(command);
+        return ValueTask.FromResult(result);
+    }
+
+    private void ApplyTenantFilter(DbCommand command)
+    {
+        var tenantId = _tenantProvider.GetCurrentTenantId();
+        
+        // Only modify SELECT commands
+        if (!command.CommandText.TrimStart().StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+            return;
+            
+        // Don't modify if it already has a tenant filter
+        if (command.CommandText.Contains("TenantId =") || command.CommandText.Contains("@tenant"))
+            return;
+            
+        // Simple approach: Add tenant filter to WHERE clause
+        if (command.CommandText.Contains("WHERE"))
+        {
+            command.CommandText = command.CommandText.Replace(
+                "WHERE", $"WHERE TenantId = @tenant AND");
+        }
+        else if (command.CommandText.Contains("FROM"))
+        {
+            // Find position after FROM clause and table name
+            var fromIndex = command.CommandText.IndexOf("FROM");
+            var wherePosition = command.CommandText.IndexOf("ORDER BY");
+            if (wherePosition == -1) wherePosition = command.CommandText.Length;
+            
+            command.CommandText = command.CommandText.Insert(
+                wherePosition, $" WHERE TenantId = @tenant ");
+        }
+        
+        // Add parameter
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "@tenant";
+        parameter.Value = tenantId;
+        command.Parameters.Add(parameter);
+    }
+}
+
+// Register in Program.cs or Startup.cs
+services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(connectionString);
+    options.AddInterceptors(
+        new MultiTenantCommandInterceptor(tenantProvider),
+        new AuditSaveChangesInterceptor());
+});
+```
+
+## Key Points 💡
+- Interceptors provide a clean way to implement cross-cutting concerns
+- They can modify commands before execution or just observe operations
+- Multiple interceptors can be registered and will execute in registration order
+- Interceptors are powerful but should be used judiciously due to performance impact
+- Available since EF Core 3.0 with expanded capabilities in later versions
+- They're ideal for auditing, logging, multi-tenancy, and diagnostics
+- Interceptors can be registered globally or per-context
+
+## Common Follow-up Questions
+1. How do interceptors differ from database triggers?
+2. What's the performance impact of using interceptors?
+3. Can interceptors be used to implement row-level security?
+4. How would you test code that uses interceptors?

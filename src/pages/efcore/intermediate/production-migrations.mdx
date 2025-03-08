@@ -1,0 +1,166 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Executing Database Migrations in Production
+---
+
+## Interview Question
+How would you execute database migrations on a production database?
+
+## Answer
+Executing database migrations on a production database requires careful planning and execution to minimize downtime and avoid data loss. Here are the recommended approaches:
+
+### 1. Using EF Core Migration Bundles (Recommended)
+
+Migration bundles (introduced in EF Core 6.0) package migrations into a standalone executable:
+
+```csharp
+// Create a migration bundle
+dotnet ef migrations bundle --project MyProject --startup-project MyApp --output migrate.exe
+
+// Execute the bundle on the production server
+migrate.exe --connection "Server=production;Database=MyDb;User=sa;Password=***"
+```
+
+### 2. Using the EF Core CLI Tool
+
+```bash
+# On your development machine, create a SQL script from migrations
+dotnet ef migrations script --project MyProject --startup-project MyApp --idempotent --output migrate.sql
+
+# Transfer the script to production server and execute it using sqlcmd or similar tool
+sqlcmd -S productionserver -d MyDatabase -U username -P password -i migrate.sql
+```
+
+### 3. Using Code-Based Migration Application
+
+```csharp
+// In a deployment script or application startup
+public static void ApplyMigrations(IHost host)
+{
+    using var scope = host.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    
+    // Apply pending migrations
+    db.Database.Migrate();
+    
+    // Or check if migrations are pending first
+    if (db.Database.GetPendingMigrations().Any())
+    {
+        // Log migration start
+        db.Database.Migrate();
+        // Log migration complete
+    }
+}
+```
+
+### 4. Using a CI/CD Pipeline
+
+```yaml
+# Azure DevOps Pipeline example
+- stage: DeployDatabase
+  jobs:
+  - job: MigrateDatabase
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Install EF Core tools'
+      inputs:
+        command: custom
+        custom: tool
+        arguments: 'install --global dotnet-ef'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Generate migration script'
+      inputs:
+        command: custom
+        custom: ef
+        arguments: 'migrations script --idempotent --output $(Build.ArtifactStagingDirectory)/migrate.sql --project src/MyProject --startup-project src/MyApp'
+    
+    - task: SqlAzureDacpacDeployment@1
+      displayName: 'Execute migration script'
+      inputs:
+        azureSubscription: 'My Azure Subscription'
+        ServerName: 'myserver.database.windows.net'
+        DatabaseName: 'MyDatabase'
+        SqlUsername: '$(SqlUsername)'
+        SqlPassword: '$(SqlPassword)'
+        deployType: 'SqlTask'
+        SqlFile: '$(Build.ArtifactStagingDirectory)/migrate.sql'
+```
+
+### Real-World Example: Blue-Green Deployment with Migrations
+
+```csharp
+// Deployment script for blue-green deployment with database migrations
+public class DeploymentManager
+{
+    public async Task PerformBlueGreenDeploymentAsync()
+    {
+        // 1. Create migration script
+        var scriptPath = GenerateMigrationScript();
+        
+        // 2. Verify script (optional manual step)
+        await NotifyDbaForScriptVerification(scriptPath);
+        
+        // 3. Take database backup
+        await BackupDatabaseAsync();
+        
+        // 4. Apply migrations during maintenance window
+        await ApplyMigrationsAsync(scriptPath);
+        
+        // 5. Deploy new application version to staging ("green")
+        await DeployToGreenEnvironmentAsync();
+        
+        // 6. Run smoke tests against green environment
+        var testsSucceeded = await RunSmokeTestsAsync();
+        
+        if (testsSucceeded)
+        {
+            // 7. Switch traffic from blue to green
+            await SwitchTrafficToGreenAsync();
+            
+            // 8. Monitor for issues
+            await MonitorDeploymentAsync();
+        }
+        else
+        {
+            // Rollback if tests failed
+            await RollbackDeploymentAsync();
+        }
+    }
+    
+    private string GenerateMigrationScript()
+    {
+        // Generate idempotent SQL script from EF migrations
+        var scriptPath = Path.Combine(Path.GetTempPath(), "migrate.sql");
+        var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"ef migrations script --idempotent --output {scriptPath}",
+            WorkingDirectory = "/path/to/project",
+            RedirectStandardOutput = true,
+            UseShellExecute = false
+        });
+        
+        process.WaitForExit();
+        return scriptPath;
+    }
+    
+    // Other methods for the deployment process...
+}
+```
+
+## Key Points 💡
+- Always test migrations on a staging environment first
+- Create and review SQL scripts before applying to production
+- Use idempotent scripts to ensure safety in repeated runs
+- Consider using a maintenance window for major schema changes
+- Always back up the database before applying migrations
+- For critical systems, consider blue-green deployments
+- Monitor database performance after applying migrations
+- Have a rollback plan ready in case of issues
+
+## Common Follow-up Questions
+1. How do you handle migrations that might cause downtime?
+2. What's your approach to rolling back a failed migration?
+3. How do you handle migrations with data loss potential?
+4. How do you coordinate database migrations with application deployments?

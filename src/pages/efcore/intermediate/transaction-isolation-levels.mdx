@@ -1,0 +1,141 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Transaction Isolation Levels in Entity Framework Core
+---
+
+## Interview Question
+Explain different transaction isolation levels.
+
+## Answer
+Transaction isolation levels determine how transactions interact with each other in a database system, particularly when multiple transactions are reading and writing data concurrently.
+
+### The Four Standard Isolation Levels
+
+#### 1. Read Uncommitted
+The lowest isolation level, allowing transactions to read data that has been modified but not yet committed by other transactions.
+
+```csharp
+using var transaction = await _context.Database.BeginTransactionAsync(
+    IsolationLevel.ReadUncommitted);
+```
+
+**Characteristics:**
+- Allows dirty reads (reading uncommitted changes)
+- Allows non-repeatable reads (data changing between reads)
+- Allows phantom reads (new rows appearing between reads)
+- Highest concurrency, lowest consistency
+
+**Use Cases:**
+- Reporting queries where absolute accuracy isn't critical
+- Scenarios where performance is more important than consistency
+- Reading approximate counts or statistics
+
+#### 2. Read Committed
+Ensures that a transaction only reads data that has been committed by other transactions.
+
+```csharp
+using var transaction = await _context.Database.BeginTransactionAsync(
+    IsolationLevel.ReadCommitted);
+```
+
+**Characteristics:**
+- Prevents dirty reads
+- Allows non-repeatable reads
+- Allows phantom reads
+- Good balance between concurrency and consistency
+
+**Use Cases:**
+- Default isolation level in many databases (SQL Server, PostgreSQL)
+- General-purpose OLTP applications
+- Most business applications where some concurrency anomalies are acceptable
+
+#### 3. Repeatable Read
+Ensures that if a transaction reads a row, it will get the same data if it reads that row again, even if other transactions modify the data.
+
+```csharp
+using var transaction = await _context.Database.BeginTransactionAsync(
+    IsolationLevel.RepeatableRead);
+```
+
+**Characteristics:**
+- Prevents dirty reads
+- Prevents non-repeatable reads
+- Allows phantom reads
+- Higher consistency, lower concurrency
+
+**Use Cases:**
+- Financial calculations that read the same data multiple times
+- Reports that need consistent data throughout the transaction
+- Default isolation level in MySQL/MariaDB
+
+#### 4. Serializable
+The highest isolation level, ensuring complete isolation from other transactions.
+
+```csharp
+using var transaction = await _context.Database.BeginTransactionAsync(
+    IsolationLevel.Serializable);
+```
+
+**Characteristics:**
+- Prevents dirty reads
+- Prevents non-repeatable reads
+- Prevents phantom reads
+- Highest consistency, lowest concurrency
+- May cause more deadlocks and timeouts
+
+**Use Cases:**
+- Financial transactions requiring absolute consistency
+- Critical data integrity operations
+- Scenarios where data must be completely isolated
+
+### Additional Isolation Levels (SQL Server Specific)
+
+#### 5. Snapshot
+Provides statement-level read consistency without locking.
+
+```csharp
+using var transaction = await _context.Database.BeginTransactionAsync(
+    IsolationLevel.Snapshot);
+```
+
+**Characteristics:**
+- Prevents dirty reads
+- Prevents non-repeatable reads
+- Prevents phantom reads
+- Uses row versioning instead of locks
+- Good balance between isolation and concurrency
+
+**Use Cases:**
+- Reporting applications that need consistent point-in-time view
+- Long-running read operations that shouldn't block writers
+- Applications needing high concurrency with good consistency
+
+### Concurrency Phenomena
+
+| Isolation Level   | Dirty Reads | Non-repeatable Reads | Phantom Reads |
+|-------------------|-------------|----------------------|---------------|
+| Read Uncommitted  | Yes         | Yes                  | Yes           |
+| Read Committed    | No          | Yes                  | Yes           |
+| Repeatable Read   | No          | No                   | Yes           |
+| Serializable      | No          | No                   | No            |
+| Snapshot          | No          | No                   | No            |
+
+
+## Key Points 💡
+- Higher isolation levels provide more consistency but reduce concurrency
+- Lower isolation levels improve performance but may lead to data anomalies
+- The default isolation level varies by database system
+- SQL Server default: Read Committed
+- PostgreSQL default: Read Committed
+- MySQL/MariaDB default: Repeatable Read
+- Oracle default: Read Committed
+- Choose the appropriate isolation level based on your specific requirements
+- Consider using optimistic concurrency for better scalability when appropriate
+- Snapshot isolation provides a good balance for many applications
+- Be aware of deadlock potential at higher isolation levels
+
+## Common Follow-up Questions
+1. How do you choose the appropriate isolation level for a specific operation?
+2. What are the performance implications of different isolation levels?
+3. How do isolation levels affect locking behavior in the database?
+4. What is the difference between optimistic and pessimistic concurrency control?

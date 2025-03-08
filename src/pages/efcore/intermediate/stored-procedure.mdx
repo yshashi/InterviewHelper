@@ -1,0 +1,213 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Working with Stored Procedures in Entity Framework Core
+---
+
+## Interview Question
+How to call a stored procedure in EF Core?
+
+## Answer
+Entity Framework Core provides several ways to execute stored procedures, allowing you to leverage database-specific optimizations and complex logic implemented at the database level.
+
+### 1. Using FromSqlRaw for Query Results
+
+If your stored procedure returns a result set that maps to an entity:
+
+```csharp
+public async Task<List<Product>> GetProductsByCategory(string categoryName)
+{
+    return await _context.Products
+        .FromSqlRaw("EXEC GetProductsByCategory @p0", categoryName)
+        .ToListAsync();
+}
+```
+
+### 2. Using FromSqlInterpolated for Safer Parameter Handling
+
+```csharp
+public async Task<List<Product>> GetProductsByCategory(string categoryName)
+{
+    return await _context.Products
+        .FromSqlInterpolated($"EXEC GetProductsByCategory {categoryName}")
+        .ToListAsync();
+}
+```
+
+### 3. For Stored Procedures with Multiple Result Sets
+
+```csharp
+public async Task<(List<Customer> Customers, List<Order> Orders)> GetCustomerOrderReport(DateTime startDate, DateTime endDate)
+{
+    // Create command
+    var command = _context.Database.GetDbConnection().CreateCommand();
+    command.CommandText = "EXEC GetCustomerOrderReport @StartDate, @EndDate";
+    
+    // Add parameters
+    var startDateParam = command.CreateParameter();
+    startDateParam.ParameterName = "@StartDate";
+    startDateParam.Value = startDate;
+    command.Parameters.Add(startDateParam);
+    
+    var endDateParam = command.CreateParameter();
+    endDateParam.ParameterName = "@EndDate";
+    endDateParam.Value = endDate;
+    command.Parameters.Add(endDateParam);
+    
+    // Open connection if needed
+    if (_context.Database.GetDbConnection().State != ConnectionState.Open)
+    {
+        await _context.Database.GetDbConnection().OpenAsync();
+    }
+    
+    // Execute and read results
+    using var reader = await command.ExecuteReaderAsync();
+    
+    // First result set - Customers
+    var customers = new List<Customer>();
+    while (await reader.ReadAsync())
+    {
+        customers.Add(new Customer
+        {
+            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+            Name = reader.GetString(reader.GetOrdinal("Name")),
+            Email = reader.GetString(reader.GetOrdinal("Email"))
+            // Map other properties
+        });
+    }
+    
+    // Move to next result set
+    await reader.NextResultAsync();
+    
+    // Second result set - Orders
+    var orders = new List<Order>();
+    while (await reader.ReadAsync())
+    {
+        orders.Add(new Order
+        {
+            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+            CustomerId = reader.GetInt32(reader.GetOrdinal("CustomerId")),
+            OrderDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
+            TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount"))
+            // Map other properties
+        });
+    }
+    
+    return (customers, orders);
+}
+```
+
+### 4. For Non-Query Stored Procedures (No Result Set)
+
+```csharp
+public async Task<int> UpdateProductPrices(decimal increasePercentage, int categoryId)
+{
+    // Returns the number of affected rows
+    return await _context.Database.ExecuteSqlRawAsync(
+        "EXEC UpdateProductPrices @p0, @p1", 
+        increasePercentage, 
+        categoryId);
+}
+```
+
+### 5. For Stored Procedures with Output Parameters
+
+```csharp
+public async Task<(bool Success, string Message, int NewOrderId)> CreateOrder(Order order)
+{
+    // Create command
+    var connection = _context.Database.GetDbConnection();
+    var command = connection.CreateCommand();
+    command.CommandText = "EXEC CreateOrder @CustomerId, @OrderDate, @TotalAmount, @Success OUTPUT, @Message OUTPUT, @OrderId OUTPUT";
+    
+    // Add input parameters
+    command.Parameters.Add(new SqlParameter("@CustomerId", order.CustomerId));
+    command.Parameters.Add(new SqlParameter("@OrderDate", order.OrderDate));
+    command.Parameters.Add(new SqlParameter("@TotalAmount", order.TotalAmount));
+    
+    // Add output parameters
+    var successParam = new SqlParameter("@Success", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+    var messageParam = new SqlParameter("@Message", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
+    var orderIdParam = new SqlParameter("@OrderId", SqlDbType.Int) { Direction = ParameterDirection.Output };
+    
+    command.Parameters.Add(successParam);
+    command.Parameters.Add(messageParam);
+    command.Parameters.Add(orderIdParam);
+    
+    // Open connection if needed
+    if (connection.State != ConnectionState.Open)
+    {
+        await connection.OpenAsync();
+    }
+    
+    // Execute the stored procedure
+    await command.ExecuteNonQueryAsync();
+    
+    // Get output parameter values
+    bool success = (bool)successParam.Value;
+    string message = messageParam.Value?.ToString();
+    int newOrderId = (int)orderIdParam.Value;
+    
+    return (success, message, newOrderId);
+}
+```
+
+### 6. Creating a Stored Procedure in a Migration
+
+```csharp
+public partial class CreateStoredProcedures : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql(@"
+            CREATE PROCEDURE GetProductsByCategory
+                @CategoryName NVARCHAR(50)
+            AS
+            BEGIN
+                SELECT p.*
+                FROM Products p
+                JOIN Categories c ON p.CategoryId = c.Id
+                WHERE c.Name = @CategoryName
+            END
+        ");
+        
+        migrationBuilder.Sql(@"
+            CREATE PROCEDURE UpdateProductPrices
+                @IncreasePercentage DECIMAL(5,2),
+                @CategoryId INT
+            AS
+            BEGIN
+                UPDATE Products
+                SET Price = Price * (1 + @IncreasePercentage / 100)
+                WHERE CategoryId = @CategoryId
+                
+                RETURN @@ROWCOUNT
+            END
+        ");
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql("DROP PROCEDURE IF EXISTS GetProductsByCategory");
+        migrationBuilder.Sql("DROP PROCEDURE IF EXISTS UpdateProductPrices");
+    }
+}
+``` 
+
+## Key Points 💡
+- Stored procedures can encapsulate complex business logic at the database level
+- EF Core provides multiple ways to execute stored procedures
+- Use FromSqlRaw/FromSqlInterpolated for procedures that return entity data
+- Use ExecuteSqlRaw/ExecuteSqlInterpolated for procedures that don't return data
+- For complex scenarios with multiple result sets or output parameters, use ADO.NET directly
+- Stored procedures can be created and managed through EF Core migrations
+- Consider using stored procedures for:
+  - Complex data operations that are more efficient at the database level
+  - Operations that need to be shared across multiple applications
+  - Batch operations that modify large amounts of data
+  - Operations that require advanced database features not exposed by EF Core
+
+## Common Follow-up Questions
+1. What are the performance benefits of using stored procedures versus LINQ queries?
+2. How do you handle stored procedures with table-valued parameters?
+3. What are the trade-offs between using stored procedures and keeping logic in your application code?
+4. How do you unit test code that calls stored procedures?

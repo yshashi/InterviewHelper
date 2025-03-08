@@ -1,0 +1,421 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: One-to-Many Relationships in Entity Framework Core
+---
+
+## Interview Question
+How do you create a one-to-many relationship in Entity Framework Core?
+
+## Answer
+A one-to-many relationship in Entity Framework Core represents a relationship where an entity in one table can be related to multiple entities in another table, but each entity in the second table is related to only one entity in the first table. This is one of the most common relationship types in database design.
+
+### Implementing One-to-Many Relationships
+
+#### 1. Using Navigation Properties and Foreign Key
+
+```csharp
+// Model classes
+public class Author
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    // Collection navigation property
+    public List<Book> Books { get; set; }
+}
+
+public class Book
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    
+    // Foreign key property
+    public int AuthorId { get; set; }
+    
+    // Reference navigation property
+    public Author Author { get; set; }
+}
+
+// DbContext configuration
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Author> Authors { get; set; }
+    public DbSet<Book> Books { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Book>()
+            .HasOne(b => b.Author)
+            .WithMany(a => a.Books)
+            .HasForeignKey(b => b.AuthorId);
+    }
+}
+```
+
+#### 2. Using Conventions
+
+EF Core can automatically infer one-to-many relationships based on conventions:
+
+```csharp
+public class Category
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    // Collection navigation property
+    public ICollection<Product> Products { get; set; }
+}
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    
+    // Foreign key property (follows convention: navigation property name + primary key name)
+    public int CategoryId { get; set; }
+    
+    // Reference navigation property
+    public Category Category { get; set; }
+}
+
+// No explicit configuration needed in DbContext if following conventions
+```
+
+### Working with One-to-Many Relationships
+
+#### Creating Related Entities
+
+```csharp
+// Creating an author with books
+var author = new Author
+{
+    Name = "J.K. Rowling",
+    Books = new List<Book>
+    {
+        new Book { Title = "Harry Potter and the Philosopher's Stone" },
+        new Book { Title = "Harry Potter and the Chamber of Secrets" }
+    }
+};
+
+_context.Authors.Add(author);
+await _context.SaveChangesAsync();
+
+// Adding a book to an existing author
+var existingAuthor = await _context.Authors.FindAsync(authorId);
+if (existingAuthor != null)
+{
+    var newBook = new Book
+    {
+        Title = "Harry Potter and the Prisoner of Azkaban",
+        AuthorId = existingAuthor.Id
+    };
+    
+    _context.Books.Add(newBook);
+    await _context.SaveChangesAsync();
+}
+```
+
+#### Loading Related Entities
+
+```csharp
+// Eager loading
+var authorWithBooks = await _context.Authors
+    .Include(a => a.Books)
+    .FirstOrDefaultAsync(a => a.Id == authorId);
+
+// Explicit loading
+var author = await _context.Authors.FindAsync(authorId);
+if (author != null)
+{
+    await _context.Entry(author)
+        .Collection(a => a.Books)
+        .LoadAsync();
+}
+
+// Filtered loading
+var author = await _context.Authors.FindAsync(authorId);
+if (author != null)
+{
+    await _context.Entry(author)
+        .Collection(a => a.Books)
+        .Query()
+        .Where(b => b.Title.Contains("Stone"))
+        .LoadAsync();
+}
+```
+
+#### Updating Related Entities
+
+```csharp
+var author = await _context.Authors
+    .Include(a => a.Books)
+    .FirstOrDefaultAsync(a => a.Id == authorId);
+    
+if (author != null)
+{
+    // Update author
+    author.Name = "J.K. Rowling (Joanne Rowling)";
+    
+    // Update a book
+    var book = author.Books.FirstOrDefault(b => b.Id == bookId);
+    if (book != null)
+    {
+        book.Title = "Updated Title";
+    }
+    
+    await _context.SaveChangesAsync();
+}
+```
+
+#### Deleting Related Entities
+
+```csharp
+// Delete a single book
+var book = await _context.Books.FindAsync(bookId);
+if (book != null)
+{
+    _context.Books.Remove(book);
+    await _context.SaveChangesAsync();
+}
+
+// Delete all books for an author
+var author = await _context.Authors
+    .Include(a => a.Books)
+    .FirstOrDefaultAsync(a => a.Id == authorId);
+    
+if (author != null)
+{
+    _context.Books.RemoveRange(author.Books);
+    await _context.SaveChangesAsync();
+}
+
+// Delete an author and all books (with cascade delete)
+var author = await _context.Authors.FindAsync(authorId);
+if (author != null)
+{
+    _context.Authors.Remove(author);
+    await _context.SaveChangesAsync();
+}
+```
+
+### Real-World Example: Blog System
+
+```csharp
+// Entity classes
+public class Blog
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string OwnerId { get; set; }
+    
+    // Navigation property
+    public List<Post> Posts { get; set; } = new List<Post>();
+}
+
+public class Post
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Content { get; set; }
+    public DateTime PublishedAt { get; set; }
+    public bool IsPublished { get; set; }
+    
+    // Foreign key
+    public int BlogId { get; set; }
+    
+    // Navigation property
+    public Blog Blog { get; set; }
+    
+    // Tags relationship (many-to-many)
+    public List<PostTag> PostTags { get; set; } = new List<PostTag>();
+}
+
+public class PostTag
+{
+    public int PostId { get; set; }
+    public Post Post { get; set; }
+    
+    public int TagId { get; set; }
+    public Tag Tag { get; set; }
+}
+
+public class Tag
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    public List<PostTag> PostTags { get; set; } = new List<PostTag>();
+}
+
+// DbContext configuration
+public class BlogDbContext : DbContext
+{
+    public BlogDbContext(DbContextOptions<BlogDbContext> options)
+        : base(options)
+    {
+    }
+    
+    public DbSet<Blog> Blogs { get; set; }
+    public DbSet<Post> Posts { get; set; }
+    public DbSet<Tag> Tags { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configure one-to-many relationship
+        modelBuilder.Entity<Post>()
+            .HasOne(p => p.Blog)
+            .WithMany(b => b.Posts)
+            .HasForeignKey(p => p.BlogId)
+            .OnDelete(DeleteBehavior.Cascade);
+            
+        // Configure many-to-many relationship
+        modelBuilder.Entity<PostTag>()
+            .HasKey(pt => new { pt.PostId, pt.TagId });
+            
+        modelBuilder.Entity<PostTag>()
+            .HasOne(pt => pt.Post)
+            .WithMany(p => p.PostTags)
+            .HasForeignKey(pt => pt.PostId);
+            
+        modelBuilder.Entity<PostTag>()
+            .HasOne(pt => pt.Tag)
+            .WithMany(t => t.PostTags)
+            .HasForeignKey(pt => pt.TagId);
+    }
+}
+
+// Blog service implementation
+public class BlogService
+{
+    private readonly BlogDbContext _context;
+    
+    public BlogService(BlogDbContext context)
+    {
+        _context = context;
+    }
+    
+    public async Task<Blog> CreateBlogAsync(string title, string description, string ownerId)
+    {
+        var blog = new Blog
+        {
+            Title = title,
+            Description = description,
+            OwnerId = ownerId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        _context.Blogs.Add(blog);
+        await _context.SaveChangesAsync();
+        
+        return blog;
+    }
+    
+    public async Task<Post> CreatePostAsync(int blogId, string title, string content, bool publish = false)
+    {
+        var blog = await _context.Blogs.FindAsync(blogId);
+        if (blog == null)
+            throw new NotFoundException("Blog not found");
+            
+        var post = new Post
+        {
+            BlogId = blogId,
+            Title = title,
+            Content = content,
+            IsPublished = publish,
+            PublishedAt = publish ? DateTime.UtcNow : default
+        };
+        
+        _context.Posts.Add(post);
+        await _context.SaveChangesAsync();
+        
+        return post;
+    }
+    
+    public async Task<List<PostDto>> GetBlogPostsAsync(int blogId, bool includeUnpublished = false)
+    {
+        var query = _context.Posts
+            .Where(p => p.BlogId == blogId);
+            
+        if (!includeUnpublished)
+        {
+            query = query.Where(p => p.IsPublished);
+        }
+        
+        return await query
+            .OrderByDescending(p => p.PublishedAt)
+            .Select(p => new PostDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Summary = p.Content.Length > 200 
+                    ? p.Content.Substring(0, 200) + "..." 
+                    : p.Content,
+                PublishedAt = p.PublishedAt,
+                IsPublished = p.IsPublished
+            })
+            .ToListAsync();
+    }
+    
+    public async Task<bool> PublishPostAsync(int postId)
+    {
+        var post = await _context.Posts.FindAsync(postId);
+        if (post == null)
+            return false;
+            
+        post.IsPublished = true;
+        post.PublishedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    
+    public async Task<bool> DeletePostAsync(int postId)
+    {
+        var post = await _context.Posts.FindAsync(postId);
+        if (post == null)
+            return false;
+            
+        _context.Posts.Remove(post);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+}
+
+// DTOs
+public class PostDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Summary { get; set; }
+    public DateTime PublishedAt { get; set; }
+    public bool IsPublished { get; set; }
+}
+
+public class NotFoundException : Exception
+{
+    public NotFoundException(string message) : base(message) { }
+}
+```
+
+## Key Points 💡
+- One-to-many relationships are the most common relationship type in database design
+- The "one" side is called the principal entity and the "many" side is called the dependent entity
+- The dependent entity contains a foreign key property that references the principal entity's primary key
+- EF Core can automatically infer one-to-many relationships based on conventions
+- Use `HasOne` and `WithMany` in the Fluent API to configure the relationship explicitly
+- Collection navigation properties are typically defined as `ICollection<T>`, `List<T>`, or `IList<T>`
+- Reference navigation properties point to a single related entity
+- Configure cascade delete behavior using `OnDelete`
+- One-to-many relationships are used for:
+  - Parent-child relationships (e.g., Order-OrderItems)
+  - Categorization (e.g., Category-Products)
+  - Ownership (e.g., User-Posts)
+
+## Common Follow-up Questions
+1. How do you handle cascade delete in one-to-many relationships?
+2. What's the difference between lazy loading and eager loading for one-to-many relationships?
+3. How do you query and filter related entities efficiently?
+4. What are the performance considerations when working with one-to-many relationships with large collections?

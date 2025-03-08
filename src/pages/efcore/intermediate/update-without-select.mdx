@@ -1,0 +1,93 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Updating Entities Without Selecting Them First
+---
+
+## Interview Question
+How can you update an existing entity without selecting it from the database?
+
+## Answer
+Entity Framework Core provides several ways to update entities without first retrieving them from the database, which can significantly improve performance for simple updates.
+
+### 1. Using DbContext.Update with a Detached Entity
+
+```csharp
+public async Task UpdateProductPrice(int productId, decimal newPrice)
+{
+    // Create a detached entity with just the primary key and values to update
+    var product = new Product
+    {
+        Id = productId,
+        Price = newPrice
+    };
+    
+    // Attach and mark as modified
+    _context.Products.Update(product);
+    
+    // Save changes
+    await _context.SaveChangesAsync();
+}
+```
+
+**Note:** This approach updates ALL properties of the entity, not just the ones you set. Any properties not explicitly set will be updated with their default values.
+
+### 2. Using EntityEntry.Property to Update Specific Properties
+
+```csharp
+public async Task UpdateProductPriceOnly(int productId, decimal newPrice)
+{
+    // Create a detached entity with just the primary key
+    var product = new Product { Id = productId };
+    
+    // Attach the entity (it's now in Unchanged state)
+    var entry = _context.Products.Attach(product);
+    
+    // Mark only specific properties as modified
+    entry.Property(p => p.Price).IsModified = true;
+    product.Price = newPrice;
+    
+    // Save changes
+    await _context.SaveChangesAsync();
+}
+```
+
+### 3. Using ExecuteUpdateAsync (EF Core 7.0+)
+
+```csharp
+public async Task UpdateProductPriceWithExecuteUpdate(int productId, decimal newPrice)
+{
+    // Update directly without tracking
+    await _context.Products
+        .Where(p => p.Id == productId)
+        .ExecuteUpdateAsync(setters => setters
+            .SetProperty(p => p.Price, newPrice)
+            .SetProperty(p => p.LastUpdated, DateTime.UtcNow));
+}
+```
+
+### 4. Using Raw SQL for Performance-Critical Updates
+
+```csharp
+public async Task UpdateProductPriceWithRawSql(int productId, decimal newPrice)
+{
+    await _context.Database.ExecuteSqlRawAsync(
+        "UPDATE Products SET Price = {0}, LastUpdated = {1} WHERE Id = {2}",
+        newPrice, DateTime.UtcNow, productId);
+}
+```
+
+## Key Points 💡
+- Updating without selecting first improves performance by reducing database roundtrips
+- `Update()` marks all properties as modified, which may not be what you want
+- `Attach()` with selective property modification gives more control
+- `ExecuteUpdateAsync()` (EF Core 7+) is the most efficient method for simple updates
+- Raw SQL can be used for complex or bulk updates
+- Be careful with concurrency when using these methods
+- These approaches bypass change tracking and validation logic
+- Consider using optimistic concurrency with a rowversion/timestamp for important data
+
+## Common Follow-up Questions
+1. How do these methods handle concurrency conflicts?
+2. What are the trade-offs between using EF Core's update methods vs. raw SQL?
+3. How would you handle validation when updating without selecting first?
+4. How does this approach impact auditing and change tracking?

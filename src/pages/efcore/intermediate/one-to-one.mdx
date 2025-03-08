@@ -1,0 +1,353 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: One-to-One Relationships in Entity Framework Core
+---
+
+## Interview Question
+How do you create a one-to-one relationship in Entity Framework Core?
+
+## Answer
+A one-to-one relationship in Entity Framework Core represents a relationship where each entity in one table is related to exactly one entity in another table. This is implemented by having a foreign key property in one entity that references the primary key of the related entity.
+
+### Implementing One-to-One Relationships
+
+There are two main approaches to creating one-to-one relationships in EF Core:
+
+#### 1. Using Navigation Properties and Foreign Key
+
+```csharp
+// Model classes
+public class Person
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    // Navigation property
+    public PersonDetail Detail { get; set; }
+}
+
+public class PersonDetail
+{
+    public int Id { get; set; }
+    
+    // Foreign key property
+    public int PersonId { get; set; }
+    
+    public string Address { get; set; }
+    public string PhoneNumber { get; set; }
+    
+    // Navigation property back to Person
+    public Person Person { get; set; }
+}
+
+// DbContext configuration
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Person> People { get; set; }
+    public DbSet<PersonDetail> PersonDetails { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PersonDetail>()
+            .HasOne(d => d.Person)
+            .WithOne(p => p.Detail)
+            .HasForeignKey<PersonDetail>(d => d.PersonId);
+    }
+}
+```
+
+#### 2. Using Shared Primary Key
+
+In this approach, both entities share the same primary key value, which creates an even tighter coupling:
+
+```csharp
+public class Employee
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    // Navigation property
+    public EmployeeBadge Badge { get; set; }
+}
+
+public class EmployeeBadge
+{
+    // Primary key and foreign key are the same
+    public int Id { get; set; }
+    
+    public string BadgeNumber { get; set; }
+    public DateTime IssueDate { get; set; }
+    
+    // Navigation property back to Employee
+    public Employee Employee { get; set; }
+}
+
+// DbContext configuration
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Employee> Employees { get; set; }
+    public DbSet<EmployeeBadge> EmployeeBadges { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EmployeeBadge>()
+            .HasOne(b => b.Employee)
+            .WithOne(e => e.Badge)
+            .HasForeignKey<EmployeeBadge>(b => b.Id);
+    }
+}
+```
+
+### Working with One-to-One Relationships
+
+#### Creating Related Entities
+
+```csharp
+// Creating a person with details
+var person = new Person
+{
+    Name = "John Doe",
+    Detail = new PersonDetail
+    {
+        Address = "123 Main St",
+        PhoneNumber = "555-1234"
+    }
+};
+
+_context.People.Add(person);
+await _context.SaveChangesAsync();
+```
+
+#### Loading Related Entities
+
+```csharp
+// Eager loading
+var personWithDetail = await _context.People
+    .Include(p => p.Detail)
+    .FirstOrDefaultAsync(p => p.Id == id);
+
+// Explicit loading
+var person = await _context.People.FindAsync(id);
+if (person != null)
+{
+    await _context.Entry(person)
+        .Reference(p => p.Detail)
+        .LoadAsync();
+}
+```
+
+#### Updating Related Entities
+
+```csharp
+var person = await _context.People
+    .Include(p => p.Detail)
+    .FirstOrDefaultAsync(p => p.Id == id);
+    
+if (person != null)
+{
+    person.Name = "Jane Doe";
+    person.Detail.Address = "456 Oak Ave";
+    
+    await _context.SaveChangesAsync();
+}
+```
+
+#### Deleting Related Entities
+
+```csharp
+// Delete the detail
+var person = await _context.People
+    .Include(p => p.Detail)
+    .FirstOrDefaultAsync(p => p.Id == id);
+    
+if (person != null)
+{
+    _context.PersonDetails.Remove(person.Detail);
+    await _context.SaveChangesAsync();
+}
+
+// Delete the person and the detail (with cascade delete)
+var person = await _context.People.FindAsync(id);
+if (person != null)
+{
+    _context.People.Remove(person);
+    await _context.SaveChangesAsync();
+}
+```
+
+### Real-World Example: User and Profile System
+
+```csharp
+// Entity classes
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; }
+    public string Email { get; set; }
+    public string PasswordHash { get; set; }
+    public DateTime CreatedAt { get; set; }
+    
+    // Navigation property
+    public UserProfile Profile { get; set; }
+}
+
+public class UserProfile
+{
+    public int Id { get; set; }
+    
+    // Foreign key
+    public int UserId { get; set; }
+    
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string Bio { get; set; }
+    public string AvatarUrl { get; set; }
+    public string Location { get; set; }
+    public DateTime LastUpdated { get; set; }
+    
+    // Navigation property
+    public User User { get; set; }
+}
+
+// DbContext configuration
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+    
+    public DbSet<User> Users { get; set; }
+    public DbSet<UserProfile> UserProfiles { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserProfile>()
+            .HasOne(p => p.User)
+            .WithOne(u => u.Profile)
+            .HasForeignKey<UserProfile>(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+// User service implementation
+public class UserService
+{
+    private readonly ApplicationDbContext _context;
+    
+    public UserService(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+    
+    public async Task<User> RegisterUserAsync(RegisterUserDto registerDto)
+    {
+        var user = new User
+        {
+            Username = registerDto.Username,
+            Email = registerDto.Email,
+            PasswordHash = HashPassword(registerDto.Password),
+            CreatedAt = DateTime.UtcNow,
+            Profile = new UserProfile
+            {
+                FirstName = registerDto.FirstName,
+                LastName = registerDto.LastName,
+                DateOfBirth = registerDto.DateOfBirth,
+                LastUpdated = DateTime.UtcNow
+            }
+        };
+        
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        
+        return user;
+    }
+    
+    public async Task<UserProfileDto> GetUserProfileAsync(int userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.Profile)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+            
+        if (user == null)
+            return null;
+            
+        return new UserProfileDto
+        {
+            Username = user.Username,
+            Email = user.Email,
+            FirstName = user.Profile?.FirstName,
+            LastName = user.Profile?.LastName,
+            DateOfBirth = user.Profile?.DateOfBirth,
+            Bio = user.Profile?.Bio,
+            AvatarUrl = user.Profile?.AvatarUrl,
+            Location = user.Profile?.Location
+        };
+    }
+    
+    public async Task<bool> UpdateProfileAsync(int userId, UpdateProfileDto updateDto)
+    {
+        var user = await _context.Users
+            .Include(u => u.Profile)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+            
+        if (user == null)
+            return false;
+            
+        // Create profile if it doesn't exist
+        if (user.Profile == null)
+        {
+            user.Profile = new UserProfile
+            {
+                UserId = userId,
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+        
+        // Update profile properties
+        user.Profile.FirstName = updateDto.FirstName;
+        user.Profile.LastName = updateDto.LastName;
+        user.Profile.DateOfBirth = updateDto.DateOfBirth;
+        user.Profile.Bio = updateDto.Bio;
+        user.Profile.Location = updateDto.Location;
+        user.Profile.LastUpdated = DateTime.UtcNow;
+        
+        if (!string.IsNullOrEmpty(updateDto.AvatarUrl))
+        {
+            user.Profile.AvatarUrl = updateDto.AvatarUrl;
+        }
+        
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    
+    private string HashPassword(string password)
+    {
+        // Implementation of password hashing
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
+}
+```
+
+## Key Points 💡
+- One-to-one relationships connect exactly one record in one table to exactly one record in another table
+- There are two main ways to implement one-to-one relationships:
+  - Using a foreign key in one entity (more common)
+  - Using a shared primary key (tighter coupling)
+- The principal entity is the one that contains the primary key
+- The dependent entity is the one that contains the foreign key
+- Use `HasOne` and `WithOne` in the Fluent API to configure the relationship
+- Specify which entity has the foreign key using `HasForeignKey`
+- Configure cascade delete behavior using `OnDelete`
+- One-to-one relationships are useful for:
+  - Splitting large entities into multiple tables
+  - Separating frequently accessed data from less frequently accessed data
+  - Implementing optional components of an entity
+  - Implementing security boundaries where certain data needs different access controls
+
+## Common Follow-up Questions
+1. What's the difference between using a foreign key and using a shared primary key for one-to-one relationships?
+2. How do you handle optional one-to-one relationships in EF Core?
+3. What cascade delete options are available for one-to-one relationships?
+4. How do you query entities with one-to-one relationships efficiently?

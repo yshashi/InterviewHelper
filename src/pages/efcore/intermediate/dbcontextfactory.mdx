@@ -1,0 +1,162 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: When to Use DbContextFactory in Entity Framework Core
+---
+
+## Interview Question
+When should you use DbContextFactory?
+
+## Answer
+A DbContextFactory should be used in specific scenarios where the standard dependency injection approach for DbContext doesn't fit your requirements.
+
+### Key Scenarios for Using DbContextFactory
+
+### 1. Long-Running Processes
+When you need to use a DbContext in a long-running process where keeping a single context instance alive would be problematic:
+
+```csharp
+public class DataProcessingService
+{
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+
+    public DataProcessingService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    {
+        _contextFactory = contextFactory;
+    }
+
+    public async Task ProcessLargeDatasetAsync()
+    {
+        // Process data in batches
+        for (int i = 0; i < 100; i++)
+        {
+            // Create a fresh context for each batch
+            using var context = _contextFactory.CreateDbContext();
+            
+            var batch = await context.Items
+                .Skip(i * 1000)
+                .Take(1000)
+                .ToListAsync();
+                
+            // Process batch
+            await ProcessBatchAsync(batch);
+        }
+    }
+}
+```
+
+### 2. Singleton Services
+When you need to use DbContext in a singleton-lifetime service:
+
+```csharp
+public class CachingService : IHostedService
+{
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private Timer _timer;
+
+    public CachingService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    {
+        _contextFactory = contextFactory;
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        _timer = new Timer(RefreshCache, null, TimeSpan.Zero, TimeSpan.FromMinutes(15));
+        return Task.CompletedTask;
+    }
+
+    private void RefreshCache(object state)
+    {
+        // Create a new context for each refresh operation
+        using var context = _contextFactory.CreateDbContext();
+        
+        // Refresh cache from database
+        var products = context.Products.ToList();
+        
+        // Update cache
+        // ...
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _timer?.Change(Timeout.Infinite, 0);
+        return Task.CompletedTask;
+    }
+}
+```
+
+### 3. Parallel Operations
+When you need multiple DbContext instances to perform parallel operations:
+
+```csharp
+public class ParallelProcessor
+{
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+
+    public ParallelProcessor(IDbContextFactory<ApplicationDbContext> contextFactory)
+    {
+        _contextFactory = contextFactory;
+    }
+
+    public async Task ProcessInParallelAsync(IEnumerable<int> itemIds)
+    {
+        var tasks = itemIds.Select(async id =>
+        {
+            // Each parallel task gets its own context
+            using var context = _contextFactory.CreateDbContext();
+            var item = await context.Items.FindAsync(id);
+            
+            // Process item
+            await ProcessItemAsync(item);
+        });
+
+        await Task.WhenAll(tasks);
+    }
+}
+```
+
+### 4. Blazor WebAssembly Applications
+In Blazor WebAssembly, where the standard scoped lifetime doesn't align with component lifecycles:
+
+```csharp
+// Program.cs in Blazor WebAssembly
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+    options.UseSqlite("Data Source=app.db"));
+
+// ProductComponent.razor
+@inject IDbContextFactory<ApplicationDbContext> ContextFactory
+
+@code {
+    private List<Product> products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = ContextFactory.CreateDbContext();
+        products = await context.Products.ToListAsync();
+    }
+
+    private async Task AddProduct()
+    {
+        using var context = ContextFactory.CreateDbContext();
+        context.Products.Add(new Product { Name = "New Product" });
+        await context.SaveChangesAsync();
+        
+        // Refresh products
+        products = await context.Products.ToListAsync();
+    }
+}
+```
+
+## Key Points 💡
+- DbContextFactory creates new DbContext instances on demand
+- Each context should be disposed after use
+- Ideal for scenarios where context lifetime doesn't align with DI scope
+- Registered with `AddDbContextFactory` in the service collection
+- Available since EF Core 5.0
+- Can be used alongside regular DbContext registration
+- Prevents "DbContext already disposed" and "A second operation started" errors
+
+## Common Follow-up Questions
+1. What's the difference between DbContextFactory and DbContextPool?
+2. How does DbContextFactory handle database connections?
+3. Can DbContextFactory be used with pooling?
+4. What are the performance implications of creating new contexts versus pooling?
