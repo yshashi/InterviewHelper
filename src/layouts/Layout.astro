@@ -25,6 +25,9 @@ const {
   frontmatter
 } = Astro.props;
 
+const currentPath = Astro.url.pathname;
+const isAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath === '/profile' || currentPath.startsWith('/auth/');
+
 const pageTitle = frontmatter?.title || propTitle || 'Interview Helper';
 const description = frontmatter?.description || propDescription || "Master modern web development interviews with our comprehensive guide. Get expert insights on Angular, React, Node.js, .NET, TypeScript, and more.";
 const metaTitle = `${pageTitle}`;
@@ -38,21 +41,25 @@ const metaTitle = `${pageTitle}`;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script is:inline>
       window.addEventListener('DOMContentLoaded', (event) => {
+        const currentPath = window.location.pathname;
+        const isAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath.startsWith('/auth/');
+        
+        if (!isAuthPage) {
+          const script1 = document.createElement('script');
+          script1.src = '/pagefind/pagefind.js';
+          script1.type = "module";
+          document.head.appendChild(script1);
 
-        const script1 = document.createElement('script');
-        script1.src = '/pagefind/pagefind.js';
-        script1.type = "module";
-        document.head.appendChild(script1);
+          const script2 = document.createElement('script');
+          script2.src = '/pagefind/pagefind-ui.js';
+          script2.type = "module";
+          document.head.appendChild(script2);
 
-        const script2 = document.createElement('script');
-        script2.src = '/pagefind/pagefind-ui.js';
-        script2.type = "module";
-        document.head.appendChild(script2);
-
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = '/pagefind/pagefind-ui.css';
-        document.head.appendChild(link);
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = '/pagefind/pagefind-ui.css';
+          document.head.appendChild(link);
+        }
       });
     </script>
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -105,18 +112,22 @@ const metaTitle = `${pageTitle}`;
     <Header />
     
     <div class="pt-12 sm:pt-16 flex relative">
-      <!-- Sidebar with overlay -->
-      <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity duration-300"></div>
-      <aside id="sidebar" class="transform lg:transform-none lg:opacity-100 transition-all duration-300 fixed w-[280px] left-0 top-16 bottom-0 overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 -translate-x-full lg:translate-x-0 z-40 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-        <Sidebar />
-      </aside>
+      {!isAuthPage && (
+        <>
+          <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity duration-300"></div>
+          <aside id="sidebar" class="transform lg:transform-none lg:opacity-100 transition-all duration-300 fixed w-[280px] left-0 top-16 bottom-0 overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 -translate-x-full lg:translate-x-0 z-40 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <Sidebar />
+          </aside>
+        </>
+      )}
       
-      <!-- Main content -->
-      <main class="flex-1 min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900 w-full lg:ml-[280px]">
+      <main class={`flex-1 min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900 w-full ${!isAuthPage ? 'lg:ml-[280px]' : ''}`}>
         <div class="container mx-auto p-2 sm:p-4 lg:p-6 max-w-[1200px] transition-opacity duration-200">
-          <div class="mb-6">
-            <Search />
-          </div>
+          {!isAuthPage && (
+            <div class="mb-6">
+              <Search />
+            </div>
+          )}
           <slot />
         </div>
       </main>

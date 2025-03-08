@@ -1,0 +1,58 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Authentication - Interview Helper" description="Completing your authentication">
+  <div class="max-w-lg mx-auto my-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+    <div class="text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <h1 class="text-2xl font-bold mb-2 text-gray-800 dark:text-white">Completing Authentication</h1>
+      <p class="text-gray-600 dark:text-gray-300">Please wait while we complete your authentication...</p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('accessToken');
+    const refreshToken = urlParams.get('refreshToken');
+    console.log(accessToken, refreshToken);
+    
+    if (accessToken && refreshToken) {
+      localStorage.setItem('interviewhelper:accessToken', accessToken);
+      localStorage.setItem('interviewhelper:refreshToken', refreshToken);
+      
+      fetchUserData(accessToken);
+    } else {
+      window.location.href = '/login?error=Authentication failed';
+    }
+  });
+  
+  async function fetchUserData(accessToken: string): Promise<void> {
+    const API_URL = import.meta.env.PROD 
+      ? 'https://api.interviewhelper.in/api' 
+      : (import.meta.env.PUBLIC_API_URL || 'http://localhost:5500/api');
+    
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+      
+      const data = await response.json();
+      
+      localStorage.setItem('interviewhelper:user', JSON.stringify(data.user));
+      
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      window.location.href = '/login?error=Failed to fetch user data';
+    }
+  }
+</script>
