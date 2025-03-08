@@ -296,56 +296,339 @@ const menuItems = [
         title: ".NET",
         icon: "fas fa-cube",
         items: [
+      {
+        title: "Basic Questions",
+        items: [
           {
-            title: "ASP.NET Core",
-            items: [
-              { title: "Web API Design", path: "/dotnet/web-api" },
-              { title: "Middleware Pipeline", path: "/dotnet/middleware" },
-              { title: "Authentication & Authorization", path: "/dotnet/auth" },
-            ],
+            title: "What is .NET, and what are its key components?",
+            path: "/dotnet/basic/what-is-dotnet"
           },
           {
-            title: "Data Access",
-            items: [
-              { title: "Entity Framework Core", path: "/dotnet/ef-core" },
-              { title: "CQRS Pattern", path: "/dotnet/cqrs" },
-              { title: "Repository Pattern", path: "/dotnet/repository" },
-            ],
+            title: "What is the difference between .NET Framework and .NET Core?",
+            path: "/dotnet/basic/dotnet-framework-vs-core"
           },
           {
-            title: "Architecture",
-            items: [
-              {
-                title: "Clean Architecture",
-                path: "/dotnet/clean-architecture",
-              },
-              { title: "Microservices", path: "/dotnet/microservices" },
-              { title: "Domain-Driven Design", path: "/dotnet/ddd" },
-            ],
+            title: "What is the Common Language Runtime (CLR)?",
+            path: "/dotnet/basic/common-language-runtime"
           },
-        ],
+          {
+            title: "What is the purpose of MSIL (Microsoft Intermediate Language)?",
+            path: "/dotnet/basic/msil-purpose"
+          },
+          {
+            title: "Explain the concept of assemblies in .NET.",
+            path: "/dotnet/basic/assemblies-in-dotnet"
+          },
+          {
+            title: "What are the different types of assemblies in .NET?",
+            path: "/dotnet/basic/types-of-assemblies"
+          },
+          {
+            title: "What is the Global Assembly Cache (GAC)?",
+            path: "/dotnet/basic/global-assembly-cache"
+          },
+          {
+            title: "What is the difference between managed and unmanaged code?",
+            path: "/dotnet/basic/managed-vs-unmanaged-code"
+          },
+          {
+            title: "What is Garbage Collection in .NET, and how does it work?",
+            path: "/dotnet/basic/garbage-collection"
+          },
+          {
+            title: "What is a namespace in .NET?",
+            path: "/dotnet/basic/namespace-in-dotnet"
+          },
+          {
+            title: "What are the access modifiers in C#?",
+            path: "/dotnet/basic/access-modifiers"
+          },
+          {
+            title: "What is the difference between struct and class in C#?",
+            path: "/dotnet/basic/struct-vs-class"
+          },
+          {
+            title: "What is boxing and unboxing in .NET?",
+            path: "/dotnet/basic/boxing-and-unboxing"
+          },
+          {
+            title: "What is the purpose of the using statement in C#?",
+            path: "/dotnet/basic/using-statement"
+          }
+        ]
+      },
+      {
+        title: "Intermediate Questions",
+        items: [
+          {
+            title: "What is the difference between IEnumerable and IQueryable in .NET?",
+            path: "/dotnet/intermediate/ienumerable-vs-iqueryable"
+          },
+          {
+            title: "What is dependency injection, and how is it implemented in .NET?",
+            path: "/dotnet/intermediate/dependency-injection"
+          },
+          {
+            title: "Explain the concept of middleware in ASP.NET Core.",
+            path: "/dotnet/intermediate/middleware-in-aspnet-core"
+          },
+          {
+            title: "What are the different hosting models in ASP.NET Core?",
+            path: "/dotnet/intermediate/hosting-models"
+          },
+          {
+            title: "What is Entity Framework, and what are its advantages?",
+            path: "/dotnet/intermediate/entity-framework"
+          },
+          {
+            title: "What is the difference between Code-First and Database-First approaches in Entity Framework?",
+            path: "/dotnet/intermediate/code-first-vs-database-first"
+          },
+          {
+            title: "What are LINQ queries, and how do they work in .NET?",
+            path: "/dotnet/intermediate/linq-queries"
+          },
+          {
+            title: "What is the purpose of async and await in C#?",
+            path: "/dotnet/intermediate/async-await"
+          },
+          {
+            title: "What are delegates in C#, and how are they used?",
+            path: "/dotnet/intermediate/delegates-in-csharp"
+          },
+          {
+            title: "What is the difference between Task and Thread in .NET?",
+            path: "/dotnet/intermediate/task-vs-thread"
+          },
+          {
+            title: "What are extension methods in C#?",
+            path: "/dotnet/intermediate/extension-methods"
+          },
+          {
+            title: "What is the purpose of IConfiguration in ASP.NET Core?",
+            path: "/dotnet/intermediate/iconfiguration-purpose"
+          },
+          {
+            title: "What are filters in ASP.NET Core, and how are they used?",
+            path: "/dotnet/intermediate/filters-in-aspnet-core"
+          },
+          {
+            title: "What is the difference between authentication and authorization in .NET?",
+            path: "/dotnet/intermediate/authentication-vs-authorization"
+          }
+        ]
+      },
+      {
+        title: "Advanced Questions",
+        items: [
+          {
+            title: "What is the purpose of the Span<T> and Memory<T> types in .NET?",
+            path: "/dotnet/advanced/span-and-memory"
+          },
+          {
+            title: "How does the .NET garbage collector handle memory management in multi-generational heaps?",
+            path: "/dotnet/advanced/garbage-collector-memory-management"
+          },
+          {
+            title: "What are the differences between AOT (Ahead-of-Time) and JIT (Just-In-Time) compilation in .NET?",
+            path: "/dotnet/advanced/aot-vs-jit-compilation"
+          },
+          {
+            title: "How can you optimize the performance of an ASP.NET Core application?",
+            path: "/dotnet/advanced/optimize-aspnet-core-performance"
+          },
+          {
+            title: "What is the role of the ILogger interface in .NET, and how is logging implemented?",
+            path: "/dotnet/advanced/ilogger-and-logging"
+          },
+          {
+            title: "What are the differences between Blazor Server and Blazor WebAssembly?",
+            path: "/dotnet/advanced/blazor-server-vs-webassembly"
+          },
+          {
+            title: "How does .NET handle cross-platform development with .NET 8?",
+            path: "/dotnet/advanced/cross-platform-dotnet8"
+          },
+          {
+            title: "What are gRPC services, and how are they implemented in .NET?",
+            path: "/dotnet/advanced/grpc-services"
+          },
+          {
+            title: "How can you implement a custom middleware in ASP.NET Core?",
+            path: "/dotnet/advanced/custom-middleware"
+          },
+          {
+            title: "What is the purpose of the ValueTask type in .NET, and when should it be used?",
+            path: "/dotnet/advanced/valuetask-purpose"
+          }
+        ]
+      }
+    ]
       },
       {
         title: "Node.js",
         icon: "fab fa-node-js",
         items: [
           {
-            title: "Core Concepts",
+            title: "Beginner",
             items: [
-              { title: "Event Loop", path: "/nodejs/event-loop" },
-              { title: "Streams & Buffers", path: "/nodejs/streams" },
-              { title: "Error Handling", path: "/nodejs/error-handling" },
-            ],
+              {
+                title: "What is a first class function in Javascript?",
+                path: "/nodejs/beginner/first-class-function-in-js"
+              },
+              {
+                title: "What is Node.js and how it works?",
+                path: "/nodejs/beginner/how-nodejs-works"
+              },
+              {
+                title: "How do you manage packages in your node.js project?",
+                path: "/nodejs/beginner/manage-packages-in-nodejs"
+              },
+              {
+                title: "How is Node.js better than other frameworks most popularly used?",
+                path: "/nodejs/beginner/why-nodejs-better-than-others"
+              },
+              {
+                title: "Explain the steps how “Control Flow” controls the function calls?",
+                path: "/nodejs/beginner/control-flow-in-nodejs"
+              },
+              {
+                title: "What are some commonly used timing features of Node.js?",
+                path: "/nodejs/beginner/timing-features-in-nodejs"
+              },
+              {
+                title: "What are the advantages of using promises instead of callbacks?",
+                path: "/nodejs/beginner/advantages-of-promises"
+              },
+              {
+                title: "What is fork in node JS?",
+                path: "/nodejs/beginner/fork-in-nodejs"
+              },
+              {
+                title: "Why is Node.js single-threaded?",
+                path: "/nodejs/beginner/why-nodejs-single-threaded"
+              },
+              {
+                title: "How do you create a simple server in Node.js that returns Hello World?",
+                path: "/nodejs/beginner/simple-server-in-nodejs"
+              },
+              {
+                title: "How many types of API functions are there in Node.js?",
+                path: "/nodejs/beginner/types-of-api-functions"
+              },
+              {
+                title: "What is REPL?",
+                path: "/nodejs/beginner/what-is-repl"
+              },
+              {
+                title: "List down the two arguments that async.queue takes as input?",
+                path: "/nodejs/beginner/async-queue-arguments"
+              },
+              {
+                title: "What is the purpose of module.exports?",
+                path: "/nodejs/beginner/module-exports-purpose"
+              },
+              {
+                title: "What tools can be used to assure consistent code style?",
+                path: "/nodejs/beginner/tools-for-consistent-code-style"
+              }
+            ]
           },
           {
-            title: "Database Integration",
+            title: "Intermediate",
             items: [
-              { title: "Prisma ORM", path: "/nodejs/prisma" },
-              { title: "MongoDB", path: "/nodejs/mongodb" },
-              { title: "SQL Databases", path: "/nodejs/sql" },
-            ],
+              {
+                title: "What do you understand by callback hell?",
+                path: "/nodejs/intermediate/callback-hell-in-nodejs"
+              },
+              {
+                title: "What is an event-loop in Node JS?",
+                path: "/nodejs/intermediate/event-loop-in-nodejs"
+              },
+              {
+                title: "If Node.js is single threaded then how does it handle concurrency?",
+                path: "/nodejs/intermediate/concurrency-in-nodejs"
+              },
+              {
+                title: "Differentiate between process.nextTick() and setImmediate()?",
+                path: "/nodejs/intermediate/process-nexttick-vs-setimmediate"
+              },
+              {
+                title: "How does Node.js overcome the problem of blocking of I/O operations?",
+                path: "/nodejs/intermediate/non-blocking-io-in-nodejs"
+              },
+              {
+                title: "How can we use async await in node.js?",
+                path: "/nodejs/intermediate/async-await-in-nodejs"
+              },
+              {
+                title: "What is node.js streams?",
+                path: "/nodejs/intermediate/nodejs-streams"
+              },
+              {
+                title: "What are node.js buffers?",
+                path: "/nodejs/intermediate/nodejs-buffers"
+              },
+              {
+                title: "What is middleware?",
+                path: "/nodejs/intermediate/what-is-middleware"
+              },
+              {
+                title: "Explain what a Reactor Pattern in Node.js?",
+                path: "/nodejs/intermediate/reactor-pattern-in-nodejs"
+              },
+              {
+                title: "Why should you separate Express app and server?",
+                path: "/nodejs/intermediate/separate-express-app-server"
+              },
+              {
+                title: "For Node.js, why Google uses V8 engine?",
+                path: "/nodejs/intermediate/google-v8-engine"
+              },
+              {
+                title: "Describe the exit codes of Node.js?",
+                path: "/nodejs/intermediate/nodejs-exit-codes"
+              },
+              {
+                title: "Explain the concept of stub in Node.js?",
+                path: "/nodejs/intermediate/concept-of-stub"
+              }
+            ]
           },
-        ],
+          {
+            title: "Advanced",
+            items: [
+              {
+                title: "What is an Event Emitter in Node.js?",
+                path: "/nodejs/advanced/event-emitter-in-nodejs"
+              },
+              {
+                title: "Enhancing Node.js performance through clustering.",
+                path: "/nodejs/advanced/clustering-for-performance"
+              },
+              {
+                title: "What is a thread pool and which library handles it in Node.js?",
+                path: "/nodejs/advanced/thread-pool-in-nodejs"
+              },
+              {
+                title: "What is WASI and why is it being introduced?",
+                path: "/nodejs/advanced/what-is-wasi"
+              },
+              {
+                title: "How are worker threads different from clusters?",
+                path: "/nodejs/advanced/worker-threads-vs-clusters"
+              },
+              {
+                title: "How to measure the duration of async operations?",
+                path: "/nodejs/advanced/measure-async-duration"
+              },
+              {
+                title: "How to measure the performance of async operations?",
+                path: "/nodejs/advanced/measure-async-performance"
+              }
+            ]
+    }
+  ]
       },
       {
         title: "EfCore",
