@@ -980,23 +980,378 @@ const menuItems = [
     icon: "fas fa-cloud",
     items: [
       {
-        title: "CI/CD",
+        title: "Basic Questions",
         items: [
-          { title: "GitHub Actions", path: "/devops/github-actions" },
-          { title: "Azure DevOps", path: "/devops/azure-devops" },
-          { title: "Docker", path: "/devops/docker" },
-        ],
+          {
+            title: "What is DevOps, and what are its core principles?",
+            path: "/devops/basic/what-is-devops"
+          },
+          {
+            title: "What is the difference between DevOps and traditional IT operations?",
+            path: "/devops/basic/devops-vs-traditional-it"
+          },
+          {
+            title: "What are the key benefits of implementing DevOps in an organization?",
+            path: "/devops/basic/benefits-of-devops"
+          },
+          {
+            title: "What is Continuous Integration (CI), and why is it important?",
+            path: "/devops/basic/what-is-ci"
+          },
+          {
+            title: "What is Continuous Deployment (CD), and how does it differ from Continuous Delivery?",
+            path: "/devops/basic/what-is-cd"
+          },
+          {
+            title: "What are the main components of a CI/CD pipeline?",
+            path: "/devops/basic/cicd-components"
+          },
+          {
+            title: "What is version control, and why is it essential in DevOps?",
+            path: "/devops/basic/version-control"
+          },
+          {
+            title: "What are some popular version control systems used in DevOps?",
+            path: "/devops/basic/version-control-systems"
+          },
+          {
+            title: "What is the purpose of a build tool in DevOps?",
+            path: "/devops/basic/build-tool-purpose"
+          },
+          {
+            title: "What is a container, and how does it relate to DevOps?",
+            path: "/devops/basic/what-is-container"
+          },
+          {
+            title: "What is the role of a configuration management tool in DevOps?",
+            path: "/devops/basic/configuration-management"
+          },
+          {
+            title: "What is Infrastructure as Code (IaC), and what are its advantages?",
+            path: "/devops/basic/what-is-iac"
+          },
+          {
+            title: "What is the difference between a monolithic and a microservices architecture?",
+            path: "/devops/basic/monolithic-vs-microservices"
+          },
+          {
+            title: "What are the basic steps to deploy an application to a cloud provider?",
+            path: "/devops/basic/deploy-to-cloud"
+          }
+        ]
       },
-    ],
+      {
+        title: "Intermediate Questions",
+        items: [
+          {
+            title: "How do you set up a CI/CD pipeline using Jenkins?",
+            path: "/devops/intermediate/jenkins-cicd-setup"
+          },
+          {
+            title: "What is the role of Docker in a DevOps workflow?",
+            path: "/devops/intermediate/docker-in-devops"
+          },
+          {
+            title: "How does Kubernetes manage containerized applications?",
+            path: "/devops/intermediate/kubernetes-management"
+          },
+          {
+            title: "What is the difference between Docker and Kubernetes?",
+            path: "/devops/intermediate/docker-vs-kubernetes"
+          },
+          {
+            title: "How can you automate infrastructure provisioning using Terraform?",
+            path: "/devops/intermediate/terraform-automation"
+          },
+          {
+            title: "What are the best practices for writing effective IaC scripts?",
+            path: "/devops/intermediate/iac-best-practices"
+          },
+          {
+            title: "How do you monitor the performance of a deployed application?",
+            path: "/devops/intermediate/monitor-performance"
+          },
+          {
+            title: "What is the purpose of a blue-green deployment strategy?",
+            path: "/devops/intermediate/blue-green-deployment"
+          },
+          {
+            title: "How do you handle rollback strategies in a deployment process?",
+            path: "/devops/intermediate/rollback-strategies"
+          },
+          {
+            title: "What is the role of a load balancer in a DevOps deployment?",
+            path: "/devops/intermediate/load-balancer-role"
+          },
+          {
+            title: "How do you ensure security in a CI/CD pipeline?",
+            path: "/devops/intermediate/cicd-security"
+          },
+          {
+            title: "What is the difference between canary deployment and rolling deployment?",
+            path: "/devops/intermediate/canary-vs-rolling"
+          },
+          {
+            title: "How do you use GitOps to manage infrastructure and applications?",
+            path: "/devops/intermediate/gitops"
+          },
+          {
+            title: "What are the key metrics to monitor in a DevOps environment?",
+            path: "/devops/intermediate/devops-metrics"
+          }
+        ]
+      },
+      {
+        title: "Advanced Questions",
+        items: [
+          {
+            title: "How do you design a highly available and scalable deployment architecture?",
+            path: "/devops/advanced/high-availability-design"
+          },
+          {
+            title: "What are the challenges of implementing DevOps in a legacy system?",
+            path: "/devops/advanced/devops-in-legacy"
+          },
+          {
+            title: "How can you implement a zero-downtime deployment strategy?",
+            path: "/devops/advanced/zero-downtime-deployment"
+          },
+          {
+            title: "What is the role of Service Mesh (e.g., Istio) in a microservices architecture?",
+            path: "/devops/advanced/service-mesh-role"
+          },
+          {
+            title: "How do you integrate security practices into a DevOps pipeline (DevSecOps)?",
+            path: "/devops/advanced/devsecops"
+          },
+          {
+            title: "What are the differences between stateful and stateless applications in deployment?",
+            path: "/devops/advanced/stateful-vs-stateless"
+          },
+          {
+            title: "How do you perform chaos engineering to improve system resilience?",
+            path: "/devops/advanced/chaos-engineering"
+          },
+          {
+            title: "What is the purpose of a GitLab CI/CD pipeline, and how does it compare to Jenkins?",
+            path: "/devops/advanced/gitlab-cicd-vs-jenkins"
+          },
+          {
+            title: "How can you optimize a CI/CD pipeline for faster build and deployment times?",
+            path: "/devops/advanced/cicd-optimization"
+          },
+          {
+            title: "What are the best practices for managing secrets in a DevOps environment?",
+            path: "/devops/advanced/managing-secrets"
+          },
+          {
+            title: "How do you implement multi-cloud deployment strategies?",
+            path: "/devops/advanced/multi-cloud-deployment"
+          },
+          {
+            title: "What is the role of observability in modern DevOps practices?",
+            path: "/devops/advanced/observability"
+          },
+          {
+            title: "How do you handle data migration during a deployment to a new environment?",
+            path: "/devops/advanced/data-migration"
+          },
+          {
+            title: "How can you automate disaster recovery in a DevOps setup?",
+            path: "/devops/advanced/disaster-recovery"
+          }
+        ]
+      }
+    ]
   },
   {
     title: "Testing",
     icon: "fas fa-vial",
     items: [
-      { title: "Unit Testing", path: "/testing/unit-testing" },
-      { title: "Integration Testing", path: "/testing/integration-testing" },
-      { title: "E2E Testing", path: "/testing/e2e-testing" },
-    ],
+      {
+        title: "Basic Questions",
+        items: [
+          {
+            title: "What is software testing, and why is it important?",
+            path: "/testing/basic/what-is-software-testing"
+          },
+          {
+            title: "What is the difference between manual testing and automated testing?",
+            path: "/testing/basic/manual-vs-automated-testing"
+          },
+          {
+            title: "What are the different levels of software testing (e.g., unit, integration, system)?",
+            path: "/testing/basic/levels-of-testing"
+          },
+          {
+            title: "What is a test case, and what are its key components?",
+            path: "/testing/basic/what-is-test-case"
+          },
+          {
+            title: "What is the purpose of a test plan in software testing?",
+            path: "/testing/basic/test-plan-purpose"
+          },
+          {
+            title: "What are the different types of testing (e.g., functional, non-functional)?",
+            path: "/testing/basic/types-of-testing"
+          },
+          {
+            title: "What is regression testing, and when is it performed?",
+            path: "/testing/basic/regression-testing"
+          },
+          {
+            title: "What is the difference between verification and validation in testing?",
+            path: "/testing/basic/verification-vs-validation"
+          },
+          {
+            title: "What are the common testing techniques (e.g., black-box, white-box)?",
+            path: "/testing/basic/testing-techniques"
+          },
+          {
+            title: "What is a bug, and how is it reported in a testing process?",
+            path: "/testing/basic/what-is-bug"
+          },
+          {
+            title: "What is the role of a test environment in software testing?",
+            path: "/testing/basic/test-environment"
+          },
+          {
+            title: "What are the qualities of a good test case?",
+            path: "/testing/basic/qualities-of-test-case"
+          },
+          {
+            title: "What is the difference between smoke testing and sanity testing?",
+            path: "/testing/basic/smoke-vs-sanity-testing"
+          },
+          {
+            title: "What tools are commonly used for manual testing?",
+            path: "/testing/basic/tools-for-manual-testing"
+          }
+        ]
+      },
+      {
+        title: "Intermediate Questions",
+        items: [
+          {
+            title: "How do you write effective unit tests using a framework like JUnit or NUnit?",
+            path: "/testing/intermediate/unit-tests"
+          },
+          {
+            title: "What is test-driven development (TDD), and how does it work?",
+            path: "/testing/intermediate/test-driven-development"
+          },
+          {
+            title: "How do you perform integration testing for a microservices architecture?",
+            path: "/testing/intermediate/integration-testing-microservices"
+          },
+          {
+            title: "What is the purpose of mocking in unit testing, and how is it implemented?",
+            path: "/testing/intermediate/mocking-in-unit-testing"
+          },
+          {
+            title: "How do you handle flaky tests in an automated testing suite?",
+            path: "/testing/intermediate/handling-flaky-tests"
+          },
+          {
+            title: "What is the difference between end-to-end (E2E) testing and integration testing?",
+            path: "/testing/intermediate/e2e-vs-integration-testing"
+          },
+          {
+            title: "How do you use Selenium for automated web testing?",
+            path: "/testing/intermediate/selenium-web-testing"
+          },
+          {
+            title: "What is the role of continuous testing in a DevOps pipeline?",
+            path: "/testing/intermediate/continuous-testing"
+          },
+          {
+            title: "How do you measure the coverage of your test suite?",
+            path: "/testing/intermediate/test-coverage"
+          },
+          {
+            title: "What is the difference between load testing and stress testing?",
+            path: "/testing/intermediate/load-vs-stress-testing"
+          },
+          {
+            title: "How do you perform security testing for a web application?",
+            path: "/testing/intermediate/security-testing"
+          },
+          {
+            title: "What is the purpose of a test automation framework, and what are some examples?",
+            path: "/testing/intermediate/test-automation-framework"
+          },
+          {
+            title: "How do you handle test data management in automated testing?",
+            path: "/testing/intermediate/test-data-management"
+          },
+          {
+            title: "What are the best practices for writing maintainable automated tests?",
+            path: "/testing/intermediate/maintainable-automated-tests"
+          }
+        ]
+      },
+      {
+        title: "Advanced Questions",
+        items: [
+          {
+            title: "How do you design a comprehensive testing strategy for a large-scale application?",
+            path: "/testing/advanced/testing-strategy"
+          },
+          {
+            title: "What are the challenges of testing in an agile development environment?",
+            path: "/testing/advanced/testing-in-agile"
+          },
+          {
+            title: "How can you implement performance testing using tools like JMeter or LoadRunner?",
+            path: "/testing/advanced/performance-testing"
+          },
+          {
+            title: "What is mutation testing, and how does it improve test quality?",
+            path: "/testing/advanced/mutation-testing"
+          },
+          {
+            title: "How do you perform accessibility testing for a web application?",
+            path: "/testing/advanced/accessibility-testing"
+          },
+          {
+            title: "What is the role of AI and machine learning in modern software testing?",
+            path: "/testing/advanced/ai-in-testing"
+          },
+          {
+            title: "How do you implement contract testing for microservices?",
+            path: "/testing/advanced/contract-testing"
+          },
+          {
+            title: "What are the differences between static and dynamic testing techniques?",
+            path: "/testing/advanced/static-vs-dynamic-testing"
+          },
+          {
+            title: "How do you handle testing in a continuous deployment environment?",
+            path: "/testing/advanced/testing-in-continuous-deployment"
+          },
+          {
+            title: "What is the purpose of chaos testing, and how can it be applied to testing?",
+            path: "/testing/advanced/chaos-testing"
+          },
+          {
+            title: "How do you ensure test coverage for edge cases in a complex system?",
+            path: "/testing/advanced/edge-case-coverage"
+          },
+          {
+            title: "What are the best practices for testing a distributed system?",
+            path: "/testing/advanced/testing-distributed-system"
+          },
+          {
+            title: "How do you integrate testing into a CI/CD pipeline with parallel execution?",
+            path: "/testing/advanced/cicd-parallel-testing"
+          },
+          {
+            title: "How can you use exploratory testing to complement automated testing?",
+            path: "/testing/advanced/exploratory-testing"
+          }
+        ]
+      }
+    ]
   },
 ];
 ---
