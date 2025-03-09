@@ -1,11 +1,14 @@
 ---
+
 ---
 
-<header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+<header
+  class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+>
   <div class="flex items-center justify-between h-16 px-4">
     <div class="flex items-center space-x-1">
       <!-- Mobile menu button -->
-      <button 
+      <button
         id="mobile-menu-button"
         type="button"
         class="lg:hidden text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5"
@@ -15,22 +18,49 @@
       </button>
 
       <a href="/" class="flex items-center">
-        <svg width="45" height="45" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" fill="none">
-          <polygon points="128,20 236,80 208,216 128,256 48,216 20,80" 
-                   fill="url(#gradient)" stroke="white" stroke-width="10" stroke-linejoin="round"/>
-          <text x="50%" y="67%" font-size="100" font-weight="bold" text-anchor="middle"
-                fill="white" font-family="Arial, sans-serif" letter-spacing="2">
+        <svg
+          width="45"
+          height="45"
+          viewBox="0 0 256 256"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+        >
+          <polygon
+            points="128,20 236,80 208,216 128,256 48,216 20,80"
+            fill="url(#gradient)"
+            stroke="white"
+            stroke-width="10"
+            stroke-linejoin="round"></polygon>
+          <text
+            x="50%"
+            y="67%"
+            font-size="100"
+            font-weight="bold"
+            text-anchor="middle"
+            fill="white"
+            font-family="Arial, sans-serif"
+            letter-spacing="2"
+          >
             IH
           </text>
           <defs>
-            <linearGradient id="gradient" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#2563eb"/>
-              <stop offset="1" stop-color="#9333ea"/>
+            <linearGradient
+              id="gradient"
+              x1="0"
+              y1="0"
+              x2="256"
+              y2="256"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop stop-color="#2563eb"></stop>
+              <stop offset="1" stop-color="#9333ea"></stop>
             </linearGradient>
           </defs>
         </svg>
-        
-        <span class="text-xl hidden md:block mt-1 ml-2 font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+
+        <span
+          class="text-xl hidden md:block mt-1 ml-2 font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+        >
           Interview Helper
         </span>
       </a>
@@ -40,21 +70,21 @@
       <button
         id="theme-toggle"
         type="button"
-        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 
-        focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 
+        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700
+        focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700
         w-10 h-10 flex items-center justify-center rounded-lg"
         aria-label="Toggle dark mode"
       >
         <i id="theme-toggle-dark-icon" class="hidden fas fa-moon text-lg"></i>
         <i id="theme-toggle-light-icon" class="hidden fas fa-sun text-lg"></i>
       </button>
-    
+
       <a
         href="https://github.com/yshashi/InterviewHelper"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 
-        focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 
+        class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700
+        focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700
         w-10 h-10 flex items-center justify-center rounded-lg"
         title="View on GitHub"
       >
@@ -63,14 +93,14 @@
 
       <div id="auth-section" class="hidden">
         <div id="auth-buttons" class="flex items-center gap-2">
-          <a 
-            href="/login" 
+          <a
+            href="/login"
             class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
           >
             Log in
           </a>
-          <a 
-            href="/register" 
+          <a
+            href="/register"
             class="text-sm font-medium text-white px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors"
           >
             Register
@@ -78,28 +108,47 @@
         </div>
 
         <div id="user-profile" class="relative hidden">
-          <button 
+          <button
             id="profile-dropdown-button"
             class="flex items-center justify-center rounded-full w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
           >
+            <img
+              id="profile-picture"
+              class="w-8 h-8 rounded-full"
+              src=""
+              alt="Profile Picture"
+              crossorigin="anonymous"
+            />
             <span id="user-initials">U</span>
           </button>
-          
-          <div 
-            id="profile-dropdown-menu" 
+
+          <div
+            id="profile-dropdown-menu"
             class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 hidden z-50"
           >
-            <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-              <p id="user-name" class="font-medium text-gray-900 dark:text-white truncate">User Name</p>
-              <p id="user-email" class="text-xs text-gray-500 dark:text-gray-400 truncate">user@example.com</p>
+            <div
+              class="px-4 py-2 border-b border-gray-200 dark:border-gray-700"
+            >
+              <p
+                id="user-name"
+                class="font-medium text-gray-900 dark:text-white truncate"
+              >
+                User Name
+              </p>
+              <p
+                id="user-email"
+                class="text-xs text-gray-500 dark:text-gray-400 truncate"
+              >
+                user@example.com
+              </p>
             </div>
-            <a 
-              href="/profile" 
+            <a
+              href="/profile"
               class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Profile
             </a>
-            <button 
+            <button
               id="logout-button"
               class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
@@ -109,40 +158,42 @@
         </div>
       </div>
     </div>
-    
   </div>
 </header>
 
 <script>
-  const THEME_KEY = 'interviewhelper:theme';
-  const API_URL = import.meta.env.PROD 
-    ? 'https://api.interviewhelper.in/api' 
-    : (import.meta.env.PUBLIC_API_URL || 'http://localhost:5500/api');
+  const THEME_KEY = "interviewhelper:theme";
+  const API_URL = import.meta.env.PROD
+    ? "https://api.interviewhelper.in/api"
+    : import.meta.env.PUBLIC_API_URL || "http://localhost:5500/api";
 
   // Theme toggle functionality
   function updateThemeIcons() {
-    const darkIcon = document.getElementById('theme-toggle-dark-icon');
-    const lightIcon = document.getElementById('theme-toggle-light-icon');
+    const darkIcon = document.getElementById("theme-toggle-dark-icon");
+    const lightIcon = document.getElementById("theme-toggle-light-icon");
 
-    if (document.documentElement.classList.contains('dark')) {
-      darkIcon?.classList.add('hidden');
-      lightIcon?.classList.remove('hidden');
+    if (document.documentElement.classList.contains("dark")) {
+      darkIcon?.classList.add("hidden");
+      lightIcon?.classList.remove("hidden");
     } else {
-      lightIcon?.classList.add('hidden');
-      darkIcon?.classList.remove('hidden');
+      lightIcon?.classList.add("hidden");
+      darkIcon?.classList.remove("hidden");
     }
   }
 
   // Function to get current theme
   function getCurrentTheme() {
-    return localStorage.getItem(THEME_KEY) === 'dark' || 
-      (!localStorage.getItem(THEME_KEY) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return (
+      localStorage.getItem(THEME_KEY) === "dark" ||
+      (!localStorage.getItem(THEME_KEY) &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches)
+    );
   }
 
   // Function to set theme
   function setTheme(isDark: boolean) {
-    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", isDark);
     updateThemeIcons();
   }
 
@@ -150,107 +201,142 @@
   setTheme(getCurrentTheme());
 
   // Theme toggle handler
-  const themeToggleBtn = document.getElementById('theme-toggle');
-  themeToggleBtn?.addEventListener('click', () => {
-    const isDark = !document.documentElement.classList.contains('dark');
+  const themeToggleBtn = document.getElementById("theme-toggle");
+  themeToggleBtn?.addEventListener("click", () => {
+    const isDark = !document.documentElement.classList.contains("dark");
     setTheme(isDark);
   });
 
   // Update theme on navigation
-  document.addEventListener('astro:after-swap', () => {
+  document.addEventListener("astro:after-swap", () => {
     setTheme(getCurrentTheme());
     initializeAuthUI();
   });
 
   // Update theme on page load
-  document.addEventListener('astro:page-load', () => {
+  document.addEventListener("astro:page-load", () => {
     setTheme(getCurrentTheme());
     initializeAuthUI();
   });
 
+  function setUserInitials(
+    user: User,
+    userInitials: HTMLElement | null,
+    userName: HTMLElement | null
+  ) {
+    if (user.name && userInitials && userName) {
+      userName.textContent = user.name;
+      userInitials.textContent = user.name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
+    } else if (user.email && userName && userInitials) {
+      userName.textContent = user.email.split("@")[0];
+      userInitials.textContent = user.email[0].toUpperCase();
+    }
+  }
+
   function initializeAuthUI() {
-    const authSection = document.getElementById('auth-section');
-    const authButtons = document.getElementById('auth-buttons');
-    const userProfile = document.getElementById('user-profile');
-    const profileDropdownButton = document.getElementById('profile-dropdown-button');
-    const profileDropdownMenu = document.getElementById('profile-dropdown-menu');
-    const userInitials = document.getElementById('user-initials');
-    const userName = document.getElementById('user-name');
-    const userEmail = document.getElementById('user-email');
-    const logoutButton = document.getElementById('logout-button');
+    const authSection = document.getElementById("auth-section");
+    const authButtons = document.getElementById("auth-buttons");
+    const userProfile = document.getElementById("user-profile");
+    const profileDropdownButton = document.getElementById(
+      "profile-dropdown-button"
+    );
+    const profileDropdownMenu = document.getElementById(
+      "profile-dropdown-menu"
+    );
+    const userInitials = document.getElementById("user-initials");
+    const profilePicture = document.getElementById("profile-picture");
+    const userName = document.getElementById("user-name");
+    const userEmail = document.getElementById("user-email");
+    const logoutButton = document.getElementById("logout-button");
 
     if (!authSection) return;
 
-    authSection.classList.remove('hidden');
+    authSection.classList.remove("hidden");
 
-    const userJson = localStorage.getItem('interviewhelper:user');
-    const accessToken = localStorage.getItem('interviewhelper:accessToken');
+    const userJson = localStorage.getItem("interviewhelper:user");
+    const accessToken = localStorage.getItem("interviewhelper:accessToken");
 
     if (userJson && accessToken && authButtons && userProfile) {
       const user = JSON.parse(userJson);
-      
-      authButtons.classList.add('hidden');
-      userProfile.classList.remove('hidden');
-      
-      if (user.name && userInitials && userName) {
-        userName.textContent = user.name;
-        userInitials.textContent = user.name
-          .split(' ')
-          .map((n: string) => n[0])
-          .join('')
-          .toUpperCase()
-          .substring(0, 2);
-      } else if (user.email && userName && userInitials) {
-        userName.textContent = user.email.split('@')[0];
-        userInitials.textContent = user.email[0].toUpperCase();
+
+      authButtons.classList.add("hidden");
+      userProfile.classList.remove("hidden");
+
+      if (profilePicture && user.profilePicture) {
+        profilePicture.setAttribute("src", user.profilePicture);
+        profilePicture.setAttribute("alt", user.name || user.email);
+        userName && (userName.textContent = user.name || user.email);
+        userInitials?.classList.add("hidden");
+        profilePicture.onerror = () => {
+          userInitials?.classList.remove("hidden");
+          profilePicture.classList.add("hidden");
+          setUserInitials(user, userInitials, userName);
+        };
+      } else {
+        setUserInitials(user, userInitials, userName);
       }
-      
+
       if (userEmail) {
         userEmail.textContent = user.email;
       }
-      
+
       if (profileDropdownButton && profileDropdownMenu) {
-        profileDropdownButton.addEventListener('click', (e) => {
+        profileDropdownButton.addEventListener("click", (e) => {
           e.stopPropagation();
-          profileDropdownMenu.classList.toggle('hidden');
+          profileDropdownMenu.classList.toggle("hidden");
         });
-        
-        document.addEventListener('click', () => {
-          profileDropdownMenu.classList.add('hidden');
+
+        document.addEventListener("click", () => {
+          profileDropdownMenu.classList.add("hidden");
         });
       }
-      
+
       if (logoutButton) {
-        logoutButton.addEventListener('click', async () => {
+        logoutButton.addEventListener("click", async () => {
           try {
-            const refreshToken = localStorage.getItem('interviewhelper:refreshToken');
-            
+            const refreshToken = localStorage.getItem(
+              "interviewhelper:refreshToken"
+            );
+
             if (refreshToken) {
               await fetch(`${API_URL}/auth/logout`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${accessToken}`
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${accessToken}`,
                 },
-                body: JSON.stringify({ refreshToken })
+                body: JSON.stringify({ refreshToken }),
               });
             }
           } catch (error) {
-            console.error('Logout error:', error);
+            console.error("Logout error:", error);
           } finally {
-            localStorage.removeItem('interviewhelper:accessToken');
-            localStorage.removeItem('interviewhelper:refreshToken');
-            localStorage.removeItem('interviewhelper:user');
-            
-            window.location.href = '/';
+            localStorage.removeItem("interviewhelper:accessToken");
+            localStorage.removeItem("interviewhelper:refreshToken");
+            localStorage.removeItem("interviewhelper:user");
+
+            window.location.href = "/";
           }
         });
       }
     } else if (authButtons && userProfile) {
-      authButtons.classList.remove('hidden');
-      userProfile.classList.add('hidden');
+      authButtons.classList.remove("hidden");
+      userProfile.classList.add("hidden");
     }
   }
 
-  document.addEventListener('DOMContentLoaded', initializeAuthUI);
+  document.addEventListener("DOMContentLoaded", initializeAuthUI);
+
+  export type User = {
+    id: string;
+    name: string;
+    username: string;
+    email: string;
+    profilePicture: string;
+  };
 </script>
