@@ -417,6 +417,17 @@ const features = [
     document.documentElement.classList.toggle("dark", isDark);
   }
 
+  document.addEventListener('DOMContentLoaded', () => {
+    const storedRedirect = localStorage.getItem('interviewhelper:redirectAfterLogin');
+    const accessToken = localStorage.getItem('interviewhelper:accessToken');
+
+    if (storedRedirect && accessToken) {
+      localStorage.removeItem('interviewhelper:redirectAfterLogin');
+      window.location.href = storedRedirect;
+      return;
+    }
+  });
+
   // Initialize theme on page load and after navigation
   document.addEventListener("astro:page-load", () => {
     setTheme(getCurrentTheme());

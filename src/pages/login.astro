@@ -104,6 +104,11 @@ import Layout from '../layouts/Layout.astro';
       errorMessage.textContent = decodeURIComponent(error);
       errorMessage.classList.remove('hidden');
     }
+
+    const redirect = urlParams.get('redirect') || '/';
+    if (redirect && redirect !== '/') {
+      localStorage.setItem('interviewhelper:redirectAfterLogin', redirect);
+    }
     
     // Set up social login buttons
     googleLoginBtn?.addEventListener('click', () => {
@@ -151,7 +156,8 @@ import Layout from '../layouts/Layout.astro';
         localStorage.setItem('interviewhelper:refreshToken', data.refreshToken);
         localStorage.setItem('interviewhelper:user', JSON.stringify(data.user));
         
-        window.location.href = '/';
+        const redirectUrl = urlParams.get('redirect') || '/';
+        window.location.href = redirectUrl;
       } catch (error: any) {
         if (errorMessage) {
           errorMessage.textContent = error.message || 'An error occurred during login';
