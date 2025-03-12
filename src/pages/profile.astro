@@ -144,7 +144,7 @@ import Layout from '../layouts/Layout.astro';
 
       const userObj = JSON.parse(localStorage.getItem('interviewhelper:user') || '{}');
       
-      const response = await fetch(`${API_URL}/users/${userObj.userId}`, {
+      const response = await fetch(`${API_URL}/users/${userObj.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
