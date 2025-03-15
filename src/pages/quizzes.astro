@@ -1,0 +1,32 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TopicwiseQuizList from '../components/TopicwiseQuizList.jsx';
+
+const title = "Topic-wise Quizzes - Interview Helper";
+const description = "Test your knowledge with our interactive quizzes on various technologies and topics. Choose from a wide range of subjects and challenge yourself.";
+---
+
+<Layout title={title} description={description}>
+  <div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Topic-wise Quizzes</h1>
+      <p class="text-gray-600 dark:text-gray-300 mt-2">
+        Challenge yourself with our comprehensive collection of quizzes on various technologies and programming concepts.
+      </p>
+    </div>
+
+    <TopicwiseQuizList client:load />
+    
+    <div class="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">About Our Quizzes</h2>
+      <p class="text-gray-700 dark:text-gray-300">
+        Our topic-wise quizzes are designed to test your knowledge and help you prepare for technical interviews.
+        Each quiz contains a set of carefully curated multiple-choice questions that cover important concepts and common interview topics.
+      </p>
+      <p class="text-gray-700 dark:text-gray-300 mt-2">
+        You'll have 60 seconds to answer each question, and your results will be displayed at the end of the quiz.
+        If you're logged in, your results will be saved so you can track your progress over time.
+      </p>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,18 @@
+---
+import Layout from '../layouts/Layout.astro';
+import QuizAnalytics from '../components/QuizAnalytics';
+---
+
+<Layout title="Quiz Analytics - Interview Helper">
+  <main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-white">
+      Your Quiz Performance Analytics
+    </h1>
+    
+    <p class="text-center text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+      Track your progress, identify your strengths and areas for improvement, and get personalized insights to help you excel in your interviews.
+    </p>
+    
+    <QuizAnalytics client:only="react" userId={null} />
+  </main>
+</Layout>

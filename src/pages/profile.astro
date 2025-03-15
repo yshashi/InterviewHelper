@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import QuizDashboard from '../components/QuizDashboard';
 ---
 
 <Layout title="Profile - Interview Helper" description="Your Interview Helper profile">
@@ -51,6 +52,11 @@ import Layout from '../layouts/Layout.astro';
           </button>
         </div>
       </form>
+    </div>
+    
+    <div class="mt-8">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Your Quiz Performance</h2>
+      <QuizDashboard client:only="react" />
     </div>
   </div>
 </Layout>
