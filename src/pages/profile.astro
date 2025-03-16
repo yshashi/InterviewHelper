@@ -150,7 +150,7 @@ import QuizDashboard from '../components/QuizDashboard';
 
       const userObj = JSON.parse(localStorage.getItem('interviewhelper:user') || '{}');
       
-      const response = await fetch(`${API_URL}/users/${userObj.id}`, {
+      const response = await fetch(`${API_URL}/users/${userObj.userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -163,9 +163,10 @@ import QuizDashboard from '../components/QuizDashboard';
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update profile');
       }
-      
-      const { email, name, username } = await response.json();
+      const userResponse = await response.json();
+      const { email, name, username } = userResponse;
       updateProfileDisplay({ email, name, username });
+      localStorage.setItem('interviewhelper:user', JSON.stringify(userResponse));
       showMessage('success', 'Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);

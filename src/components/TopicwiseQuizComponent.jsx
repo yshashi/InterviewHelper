@@ -495,7 +495,7 @@ export default function TopicwiseQuizComponent({ topicKey, topicName }) {
                   return (
                     <div key={option} className={optionClass}>
                       <div className="flex items-start">
-                        <span className="font-medium mr-2">{option}:</span>
+                        <span className="font-medium mr-2 text-gray-700 dark:text-gray-300">{option}:</span>
                         <span className="text-gray-700 dark:text-gray-300">
                           {questions[index]?.options?.[option] || ''}
                         </span>
@@ -556,7 +556,7 @@ export default function TopicwiseQuizComponent({ topicKey, topicName }) {
                 }`}
               >
                 <div className="flex items-start">
-                  <span className="font-medium mr-2">{option}:</span>
+                  <span className="font-medium mr-2 text-gray-700 dark:text-gray-300">{option}:</span>
                   <span className="text-gray-700 dark:text-gray-300">{currentQuestion.options[option]}</span>
                 </div>
               </button>
