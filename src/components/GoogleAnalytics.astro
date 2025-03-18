@@ -6,23 +6,25 @@ import { GA_MEASUREMENT_ID } from '../config';
 {GA_MEASUREMENT_ID && (
   <Fragment>
     <script 
-      type="text/partytown"
+      async
       src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
     ></script>
-    <script type="text/partytown" define:vars={{ GA_MEASUREMENT_ID }}>
+    <script define:vars={{ GA_MEASUREMENT_ID }}>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
       }
       gtag('js', new Date());
       gtag('config', GA_MEASUREMENT_ID, {
-        send_page_view: false
+        page_path: window.location.pathname,
       });
+
+      // Handle client-side navigation
       document.addEventListener('astro:after-swap', () => {
-        gtag('event', 'page_view', {
+        gtag('config', GA_MEASUREMENT_ID, {
+          page_path: window.location.pathname,
           page_title: document.title,
-          page_location: window.location.href,
-          page_path: window.location.pathname
+          page_location: window.location.href
         });
       });
     </script>
