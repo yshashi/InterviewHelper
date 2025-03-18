@@ -6,6 +6,7 @@ import sitemap from '@astrojs/sitemap';
 import compress from 'astro-compress';
 import react from '@astrojs/react';
 import vercel from '@astrojs/vercel';
+import partytown from '@astrojs/partytown';
 
 // https://astro.build/config
 export default defineConfig({
@@ -18,7 +19,12 @@ export default defineConfig({
     tailwind(),
     react(),
     compress(),
-    sitemap()
+    sitemap(),
+    partytown({
+      config: {
+        forward: ['dataLayer.push'],
+      },
+    })
   ],
   build: {
     format: 'directory'

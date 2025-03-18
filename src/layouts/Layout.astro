@@ -2,7 +2,7 @@
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Search from '../components/Search.astro';
-import Analytics from '@vercel/analytics/astro';
+import GoogleAnalytics from '../components/GoogleAnalytics.astro';
 
 interface Props {
   title?: string;
@@ -64,7 +64,7 @@ const metaTitle = `${pageTitle}`;
     </script>
     <link rel="icon" type="image/png" href="/favicon.png" />
 
-    <Analytics />
+    <GoogleAnalytics />
     <title>{metaTitle}</title>
     <meta name="title" content={metaTitle} />
     <meta name="description" content={description} />
