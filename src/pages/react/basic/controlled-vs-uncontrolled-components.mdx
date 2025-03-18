@@ -1,0 +1,297 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between controlled and uncontrolled components in React?
+---
+
+# What is the difference between controlled and uncontrolled components in React?
+
+In React, form elements such as `<input>`, `<textarea>`, and `<select>` maintain their own state and update it based on user input. When dealing with these elements, developers have two approaches: controlled components and uncontrolled components. The key difference lies in how the form data is handled - whether React controls it or the DOM controls it.
+
+## Controlled Components
+
+Controlled components are those where React completely controls the state of the form elements. The component's state becomes the "single source of truth" for the input value.
+
+```jsx
+import React, { useState } from 'react';
+
+function ControlledForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Form submitted with:', { name, email, message });
+    // Process form data...
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="name">Name:</label>
+        <input
+          type="text"
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="message">Message:</label>
+        <textarea
+          id="message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+      </div>
+      
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+### Key Characteristics of Controlled Components:
+
+1. **React manages the state**: The component's state serves as the "single source of truth"
+2. **Value attribute**: Form elements have a `value` prop set (or `checked` for checkboxes and radio buttons)
+3. **Event handlers**: Changes are handled through event handlers like `onChange`
+4. **Immediate access to input values**: You can access the current value of the input at any time
+5. **Input validation**: You can perform validation on every keystroke
+
+## Uncontrolled Components
+
+Uncontrolled components are those where the form data is handled by the DOM itself. Instead of writing an event handler for every state update, you can use a ref to get form values from the DOM.
+
+```jsx
+import React, { useRef } from 'react';
+
+function UncontrolledForm() {
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const messageRef = useRef(null);
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = {
+      name: nameRef.current.value,
+      email: emailRef.current.value,
+      message: messageRef.current.value
+    };
+    
+    console.log('Form submitted with:', formData);
+    // Process form data...
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="name">Name:</label>
+        <input
+          type="text"
+          id="name"
+          ref={nameRef}
+          defaultValue="Rahul" // Optional initial value
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          ref={emailRef}
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="message">Message:</label>
+        <textarea
+          id="message"
+          ref={messageRef}
+        />
+      </div>
+      
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+### Key Characteristics of Uncontrolled Components:
+
+1. **DOM manages the state**: The form element maintains its own state
+2. **Refs**: You use refs to access the current values of form elements
+3. **defaultValue**: Instead of `value`, you use `defaultValue` for initial values (or `defaultChecked` for checkboxes and radio buttons)
+4. **Less code**: Often requires less code for simple forms
+5. **Values accessed on submit**: You typically access form values when the form is submitted
+
+## Comparison Table
+
+| Feature | Controlled Components | Uncontrolled Components |
+|---------|----------------------|------------------------|
+| Source of truth | Component state | DOM |
+| Value access | Anytime via state | On-demand via refs |
+| Value setting | Through state updates | Through `defaultValue` or DOM manipulation |
+| Input validation | Immediate (on change) | Typically on submit |
+| Code complexity | More code, more explicit | Less code, more implicit |
+| Form reset | Reset state values | Use DOM API (form.reset()) |
+| Dynamic inputs | Easier to implement | More complex |
+| Testing | Easier to test | More challenging |
+
+## When to Use Each Approach
+
+### Use Controlled Components When:
+
+1. You need immediate validation feedback
+2. You want to conditionally disable the submit button
+3. You need to enforce input formats (e.g., credit card formatting)
+4. You're building dynamic forms where fields change based on user input
+5. You need to submit the form programmatically
+6. You want more predictable and testable code
+
+### Use Uncontrolled Components When:
+
+1. You're integrating with non-React code
+2. You're building simple forms with minimal validation
+3. You're working with large forms where performance might be a concern
+4. You're using file inputs (which are inherently uncontrolled)
+5. You're converting a legacy application to React
+
+## File Inputs - A Special Case
+
+File inputs (`<input type="file">`) are inherently uncontrolled in React because their value can only be set by a user, not programmatically due to security reasons.
+
+```jsx
+import React, { useRef, useState } from 'react';
+
+function FileUploadForm() {
+  const fileInputRef = useRef(null);
+  const [fileName, setFileName] = useState('No file chosen');
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const file = fileInputRef.current.files[0];
+    console.log('Selected file:', file);
+    // Process file upload...
+  };
+  
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setFileName(file ? file.name : 'No file chosen');
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="file">Choose file:</label>
+        <input
+          type="file"
+          id="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+        />
+        <span>{fileName}</span>
+      </div>
+      
+      <button type="submit">Upload</button>
+    </form>
+  );
+}
+```
+
+## Hybrid Approach
+
+Sometimes, you might want to use both approaches in the same form:
+
+```jsx
+import React, { useState, useRef } from 'react';
+
+function HybridForm() {
+  // Controlled components
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  
+  // Uncontrolled component
+  const fileInputRef = useRef(null);
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    const formData = {
+      name,
+      email,
+      file: fileInputRef.current.files[0]
+    };
+    
+    console.log('Form submitted with:', formData);
+    // Process form data...
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="name">Name:</label>
+        <input
+          type="text"
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="file">File:</label>
+        <input
+          type="file"
+          id="file"
+          ref={fileInputRef}
+        />
+      </div>
+      
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+## Interview Tips
+
+1. **Understand the core difference**: Be able to explain that controlled components use React state while uncontrolled components rely on the DOM.
+
+2. **Pros and cons**: Discuss the advantages and disadvantages of each approach in different scenarios.
+
+3. **React philosophy**: Mention that controlled components align better with React's "single source of truth" philosophy.
+
+4. **Performance considerations**: Be prepared to discuss potential performance implications of controlled vs. uncontrolled components.
+
+5. **File inputs**: Explain why file inputs are typically handled as uncontrolled components.
+
+6. **Form libraries**: Mention popular form libraries like Formik or React Hook Form and how they relate to these concepts.
+
+7. **Real-world examples**: Share specific examples of when you've used each approach in your projects.
+
+8. **Best practices**: Discuss when to use each approach and why the React team generally recommends controlled components.
+
+9. **Validation strategies**: Explain how form validation differs between controlled and uncontrolled components.

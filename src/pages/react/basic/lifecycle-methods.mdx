@@ -1,0 +1,529 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are React lifecycle methods in class components?
+---
+
+# What are React lifecycle methods in class components?
+
+React lifecycle methods are special methods that automatically get called as your component achieves certain milestones in its life. These methods give you the opportunity to run code at specific times during a component's existence - when it's created (mounted), updated, or destroyed (unmounted). While functional components now use hooks for similar functionality, understanding lifecycle methods remains important for maintaining legacy code and grasping React's core concepts.
+
+## Lifecycle Phases
+
+React component lifecycles can be categorized into three main phases:
+
+1. **Mounting**: When a component is being created and inserted into the DOM
+2. **Updating**: When a component is being re-rendered due to changes in props or state
+3. **Unmounting**: When a component is being removed from the DOM
+
+## Mounting Phase Methods
+
+These methods are called when an instance of a component is being created and inserted into the DOM:
+
+### 1. constructor()
+
+```jsx
+constructor(props) {
+  super(props);
+  // Initialize state
+  this.state = {
+    counter: 0
+  };
+  // Bind event handlers
+  this.handleClick = this.handleClick.bind(this);
+}
+```
+
+The constructor is called before anything else when a component is initialized. It's used for:
+- Initializing local state by assigning an object to `this.state`
+- Binding event handler methods to the instance
+
+Always call `super(props)` first in the constructor to properly set up the parent class.
+
+### 2. static getDerivedStateFromProps()
+
+```jsx
+static getDerivedStateFromProps(props, state) {
+  // Return an object to update state, or null to indicate no change
+  if (props.maxCount !== state.prevMaxCount) {
+    return {
+      counter: Math.min(state.counter, props.maxCount),
+      prevMaxCount: props.maxCount
+    };
+  }
+  return null;
+}
+```
+
+This method is called right before rendering when new props or state are being received. It should return an object to update the state, or null to indicate no change.
+
+This method exists for rare use cases where the state depends on changes in props over time.
+
+### 3. render()
+
+```jsx
+render() {
+  return (
+    <div>
+      <h1>Counter: {this.state.counter}</h1>
+      <button onClick={this.handleClick}>Increment</button>
+    </div>
+  );
+}
+```
+
+The `render()` method is the only required method in a class component. It examines `this.props` and `this.state` and returns:
+- React elements (typically created via JSX)
+- Arrays and fragments
+- Portals
+- String or numbers
+- Booleans or null (renders nothing)
+
+The render method should be pure, meaning it does not modify component state, returns the same result each time it's invoked, and doesn't directly interact with the browser.
+
+### 4. componentDidMount()
+
+```jsx
+componentDidMount() {
+  // Perfect for API calls, subscriptions, or DOM manipulations
+  this.timerID = setInterval(
+    () => this.tick(),
+    1000
+  );
+  
+  // API call example
+  fetch('https://api.example.com/data')
+    .then(response => response.json())
+    .then(data => this.setState({ data }));
+}
+```
+
+This method is invoked immediately after a component is mounted (inserted into the DOM). This is the ideal place for:
+- Network requests
+- Setting up subscriptions
+- Direct DOM manipulations
+- Integrating with third-party libraries
+
+## Updating Phase Methods
+
+These methods are called when a component is being re-rendered due to changes in props or state:
+
+### 1. static getDerivedStateFromProps()
+
+This method is also called during updates, before every render. Its behavior is the same as during mounting.
+
+### 2. shouldComponentUpdate()
+
+```jsx
+shouldComponentUpdate(nextProps, nextState) {
+  // Only re-render if counter has changed
+  return nextState.counter !== this.state.counter;
+}
+```
+
+This method lets you decide whether a re-render is necessary. It's called before rendering when new props or state are received. By default, it returns `true`.
+
+Implement this method only for performance optimizations. Returning `false` prevents the component from re-rendering.
+
+### 3. render()
+
+The render method is called again during updates, just as it is during mounting.
+
+### 4. getSnapshotBeforeUpdate()
+
+```jsx
+getSnapshotBeforeUpdate(prevProps, prevState) {
+  // Capture information from the DOM before it potentially changes
+  if (prevProps.list.length < this.props.list.length) {
+    const list = this.listRef.current;
+    return list.scrollHeight - list.scrollTop;
+  }
+  return null;
+}
+```
+
+This method is called right before the most recently rendered output is committed to the DOM. It enables your component to capture some information from the DOM (e.g., scroll position) before it is potentially changed.
+
+Any value returned by this method will be passed as a parameter to `componentDidUpdate()`.
+
+### 5. componentDidUpdate()
+
+```jsx
+componentDidUpdate(prevProps, prevState, snapshot) {
+  // Operate on the DOM after an update
+  if (prevProps.userId !== this.props.userId) {
+    this.fetchData(this.props.userId);
+  }
+  
+  // If we have a snapshot value, we've added new items
+  if (snapshot !== null) {
+    const list = this.listRef.current;
+    list.scrollTop = list.scrollHeight - snapshot;
+  }
+}
+```
+
+This method is called immediately after updating occurs. It is not called for the initial render.
+
+Use this method to:
+- Operate on the DOM after an update
+- Make network requests when props change
+- Apply DOM updates from a snapshot returned by `getSnapshotBeforeUpdate()`
+
+## Unmounting Phase Method
+
+This method is called when a component is being removed from the DOM:
+
+### componentWillUnmount()
+
+```jsx
+componentWillUnmount() {
+  // Clean up resources before component is destroyed
+  clearInterval(this.timerID);
+  this.subscription.unsubscribe();
+  document.removeEventListener('click', this.handleClick);
+}
+```
+
+This method is invoked immediately before a component is unmounted and destroyed. Perform any necessary cleanup in this method, such as:
+- Invalidating timers
+- Canceling network requests
+- Cleaning up subscriptions
+- Removing event listeners
+
+## Error Handling Methods
+
+These methods are called when there is an error during rendering, in a lifecycle method, or in the constructor of any child component:
+
+### 1. static getDerivedStateFromError()
+
+```jsx
+static getDerivedStateFromError(error) {
+  // Update state so the next render will show the fallback UI
+  return { hasError: true };
+}
+```
+
+This method is called when a descendant component throws an error. It receives the error that was thrown and should return a value to update state.
+
+### 2. componentDidCatch()
+
+```jsx
+componentDidCatch(error, info) {
+  // Log the error to an error reporting service
+  console.error("Error caught:", error);
+  console.log("Component stack:", info.componentStack);
+  logErrorToService(error, info);
+}
+```
+
+This method is called after an error has been thrown by a descendant component. It receives two parameters:
+- `error`: The error that was thrown
+- `info`: An object with a `componentStack` key containing information about which component threw the error
+
+Use this method to log error information to an error reporting service.
+
+## Complete Lifecycle Example
+
+Here's a comprehensive example demonstrating various lifecycle methods:
+
+```jsx
+import React, { Component } from 'react';
+
+class LifecycleDemo extends Component {
+  constructor(props) {
+    super(props);
+    console.log('1. Constructor called');
+    
+    this.state = {
+      count: 0,
+      data: null,
+      prevPropsUserName: props.userName
+    };
+    
+    this.listRef = React.createRef();
+  }
+  
+  static getDerivedStateFromProps(props, state) {
+    console.log('2. getDerivedStateFromProps called');
+    
+    // Update state if props.userName has changed
+    if (props.userName !== state.prevPropsUserName) {
+      return {
+        prevPropsUserName: props.userName,
+        count: 0 // Reset count when user changes
+      };
+    }
+    
+    return null;
+  }
+  
+  componentDidMount() {
+    console.log('4. componentDidMount called');
+    
+    // Start timer
+    this.timerID = setInterval(() => {
+      this.setState(prevState => ({
+        count: prevState.count + 1
+      }));
+    }, 1000);
+    
+    // Fetch data
+    fetch('https://jsonplaceholder.typicode.com/todos/1')
+      .then(response => response.json())
+      .then(data => this.setState({ data }));
+      
+    // Add event listener
+    document.addEventListener('click', this.handleDocumentClick);
+  }
+  
+  shouldComponentUpdate(nextProps, nextState) {
+    console.log('5. shouldComponentUpdate called');
+    
+    // Only update if count is even
+    return nextState.count % 2 === 0 || nextState.data !== this.state.data;
+  }
+  
+  getSnapshotBeforeUpdate(prevProps, prevState) {
+    console.log('7. getSnapshotBeforeUpdate called');
+    
+    // Capture the scroll position if the items will change
+    if (prevState.count < this.state.count) {
+      const list = this.listRef.current;
+      return list ? list.scrollHeight : null;
+    }
+    return null;
+  }
+  
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    console.log('8. componentDidUpdate called');
+    console.log('Snapshot value:', snapshot);
+    
+    // If we have a snapshot value, restore the scroll position
+    if (snapshot !== null && this.listRef.current) {
+      this.listRef.current.scrollTop = snapshot;
+    }
+    
+    // Check if specific props changed
+    if (prevProps.userName !== this.props.userName) {
+      console.log('Username changed, fetching new data');
+      // Fetch new user data
+    }
+  }
+  
+  componentWillUnmount() {
+    console.log('9. componentWillUnmount called');
+    
+    // Clean up
+    clearInterval(this.timerID);
+    document.removeEventListener('click', this.handleDocumentClick);
+  }
+  
+  handleDocumentClick = () => {
+    console.log('Document clicked');
+  }
+  
+  handleButtonClick = () => {
+    this.setState(prevState => ({
+      count: prevState.count + 1
+    }));
+  }
+  
+  render() {
+    console.log('3/6. render called');
+    
+    return (
+      <div>
+        <h1>Lifecycle Demo for {this.props.userName}</h1>
+        <p>Count: {this.state.count}</p>
+        
+        {this.state.data && (
+          <div>
+            <h2>Data Loaded:</h2>
+            <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+          </div>
+        )}
+        
+        <button onClick={this.handleButtonClick}>
+          Increment Count
+        </button>
+        
+        <div 
+          ref={this.listRef}
+          style={{ height: '100px', overflow: 'auto' }}
+        >
+          {Array.from({ length: this.state.count }).map((_, index) => (
+            <p key={index}>Item {index + 1}</p>
+          ))}
+        </div>
+      </div>
+    );
+  }
+}
+
+// Error boundary component
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true };
+  }
+  
+  componentDidCatch(error, info) {
+    // Log the error to an error reporting service
+    console.error('Error caught:', error);
+    console.log('Component stack:', info.componentStack);
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      // You can render any custom fallback UI
+      return <h1>Something went wrong.</h1>;
+    }
+    
+    return this.props.children;
+  }
+}
+
+// Usage
+function App() {
+  return (
+    <ErrorBoundary>
+      <LifecycleDemo userName="Rahul" />
+    </ErrorBoundary>
+  );
+}
+```
+
+## Lifecycle Methods vs. Hooks
+
+With the introduction of React Hooks, functional components can now handle state and side effects without class components. Here's how lifecycle methods map to hooks:
+
+| Lifecycle Method | Hook Equivalent |
+|------------------|-----------------|
+| `constructor` | `useState` |
+| `getDerivedStateFromProps` | `useState` + `useEffect` |
+| `shouldComponentUpdate` | `React.memo` + `useMemo` |
+| `render` | Function body |
+| `componentDidMount` | `useEffect(() => {}, [])` |
+| `componentDidUpdate` | `useEffect(() => {}, [dependencies])` |
+| `componentWillUnmount` | `useEffect(() => { return () => {} }, [])` |
+| `getDerivedStateFromError` & `componentDidCatch` | `ErrorBoundary` component (no hook equivalent yet) |
+
+Example of a functional component with hooks that replaces a class component:
+
+```jsx
+import React, { useState, useEffect, useRef } from 'react';
+
+function LifecycleDemoWithHooks({ userName }) {
+  // Replace constructor and state initialization
+  const [count, setCount] = useState(0);
+  const [data, setData] = useState(null);
+  const listRef = useRef(null);
+  const prevUserNameRef = useRef(userName);
+  
+  // Replace getDerivedStateFromProps
+  useEffect(() => {
+    if (prevUserNameRef.current !== userName) {
+      setCount(0); // Reset count when user changes
+      prevUserNameRef.current = userName;
+    }
+  }, [userName]);
+  
+  // Replace componentDidMount
+  useEffect(() => {
+    console.log('Component mounted');
+    
+    // Start timer
+    const timerID = setInterval(() => {
+      setCount(c => c + 1);
+    }, 1000);
+    
+    // Fetch data
+    fetch('https://jsonplaceholder.typicode.com/todos/1')
+      .then(response => response.json())
+      .then(data => setData(data));
+      
+    // Add event listener
+    const handleDocumentClick = () => {
+      console.log('Document clicked');
+    };
+    
+    document.addEventListener('click', handleDocumentClick);
+    
+    // Replace componentWillUnmount
+    return () => {
+      console.log('Component unmounting');
+      clearInterval(timerID);
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, []); // Empty dependency array means this runs once on mount
+  
+  // Replace componentDidUpdate for userName changes
+  useEffect(() => {
+    if (prevUserNameRef.current !== userName) {
+      console.log('Username changed, fetching new data');
+      // Fetch new user data
+    }
+  }, [userName]);
+  
+  // Handle button click
+  const handleButtonClick = () => {
+    setCount(c => c + 1);
+  };
+  
+  // Replace render
+  return (
+    <div>
+      <h1>Lifecycle Demo for {userName}</h1>
+      <p>Count: {count}</p>
+      
+      {data && (
+        <div>
+          <h2>Data Loaded:</h2>
+          <pre>{JSON.stringify(data, null, 2)}</pre>
+        </div>
+      )}
+      
+      <button onClick={handleButtonClick}>
+        Increment Count
+      </button>
+      
+      <div 
+        ref={listRef}
+        style={{ height: '100px', overflow: 'auto' }}
+      >
+        {Array.from({ length: count }).map((_, index) => (
+          <p key={index}>Item {index + 1}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Interview Tips
+
+1. **Understand the flow**: Be able to explain the order in which lifecycle methods are called during mounting, updating, and unmounting.
+
+2. **Common use cases**: Know what each lifecycle method is typically used for:
+   - `componentDidMount`: API calls, subscriptions, DOM manipulations
+   - `componentDidUpdate`: Responding to prop/state changes, DOM updates
+   - `componentWillUnmount`: Cleanup (timers, subscriptions, event listeners)
+
+3. **Deprecated methods**: Be aware that some lifecycle methods are deprecated (like `componentWillMount`, `componentWillReceiveProps`, and `componentWillUpdate`).
+
+4. **Error boundaries**: Understand how `getDerivedStateFromError` and `componentDidCatch` work for error handling.
+
+5. **Hooks comparison**: Be ready to explain how hooks can replace lifecycle methods in functional components.
+
+6. **Performance considerations**: Discuss how `shouldComponentUpdate` and `PureComponent` can optimize rendering performance.
+
+7. **Anti-patterns**: Know what not to do in lifecycle methods (e.g., setState in render, or not cleaning up in componentWillUnmount).
+
+8. **Real-world examples**: Share specific examples of how you've used lifecycle methods in projects, focusing on solving practical problems.
+
+9. **Debugging**: Explain how you might debug issues related to component lifecycle (e.g., using console logs in each method).

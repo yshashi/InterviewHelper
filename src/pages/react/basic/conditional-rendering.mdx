@@ -1,0 +1,451 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is conditional rendering in React, and how can you implement it?
+---
+
+# What is conditional rendering in React, and how can you implement it?
+
+Conditional rendering in React allows you to create dynamic user interfaces that display different components or elements based on certain conditions. This is a fundamental concept in React that enables you to control what users see based on application state, user permissions, data availability, or other factors.
+
+## Basic Conditional Rendering Techniques
+
+### 1. Using If/Else Statements
+
+You can use regular JavaScript if/else statements outside the JSX to determine what to render:
+
+```jsx
+function UserGreeting({ isLoggedIn, username }) {
+  if (isLoggedIn) {
+    return <h1>Welcome back, {username}!</h1>;
+  } else {
+    return <h1>Please sign in</h1>;
+  }
+}
+```
+
+### 2. Using Ternary Operators
+
+The ternary operator provides a more concise way to conditionally render elements inline:
+
+```jsx
+function UserGreeting({ isLoggedIn, username }) {
+  return (
+    <h1>
+      {isLoggedIn ? `Welcome back, ${username}!` : 'Please sign in'}
+    </h1>
+  );
+}
+```
+
+### 3. Using Logical && Operator
+
+For simpler conditions where you either want to render something or nothing, the logical && operator is useful:
+
+```jsx
+function Notifications({ messages }) {
+  return (
+    <div>
+      {messages.length > 0 && (
+        <div className="notification-badge">
+          {messages.length}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### 4. Using Nullish Coalescing Operator (??)
+
+The nullish coalescing operator is helpful when you want to provide a fallback for null or undefined values:
+
+```jsx
+function UserProfile({ user }) {
+  return (
+    <div>
+      <h1>{user?.name ?? 'Guest User'}</h1>
+      <p>{user?.bio ?? 'No bio available'}</p>
+    </div>
+  );
+}
+```
+
+### 5. Using Switch Statements
+
+For multiple conditions, a switch statement can be clearer:
+
+```jsx
+function PaymentStatus({ status }) {
+  let message;
+  
+  switch (status) {
+    case 'processing':
+      message = <span className="processing">Payment is processing...</span>;
+      break;
+    case 'success':
+      message = <span className="success">Payment successful!</span>;
+      break;
+    case 'failed':
+      message = <span className="error">Payment failed. Please try again.</span>;
+      break;
+    default:
+      message = <span>Unknown payment status</span>;
+  }
+  
+  return <div className="payment-status">{message}</div>;
+}
+```
+
+### 6. Using Immediately-Invoked Function Expressions (IIFE)
+
+For complex conditional logic within JSX:
+
+```jsx
+function ProductItem({ product }) {
+  return (
+    <div className="product-item">
+      <h2>{product.name}</h2>
+      <p>₹{product.price.toLocaleString()}</p>
+      
+      {(() => {
+        if (product.stock > 10) {
+          return <span className="in-stock">In Stock</span>;
+        } else if (product.stock > 0) {
+          return <span className="limited">Only {product.stock} left!</span>;
+        } else {
+          return <span className="out-of-stock">Out of Stock</span>;
+        }
+      })()}
+    </div>
+  );
+}
+```
+
+## Conditional Rendering of Components
+
+### Rendering Different Components Based on Conditions
+
+```jsx
+function AuthenticationPage({ isRegistering }) {
+  return (
+    <div className="auth-container">
+      <h1>{isRegistering ? 'Create Account' : 'Login'}</h1>
+      {isRegistering ? <RegisterForm /> : <LoginForm />}
+    </div>
+  );
+}
+```
+
+### Conditional Props
+
+```jsx
+function Button({ isSubmitting, children }) {
+  return (
+    <button 
+      disabled={isSubmitting}
+      className={isSubmitting ? 'btn-disabled' : 'btn-primary'}
+    >
+      {isSubmitting ? 'Processing...' : children}
+    </button>
+  );
+}
+```
+
+### Conditional Styling
+
+```jsx
+function ProgressBar({ percentage }) {
+  return (
+    <div className="progress-container">
+      <div 
+        className="progress-bar"
+        style={{ 
+          width: `${percentage}%`,
+          backgroundColor: percentage < 30 ? 'red' : 
+                          percentage < 70 ? 'yellow' : 'green'
+        }}
+      />
+      <span>{percentage}% Complete</span>
+    </div>
+  );
+}
+```
+
+## Advanced Conditional Rendering Patterns
+
+### 1. Component Composition with Props
+
+```jsx
+function Card({ title, children, footer, headerStyle }) {
+  return (
+    <div className="card">
+      {title && (
+        <div className="card-header" style={headerStyle}>
+          {title}
+        </div>
+      )}
+      
+      <div className="card-body">
+        {children}
+      </div>
+      
+      {footer && (
+        <div className="card-footer">
+          {footer}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Usage
+function App() {
+  return (
+    <Card 
+      title="Important Notice"
+      footer={<button>Dismiss</button>}
+      headerStyle={{ backgroundColor: 'lightblue' }}
+    >
+      <p>This is an important message for all users.</p>
+    </Card>
+  );
+}
+```
+
+### 2. Render Props Pattern
+
+```jsx
+function ToggleComponent({ render }) {
+  const [isOn, setIsOn] = useState(false);
+  
+  const toggle = () => setIsOn(!isOn);
+  
+  return render({ isOn, toggle });
+}
+
+// Usage
+function App() {
+  return (
+    <ToggleComponent 
+      render={({ isOn, toggle }) => (
+        <div>
+          <button onClick={toggle}>
+            {isOn ? 'Turn Off' : 'Turn On'}
+          </button>
+          <p>The switch is {isOn ? 'on' : 'off'}</p>
+        </div>
+      )}
+    />
+  );
+}
+```
+
+### 3. Higher-Order Components (HOC)
+
+```jsx
+// HOC that adds conditional rendering based on authentication
+function withAuth(Component) {
+  return function AuthenticatedComponent(props) {
+    const { isAuthenticated, user } = useAuth();
+    
+    if (!isAuthenticated) {
+      return <Redirect to="/login" />;
+    }
+    
+    return <Component {...props} user={user} />;
+  };
+}
+
+// Usage
+const DashboardPage = withAuth(function Dashboard({ user }) {
+  return (
+    <div>
+      <h1>Welcome to your dashboard, {user.name}</h1>
+      {/* Dashboard content */}
+    </div>
+  );
+});
+```
+
+### 4. Using Custom Hooks for Conditional Logic
+
+```jsx
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(false);
+  
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    setMatches(mediaQuery.matches);
+    
+    const handler = (event) => setMatches(event.matches);
+    mediaQuery.addEventListener('change', handler);
+    
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, [query]);
+  
+  return matches;
+}
+
+// Usage
+function ResponsiveComponent() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  return (
+    <div>
+      {isMobile ? (
+        <MobileNavigation />
+      ) : (
+        <DesktopNavigation />
+      )}
+    </div>
+  );
+}
+```
+
+## Common Pitfalls and Best Practices
+
+### Pitfalls to Avoid
+
+1. **Forgetting that `&&` evaluates the left side first**:
+   ```jsx
+   // This can cause issues if messages is 0
+   {messages && <p>{messages} new messages</p>}
+   
+   // Better approach
+   {messages > 0 && <p>{messages} new messages</p>}
+   ```
+
+2. **Complex conditions in JSX**:
+   ```jsx
+   // Hard to read
+   {isLoggedIn && hasPermission && !isLoading && <AdminPanel />}
+   
+   // Better approach
+   {shouldShowAdminPanel && <AdminPanel />}
+   ```
+
+3. **Inconsistent rendering paths**:
+   ```jsx
+   // Problematic: sometimes returns JSX, sometimes undefined
+   function Component() {
+     if (condition) {
+       return <div>Something</div>;
+     }
+     // Missing return statement
+   }
+   
+   // Better approach
+   function Component() {
+     if (condition) {
+       return <div>Something</div>;
+     }
+     return null; // Explicit return
+   }
+   ```
+
+### Best Practices
+
+1. **Extract complex conditions into variables or functions**:
+   ```jsx
+   function UserProfile({ user, permissions }) {
+     // Extract complex conditions
+     const canEditProfile = permissions.includes('edit_profile');
+     const isProfileComplete = Boolean(user.name && user.email && user.bio);
+     const showCompletionPrompt = !isProfileComplete && user.daysRegistered > 7;
+     
+     return (
+       <div>
+         <h1>{user.name || 'Anonymous User'}</h1>
+         
+         {canEditProfile && (
+           <button>Edit Profile</button>
+         )}
+         
+         {showCompletionPrompt && (
+           <div className="prompt">Please complete your profile</div>
+         )}
+       </div>
+     );
+   }
+   ```
+
+2. **Use component composition for complex UIs**:
+   ```jsx
+   function Page({ user, content, isLoading }) {
+     if (isLoading) {
+       return <LoadingSpinner />;
+     }
+     
+     return (
+       <PageLayout>
+         <Header user={user} />
+         <Content data={content} />
+         <Footer />
+       </PageLayout>
+     );
+   }
+   ```
+
+3. **Create specialized components for different states**:
+   ```jsx
+   function DataFetcher({ url, renderLoading, renderError, renderData }) {
+     const [state, setState] = useState({
+       data: null,
+       isLoading: true,
+       error: null
+     });
+     
+     useEffect(() => {
+       const fetchData = async () => {
+         try {
+           setState({ data: null, isLoading: true, error: null });
+           const response = await fetch(url);
+           const data = await response.json();
+           setState({ data, isLoading: false, error: null });
+         } catch (error) {
+           setState({ data: null, isLoading: false, error });
+         }
+       };
+       
+       fetchData();
+     }, [url]);
+     
+     if (state.isLoading) {
+       return renderLoading();
+     }
+     
+     if (state.error) {
+       return renderError(state.error);
+     }
+     
+     return renderData(state.data);
+   }
+   
+   // Usage
+   <DataFetcher
+     url="/api/products"
+     renderLoading={() => <LoadingSpinner />}
+     renderError={(error) => <ErrorMessage message={error.message} />}
+     renderData={(data) => <ProductList products={data} />}
+   />
+   ```
+
+## Interview Tips
+
+1. **Explain the concept**: Conditional rendering is a pattern in React where you render different UI elements based on certain conditions.
+
+2. **Highlight multiple approaches**: Demonstrate knowledge of different techniques (if/else, ternary, &&, switch) and when each is most appropriate.
+
+3. **Discuss performance implications**: Mention that conditional rendering can affect performance if overused or implemented incorrectly.
+
+4. **Emphasize readability**: Stress the importance of keeping conditional logic clean and readable, especially for complex conditions.
+
+5. **Share real examples**: Provide examples from your own projects where conditional rendering solved specific UI challenges.
+
+6. **Discuss testing**: Explain how to test components with conditional rendering, ensuring all possible states are covered.
+
+7. **Address common pitfalls**: Show awareness of common mistakes like forgetting to handle all possible states or creating inconsistent rendering paths.
+
+8. **Connect to state management**: Explain how conditional rendering often works with state management to create dynamic UIs.
+
+9. **Mention accessibility**: Discuss how conditional rendering can impact accessibility and how to ensure all UI states remain accessible.

@@ -1,0 +1,526 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are React components, and how do you create one?
+---
+
+# What are React components, and how do you create one?
+
+React components are independent, reusable pieces of code that return React elements describing what should appear on the screen. They are the building blocks of any React application, allowing you to split the UI into separate, manageable pieces that can be developed and tested in isolation.
+
+Think of components as custom HTML elements that encapsulate their own structure, behavior, and styling. Each component can maintain its own internal state and accept external data through props.
+
+## Types of React Components
+
+There are two main types of components in React:
+
+1. **Functional Components** (also called Function Components)
+2. **Class Components**
+
+## Creating Functional Components
+
+Functional components are JavaScript functions that accept props as an argument and return React elements.
+
+```jsx
+// Simple functional component
+function Greeting(props) {
+  return <h1>Hello, {props.name}!</h1>;
+}
+
+// Arrow function syntax
+const Greeting = (props) => {
+  return <h1>Hello, {props.name}!</h1>;
+};
+
+// With destructuring
+const Greeting = ({ name }) => {
+  return <h1>Hello, {name}!</h1>;
+};
+
+// One-liner with implicit return
+const Greeting = ({ name }) => <h1>Hello, {name}!</h1>;
+```
+
+### Using the Component
+
+```jsx
+function App() {
+  return (
+    <div>
+      <Greeting name="Rahul" />
+      <Greeting name="Priya" />
+    </div>
+  );
+}
+```
+
+## Creating Class Components
+
+Class components are ES6 classes that extend `React.Component` and implement a `render()` method.
+
+```jsx
+import React, { Component } from 'react';
+
+class Greeting extends Component {
+  render() {
+    return <h1>Hello, {this.props.name}!</h1>;
+  }
+}
+```
+
+## Components with State
+
+### Functional Component with State (using Hooks)
+
+```jsx
+import React, { useState } from 'react';
+
+function Counter() {
+  // useState returns a state variable and a function to update it
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+### Class Component with State
+
+```jsx
+import React, { Component } from 'react';
+
+class Counter extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      count: 0
+    };
+  }
+  
+  render() {
+    return (
+      <div>
+        <p>You clicked {this.state.count} times</p>
+        <button onClick={() => this.setState({ count: this.state.count + 1 })}>
+          Click me
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+## Component Lifecycle and Side Effects
+
+### Functional Component with Effects
+
+```jsx
+import React, { useState, useEffect } from 'react';
+
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // This runs after render and when userId changes
+    setLoading(true);
+    
+    fetch(`https://api.example.com/users/${userId}`)
+      .then(response => response.json())
+      .then(data => {
+        setUser(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching user:', error);
+        setLoading(false);
+      });
+      
+    // Cleanup function (runs before effect runs again or component unmounts)
+    return () => {
+      console.log('Cleaning up previous effect');
+    };
+  }, [userId]); // Only re-run if userId changes
+  
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <div>User not found</div>;
+  
+  return (
+    <div className="user-profile">
+      <h2>{user.name}</h2>
+      <p>Email: {user.email}</p>
+      <p>Role: {user.role}</p>
+    </div>
+  );
+}
+```
+
+### Class Component Lifecycle Methods
+
+```jsx
+import React, { Component } from 'react';
+
+class UserProfile extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      user: null,
+      loading: true
+    };
+  }
+  
+  componentDidMount() {
+    this.fetchUser();
+  }
+  
+  componentDidUpdate(prevProps) {
+    if (prevProps.userId !== this.props.userId) {
+      this.fetchUser();
+    }
+  }
+  
+  componentWillUnmount() {
+    console.log('Component is unmounting');
+    // Cleanup code here
+  }
+  
+  fetchUser() {
+    this.setState({ loading: true });
+    
+    fetch(`https://api.example.com/users/${this.props.userId}`)
+      .then(response => response.json())
+      .then(data => {
+        this.setState({
+          user: data,
+          loading: false
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching user:', error);
+        this.setState({ loading: false });
+      });
+  }
+  
+  render() {
+    const { loading, user } = this.state;
+    
+    if (loading) return <div>Loading...</div>;
+    if (!user) return <div>User not found</div>;
+    
+    return (
+      <div className="user-profile">
+        <h2>{user.name}</h2>
+        <p>Email: {user.email}</p>
+        <p>Role: {user.role}</p>
+      </div>
+    );
+  }
+}
+```
+
+## Component Composition
+
+React encourages composition over inheritance. Here's how to compose components:
+
+```jsx
+// Button component
+function Button({ onClick, children, color = 'blue' }) {
+  return (
+    <button 
+      onClick={onClick}
+      style={{ 
+        backgroundColor: color,
+        color: 'white',
+        padding: '8px 16px',
+        border: 'none',
+        borderRadius: '4px'
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// Card component
+function Card({ title, children }) {
+  return (
+    <div style={{ 
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      padding: '16px',
+      margin: '8px 0'
+    }}>
+      {title && <h3>{title}</h3>}
+      {children}
+    </div>
+  );
+}
+
+// Using composition to create a UserCard
+function UserCard({ user, onContact }) {
+  return (
+    <Card title={user.name}>
+      <p>Email: {user.email}</p>
+      <p>Role: {user.role}</p>
+      <Button onClick={onContact} color="green">
+        Contact User
+      </Button>
+    </Card>
+  );
+}
+
+// App component using the composed components
+function App() {
+  const handleContact = (user) => {
+    console.log(`Contacting ${user.name}`);
+  };
+  
+  const users = [
+    { id: 1, name: 'Rahul Sharma', email: 'rahul@example.com', role: 'Developer' },
+    { id: 2, name: 'Priya Patel', email: 'priya@example.com', role: 'Designer' }
+  ];
+  
+  return (
+    <div className="app">
+      <h1>User Directory</h1>
+      {users.map(user => (
+        <UserCard 
+          key={user.id} 
+          user={user} 
+          onContact={() => handleContact(user)} 
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+## Real-World Example
+
+In a recent e-commerce project, I created a product listing page with multiple components:
+
+```jsx
+// ProductCard.jsx
+function ProductCard({ product, onAddToCart }) {
+  const { id, name, price, image, rating, inStock } = product;
+  
+  return (
+    <div className="product-card">
+      <div className="product-image">
+        <img src={image} alt={name} />
+        {!inStock && <span className="out-of-stock-badge">Out of Stock</span>}
+      </div>
+      
+      <div className="product-info">
+        <h3>{name}</h3>
+        <div className="product-rating">
+          <StarRating value={rating} />
+          <span>({rating.toFixed(1)})</span>
+        </div>
+        <p className="product-price">₹{price.toLocaleString()}</p>
+        
+        <button 
+          className="add-to-cart-button"
+          disabled={!inStock}
+          onClick={() => onAddToCart(id)}
+        >
+          {inStock ? 'Add to Cart' : 'Out of Stock'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// StarRating.jsx
+function StarRating({ value, max = 5 }) {
+  return (
+    <div className="star-rating">
+      {[...Array(max)].map((_, index) => {
+        const starValue = index + 1;
+        return (
+          <span 
+            key={index}
+            className={`star ${starValue <= value ? 'filled' : 
+                           starValue - 0.5 <= value ? 'half-filled' : 'empty'}`}
+          >
+            ★
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// ProductGrid.jsx
+function ProductGrid({ products, onAddToCart }) {
+  return (
+    <div className="product-grid">
+      {products.map(product => (
+        <ProductCard 
+          key={product.id} 
+          product={product} 
+          onAddToCart={onAddToCart} 
+        />
+      ))}
+    </div>
+  );
+}
+
+// Filters.jsx
+function Filters({ categories, selectedCategory, onCategoryChange, onSortChange }) {
+  return (
+    <div className="filters">
+      <div className="category-filter">
+        <h3>Categories</h3>
+        <ul>
+          <li 
+            className={selectedCategory === null ? 'active' : ''}
+            onClick={() => onCategoryChange(null)}
+          >
+            All Products
+          </li>
+          {categories.map(category => (
+            <li 
+              key={category.id}
+              className={selectedCategory === category.id ? 'active' : ''}
+              onClick={() => onCategoryChange(category.id)}
+            >
+              {category.name}
+            </li>
+          ))}
+        </ul>
+      </div>
+      
+      <div className="sort-options">
+        <h3>Sort By</h3>
+        <select onChange={e => onSortChange(e.target.value)}>
+          <option value="popularity">Popularity</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="rating">Customer Rating</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// ProductPage.jsx (main component)
+function ProductPage() {
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [sortOption, setSortOption] = useState('popularity');
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // Fetch products and categories
+    Promise.all([
+      fetch('/api/products').then(res => res.json()),
+      fetch('/api/categories').then(res => res.json())
+    ])
+    .then(([productsData, categoriesData]) => {
+      setProducts(productsData);
+      setFilteredProducts(productsData);
+      setCategories(categoriesData);
+      setLoading(false);
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+      setLoading(false);
+    });
+  }, []);
+  
+  useEffect(() => {
+    // Filter and sort products when dependencies change
+    let result = [...products];
+    
+    // Apply category filter
+    if (selectedCategory) {
+      result = result.filter(product => product.categoryId === selectedCategory);
+    }
+    
+    // Apply sorting
+    switch (sortOption) {
+      case 'price-low':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'rating':
+        result.sort((a, b) => b.rating - a.rating);
+        break;
+      default: // popularity
+        result.sort((a, b) => b.popularity - a.popularity);
+    }
+    
+    setFilteredProducts(result);
+  }, [products, selectedCategory, sortOption]);
+  
+  const handleAddToCart = (productId) => {
+    console.log(`Adding product ${productId} to cart`);
+    // Cart logic here
+  };
+  
+  if (loading) return <div className="loading-spinner">Loading...</div>;
+  
+  return (
+    <div className="product-page">
+      <h1>Our Products</h1>
+      
+      <div className="product-layout">
+        <Filters 
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          onSortChange={setSortOption}
+        />
+        
+        <div className="product-content">
+          <p className="product-count">
+            Showing {filteredProducts.length} products
+          </p>
+          
+          <ProductGrid 
+            products={filteredProducts}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+This example demonstrates:
+
+1. **Component Composition**: Breaking down a complex UI into smaller, reusable components
+2. **Props**: Passing data and callbacks between components
+3. **State Management**: Using useState and useEffect hooks to manage component state
+4. **Conditional Rendering**: Showing different UI based on state (loading, out of stock)
+5. **Event Handling**: Responding to user interactions (clicks, selections)
+
+## Best Practices for Creating Components
+
+1. **Single Responsibility Principle**: Each component should ideally do one thing well
+2. **Keep Components Small**: Large components are harder to maintain and reuse
+3. **Use Composition**: Combine smaller components to build complex UIs
+4. **Meaningful Names**: Use clear, descriptive names for components
+5. **Consistent Props API**: Design props interfaces that are intuitive and consistent
+6. **Avoid Deep Nesting**: Flatten component hierarchies when possible
+7. **Extract Reusable Logic**: Use custom hooks to share logic between components
+
+## Interview Tips
+
+- Explain the difference between functional and class components, but emphasize that functional components with hooks are the modern approach
+- Demonstrate knowledge of component composition over inheritance
+- Be ready to discuss how you decide when to create a new component vs. expanding an existing one
+- Mention how you handle component communication (props, context, state management)
+- Share a specific example of how you've used components to solve a real problem
+- Be prepared to discuss performance considerations when creating components

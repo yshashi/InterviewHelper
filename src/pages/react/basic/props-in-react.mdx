@@ -1,0 +1,591 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are props in React, and how are they used?
+---
+
+# What are props in React, and how are they used?
+
+Props (short for "properties") are a way of passing data from parent components to child components in React. They are read-only and help make your components reusable by allowing them to receive different data inputs.
+
+Think of props like function parameters - they allow you to pass values into your component that can influence what gets rendered to the DOM.
+
+## How Props Work
+
+Props flow in a one-way direction from parent to child, creating a unidirectional data flow that makes applications more predictable and easier to understand.
+
+### Basic Props Usage
+
+```jsx
+// Parent component passing props
+function App() {
+  return (
+    <div>
+      <Greeting name="Rahul" />
+      <Greeting name="Priya" />
+    </div>
+  );
+}
+
+// Child component receiving props
+function Greeting(props) {
+  return <h1>Hello, {props.name}!</h1>;
+}
+
+// Using destructuring for cleaner code
+function Greeting({ name }) {
+  return <h1>Hello, {name}!</h1>;
+}
+```
+
+## Types of Props
+
+### 1. Simple Data Types
+
+You can pass strings, numbers, booleans, etc. as props.
+
+```jsx
+<UserProfile
+  name="Rahul Sharma"
+  age={28}
+  isAdmin={true}
+  joinDate="2023-01-15"
+/>
+```
+
+### 2. Objects and Arrays
+
+You can pass complex data structures like objects and arrays.
+
+```jsx
+const user = {
+  id: 101,
+  name: "Priya Patel",
+  email: "priya@example.com",
+  skills: ["React", "Node.js", "MongoDB"]
+};
+
+<UserCard user={user} />
+
+// In the child component
+function UserCard({ user }) {
+  return (
+    <div className="user-card">
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+      <div className="skills">
+        {user.skills.map(skill => (
+          <span key={skill} className="skill-tag">{skill}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### 3. Functions as Props
+
+You can pass functions as props, allowing child components to communicate with their parents.
+
+```jsx
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  
+  const handleIncrement = () => {
+    setCount(count + 1);
+  };
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <ChildComponent onIncrement={handleIncrement} />
+    </div>
+  );
+}
+
+function ChildComponent({ onIncrement }) {
+  return (
+    <button onClick={onIncrement}>
+      Increment Count
+    </button>
+  );
+}
+```
+
+### 4. React Elements as Props
+
+You can pass JSX elements as props, which is useful for creating layout components.
+
+```jsx
+function Page() {
+  return (
+    <Layout
+      header={<Header />}
+      sidebar={<Sidebar />}
+      content={<MainContent />}
+      footer={<Footer />}
+    />
+  );
+}
+
+function Layout({ header, sidebar, content, footer }) {
+  return (
+    <div className="page-layout">
+      <div className="header">{header}</div>
+      <div className="main">
+        <div className="sidebar">{sidebar}</div>
+        <div className="content">{content}</div>
+      </div>
+      <div className="footer">{footer}</div>
+    </div>
+  );
+}
+```
+
+### 5. Children Prop
+
+The special `children` prop contains the content between the opening and closing tags of a component.
+
+```jsx
+function Card({ title, children }) {
+  return (
+    <div className="card">
+      <div className="card-header">
+        <h2>{title}</h2>
+      </div>
+      <div className="card-body">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Usage
+function App() {
+  return (
+    <Card title="Welcome">
+      <p>This is the card content.</p>
+      <button>Click me</button>
+    </Card>
+  );
+}
+```
+
+## Default Props
+
+You can specify default values for props in case they're not provided by the parent component.
+
+```jsx
+function Button({ text, color, size }) {
+  return (
+    <button className={`btn btn-${color} btn-${size}`}>
+      {text}
+    </button>
+  );
+}
+
+// Setting default props
+Button.defaultProps = {
+  text: 'Click me',
+  color: 'primary',
+  size: 'medium'
+};
+
+// In functional components, you can also use default parameters
+function Button({ text = 'Click me', color = 'primary', size = 'medium' }) {
+  return (
+    <button className={`btn btn-${color} btn-${size}`}>
+      {text}
+    </button>
+  );
+}
+```
+
+## Props Validation with PropTypes
+
+For type checking props, you can use the `prop-types` library.
+
+```jsx
+import PropTypes from 'prop-types';
+
+function UserProfile({ name, age, email, isActive }) {
+  return (
+    <div className="profile">
+      <h2>{name}</h2>
+      <p>Age: {age}</p>
+      <p>Email: {email}</p>
+      <p>Status: {isActive ? 'Active' : 'Inactive'}</p>
+    </div>
+  );
+}
+
+UserProfile.propTypes = {
+  name: PropTypes.string.isRequired,
+  age: PropTypes.number,
+  email: PropTypes.string.isRequired,
+  isActive: PropTypes.bool
+};
+
+UserProfile.defaultProps = {
+  age: 25,
+  isActive: true
+};
+```
+
+## Props in Class Components
+
+In class components, props are accessed through `this.props`.
+
+```jsx
+import React, { Component } from 'react';
+
+class Greeting extends Component {
+  render() {
+    return <h1>Hello, {this.props.name}!</h1>;
+  }
+}
+```
+
+## Props vs State
+
+It's important to understand the difference between props and state:
+
+- **Props** are passed from parent to child and are immutable within the component
+- **State** is managed within the component and can be changed by the component itself
+
+```jsx
+// Using both props and state
+function Counter({ initialCount, onCountChange }) {
+  // State - internal, mutable
+  const [count, setCount] = useState(initialCount);
+  
+  const handleIncrement = () => {
+    const newCount = count + 1;
+    setCount(newCount);
+    onCountChange(newCount); // Notify parent via props
+  };
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={handleIncrement}>Increment</button>
+    </div>
+  );
+}
+```
+
+## Advanced Props Techniques
+
+### 1. Props Spreading
+
+You can spread an object as props to pass multiple properties at once.
+
+```jsx
+function App() {
+  const userProps = {
+    name: "Rahul",
+    age: 28,
+    location: "Mumbai"
+  };
+  
+  return <UserInfo {...userProps} />;
+}
+```
+
+### 2. Render Props
+
+A technique where a component receives a function prop that returns a React element.
+
+```jsx
+function MouseTracker() {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      setPosition({
+        x: event.clientX,
+        y: event.clientY
+      });
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+  
+  return (
+    <div>
+      <h1>Mouse Tracker</h1>
+      {/* The render prop */}
+      {props.render(position)}
+    </div>
+  );
+}
+
+// Usage
+function App() {
+  return (
+    <MouseTracker 
+      render={({ x, y }) => (
+        <div>
+          <p>Current mouse position:</p>
+          <p>X: {x}, Y: {y}</p>
+        </div>
+      )}
+    />
+  );
+}
+```
+
+### 3. Higher-Order Components (HOCs)
+
+Functions that take a component and return a new component with additional props.
+
+```jsx
+// HOC that adds user data to any component
+function withUser(WrappedComponent) {
+  return function WithUser(props) {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    
+    useEffect(() => {
+      // Fetch user data
+      fetchCurrentUser()
+        .then(data => {
+          setUser(data);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error("Error fetching user:", error);
+          setLoading(false);
+        });
+    }, []);
+    
+    if (loading) return <div>Loading user data...</div>;
+    if (!user) return <div>User not found</div>;
+    
+    // Pass the user as a prop, along with all other props
+    return <WrappedComponent user={user} {...props} />;
+  };
+}
+
+// Usage
+function UserDashboard({ user, ...props }) {
+  return (
+    <div>
+      <h1>Welcome, {user.name}</h1>
+      {/* Rest of dashboard */}
+    </div>
+  );
+}
+
+const UserDashboardWithUser = withUser(UserDashboard);
+
+// In App component
+function App() {
+  return <UserDashboardWithUser theme="dark" />;
+}
+```
+
+## Real-World Example
+
+In a recent e-commerce project, I used props extensively to create a flexible product catalog:
+
+```jsx
+// ProductCatalog.jsx
+function ProductCatalog() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    category: 'all',
+    sortBy: 'popularity'
+  });
+  
+  useEffect(() => {
+    // Fetch products based on filters
+    fetchProducts(filters)
+      .then(data => {
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching products:', error);
+        setLoading(false);
+      });
+  }, [filters]);
+  
+  const handleFilterChange = (newFilters) => {
+    setFilters({ ...filters, ...newFilters });
+  };
+  
+  const handleAddToCart = (productId) => {
+    // Add to cart logic
+    console.log(`Adding product ${productId} to cart`);
+  };
+  
+  if (loading) return <LoadingSpinner />;
+  
+  return (
+    <div className="product-catalog">
+      <FilterBar 
+        filters={filters} 
+        onFilterChange={handleFilterChange} 
+      />
+      
+      <ProductGrid 
+        products={products}
+        onAddToCart={handleAddToCart}
+        layout="grid"
+        showRatings={true}
+      />
+    </div>
+  );
+}
+
+// FilterBar.jsx
+function FilterBar({ filters, onFilterChange }) {
+  const categories = ['all', 'electronics', 'clothing', 'books', 'home'];
+  const sortOptions = [
+    { value: 'popularity', label: 'Most Popular' },
+    { value: 'price-asc', label: 'Price: Low to High' },
+    { value: 'price-desc', label: 'Price: High to Low' },
+    { value: 'rating', label: 'Customer Rating' }
+  ];
+  
+  return (
+    <div className="filter-bar">
+      <div className="category-filter">
+        <h3>Categories</h3>
+        <div className="category-buttons">
+          {categories.map(category => (
+            <button
+              key={category}
+              className={filters.category === category ? 'active' : ''}
+              onClick={() => onFilterChange({ category })}
+            >
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      <div className="sort-filter">
+        <h3>Sort By</h3>
+        <select 
+          value={filters.sortBy}
+          onChange={(e) => onFilterChange({ sortBy: e.target.value })}
+        >
+          {sortOptions.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// ProductGrid.jsx
+function ProductGrid({ products, onAddToCart, layout, showRatings }) {
+  return (
+    <div className={`product-grid layout-${layout}`}>
+      {products.length === 0 ? (
+        <p className="no-products">No products found matching your criteria</p>
+      ) : (
+        products.map(product => (
+          <ProductCard 
+            key={product.id}
+            product={product}
+            onAddToCart={onAddToCart}
+            showRatings={showRatings}
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
+// ProductCard.jsx
+function ProductCard({ product, onAddToCart, showRatings }) {
+  const { id, name, price, image, rating, inStock } = product;
+  
+  return (
+    <div className="product-card">
+      <div className="product-image">
+        <img src={image} alt={name} />
+        {!inStock && <span className="out-of-stock">Out of Stock</span>}
+      </div>
+      
+      <div className="product-info">
+        <h3 className="product-name">{name}</h3>
+        
+        {showRatings && (
+          <div className="product-rating">
+            <StarRating value={rating} />
+            <span>({rating.toFixed(1)})</span>
+          </div>
+        )}
+        
+        <p className="product-price">₹{price.toLocaleString()}</p>
+        
+        <button 
+          className="add-to-cart-button"
+          disabled={!inStock}
+          onClick={() => onAddToCart(id)}
+        >
+          {inStock ? 'Add to Cart' : 'Out of Stock'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// StarRating.jsx
+function StarRating({ value, max = 5 }) {
+  return (
+    <div className="star-rating">
+      {[...Array(max)].map((_, index) => {
+        const starValue = index + 1;
+        return (
+          <span 
+            key={index}
+            className={`star ${starValue <= value ? 'filled' : 
+                           starValue - 0.5 <= value ? 'half-filled' : 'empty'}`}
+          >
+            ★
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+```
+
+This example demonstrates:
+
+1. **Props for Configuration**: The `ProductGrid` and `ProductCard` components accept props like `layout` and `showRatings` to configure their appearance
+2. **Props for Data**: Product data is passed down through the component tree
+3. **Function Props for Communication**: The `onAddToCart` and `onFilterChange` functions allow child components to communicate with parents
+4. **Props Destructuring**: Components use destructuring for cleaner code
+5. **Conditional Rendering with Props**: The `showRatings` prop controls whether ratings are displayed
+
+## Best Practices for Props
+
+1. **Keep Props Simple**: Pass only what the child component needs
+2. **Use Descriptive Names**: Make prop names clear and self-explanatory
+3. **Validate Props**: Use PropTypes or TypeScript to validate props
+4. **Provide Default Values**: Use defaultProps or default parameters
+5. **Avoid Modifying Props**: Treat props as immutable within the component
+6. **Use Destructuring**: For cleaner, more readable code
+7. **Document Props**: Add comments or documentation for complex props
+
+## Interview Tips
+
+- Explain props as a way to make components reusable and configurable
+- Emphasize the unidirectional data flow (parent to child) for predictability
+- Be ready to discuss the difference between props and state
+- Demonstrate knowledge of prop validation with PropTypes or TypeScript
+- Share a specific example of how you've used props to create flexible, reusable components
+- Mention advanced patterns like render props or HOCs if relevant to the position

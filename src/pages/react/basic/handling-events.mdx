@@ -1,0 +1,573 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you handle events in React?
+---
+
+# How do you handle events in React?
+
+React implements a synthetic event system that normalizes events across different browsers, providing a consistent API for handling user interactions. Event handling in React is similar to handling events in the DOM, but with some key differences in syntax and behavior. React events are named using camelCase (e.g., `onClick` instead of `onclick`) and you pass functions as event handlers rather than strings.
+
+## Basic Event Handling
+
+In React, you define event handlers as methods on your component or as inline functions:
+
+```jsx
+import React, { useState } from 'react';
+
+function Button() {
+  const [clicked, setClicked] = useState(false);
+  
+  // Method defined separately
+  const handleClick = () => {
+    setClicked(true);
+    console.log('Button clicked!');
+  };
+  
+  return (
+    <button 
+      onClick={handleClick} 
+      className={clicked ? 'clicked' : ''}
+    >
+      {clicked ? 'Clicked!' : 'Click me'}
+    </button>
+  );
+}
+
+function InlineExample() {
+  return (
+    // Inline function as event handler
+    <button onClick={() => console.log('Inline handler clicked!')}>
+      Inline Handler
+    </button>
+  );
+}
+```
+
+## Common React Events
+
+React supports all standard DOM events. Here are some of the most commonly used ones:
+
+### Mouse Events
+```jsx
+<button onClick={handleClick}>Click Me</button>
+<div onDoubleClick={handleDoubleClick}>Double Click Me</div>
+<div onMouseEnter={handleMouseEnter}>Hover Over Me</div>
+<div onMouseLeave={handleMouseLeave}>Hover and Leave</div>
+<div onMouseMove={handleMouseMove}>Move Mouse Over Me</div>
+```
+
+### Keyboard Events
+```jsx
+<input onKeyDown={handleKeyDown} />
+<input onKeyUp={handleKeyUp} />
+<input onKeyPress={handleKeyPress} />
+```
+
+### Form Events
+```jsx
+<form onSubmit={handleSubmit}>
+  <input onChange={handleChange} />
+  <input onFocus={handleFocus} />
+  <input onBlur={handleBlur} />
+  <select onChange={handleSelectChange}>
+    <option value="1">Option 1</option>
+    <option value="2">Option 2</option>
+  </select>
+</form>
+```
+
+### Clipboard Events
+```jsx
+<input onCopy={handleCopy} />
+<input onCut={handleCut} />
+<input onPaste={handlePaste} />
+```
+
+## Passing Arguments to Event Handlers
+
+There are two common ways to pass arguments to event handlers:
+
+### Using Arrow Functions
+
+```jsx
+function ItemList() {
+  const items = ['Item 1', 'Item 2', 'Item 3'];
+  
+  const handleItemClick = (item, index, event) => {
+    console.log(`Clicked ${item} at index ${index}`);
+    console.log('Event:', event); // The event object is still accessible
+  };
+  
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li 
+          key={index} 
+          onClick={(e) => handleItemClick(item, index, e)}
+        >
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### Using bind
+
+```jsx
+class BindExample extends React.Component {
+  constructor(props) {
+    super(props);
+    // Binding in constructor (recommended if using class components)
+    this.handleItemClick = this.handleItemClick.bind(this);
+  }
+  
+  handleItemClick(item, index, event) {
+    console.log(`Clicked ${item} at index ${index}`);
+    console.log('Event:', event);
+  }
+  
+  render() {
+    const items = ['Item 1', 'Item 2', 'Item 3'];
+    
+    return (
+      <ul>
+        {items.map((item, index) => (
+          <li 
+            key={index} 
+            onClick={this.handleItemClick.bind(this, item, index)}
+          >
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+}
+```
+
+## The Synthetic Event Object
+
+React wraps the native browser event in a cross-browser wrapper called `SyntheticEvent`. It has the same interface as the browser's native event, including:
+
+```jsx
+function EventObjectDemo() {
+  const handleClick = (event) => {
+    // Common event properties and methods
+    console.log('Event type:', event.type);
+    console.log('Target:', event.target);
+    console.log('Current target:', event.currentTarget);
+    
+    // Prevent default browser behavior
+    event.preventDefault();
+    
+    // Stop propagation
+    event.stopPropagation();
+    
+    // Access native event
+    console.log('Native event:', event.nativeEvent);
+  };
+  
+  return (
+    <a 
+      href="https://example.com" 
+      onClick={handleClick}
+    >
+      Click me (default prevented)
+    </a>
+  );
+}
+```
+
+## Event Pooling (Pre-React 17)
+
+In versions before React 17, React used event pooling to improve performance. This meant that the `SyntheticEvent` object was reused and all properties were nullified after the event callback was invoked. If you needed to access the event asynchronously, you had to call `event.persist()`.
+
+```jsx
+// Only needed in React 16 and earlier
+function EventPoolingExample() {
+  const handleClick = (event) => {
+    // This would not work in React 16 and earlier
+    setTimeout(() => {
+      console.log(event.type); // In React 16: null
+    }, 100);
+  };
+  
+  const handleClickWithPersist = (event) => {
+    // This works in React 16 and earlier
+    event.persist();
+    setTimeout(() => {
+      console.log(event.type); // "click"
+    }, 100);
+  };
+  
+  return (
+    <div>
+      <button onClick={handleClick}>Without Persist</button>
+      <button onClick={handleClickWithPersist}>With Persist</button>
+    </div>
+  );
+}
+```
+
+In React 17 and later, event pooling was removed, so you no longer need to call `event.persist()`.
+
+## Event Delegation in React
+
+React implements event delegation automatically. Instead of attaching event handlers to each element, React attaches a single event listener to the root of the document for each event type. This improves performance and memory usage, especially for lists with many items.
+
+```jsx
+function DelegationExample() {
+  const handleClick = (id, event) => {
+    console.log(`Item ${id} clicked`);
+  };
+  
+  // React uses event delegation behind the scenes
+  // Even with 1000 items, only one event listener is attached
+  return (
+    <ul>
+      {Array.from({ length: 1000 }, (_, i) => (
+        <li 
+          key={i} 
+          onClick={(e) => handleClick(i, e)}
+        >
+          Item {i}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Using useCallback for Event Handlers
+
+When defining event handlers in functional components, it's often a good practice to use the `useCallback` hook to prevent unnecessary re-renders of child components:
+
+```jsx
+import React, { useState, useCallback } from 'react';
+
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  
+  // Without useCallback, this function would be recreated on every render
+  const handleClickBad = () => {
+    setCount(count + 1);
+  };
+  
+  // With useCallback, the function is only recreated when dependencies change
+  const handleClickGood = useCallback(() => {
+    setCount(prevCount => prevCount + 1);
+  }, []); // Empty dependency array means this function never changes
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <ChildComponent onClick={handleClickGood} />
+    </div>
+  );
+}
+
+// Using React.memo to prevent unnecessary re-renders
+const ChildComponent = React.memo(function ChildComponent({ onClick }) {
+  console.log('Child component rendered');
+  
+  return (
+    <button onClick={onClick}>
+      Increment Count
+    </button>
+  );
+});
+```
+
+## Handling Form Events
+
+Form handling in React typically involves:
+1. Controlled components (form elements controlled by React state)
+2. Event handlers for changes and submissions
+
+```jsx
+import React, { useState, useCallback } from 'react';
+
+function LoginForm() {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({});
+  
+  // Handle input changes
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prevErrors => ({
+        ...prevErrors,
+        [name]: null
+      }));
+    }
+    
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
+  }, [errors]);
+  
+  // Validate form
+  const validateForm = useCallback(() => {
+    const newErrors = {};
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData]);
+  
+  // Handle form submission
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault(); // Prevent default form submission
+    
+    if (validateForm()) {
+      console.log('Form submitted with:', formData);
+      // Call API, etc.
+      alert('Login successful!');
+    }
+  }, [formData, validateForm]);
+  
+  return (
+    <form onSubmit={handleSubmit} className="login-form">
+      <h2>Login</h2>
+      
+      <div className="form-group">
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          className={errors.email ? 'error' : ''}
+        />
+        {errors.email && <p className="error-text">{errors.email}</p>}
+      </div>
+      
+      <div className="form-group">
+        <label htmlFor="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          className={errors.password ? 'error' : ''}
+        />
+        {errors.password && <p className="error-text">{errors.password}</p>}
+      </div>
+      
+      <button type="submit" className="submit-button">
+        Login
+      </button>
+    </form>
+  );
+}
+```
+
+## Custom Event Handlers with Event Bubbling
+
+You can leverage event bubbling to create efficient event handlers for complex UIs:
+
+```jsx
+import React, { useCallback } from 'react';
+
+function ShoppingCart() {
+  const [items, setItems] = useState([
+    { id: 1, name: 'Product 1', quantity: 1, price: 999 },
+    { id: 2, name: 'Product 2', quantity: 2, price: 499 },
+    { id: 3, name: 'Product 3', quantity: 1, price: 1499 }
+  ]);
+  
+  // Single handler for all cart actions
+  const handleCartAction = useCallback((e) => {
+    // Find the closest button with a data-action attribute
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+    
+    const action = button.dataset.action;
+    const itemId = Number(button.dataset.itemId);
+    
+    switch (action) {
+      case 'increment':
+        setItems(prevItems => prevItems.map(item => 
+          item.id === itemId 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
+        ));
+        break;
+        
+      case 'decrement':
+        setItems(prevItems => prevItems.map(item => 
+          item.id === itemId && item.quantity > 1
+            ? { ...item, quantity: item.quantity - 1 } 
+            : item
+        ));
+        break;
+        
+      case 'remove':
+        setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        break;
+        
+      default:
+        break;
+    }
+  }, []);
+  
+  // Calculate total
+  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  return (
+    <div className="shopping-cart">
+      <h2>Your Cart</h2>
+      
+      {/* Using a single event listener for the entire list */}
+      <ul className="cart-items" onClick={handleCartAction}>
+        {items.map(item => (
+          <li key={item.id} className="cart-item">
+            <div className="item-details">
+              <h3>{item.name}</h3>
+              <p>₹{item.price.toLocaleString()}</p>
+            </div>
+            
+            <div className="quantity-controls">
+              <button 
+                data-action="decrement" 
+                data-item-id={item.id}
+                disabled={item.quantity <= 1}
+              >
+                -
+              </button>
+              <span>{item.quantity}</span>
+              <button 
+                data-action="increment" 
+                data-item-id={item.id}
+              >
+                +
+              </button>
+            </div>
+            
+            <div className="item-total">
+              ₹{(item.price * item.quantity).toLocaleString()}
+            </div>
+            
+            <button 
+              className="remove-button"
+              data-action="remove" 
+              data-item-id={item.id}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
+      
+      <div className="cart-total">
+        <span>Total:</span>
+        <span>₹{total.toLocaleString()}</span>
+      </div>
+      
+      <button 
+        className="checkout-button"
+        onClick={() => alert('Proceeding to checkout!')}
+      >
+        Checkout
+      </button>
+    </div>
+  );
+}
+```
+
+## Handling Events in Class Components vs. Functional Components
+
+### Class Components
+
+```jsx
+class ClassComponent extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { count: 0 };
+    
+    // Binding is necessary to make `this` work in the callback
+    this.handleClick = this.handleClick.bind(this);
+  }
+  
+  handleClick() {
+    this.setState(prevState => ({
+      count: prevState.count + 1
+    }));
+  }
+  
+  render() {
+    return (
+      <button onClick={this.handleClick}>
+        Clicked {this.state.count} times
+      </button>
+    );
+  }
+}
+```
+
+### Functional Components
+
+```jsx
+function FunctionalComponent() {
+  const [count, setCount] = useState(0);
+  
+  // No binding needed
+  const handleClick = () => {
+    setCount(prevCount => prevCount + 1);
+  };
+  
+  // With useCallback for optimization
+  const handleClickOptimized = useCallback(() => {
+    setCount(prevCount => prevCount + 1);
+  }, []);
+  
+  return (
+    <button onClick={handleClickOptimized}>
+      Clicked {count} times
+    </button>
+  );
+}
+```
+
+## Interview Tips
+
+1. **Syntax differences**: Explain that React uses camelCase for event names (e.g., `onClick` instead of `onclick`) and passes functions as event handlers rather than strings.
+
+2. **Synthetic events**: Mention that React wraps native browser events in a cross-browser wrapper called `SyntheticEvent` for consistency.
+
+3. **Event delegation**: Discuss how React implements event delegation automatically for better performance.
+
+4. **Performance optimization**: Explain how to optimize event handlers using `useCallback` to prevent unnecessary re-renders.
+
+5. **Binding in class components**: Be prepared to explain why binding is necessary in class components and different ways to bind methods.
+
+6. **Common patterns**: Demonstrate knowledge of common patterns like passing arguments to event handlers and handling form submissions.
+
+7. **Best practices**: Discuss best practices like using functional updates with state setters and avoiding inline function definitions when possible.
+
+8. **Real-world examples**: Share specific examples of complex event handling from your projects, such as drag and drop, custom event delegation, or form validation.
+
+9. **React 17 changes**: Mention that event pooling was removed in React 17, so `event.persist()` is no longer needed.

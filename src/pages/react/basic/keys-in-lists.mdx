@@ -1,0 +1,328 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the purpose of keys in React lists?
+---
+
+# What is the purpose of keys in React lists?
+
+Keys are special string attributes that help React identify which items in a list have changed, been added, or been removed. They give elements a stable identity across render cycles and play a crucial role in React's reconciliation process, helping it update the DOM efficiently when the list changes.
+
+## Why Keys Are Important
+
+When rendering a list of elements in React, each element needs a unique identifier (key) to help React track it. Without keys, React has to re-render the entire list when something changes, which can lead to performance issues and unexpected behavior.
+
+```jsx
+// Without keys (not recommended)
+function TodoList({ todos }) {
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li>{todo.text}</li> // React will warn about missing keys
+      ))}
+    </ul>
+  );
+}
+
+// With keys (recommended)
+function TodoList({ todos }) {
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li key={todo.id}>{todo.text}</li> // Each item has a unique key
+      ))}
+    </ul>
+  );
+}
+```
+
+## How React Uses Keys
+
+When you provide keys, React can:
+
+1. **Identify changes**: Determine which items have been added, removed, or reordered
+2. **Preserve state**: Maintain component state for items that remain in the list
+3. **Optimize rendering**: Avoid unnecessary re-renders of unchanged components
+4. **Prevent bugs**: Ensure that component instances are properly preserved
+
+## Rules for Keys
+
+1. **Keys must be unique among siblings**: Keys only need to be unique within the same array, not globally unique
+2. **Keys should be stable**: They should not change between renders or during data changes
+3. **Keys should be primitive values**: Typically strings or numbers, not objects
+4. **Keys should be assigned to the top-level element** in the array, not to elements within it
+
+## Good vs. Bad Keys
+
+### Good Keys
+
+1. **Database IDs**: Unique identifiers from your database
+   ```jsx
+   {users.map(user => <UserItem key={user.id} user={user} />)}
+   ```
+
+2. **UUID or other generated unique IDs**: When database IDs aren't available
+   ```jsx
+   import { v4 as uuidv4 } from 'uuid';
+   
+   function createTodo(text) {
+     return { id: uuidv4(), text, completed: false };
+   }
+   ```
+
+3. **Combination of properties** that together create a unique string
+   ```jsx
+   {products.map(product => (
+     <ProductRow key={`${product.category}-${product.id}`} product={product} />
+   ))}
+   ```
+
+### Bad Keys
+
+1. **Array index**: Can cause issues if the list order changes or items are added/removed
+   ```jsx
+   // Not recommended
+   {todos.map((todo, index) => <TodoItem key={index} todo={todo} />)}
+   ```
+
+2. **Random values**: Generated during render will cause all components to re-mount on each render
+   ```jsx
+   // Very bad - never do this
+   {todos.map(todo => <TodoItem key={Math.random()} todo={todo} />)}
+   ```
+
+3. **Non-unique values**: Will cause React to throw warnings and may lead to bugs
+   ```jsx
+   // Bad - category is not unique per item
+   {products.map(product => <ProductRow key={product.category} product={product} />)}
+   ```
+
+## When Index as Key Is Acceptable
+
+While using array indices as keys is generally discouraged, there are specific cases where it's acceptable:
+
+1. The list is static and will not change
+2. The items will never be reordered or filtered
+3. The list will not be reversed or sorted
+4. The items don't have a unique ID
+
+```jsx
+// Acceptable use of index as key for a static list
+function StaticList() {
+  const items = ['Apple', 'Banana', 'Cherry', 'Date'];
+  
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li key={index}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Impact of Missing or Incorrect Keys
+
+### State Preservation Issues
+
+When keys are missing or incorrect, React may not preserve component state correctly:
+
+```jsx
+function TodoList({ todos }) {
+  return (
+    <ul>
+      {todos.map((todo, index) => (
+        <TodoItem 
+          key={index} // Using index as key (problematic)
+          todo={todo}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function TodoItem({ todo }) {
+  // This state will be reset if the item changes position in the list
+  const [isEditing, setIsEditing] = useState(false);
+  
+  return (
+    <li>
+      {isEditing ? (
+        <input 
+          value={todo.text}
+          onChange={/* ... */}
+          onBlur={() => setIsEditing(false)}
+        />
+      ) : (
+        <span onClick={() => setIsEditing(true)}>
+          {todo.text}
+        </span>
+      )}
+    </li>
+  );
+}
+```
+
+If you reorder the list (e.g., by sorting or filtering), the component states won't follow their respective items because the keys (indices) no longer match the same items.
+
+### Performance Issues
+
+Without proper keys, React has to rebuild the entire DOM subtree instead of just updating the changed elements:
+
+```jsx
+// Before update: [A, B, C, D]
+// After update: [A, X, B, C, D]
+
+// With proper keys, React only creates a new DOM node for X
+// Without keys or with index as keys, React might recreate B, C, and D nodes
+```
+
+## Practical Examples
+
+### Example 1: Todo List with Proper Keys
+
+```jsx
+import React, { useState } from 'react';
+
+function TodoApp() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Learn React', completed: false },
+    { id: 2, text: 'Build a project', completed: false },
+    { id: 3, text: 'Deploy to production', completed: false }
+  ]);
+  const [newTodo, setNewTodo] = useState('');
+  
+  const addTodo = () => {
+    if (!newTodo.trim()) return;
+    
+    const newId = Math.max(0, ...todos.map(t => t.id)) + 1;
+    setTodos([...todos, { id: newId, text: newTodo, completed: false }]);
+    setNewTodo('');
+  };
+  
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+  
+  const deleteTodo = (id) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+  
+  return (
+    <div className="todo-app">
+      <h1>Todo List</h1>
+      
+      <div className="add-todo">
+        <input
+          type="text"
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="Add a new task"
+        />
+        <button onClick={addTodo}>Add</button>
+      </div>
+      
+      <ul className="todo-list">
+        {todos.map(todo => (
+          <li key={todo.id} className={todo.completed ? 'completed' : ''}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+            />
+            <span>{todo.text}</span>
+            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### Example 2: Sortable List Demonstrating Key Importance
+
+```jsx
+import React, { useState } from 'react';
+
+function SortableUserList() {
+  const [users, setUsers] = useState([
+    { id: 1, name: 'Rahul', age: 28 },
+    { id: 2, name: 'Priya', age: 24 },
+    { id: 3, name: 'Amit', age: 32 },
+    { id: 4, name: 'Neha', age: 26 }
+  ]);
+  
+  const [sortBy, setSortBy] = useState('name');
+  
+  const sortedUsers = [...users].sort((a, b) => {
+    if (sortBy === 'name') {
+      return a.name.localeCompare(b.name);
+    } else if (sortBy === 'age') {
+      return a.age - b.age;
+    }
+    return 0;
+  });
+  
+  return (
+    <div className="user-list">
+      <div className="controls">
+        <button onClick={() => setSortBy('name')}>
+          Sort by Name
+        </button>
+        <button onClick={() => setSortBy('age')}>
+          Sort by Age
+        </button>
+      </div>
+      
+      <ul>
+        {sortedUsers.map(user => (
+          <UserItem key={user.id} user={user} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function UserItem({ user }) {
+  // This state will be preserved correctly because we use stable keys
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <li className="user-item">
+      <div onClick={() => setIsExpanded(!isExpanded)}>
+        <strong>{user.name}</strong> (Age: {user.age})
+        <span>{isExpanded ? ' 🔽' : ' 🔼'}</span>
+      </div>
+      
+      {isExpanded && (
+        <div className="user-details">
+          <p>User ID: {user.id}</p>
+          <p>This content is only visible when expanded</p>
+        </div>
+      )}
+    </li>
+  );
+}
+```
+
+## Interview Tips
+
+1. **Explain the purpose**: Keys help React identify which items have changed, been added, or been removed in a list.
+
+2. **Emphasize uniqueness**: Stress that keys must be unique among siblings but don't need to be globally unique.
+
+3. **Discuss performance**: Explain how proper keys improve performance by allowing React to update only what has changed.
+
+4. **Warn against index as key**: Explain why using array indices as keys can lead to bugs, especially in dynamic lists.
+
+5. **Provide examples**: Share real-world scenarios where proper keys prevented bugs or improved performance.
+
+6. **Mention reconciliation**: Demonstrate knowledge of React's reconciliation process and how keys play a role in it.
+
+7. **Discuss state preservation**: Explain how keys help React preserve component state across renders.
+
+8. **Address common misconceptions**: Clarify that keys are not passed to components as props (unless you explicitly pass them).
+
+9. **Show debugging knowledge**: Mention that React will warn in the console when keys are missing or duplicate.

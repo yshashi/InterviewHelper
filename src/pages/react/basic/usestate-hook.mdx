@@ -1,0 +1,498 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the purpose of the useState hook in React?
+---
+
+# What is the purpose of the useState hook in React?
+
+The `useState` hook is one of the most fundamental hooks in React that enables functional components to manage local state. It allows developers to add and update state in functional components without converting them to class components. When called, `useState` returns a pair: the current state value and a function to update that value, making state management straightforward and predictable.
+
+## Basic Usage of useState
+
+The `useState` hook takes an initial state value as an argument and returns an array with two elements: the current state value and a function to update it.
+
+```jsx
+import React, { useState } from 'react';
+
+function Counter() {
+  // Declare a state variable named 'count' with initial value 0
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+In this example:
+- `count` is the state variable that holds the current value
+- `setCount` is the function to update the count state
+- `0` is the initial value for the count state
+
+## Multiple State Variables
+
+You can use `useState` multiple times in a single component to manage different pieces of state independently.
+
+```jsx
+function UserProfile() {
+  const [name, setName] = useState('');
+  const [age, setAge] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  
+  return (
+    <form>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name"
+      />
+      <input
+        type="number"
+        value={age}
+        onChange={(e) => setAge(Number(e.target.value))}
+        placeholder="Age"
+      />
+      <label>
+        <input
+          type="checkbox"
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
+        />
+        Active
+      </label>
+    </form>
+  );
+}
+```
+
+## Using Objects with useState
+
+You can use objects to group related state variables.
+
+```jsx
+function UserForm() {
+  const [user, setUser] = useState({
+    name: '',
+    email: '',
+    age: 0
+  });
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Important: spread the previous state to avoid losing other fields
+    setUser({
+      ...user,
+      [name]: name === 'age' ? Number(value) : value
+    });
+  };
+  
+  return (
+    <form>
+      <input
+        type="text"
+        name="name"
+        value={user.name}
+        onChange={handleChange}
+        placeholder="Name"
+      />
+      <input
+        type="email"
+        name="email"
+        value={user.email}
+        onChange={handleChange}
+        placeholder="Email"
+      />
+      <input
+        type="number"
+        name="age"
+        value={user.age}
+        onChange={handleChange}
+        placeholder="Age"
+      />
+    </form>
+  );
+}
+```
+
+## Functional Updates
+
+When the new state depends on the previous state, you should use the functional update form of `useState`.
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  // Not ideal - may lead to stale state in certain scenarios
+  const incrementBad = () => {
+    setCount(count + 1);
+  };
+  
+  // Better - uses functional update
+  const incrementGood = () => {
+    setCount(prevCount => prevCount + 1);
+  };
+  
+  // This will correctly increment the count by 3
+  const incrementThrice = () => {
+    setCount(prev => prev + 1);
+    setCount(prev => prev + 1);
+    setCount(prev => prev + 1);
+  };
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={incrementGood}>Increment</button>
+      <button onClick={incrementThrice}>+3</button>
+    </div>
+  );
+}
+```
+
+## Lazy Initial State
+
+If the initial state is expensive to compute, you can provide a function to `useState`.
+
+```jsx
+function TodoList() {
+  // This function only runs during the first render
+  const [todos, setTodos] = useState(() => {
+    const savedTodos = localStorage.getItem('todos');
+    if (savedTodos) {
+      return JSON.parse(savedTodos);
+    }
+    return []; // Default initial state
+  });
+  
+  // Rest of component...
+}
+```
+
+## State Updates are Asynchronous
+
+React may batch multiple state updates for performance reasons, so the state might not change immediately after calling the setter function.
+
+```jsx
+function AsyncExample() {
+  const [count, setCount] = useState(0);
+  
+  const handleClick = () => {
+    setCount(count + 1);
+    console.log(count); // This will still show the old value
+    
+    // To see the updated value, use useEffect
+    // or the functional update form with a callback
+  };
+  
+  // This effect runs after the state has been updated
+  useEffect(() => {
+    console.log('Updated count:', count);
+  }, [count]);
+  
+  return (
+    <button onClick={handleClick}>
+      Increment
+    </button>
+  );
+}
+```
+
+## useState vs useReducer
+
+For complex state logic, `useReducer` might be more appropriate than `useState`.
+
+```jsx
+// With useState (multiple related state variables)
+function Counter() {
+  const [count, setCount] = useState(0);
+  const [step, setStep] = useState(1);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + step)}>
+        Add {step}
+      </button>
+      <input
+        type="number"
+        value={step}
+        onChange={(e) => setStep(Number(e.target.value))}
+        min="1"
+      />
+    </div>
+  );
+}
+
+// With useReducer (unified state management)
+function counterReducer(state, action) {
+  switch (action.type) {
+    case 'increment':
+      return { ...state, count: state.count + state.step };
+    case 'setStep':
+      return { ...state, step: action.payload };
+    default:
+      return state;
+  }
+}
+
+function CounterWithReducer() {
+  const [state, dispatch] = useReducer(counterReducer, {
+    count: 0,
+    step: 1
+  });
+  
+  return (
+    <div>
+      <p>Count: {state.count}</p>
+      <button onClick={() => dispatch({ type: 'increment' })}>
+        Add {state.step}
+      </button>
+      <input
+        type="number"
+        value={state.step}
+        onChange={(e) => dispatch({
+          type: 'setStep',
+          payload: Number(e.target.value)
+        })}
+        min="1"
+      />
+    </div>
+  );
+}
+```
+
+## Real-World Example
+
+Here's a practical example of using `useState` in a form with validation:
+
+```jsx
+function SignupForm() {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
+    // Clear error when user starts typing again
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: null
+      });
+    }
+  };
+  
+  const validate = () => {
+    const newErrors = {};
+    
+    // Username validation
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    }
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    // Confirm password validation
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (validate()) {
+      setIsSubmitting(true);
+      
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        console.log('Form submitted successfully:', formData);
+        // Reset form after successful submission
+        setFormData({
+          username: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+        alert('Signup successful!');
+      } catch (error) {
+        console.error('Submission error:', error);
+        setErrors({ submit: 'Failed to submit form. Please try again.' });
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className="signup-form">
+      <h2>Create an Account</h2>
+      
+      <div className="form-group">
+        <label htmlFor="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          className={errors.username ? 'error' : ''}
+        />
+        {errors.username && <p className="error-text">{errors.username}</p>}
+      </div>
+      
+      <div className="form-group">
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          className={errors.email ? 'error' : ''}
+        />
+        {errors.email && <p className="error-text">{errors.email}</p>}
+      </div>
+      
+      <div className="form-group">
+        <label htmlFor="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          className={errors.password ? 'error' : ''}
+        />
+        {errors.password && <p className="error-text">{errors.password}</p>}
+      </div>
+      
+      <div className="form-group">
+        <label htmlFor="confirmPassword">Confirm Password</label>
+        <input
+          type="password"
+          id="confirmPassword"
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          className={errors.confirmPassword ? 'error' : ''}
+        />
+        {errors.confirmPassword && (
+          <p className="error-text">{errors.confirmPassword}</p>
+        )}
+      </div>
+      
+      {errors.submit && <p className="error-text">{errors.submit}</p>}
+      
+      <button 
+        type="submit" 
+        disabled={isSubmitting}
+        className="submit-button"
+      >
+        {isSubmitting ? 'Signing up...' : 'Sign Up'}
+      </button>
+    </form>
+  );
+}
+```
+
+## Common Mistakes with useState
+
+1. **Forgetting to spread the previous state when updating objects**
+   ```jsx
+   // Wrong
+   setUser({ name: 'Rahul' }); // This will remove email and other fields
+   
+   // Correct
+   setUser({ ...user, name: 'Rahul' });
+   ```
+
+2. **Not using functional updates when new state depends on previous state**
+   ```jsx
+   // Wrong - may lead to stale state
+   setCount(count + 1);
+   
+   // Correct
+   setCount(prevCount => prevCount + 1);
+   ```
+
+3. **Trying to use state immediately after updating it**
+   ```jsx
+   // Wrong - state updates are asynchronous
+   setCount(count + 1);
+   console.log(count); // Still shows old value
+   
+   // Correct - use useEffect to react to state changes
+   useEffect(() => {
+     console.log(count);
+   }, [count]);
+   ```
+
+4. **Updating state too frequently**
+   ```jsx
+   // Inefficient - causes multiple re-renders
+   items.forEach(item => {
+     setTotal(total + item.price);
+   });
+   
+   // Better - single update
+   const newTotal = items.reduce((sum, item) => sum + item.price, 0);
+   setTotal(newTotal);
+   ```
+
+## Interview Tips
+
+1. **Explain the basics**: Be able to explain that `useState` is a React hook that lets you add state to functional components.
+
+2. **Compare with class components**: Highlight how `useState` simplifies state management compared to using `this.state` and `this.setState()` in class components.
+
+3. **Discuss state initialization**: Explain both direct initialization (`useState(0)`) and lazy initialization (`useState(() => expensiveComputation())`).
+
+4. **Explain state updates**: Emphasize that state updates are asynchronous and may be batched by React for performance.
+
+5. **Functional updates**: Demonstrate knowledge of functional updates when new state depends on previous state.
+
+6. **Rules of hooks**: Mention that hooks must be called at the top level of your component and not inside loops, conditions, or nested functions.
+
+7. **Performance considerations**: Discuss how to optimize performance by avoiding unnecessary re-renders, such as by using the functional update form or `useMemo`/`useCallback`.
+
+8. **Real-world scenarios**: Share examples of how you've used `useState` in real projects, such as form handling, toggling UI elements, or managing application state.
+
+9. **When to use alternatives**: Explain when you might choose `useReducer` over `useState` (for complex state logic) or external state management libraries for larger applications.

@@ -1,0 +1,201 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is JSX, and how does it work in React?
+---
+
+# What is JSX, and how does it work in React?
+
+JSX (JavaScript XML) is a syntax extension for JavaScript that looks similar to HTML or XML. It allows us to write HTML-like code directly in our JavaScript files. JSX makes React code more readable and expressive by letting developers describe what the UI should look like using familiar HTML-like syntax, while still leveraging the full power of JavaScript.
+
+## How JSX Works in React
+
+JSX is not directly understood by browsers. Instead, tools like Babel transform JSX into regular JavaScript function calls before the code runs in the browser.
+
+```jsx
+// This JSX code
+const element = <h1 className="greeting">Hello, world!</h1>;
+
+// Gets transformed into this JavaScript
+const element = React.createElement(
+  'h1',
+  { className: 'greeting' },
+  'Hello, world!'
+);
+```
+
+The transformed code creates a React element, which is a lightweight description of what to render. React then uses these elements to build and update the DOM efficiently.
+
+## Key Features of JSX
+
+### 1. Embedding Expressions
+
+You can embed any JavaScript expression within JSX using curly braces `{}`.
+
+```jsx
+function Greeting() {
+  const user = {
+    firstName: 'Rahul',
+    lastName: 'Sharma'
+  };
+  
+  return (
+    <div>
+      <h1>Hello, {user.firstName} {user.lastName}!</h1>
+      <p>Today is {new Date().toLocaleDateString()}</p>
+      <p>Random number: {Math.floor(Math.random() * 100)}</p>
+    </div>
+  );
+}
+```
+
+### 2. JSX as Expressions
+
+JSX expressions themselves become regular JavaScript expressions after compilation. This means you can use JSX inside if statements, loops, assign it to variables, accept it as arguments, and return it from functions.
+
+```jsx
+function getGreeting(user) {
+  if (user) {
+    return <h1>Hello, {user.name}!</h1>;
+  }
+  return <h1>Hello, Stranger!</h1>;
+}
+
+function App() {
+  const isLoggedIn = true;
+  
+  return (
+    <div>
+      {isLoggedIn ? (
+        <LogoutButton />
+      ) : (
+        <LoginButton />
+      )}
+    </div>
+  );
+}
+```
+
+### 3. Specifying Attributes
+
+You can specify HTML attributes in JSX using either string literals or JavaScript expressions.
+
+```jsx
+// String literal
+const element = <input type="text" />;
+
+// JavaScript expression
+const element = <img src={user.avatarUrl} alt={user.name} />;
+```
+
+Note that JSX uses camelCase property naming convention instead of HTML attribute names:
+- `class` becomes `className`
+- `for` becomes `htmlFor`
+- `tabindex` becomes `tabIndex`
+
+### 4. Children in JSX
+
+JSX elements can contain children, just like HTML elements.
+
+```jsx
+const element = (
+  <div>
+    <h1>Hello!</h1>
+    <p>Welcome to my React application.</p>
+    <ul>
+      <li>Feature 1</li>
+      <li>Feature 2</li>
+    </ul>
+  </div>
+);
+```
+
+### 5. JSX Prevents Injection Attacks
+
+React DOM escapes any values embedded in JSX before rendering them, helping to prevent cross-site scripting (XSS) attacks.
+
+```jsx
+const userInput = '<script>alert("Hack attempt!")</script>';
+// This is safe - the script tag will be displayed as text, not executed
+const element = <div>{userInput}</div>;
+```
+
+## Real-World Example
+
+In a recent project, I built a dashboard for an e-commerce analytics platform. JSX made it much easier to create complex UI components with dynamic data:
+
+```jsx
+function SalesSummary({ data }) {
+  const totalSales = data.reduce((sum, item) => sum + item.amount, 0);
+  const topProduct = data.sort((a, b) => b.amount - a.amount)[0];
+  
+  return (
+    <div className="sales-card">
+      <div className="sales-header">
+        <h2>Sales Summary</h2>
+        <span className="period">{data[0].date} - {data[data.length - 1].date}</span>
+      </div>
+      
+      <div className="sales-metrics">
+        <div className="metric">
+          <span className="label">Total Sales</span>
+          <span className="value">₹{totalSales.toLocaleString()}</span>
+          {data.trend > 0 ? (
+            <span className="trend positive">↑ {data.trend}%</span>
+          ) : (
+            <span className="trend negative">↓ {Math.abs(data.trend)}%</span>
+          )}
+        </div>
+        
+        <div className="metric">
+          <span className="label">Orders</span>
+          <span className="value">{data.orders}</span>
+        </div>
+        
+        <div className="metric">
+          <span className="label">Top Product</span>
+          <span className="value">{topProduct.name}</span>
+          <span className="sub-value">₹{topProduct.amount.toLocaleString()}</span>
+        </div>
+      </div>
+      
+      <div className="sales-chart">
+        {data.map(item => (
+          <div 
+            key={item.id}
+            className="bar" 
+            style={{ 
+              height: `${(item.amount / topProduct.amount) * 100}%`,
+              backgroundColor: item.amount > 10000 ? '#34c759' : '#007aff'
+            }}
+            title={`${item.date}: ₹${item.amount.toLocaleString()}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+This component demonstrates how JSX allows us to:
+1. Combine JavaScript logic with UI rendering
+2. Use conditional rendering based on data values
+3. Apply dynamic styles
+4. Iterate through arrays to generate UI elements
+5. Create a readable, declarative representation of a complex UI component
+
+## Benefits of JSX in Development
+
+1. **Familiarity**: The HTML-like syntax is familiar to web developers
+2. **Visual context**: Seeing the markup structure makes it easier to understand the component's output
+3. **Co-location**: Keeping the markup and logic together helps maintain component coherence
+4. **Compile-time errors**: Syntax errors can be caught during compilation rather than at runtime
+5. **IntelliSense support**: Modern IDEs provide excellent autocompletion and type checking for JSX
+
+## Interview Tips
+
+- Explain that JSX is syntactic sugar over `React.createElement()` calls
+- Highlight how JSX combines the power of JavaScript with the familiarity of HTML
+- Mention the camelCase convention for attributes (className instead of class)
+- Be prepared to discuss the transformation process (Babel/transpilation)
+- Share a specific example of how JSX improved your development workflow
+- Explain how JSX helps prevent XSS attacks through automatic escaping

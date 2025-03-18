@@ -1,0 +1,185 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is React, and how does it differ from other JavaScript frameworks?
+---
+
+# What is React, and how does it differ from other JavaScript frameworks?
+
+React is a JavaScript library developed by Facebook (now Meta) for building user interfaces, particularly single-page applications. It allows developers to create reusable UI components that efficiently update and render when data changes, using a concept called the Virtual DOM.
+
+Unlike full-fledged frameworks like Angular or Vue, React focuses primarily on the view layer of applications. It gives developers more flexibility to choose additional libraries for routing, state management, and other functionalities based on project requirements.
+
+## Key Differences from Other Frameworks
+
+### 1. Library vs Framework
+
+React is a library, not a framework. This means it's less opinionated and more flexible compared to frameworks like Angular.
+
+```jsx
+// Angular approach (framework)
+// Requires specific project structure and follows Angular conventions
+@Component({
+  selector: 'app-counter',
+  template: `
+    <div>
+      <h2>{{ count }}</h2>
+      <button (click)="increment()">Increment</button>
+    </div>
+  `
+})
+export class CounterComponent {
+  count = 0;
+  
+  increment() {
+    this.count++;
+  }
+}
+
+// React approach (library)
+// More flexible, just JavaScript functions/classes
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  
+  return (
+    <div>
+      <h2>{count}</h2>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+```
+
+### 2. Virtual DOM
+
+React uses a Virtual DOM to optimize rendering performance, while many other frameworks directly manipulate the actual DOM.
+
+```jsx
+// React efficiently updates only what changed
+function TodoApp() {
+  const [todos, setTodos] = useState(['Learn React', 'Build an app']);
+  
+  const addTodo = (newTodo) => {
+    // React will only re-render what changed, not the entire list
+    setTodos([...todos, newTodo]);
+  };
+  
+  return (
+    <ul>
+      {todos.map((todo, index) => (
+        <li key={index}>{todo}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### 3. One-Way Data Binding
+
+React uses one-way data flow, making applications more predictable and easier to debug, while frameworks like Angular use two-way data binding.
+
+```jsx
+// React's one-way data flow
+function Form() {
+  const [name, setName] = useState('');
+  
+  return (
+    <input 
+      value={name} 
+      onChange={(e) => setName(e.target.value)} 
+    />
+  );
+}
+
+// Angular's two-way binding
+// template: <input [(ngModel)]="name">
+```
+
+### 4. JSX
+
+React uses JSX, which allows HTML-like syntax directly in JavaScript code, creating a more intuitive development experience.
+
+```jsx
+// React JSX
+function Welcome() {
+  return (
+    <div className="welcome-container">
+      <h1>Hello, React!</h1>
+      <p>Welcome to my application</p>
+    </div>
+  );
+}
+
+// Vue template approach
+// <template>
+//   <div class="welcome-container">
+//     <h1>Hello, Vue!</h1>
+//     <p>Welcome to my application</p>
+//   </div>
+// </template>
+```
+
+## Real-World Example
+
+I recently worked on migrating a large e-commerce dashboard from jQuery to React. The old codebase had become difficult to maintain with thousands of lines of jQuery manipulating DOM elements directly.
+
+With React, we broke down the UI into reusable components:
+
+```jsx
+// Product component
+function Product({ product, onAddToCart }) {
+  return (
+    <div className="product-card">
+      <img src={product.image} alt={product.name} />
+      <h3>{product.name}</h3>
+      <p>₹{product.price}</p>
+      <button onClick={() => onAddToCart(product)}>
+        Add to Cart
+      </button>
+    </div>
+  );
+}
+
+// ProductList component
+function ProductList() {
+  const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState([]);
+  
+  useEffect(() => {
+    // Fetch products from API
+    fetch('/api/products')
+      .then(res => res.json())
+      .then(data => setProducts(data));
+  }, []);
+  
+  const handleAddToCart = (product) => {
+    setCart([...cart, product]);
+  };
+  
+  return (
+    <div className="product-list">
+      {products.map(product => (
+        <Product 
+          key={product.id} 
+          product={product} 
+          onAddToCart={handleAddToCart} 
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+This approach made our code:
+1. More maintainable - each component had a single responsibility
+2. Easier to debug - one-way data flow made state changes predictable
+3. More performant - Virtual DOM optimized rendering
+4. Easier to test - components could be tested in isolation
+
+## Interview Tips
+
+- Emphasize React's component-based architecture and how it promotes reusability
+- Mention your experience with both React and other frameworks to show versatility
+- Be ready to discuss trade-offs between React's flexibility vs. Angular's structure
+- Explain how React fits into the larger ecosystem with libraries like Redux, React Router
+- Share a specific example of how React solved a problem in your previous projects
+- Don't just criticize other frameworks; acknowledge that different tools serve different purposes

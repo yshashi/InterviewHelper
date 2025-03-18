@@ -1,0 +1,703 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between functional and class components in React?
+---
+
+# What is the difference between functional and class components in React?
+
+React provides two ways to define components: functional components and class components. While both serve the same purpose of creating reusable UI elements, they differ in syntax, features, and the recommended approach has evolved over time.
+
+## Syntax Differences
+
+### Functional Components
+
+Functional components are JavaScript functions that accept props as an argument and return React elements.
+
+```jsx
+// Basic functional component
+function Welcome(props) {
+  return <h1>Hello, {props.name}</h1>;
+}
+
+// Using arrow function syntax
+const Welcome = (props) => {
+  return <h1>Hello, {props.name}</h1>;
+};
+
+// With destructuring
+const Welcome = ({ name }) => {
+  return <h1>Hello, {name}</h1>;
+};
+```
+
+### Class Components
+
+Class components are ES6 classes that extend from `React.Component` and require a `render()` method.
+
+```jsx
+import React, { Component } from 'react';
+
+class Welcome extends Component {
+  render() {
+    return <h1>Hello, {this.props.name}</h1>;
+  }
+}
+```
+
+## State Management
+
+### Class Components
+
+Class components have built-in state management using `this.state` and `this.setState()`.
+
+```jsx
+class Counter extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      count: 0
+    };
+  }
+  
+  incrementCount = () => {
+    this.setState({ count: this.state.count + 1 });
+    
+    // When new state depends on previous state
+    this.setState(prevState => ({
+      count: prevState.count + 1
+    }));
+  }
+  
+  render() {
+    return (
+      <div>
+        <p>Count: {this.state.count}</p>
+        <button onClick={this.incrementCount}>Increment</button>
+      </div>
+    );
+  }
+}
+```
+
+### Functional Components
+
+Before React 16.8, functional components couldn't manage their own state. With the introduction of Hooks, functional components can now use the `useState` hook.
+
+```jsx
+import React, { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  const incrementCount = () => {
+    setCount(count + 1);
+    
+    // When new state depends on previous state
+    setCount(prevCount => prevCount + 1);
+  };
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={incrementCount}>Increment</button>
+    </div>
+  );
+}
+```
+
+## Lifecycle Methods
+
+### Class Components
+
+Class components have access to lifecycle methods like `componentDidMount`, `componentDidUpdate`, and `componentWillUnmount`.
+
+```jsx
+class UserProfile extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      user: null,
+      loading: true
+    };
+  }
+  
+  componentDidMount() {
+    // Called after component is inserted into the DOM
+    this.fetchUserData();
+  }
+  
+  componentDidUpdate(prevProps) {
+    // Called when component updates
+    if (prevProps.userId !== this.props.userId) {
+      this.fetchUserData();
+    }
+  }
+  
+  componentWillUnmount() {
+    // Called before component is removed from the DOM
+    // Clean up subscriptions, timers, etc.
+    this.authSubscription.unsubscribe();
+  }
+  
+  fetchUserData() {
+    fetch(`/api/users/${this.props.userId}`)
+      .then(res => res.json())
+      .then(data => {
+        this.setState({
+          user: data,
+          loading: false
+        });
+      });
+  }
+  
+  render() {
+    const { loading, user } = this.state;
+    
+    if (loading) return <div>Loading...</div>;
+    
+    return (
+      <div>
+        <h1>{user.name}</h1>
+        <p>Email: {user.email}</p>
+      </div>
+    );
+  }
+}
+```
+
+### Functional Components
+
+Functional components use the `useEffect` hook to handle side effects and lifecycle events.
+
+```jsx
+import React, { useState, useEffect } from 'react';
+
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // Combines componentDidMount and componentDidUpdate
+    
+    let isMounted = true; // To prevent state updates after unmount
+    
+    const fetchUserData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/users/${userId}`);
+        const data = await response.json();
+        
+        if (isMounted) {
+          setUser(data);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    fetchUserData();
+    
+    // Cleanup function (similar to componentWillUnmount)
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]); // Dependency array - only re-run if userId changes
+  
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <div>User not found</div>;
+  
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <p>Email: {user.email}</p>
+    </div>
+  );
+}
+```
+
+## Handling Events
+
+### Class Components
+
+In class components, you need to bind event handlers to `this` or use arrow functions to maintain the correct context.
+
+```jsx
+class ToggleButton extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { isOn: false };
+    
+    // Binding in constructor
+    this.handleClick = this.handleClick.bind(this);
+  }
+  
+  handleClick() {
+    this.setState(prevState => ({
+      isOn: !prevState.isOn
+    }));
+  }
+  
+  // Alternative: Using arrow function (no binding needed)
+  toggleState = () => {
+    this.setState(prevState => ({
+      isOn: !prevState.isOn
+    }));
+  }
+  
+  render() {
+    return (
+      <div>
+        <button onClick={this.handleClick}>
+          {this.state.isOn ? 'ON' : 'OFF'} (bound method)
+        </button>
+        
+        <button onClick={this.toggleState}>
+          {this.state.isOn ? 'ON' : 'OFF'} (arrow function)
+        </button>
+        
+        {/* Inline arrow function (creates new function on each render) */}
+        <button onClick={() => this.setState(prevState => ({ isOn: !prevState.isOn }))}>
+          {this.state.isOn ? 'ON' : 'OFF'} (inline)
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+### Functional Components
+
+In functional components, there's no need to worry about `this` binding.
+
+```jsx
+function ToggleButton() {
+  const [isOn, setIsOn] = useState(false);
+  
+  const handleClick = () => {
+    setIsOn(prevState => !prevState);
+  };
+  
+  return (
+    <div>
+      <button onClick={handleClick}>
+        {isOn ? 'ON' : 'OFF'} (defined function)
+      </button>
+      
+      {/* Inline function */}
+      <button onClick={() => setIsOn(prevState => !prevState)}>
+        {isOn ? 'ON' : 'OFF'} (inline)
+      </button>
+    </div>
+  );
+}
+```
+
+## Advanced Features
+
+### Class Components
+
+Class components have access to:
+- `this.props` and `this.state`
+- Lifecycle methods
+- `refs` using `createRef()`
+- Error boundaries using `componentDidCatch` and `static getDerivedStateFromError`
+
+```jsx
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  
+  static getDerivedStateFromError(error) {
+    // Update state so the next render shows the fallback UI
+    return { hasError: true };
+  }
+  
+  componentDidCatch(error, info) {
+    // Log the error to an error reporting service
+    console.error('Error caught by boundary:', error, info);
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+    
+    return this.props.children;
+  }
+}
+```
+
+### Functional Components
+
+Functional components with Hooks can access:
+- All built-in Hooks: `useState`, `useEffect`, `useContext`, `useReducer`, `useCallback`, `useMemo`, `useRef`, etc.
+- Custom Hooks for reusing stateful logic
+- Error boundaries still require class components (as of React 18)
+
+```jsx
+// Custom Hook example
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
+  return windowSize;
+}
+
+// Using the custom Hook
+function ResponsiveComponent() {
+  const { width, height } = useWindowSize();
+  
+  return (
+    <div>
+      <p>Window width: {width}px</p>
+      <p>Window height: {height}px</p>
+      {width < 768 ? (
+        <MobileView />
+      ) : (
+        <DesktopView />
+      )}
+    </div>
+  );
+}
+```
+
+## Performance Optimization
+
+### Class Components
+
+Class components use `shouldComponentUpdate`, `PureComponent`, or `React.memo` for optimization.
+
+```jsx
+// Using shouldComponentUpdate
+class ExpensiveComponent extends Component {
+  shouldComponentUpdate(nextProps, nextState) {
+    // Only re-render if title changes
+    return nextProps.title !== this.props.title;
+  }
+  
+  render() {
+    console.log('Rendering ExpensiveComponent');
+    return <div>{this.props.title}</div>;
+  }
+}
+
+// Using PureComponent (shallow comparison of props and state)
+class OptimizedList extends React.PureComponent {
+  render() {
+    return (
+      <ul>
+        {this.props.items.map(item => (
+          <li key={item.id}>{item.text}</li>
+        ))}
+      </ul>
+    );
+  }
+}
+```
+
+### Functional Components
+
+Functional components use `React.memo`, `useMemo`, and `useCallback` for optimization.
+
+```jsx
+// Using React.memo (equivalent to PureComponent)
+const ExpensiveComponent = React.memo(function ExpensiveComponent({ title }) {
+  console.log('Rendering ExpensiveComponent');
+  return <div>{title}</div>;
+});
+
+// Using useMemo and useCallback
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  const [text, setText] = useState('');
+  
+  // Memoized calculation - only recalculates when dependencies change
+  const expensiveCalculation = useMemo(() => {
+    console.log('Calculating...');
+    return count * 2;
+  }, [count]); // Only recalculate when count changes
+  
+  // Memoized callback - only changes when dependencies change
+  const handleClick = useCallback(() => {
+    console.log('Button clicked');
+    setCount(c => c + 1);
+  }, []); // Never recreated
+  
+  return (
+    <div>
+      <input 
+        value={text} 
+        onChange={e => setText(e.target.value)} 
+        placeholder="Type here..." 
+      />
+      <p>Count: {count}</p>
+      <p>Calculated: {expensiveCalculation}</p>
+      
+      {/* This component won't re-render when text changes */}
+      <ExpensiveComponent title="Optimized Component" onClick={handleClick} />
+      
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+    </div>
+  );
+}
+```
+
+## Real-World Example
+
+In a recent project, I migrated a class component to a functional component with hooks:
+
+### Before (Class Component)
+
+```jsx
+class ProductList extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      products: [],
+      loading: true,
+      error: null,
+      filters: {
+        category: null,
+        minPrice: 0,
+        maxPrice: 10000
+      }
+    };
+  }
+  
+  componentDidMount() {
+    this.fetchProducts();
+  }
+  
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      prevState.filters.category !== this.state.filters.category ||
+      prevState.filters.minPrice !== this.state.filters.minPrice ||
+      prevState.filters.maxPrice !== this.state.filters.maxPrice
+    ) {
+      this.fetchProducts();
+    }
+  }
+  
+  fetchProducts = async () => {
+    const { category, minPrice, maxPrice } = this.state.filters;
+    
+    try {
+      this.setState({ loading: true });
+      
+      const url = new URL('/api/products', window.location.origin);
+      if (category) url.searchParams.append('category', category);
+      url.searchParams.append('minPrice', minPrice);
+      url.searchParams.append('maxPrice', maxPrice);
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      this.setState({
+        products: data,
+        loading: false,
+        error: null
+      });
+    } catch (error) {
+      this.setState({
+        loading: false,
+        error: 'Failed to fetch products'
+      });
+    }
+  };
+  
+  handleCategoryChange = (category) => {
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        category
+      }
+    }));
+  };
+  
+  handlePriceChange = (minPrice, maxPrice) => {
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        minPrice,
+        maxPrice
+      }
+    }));
+  };
+  
+  render() {
+    const { products, loading, error, filters } = this.state;
+    
+    if (loading) return <div>Loading products...</div>;
+    if (error) return <div>Error: {error}</div>;
+    
+    return (
+      <div className="product-page">
+        <FilterPanel 
+          filters={filters}
+          onCategoryChange={this.handleCategoryChange}
+          onPriceChange={this.handlePriceChange}
+        />
+        
+        <div className="product-grid">
+          {products.length === 0 ? (
+            <p>No products found matching your criteria</p>
+          ) : (
+            products.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+}
+```
+
+### After (Functional Component with Hooks)
+
+```jsx
+function ProductList() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    category: null,
+    minPrice: 0,
+    maxPrice: 10000
+  });
+  
+  // useEffect to fetch products when filters change
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { category, minPrice, maxPrice } = filters;
+      
+      try {
+        setLoading(true);
+        
+        const url = new URL('/api/products', window.location.origin);
+        if (category) url.searchParams.append('category', category);
+        url.searchParams.append('minPrice', minPrice);
+        url.searchParams.append('maxPrice', maxPrice);
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        setProducts(data);
+        setLoading(false);
+        setError(null);
+      } catch (err) {
+        setLoading(false);
+        setError('Failed to fetch products');
+      }
+    };
+    
+    fetchProducts();
+  }, [filters]); // Dependency array - re-run when filters change
+  
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleCategoryChange = useCallback((category) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      category
+    }));
+  }, []);
+  
+  const handlePriceChange = useCallback((minPrice, maxPrice) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      minPrice,
+      maxPrice
+    }));
+  }, []);
+  
+  if (loading) return <div>Loading products...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  return (
+    <div className="product-page">
+      <FilterPanel 
+        filters={filters}
+        onCategoryChange={handleCategoryChange}
+        onPriceChange={handlePriceChange}
+      />
+      
+      <div className="product-grid">
+        {products.length === 0 ? (
+          <p>No products found matching your criteria</p>
+        ) : (
+          products.map(product => (
+            <ProductCard key={product.id} product={product} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Optimized child components
+const FilterPanel = React.memo(function FilterPanel({ 
+  filters, 
+  onCategoryChange, 
+  onPriceChange 
+}) {
+  // Component implementation
+});
+
+const ProductCard = React.memo(function ProductCard({ product }) {
+  // Component implementation
+});
+```
+
+## Key Benefits of Each Approach
+
+### Class Components
+
+- Familiar for developers coming from OOP backgrounds
+- Clear lifecycle methods with specific purposes
+- Required for error boundaries (as of React 18)
+- Better TypeScript support in older codebases
+
+### Functional Components
+
+- More concise and easier to read
+- No need to understand `this` binding
+- Hooks enable better code organization and reuse
+- Easier to test due to less boilerplate
+- Better performance optimizations with built-in memoization
+- Align with React team's future direction
+
+## Current Recommendations
+
+The React team now recommends using functional components with Hooks for new code. Class components are still supported but considered legacy.
+
+## Interview Tips
+
+- Emphasize that you're comfortable with both approaches but prefer functional components with Hooks for new code
+- Explain how Hooks solve problems that were difficult with class components (like reusing stateful logic)
+- Demonstrate knowledge of when class components might still be necessary (error boundaries)
+- Share a specific example of refactoring a class component to a functional component
+- Be prepared to discuss the challenges of migrating from class to functional components
+- Mention that understanding class components is still valuable for maintaining legacy code

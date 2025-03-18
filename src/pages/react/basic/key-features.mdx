@@ -1,0 +1,342 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Key Features of React
+---
+
+# Key Features of React
+
+React comes with several powerful features that make it a popular choice for building modern web applications. These features focus on performance, component reusability, and developer experience, enabling teams to build complex UIs efficiently.
+
+## 1. Component-Based Architecture
+
+React applications are built using components - independent, reusable pieces of code that return HTML via a render function.
+
+```jsx
+// A simple functional component
+function Greeting({ name }) {
+  return <h1>Hello, {name}!</h1>;
+}
+
+// Using the component
+function App() {
+  return (
+    <div>
+      <Greeting name="Rahul" />
+      <Greeting name="Priya" />
+    </div>
+  );
+}
+```
+
+I've used this approach in a project where we built a dashboard with multiple widgets. Each widget was a separate component, making it easy to maintain and reuse across different dashboard views.
+
+## 2. Virtual DOM
+
+React creates a lightweight copy of the actual DOM in memory (Virtual DOM) and uses a diffing algorithm to efficiently update only the parts that have changed.
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+In a recent project, we had a real-time dashboard displaying data from IoT devices. Thanks to React's Virtual DOM, we could update thousands of data points every second without performance issues.
+
+## 3. JSX (JavaScript XML)
+
+JSX is a syntax extension that allows you to write HTML-like code in JavaScript, making UI code more intuitive and readable.
+
+```jsx
+function ProductCard({ product }) {
+  return (
+    <div className="card">
+      {product.discount && <span className="discount-badge">Sale!</span>}
+      <img src={product.image} alt={product.name} />
+      <h3>{product.name}</h3>
+      <p>₹{product.price}</p>
+      {product.inStock ? (
+        <button>Add to Cart</button>
+      ) : (
+        <p className="out-of-stock">Out of Stock</p>
+      )}
+    </div>
+  );
+}
+```
+
+JSX made our team's transition from HTML/CSS to React much smoother, as the syntax felt familiar while giving us the power of JavaScript expressions.
+
+## 4. Unidirectional Data Flow
+
+React follows a one-way data binding model where data flows from parent to child components, making applications more predictable and easier to debug.
+
+```jsx
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  
+  const incrementCount = () => {
+    setCount(count + 1);
+  };
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <ChildComponent 
+        count={count} 
+        onIncrement={incrementCount} 
+      />
+    </div>
+  );
+}
+
+function ChildComponent({ count, onIncrement }) {
+  return (
+    <div>
+      <p>Child received: {count}</p>
+      <button onClick={onIncrement}>
+        Increment from Child
+      </button>
+    </div>
+  );
+}
+```
+
+This pattern helped us avoid many bugs in a complex form application where multiple components needed to share and update state.
+
+## 5. React Hooks
+
+Introduced in React 16.8, hooks allow functional components to use state and lifecycle features previously only available in class components.
+
+```jsx
+function UserProfile() {
+  // State hook
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Effect hook
+  useEffect(() => {
+    // Similar to componentDidMount
+    async function fetchUser() {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/user');
+        const data = await response.json();
+        setUser(data);
+      } catch (error) {
+        console.error("Failed to fetch user", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchUser();
+    
+    // Similar to componentWillUnmount
+    return () => {
+      // Cleanup code here
+      console.log("Component unmounting");
+    };
+  }, []); // Empty dependency array means run once on mount
+  
+  // Custom hook for form handling
+  const { values, handleChange, handleSubmit } = useForm({
+    initialValues: { name: '', email: '' }
+  });
+  
+  if (loading) return <div>Loading...</div>;
+  
+  return (
+    <div>
+      <h2>{user.name}'s Profile</h2>
+      {/* Form components */}
+    </div>
+  );
+}
+```
+
+Hooks transformed how we write React code in our team. We were able to extract common logic into custom hooks, reducing code duplication across components.
+
+## 6. React Native Support
+
+React's architecture allows code reuse between web and mobile applications through React Native.
+
+```jsx
+// This component works on both web and mobile
+function Button({ title, onPress, color }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        {
+          backgroundColor: pressed ? '#ddd' : color,
+          padding: 10,
+          borderRadius: 5,
+        }
+      ]}
+      onPress={onPress}
+    >
+      <Text style={{ color: 'white', textAlign: 'center' }}>
+        {title}
+      </Text>
+    </Pressable>
+  );
+}
+```
+
+In a recent project, we saved significant development time by sharing business logic and some UI components between our web app and mobile app.
+
+## 7. Large Ecosystem and Community Support
+
+React has a vast ecosystem of libraries, tools, and extensions:
+
+- **State Management**: Redux, MobX, Recoil
+- **Routing**: React Router
+- **UI Frameworks**: Material-UI, Chakra UI, Ant Design
+- **Form Handling**: Formik, React Hook Form
+- **Testing**: Jest, React Testing Library
+
+```jsx
+// Using React Router for navigation
+function App() {
+  return (
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Footer />
+    </Router>
+  );
+}
+```
+
+The rich ecosystem helped us quickly implement complex features like state management and routing without reinventing the wheel.
+
+## Real-World Example
+
+In a recent e-commerce project, we leveraged multiple React features to create a performant and maintainable application:
+
+```jsx
+// ProductPage.jsx
+function ProductPage() {
+  // State management with hooks
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Router params with React Router
+  const { id } = useParams();
+  const navigate = useNavigate();
+  
+  // Side effects with useEffect
+  useEffect(() => {
+    async function fetchProduct() {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/products/${id}`);
+        
+        if (!response.ok) {
+          throw new Error('Product not found');
+        }
+        
+        const data = await response.json();
+        setProduct(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchProduct();
+  }, [id]);
+  
+  // Event handling
+  const handleAddToCart = () => {
+    // Add to cart logic
+    toast.success('Added to cart!');
+  };
+  
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!product) return <NotFound />;
+  
+  return (
+    <div className="product-page">
+      <Breadcrumb 
+        items={[
+          { label: 'Home', path: '/' },
+          { label: 'Products', path: '/products' },
+          { label: product.name }
+        ]} 
+      />
+      
+      <div className="product-container">
+        <ProductGallery images={product.images} />
+        
+        <div className="product-info">
+          <h1>{product.name}</h1>
+          <Rating value={product.rating} />
+          <p className="price">₹{product.price}</p>
+          
+          {product.stock > 0 ? (
+            <>
+              <QuantitySelector 
+                max={product.stock}
+                onChange={setQuantity}
+              />
+              <Button 
+                variant="primary" 
+                onClick={handleAddToCart}
+              >
+                Add to Cart
+              </Button>
+            </>
+          ) : (
+            <OutOfStockNotice />
+          )}
+          
+          <ProductTabs 
+            description={product.description}
+            specifications={product.specifications}
+            reviews={product.reviews}
+          />
+        </div>
+      </div>
+      
+      <RelatedProducts 
+        category={product.category}
+        currentProductId={product.id}
+      />
+    </div>
+  );
+}
+```
+
+This component demonstrates:
+1. Component composition (ProductGallery, Rating, etc.)
+2. Hooks for state management (useState, useEffect)
+3. Conditional rendering based on product availability
+4. Event handling for user interactions
+5. Integration with routing (useParams, navigate)
+
+## Interview Tips
+
+- Be ready to explain how React's virtual DOM improves performance with specific examples
+- Demonstrate knowledge of both class components and functional components with hooks
+- Discuss how you've used React's component architecture to build reusable UI elements
+- Mention experience with the React ecosystem (Redux, React Router, etc.)
+- Share a specific challenge you faced in React and how you solved it
+- Be prepared to discuss React's trade-offs compared to other frameworks
