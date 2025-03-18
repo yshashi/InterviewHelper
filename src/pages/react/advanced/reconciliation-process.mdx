@@ -1,0 +1,348 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: React's Reconciliation Process
+---
+
+# React's Reconciliation Process
+
+## What is Reconciliation?
+
+Reconciliation is the algorithm React uses to determine what parts of the UI need to be updated when there are changes to the application state. It's the process of comparing a previous version of a virtual DOM tree with a new version to determine what changes need to be applied to the actual DOM.
+
+```jsx
+// When state changes in this component
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <h1>Count: {count}</h1>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+```
+
+When the button is clicked and `setCount` is called, React needs to determine what parts of the DOM need to be updated. This is where reconciliation comes in.
+
+## The Virtual DOM
+
+At the heart of React's reconciliation process is the Virtual DOM (VDOM):
+
+1. **What is the Virtual DOM?** A lightweight JavaScript representation of the actual DOM
+2. **Purpose:** Minimize expensive DOM operations by calculating the minimal set of changes needed
+
+```jsx
+// Simplified representation of Virtual DOM nodes
+const vdomNode = {
+  type: 'div',
+  props: {
+    className: 'container',
+    children: [
+      {
+        type: 'h1',
+        props: {
+          children: 'Count: 0'
+        }
+      },
+      {
+        type: 'button',
+        props: {
+          onClick: () => {},
+          children: 'Increment'
+        }
+      }
+    ]
+  }
+};
+```
+
+## The Reconciliation Algorithm
+
+React's reconciliation algorithm follows these key principles:
+
+### 1. Different Component Types
+
+When a component type changes, React assumes the entire subtree has changed:
+
+```jsx
+// Before
+<div>
+  <Counter />
+</div>
+
+// After
+<div>
+  <Timer />  // Different component type
+</div>
+```
+
+React will unmount `Counter` and mount `Timer`, not attempting to reuse any DOM nodes.
+
+### 2. Same Component Type
+
+When the component type remains the same, React updates the props of the existing component instance and calls lifecycle methods:
+
+```jsx
+// Before
+<Button color="blue" text="Click me" />
+
+// After
+<Button color="red" text="Click me" />
+```
+
+React keeps the same component instance and only updates the `color` prop.
+
+### 3. Recursing on Children
+
+By default, when recursing on the children of a DOM node, React iterates over both lists of children simultaneously and generates a mutation whenever there's a difference:
+
+```jsx
+// Before
+<ul>
+  <li>Item 1</li>
+  <li>Item 2</li>
+</ul>
+
+// After
+<ul>
+  <li>Item 1</li>
+  <li>Item 2</li>
+  <li>Item 3</li>
+</ul>
+```
+
+React matches the first two items and inserts the third item.
+
+### 4. Keys
+
+When children have keys, React uses the key to match children in the original tree with children in the subsequent tree:
+
+```jsx
+// Before
+<ul>
+  <li key="a">Item A</li>
+  <li key="b">Item B</li>
+  <li key="c">Item C</li>
+</ul>
+
+// After
+<ul>
+  <li key="b">Item B</li>
+  <li key="a">Item A</li>
+  <li key="d">Item D</li>
+</ul>
+```
+
+React knows that elements with keys 'a' and 'b' just moved, and the element with key 'c' was removed while 'd' was added.
+
+## Fiber Architecture
+
+In React 16, the reconciliation algorithm was rewritten with the Fiber architecture:
+
+### What is Fiber?
+
+Fiber is React's internal reconciliation algorithm that enables:
+
+1. **Incremental rendering**: The ability to split rendering work into chunks and spread it out over multiple frames
+2. **Priority-based updates**: The ability to prioritize different types of updates
+3. **Pause, abort, or reuse work**: The ability to pause work and come back to it later
+4. **Improved error handling**: Through error boundaries
+
+```jsx
+// Simplified representation of a Fiber node
+const fiber = {
+  // Instance
+  type: 'div',
+  key: null,
+  stateNode: domNode,
+  
+  // Fiber relationships
+  return: parentFiber,
+  child: childFiber,
+  sibling: siblingFiber,
+  
+  // Effects
+  effectTag: 'PLACEMENT',
+  nextEffect: nextFiberWithEffect,
+  
+  // Work
+  pendingProps: newProps,
+  memoizedProps: oldProps,
+  memoizedState: oldState,
+  
+  // Metadata for the work loop
+  expirationTime: 1073741823,
+};
+```
+
+### Fiber Reconciliation Phases
+
+The Fiber reconciliation process is split into two main phases:
+
+1. **Render/Reconciliation Phase** (can be interrupted):
+   - Creates a new Fiber tree (the "work in progress" tree)
+   - Performs "diffing" to determine what changed
+   - Calculates needed DOM updates
+   - Can be paused and resumed
+
+2. **Commit Phase** (cannot be interrupted):
+   - Applies all the calculated changes to the DOM
+   - Calls lifecycle methods and effects
+   - Must complete in a single pass
+
+## Diffing Heuristics
+
+React uses several heuristics to optimize the diffing process:
+
+1. **O(n) algorithm instead of O(n³)**: React's diffing algorithm is O(n) where n is the number of elements, making it much faster than a general tree diffing algorithm which would be O(n³).
+
+2. **Two elements of different types produce different trees**: If a `<div>` changes to a `<span>`, React rebuilds the entire subtree.
+
+3. **Developer hints with key prop**: The `key` prop helps React identify which items have changed, been added, or been removed.
+
+## Reconciliation in Practice
+
+### Example: List Updates
+
+```jsx
+function TodoList({ todos }) {
+  return (
+    <ul>
+      {todos.map(todo => (
+        <li key={todo.id}>
+          {todo.text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+When the `todos` array changes:
+
+1. Without keys, React would try to update each `<li>` element in place
+2. With keys, React can identify which items moved, which were added, and which were removed
+
+### Example: Conditional Rendering
+
+```jsx
+function UserProfile({ isLoggedIn, user }) {
+  return (
+    <div>
+      {isLoggedIn ? (
+        <LoggedInView user={user} />
+      ) : (
+        <LoginPrompt />
+      )}
+    </div>
+  );
+}
+```
+
+When `isLoggedIn` changes:
+
+1. React sees different component types at the same position
+2. It unmounts `LoginPrompt` and mounts `LoggedInView` (or vice versa)
+
+## Performance Optimizations
+
+### 1. Using React.memo for Component Memoization
+
+```jsx
+const MemoizedComponent = React.memo(function MyComponent(props) {
+  // Only re-renders if props change
+  return <div>{props.name}</div>;
+});
+```
+
+### 2. Using shouldComponentUpdate or React.PureComponent
+
+```jsx
+class CounterButton extends React.PureComponent {
+  // Only re-renders if props or state change (shallow comparison)
+  render() {
+    return <button>{this.props.count}</button>;
+  }
+}
+```
+
+### 3. Using the key Prop Correctly
+
+```jsx
+function ListItem({ item }) {
+  return <li>{item.text}</li>;
+}
+
+function List({ items }) {
+  return (
+    <ul>
+      {items.map(item => (
+        // Using a stable ID as key
+        <ListItem key={item.id} item={item} />
+      ))}
+    </ul>
+  );
+}
+```
+
+## Common Reconciliation Pitfalls
+
+### 1. Using Index as Key
+
+```jsx
+// BAD: Using array index as key
+{items.map((item, index) => (
+  <ListItem key={index} item={item} />
+))}
+
+// GOOD: Using stable ID as key
+{items.map(item => (
+  <ListItem key={item.id} item={item} />
+))}
+```
+
+### 2. Creating Components Inside Render
+
+```jsx
+// BAD: Creating component inside render
+function ParentComponent() {
+  // This creates a new component on every render
+  const ChildComponent = () => <div>Child</div>;
+  
+  return <ChildComponent />;
+}
+
+// GOOD: Define components outside render
+const ChildComponent = () => <div>Child</div>;
+
+function ParentComponent() {
+  return <ChildComponent />;
+}
+```
+
+### 3. Inline Object or Array Creation
+
+```jsx
+// BAD: Creating new object on every render
+function Component() {
+  return <ChildComponent style={{ margin: 0 }} />;
+}
+
+// GOOD: Memoize or define outside
+const styles = { margin: 0 };
+
+function Component() {
+  return <ChildComponent style={styles} />;
+}
+```
+
+## Interview Tips
+
+- Explain that reconciliation is React's process for determining what parts of the UI need to be updated
+- Discuss the Virtual DOM as an optimization technique, not a feature in itself
+- Highlight the importance of keys for efficient list updates
+- Mention the Fiber architecture and how it enables concurrent rendering
+- Explain the difference between the render phase and commit phase
+- Discuss common performance optimizations like React.memo and proper key usage
+- Be prepared to explain how reconciliation affects your component design decisions

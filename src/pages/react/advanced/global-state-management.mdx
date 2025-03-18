@@ -1,0 +1,843 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Global State Management in React
+---
+
+# Global State Management in React
+
+## What is Global State Management?
+
+Global state management refers to the process of managing application state that is shared across multiple components, regardless of their position in the component tree. Unlike local component state, global state is accessible throughout the application and provides a centralized way to manage data.
+
+```jsx
+// Local component state
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+
+// vs.
+
+// Global state (conceptual)
+function App() {
+  return (
+    <GlobalStateProvider>
+      <Header />
+      <MainContent />
+      <Footer />
+    </GlobalStateProvider>
+  );
+}
+
+// Components can access and update the global state
+function Header() {
+  const { user, logout } = useGlobalState();
+  
+  return (
+    <header>
+      {user ? (
+        <>
+          <span>Welcome, {user.name}</span>
+          <button onClick={logout}>Logout</button>
+        </>
+      ) : (
+        <button>Login</button>
+      )}
+    </header>
+  );
+}
+```
+
+## Why Use Global State Management?
+
+### 1. Avoid Prop Drilling
+
+Without global state, you would need to pass props through multiple component layers:
+
+```jsx
+// Without global state (prop drilling)
+function App({ user }) {
+  return (
+    <div>
+      <Header user={user} />
+      <MainContent user={user} />
+      <Footer user={user} />
+    </div>
+  );
+}
+
+function MainContent({ user }) {
+  return (
+    <main>
+      <Sidebar user={user} />
+      <Content user={user} />
+    </main>
+  );
+}
+
+function Sidebar({ user }) {
+  return (
+    <aside>
+      <UserProfile user={user} />
+    </aside>
+  );
+}
+```
+
+### 2. Centralize Data Management
+
+Global state provides a single source of truth for your application data, making it easier to manage and update.
+
+### 3. Improve Component Reusability
+
+Components can be more reusable when they're not tightly coupled to specific prop structures.
+
+## Built-in React Solutions
+
+### 1. Context API
+
+React's Context API provides a way to share values between components without explicitly passing props through every level of the tree:
+
+```jsx
+import React, { createContext, useContext, useState } from 'react';
+
+// Create a context
+const UserContext = createContext();
+
+// Create a provider component
+function UserProvider({ children }) {
+  const [user, setUser] = useState(null);
+  
+  const login = (userData) => {
+    setUser(userData);
+  };
+  
+  const logout = () => {
+    setUser(null);
+  };
+  
+  return (
+    <UserContext.Provider value={{ user, login, logout }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+// Custom hook for consuming the context
+function useUser() {
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+}
+
+// App component with the provider
+function App() {
+  return (
+    <UserProvider>
+      <Header />
+      <MainContent />
+      <Footer />
+    </UserProvider>
+  );
+}
+
+// Component that consumes the context
+function Header() {
+  const { user, logout } = useUser();
+  
+  return (
+    <header>
+      {user ? (
+        <>
+          <span>Welcome, {user.name}</span>
+          <button onClick={logout}>Logout</button>
+        </>
+      ) : (
+        <button>Login</button>
+      )}
+    </header>
+  );
+}
+```
+
+#### Context API Limitations
+
+- **Performance concerns**: All components that consume a context will re-render when the context value changes
+- **Complex state logic**: Context doesn't provide built-in state management utilities like middleware or reducers
+- **DevTools integration**: Limited debugging capabilities compared to dedicated state management libraries
+
+### 2. Combining Context with useReducer
+
+For more complex state logic, you can combine the Context API with `useReducer`:
+
+```jsx
+import React, { createContext, useContext, useReducer } from 'react';
+
+// Define action types
+const ADD_TODO = 'ADD_TODO';
+const TOGGLE_TODO = 'TOGGLE_TODO';
+const DELETE_TODO = 'DELETE_TODO';
+
+// Initial state
+const initialState = {
+  todos: []
+};
+
+// Reducer function
+function todoReducer(state, action) {
+  switch (action.type) {
+    case ADD_TODO:
+      return {
+        ...state,
+        todos: [...state.todos, {
+          id: Date.now(),
+          text: action.payload,
+          completed: false
+        }]
+      };
+    case TOGGLE_TODO:
+      return {
+        ...state,
+        todos: state.todos.map(todo =>
+          todo.id === action.payload
+            ? { ...todo, completed: !todo.completed }
+            : todo
+        )
+      };
+    case DELETE_TODO:
+      return {
+        ...state,
+        todos: state.todos.filter(todo => todo.id !== action.payload)
+      };
+    default:
+      return state;
+  }
+}
+
+// Create context
+const TodoContext = createContext();
+
+// Create provider
+function TodoProvider({ children }) {
+  const [state, dispatch] = useReducer(todoReducer, initialState);
+  
+  const addTodo = (text) => {
+    dispatch({ type: ADD_TODO, payload: text });
+  };
+  
+  const toggleTodo = (id) => {
+    dispatch({ type: TOGGLE_TODO, payload: id });
+  };
+  
+  const deleteTodo = (id) => {
+    dispatch({ type: DELETE_TODO, payload: id });
+  };
+  
+  return (
+    <TodoContext.Provider value={{ 
+      todos: state.todos,
+      addTodo,
+      toggleTodo,
+      deleteTodo
+    }}>
+      {children}
+    </TodoContext.Provider>
+  );
+}
+
+// Custom hook
+function useTodos() {
+  const context = useContext(TodoContext);
+  if (context === undefined) {
+    throw new Error('useTodos must be used within a TodoProvider');
+  }
+  return context;
+}
+
+// Usage
+function TodoList() {
+  const { todos, toggleTodo, deleteTodo } = useTodos();
+  
+  return (
+    <ul>
+      {todos.map(todo => (
+        <li key={todo.id}>
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            onChange={() => toggleTodo(todo.id)}
+          />
+          <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+            {todo.text}
+          </span>
+          <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function AddTodo() {
+  const { addTodo } = useTodos();
+  const [text, setText] = useState('');
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (text.trim()) {
+      addTodo(text);
+      setText('');
+    }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Add a todo"
+      />
+      <button type="submit">Add</button>
+    </form>
+  );
+}
+```
+
+## Third-Party State Management Libraries
+
+### 1. Redux
+
+Redux is a predictable state container for JavaScript apps that follows three principles:
+
+1. **Single source of truth**: The state of the entire application is stored in a single store
+2. **State is read-only**: The only way to change the state is to emit an action
+3. **Changes are made with pure functions**: Reducers are pure functions that take the previous state and an action, and return the next state
+
+```jsx
+import { createStore } from 'redux';
+import { Provider, useSelector, useDispatch } from 'react-redux';
+
+// Action types
+const INCREMENT = 'INCREMENT';
+const DECREMENT = 'DECREMENT';
+
+// Action creators
+const increment = () => ({ type: INCREMENT });
+const decrement = () => ({ type: DECREMENT });
+
+// Reducer
+const counterReducer = (state = { count: 0 }, action) => {
+  switch (action.type) {
+    case INCREMENT:
+      return { count: state.count + 1 };
+    case DECREMENT:
+      return { count: state.count - 1 };
+    default:
+      return state;
+  }
+};
+
+// Create store
+const store = createStore(counterReducer);
+
+// Root component
+function App() {
+  return (
+    <Provider store={store}>
+      <Counter />
+    </Provider>
+  );
+}
+
+// Component
+function Counter() {
+  const count = useSelector(state => state.count);
+  const dispatch = useDispatch();
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => dispatch(increment())}>Increment</button>
+      <button onClick={() => dispatch(decrement())}>Decrement</button>
+    </div>
+  );
+}
+```
+
+#### Redux Toolkit
+
+Redux Toolkit is the official, opinionated, batteries-included toolset for efficient Redux development:
+
+```jsx
+import { configureStore, createSlice } from '@reduxjs/toolkit';
+import { Provider, useSelector, useDispatch } from 'react-redux';
+
+// Create a slice
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { count: 0 },
+  reducers: {
+    increment: state => {
+      state.count += 1;
+    },
+    decrement: state => {
+      state.count -= 1;
+    },
+    incrementByAmount: (state, action) => {
+      state.count += action.payload;
+    }
+  }
+});
+
+// Extract action creators and reducer
+const { increment, decrement, incrementByAmount } = counterSlice.actions;
+const counterReducer = counterSlice.reducer;
+
+// Create store
+const store = configureStore({
+  reducer: {
+    counter: counterReducer
+  }
+});
+
+// Root component
+function App() {
+  return (
+    <Provider store={store}>
+      <Counter />
+    </Provider>
+  );
+}
+
+// Component
+function Counter() {
+  const count = useSelector(state => state.counter.count);
+  const dispatch = useDispatch();
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => dispatch(increment())}>Increment</button>
+      <button onClick={() => dispatch(decrement())}>Decrement</button>
+      <button onClick={() => dispatch(incrementByAmount(5))}>Add 5</button>
+    </div>
+  );
+}
+```
+
+### 2. Zustand
+
+Zustand is a small, fast, and scalable state management solution that uses simplified flux principles:
+
+```jsx
+import create from 'zustand';
+
+// Create a store
+const useStore = create(set => ({
+  count: 0,
+  increment: () => set(state => ({ count: state.count + 1 })),
+  decrement: () => set(state => ({ count: state.count - 1 })),
+  reset: () => set({ count: 0 })
+}));
+
+// Component
+function Counter() {
+  const { count, increment, decrement, reset } = useStore();
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>Increment</button>
+      <button onClick={decrement}>Decrement</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+### 3. Recoil
+
+Recoil is a state management library for React that provides several capabilities that are difficult to achieve with React alone:
+
+```jsx
+import { RecoilRoot, atom, useRecoilState, selector, useRecoilValue } from 'recoil';
+
+// Define an atom (a piece of state)
+const countAtom = atom({
+  key: 'countAtom',
+  default: 0
+});
+
+// Define a selector (derived state)
+const doubleCountSelector = selector({
+  key: 'doubleCount',
+  get: ({ get }) => {
+    const count = get(countAtom);
+    return count * 2;
+  }
+});
+
+// Root component
+function App() {
+  return (
+    <RecoilRoot>
+      <Counter />
+      <DoubleCounter />
+    </RecoilRoot>
+  );
+}
+
+// Component using the atom
+function Counter() {
+  const [count, setCount] = useRecoilState(countAtom);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+    </div>
+  );
+}
+
+// Component using the selector
+function DoubleCounter() {
+  const doubleCount = useRecoilValue(doubleCountSelector);
+  
+  return <p>Double Count: {doubleCount}</p>;
+}
+```
+
+### 4. Jotai
+
+Jotai is an atomic approach to global React state management with a minimal API:
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// Define an atom
+const countAtom = atom(0);
+
+// Derived atom
+const doubleCountAtom = atom(
+  get => get(countAtom) * 2
+);
+
+// Component
+function Counter() {
+  const [count, setCount] = useAtom(countAtom);
+  const [doubleCount] = useAtom(doubleCountAtom);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Double Count: {doubleCount}</p>
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+      <button onClick={() => setCount(c => c - 1)}>Decrement</button>
+    </div>
+  );
+}
+```
+
+## Choosing the Right Solution
+
+### When to Use Built-in React Solutions
+
+- **Small to medium-sized applications**
+- **When you don't need advanced features** like middleware, time-travel debugging, or optimized re-renders
+- **When you want to minimize bundle size**
+- **When your state logic is relatively simple**
+
+```jsx
+// Simple Context + useReducer example for a small app
+function App() {
+  return (
+    <ThemeProvider>
+      <UserProvider>
+        <Header />
+        <MainContent />
+        <Footer />
+      </UserProvider>
+    </ThemeProvider>
+  );
+}
+```
+
+### When to Use Third-Party Libraries
+
+- **Large applications** with complex state logic
+- **When you need advanced features** like middleware, devtools, or optimized performance
+- **When you have a team familiar with a specific library**
+- **When you need to share state across many components**
+
+```jsx
+// Redux example for a large application
+function App() {
+  return (
+    <Provider store={store}>
+      <PersistGate loading={<LoadingScreen />} persistor={persistor}>
+        <Router>
+          <Layout>
+            <Routes>
+              {/* ... */}
+            </Routes>
+          </Layout>
+        </Router>
+      </PersistGate>
+    </Provider>
+  );
+}
+```
+
+## Structuring Global State
+
+### 1. Domain-Based Structure
+
+Organize state by domain or feature:
+
+```jsx
+// Redux example with domain-based structure
+const rootReducer = combineReducers({
+  auth: authReducer,
+  products: productsReducer,
+  cart: cartReducer,
+  orders: ordersReducer,
+  ui: uiReducer
+});
+```
+
+### 2. Normalized State
+
+For relational data, normalize your state to avoid duplication:
+
+```jsx
+// Normalized state example
+const initialState = {
+  users: {
+    byId: {
+      'user1': { id: 'user1', name: 'John', postIds: ['post1', 'post2'] },
+      'user2': { id: 'user2', name: 'Jane', postIds: ['post3'] }
+    },
+    allIds: ['user1', 'user2']
+  },
+  posts: {
+    byId: {
+      'post1': { id: 'post1', title: 'First Post', authorId: 'user1' },
+      'post2': { id: 'post2', title: 'Second Post', authorId: 'user1' },
+      'post3': { id: 'post3', title: 'Third Post', authorId: 'user2' }
+    },
+    allIds: ['post1', 'post2', 'post3']
+  }
+};
+```
+
+### 3. Separation of UI and Domain State
+
+Keep UI state separate from domain data:
+
+```jsx
+// Redux example with separated UI and domain state
+const rootReducer = combineReducers({
+  // Domain state
+  entities: combineReducers({
+    users: usersReducer,
+    posts: postsReducer,
+    comments: commentsReducer
+  }),
+  
+  // UI state
+  ui: combineReducers({
+    theme: themeReducer,
+    modals: modalsReducer,
+    notifications: notificationsReducer
+  })
+});
+```
+
+## Performance Optimization
+
+### 1. Selective Rendering
+
+Ensure components only re-render when necessary:
+
+```jsx
+// With Redux, use selectors to extract only needed data
+function UserProfile() {
+  // This component only re-renders when username changes
+  const username = useSelector(state => state.user.name);
+  
+  return <div>Hello, {username}</div>;
+}
+```
+
+### 2. Memoization
+
+Use memoization to optimize expensive computations:
+
+```jsx
+// With Redux Toolkit, use createSelector for memoized selectors
+import { createSelector } from '@reduxjs/toolkit';
+
+const selectItems = state => state.items;
+const selectFilter = state => state.filter;
+
+const selectFilteredItems = createSelector(
+  [selectItems, selectFilter],
+  (items, filter) => items.filter(item => item.category === filter)
+);
+
+function ItemList() {
+  // Only recalculates when items or filter changes
+  const filteredItems = useSelector(selectFilteredItems);
+  
+  return (
+    <ul>
+      {filteredItems.map(item => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### 3. Context Splitting
+
+Split your context into smaller pieces to minimize re-renders:
+
+```jsx
+// Instead of one large context
+const AppContext = createContext();
+
+// Split into multiple contexts
+const UserContext = createContext();
+const ThemeContext = createContext();
+const CartContext = createContext();
+
+function App() {
+  return (
+    <UserProvider>
+      <ThemeProvider>
+        <CartProvider>
+          <MainContent />
+        </CartProvider>
+      </ThemeProvider>
+    </UserProvider>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Keep State Minimal
+
+Only store what you need in global state:
+
+```jsx
+// BAD: Storing derived data
+const state = {
+  todos: [
+    { id: 1, text: 'Buy milk', completed: false },
+    { id: 2, text: 'Clean house', completed: true }
+  ],
+  completedTodos: [
+    { id: 2, text: 'Clean house', completed: true }
+  ],
+  incompleteTodos: [
+    { id: 1, text: 'Buy milk', completed: false }
+  ]
+};
+
+// GOOD: Store minimal data and derive the rest
+const state = {
+  todos: [
+    { id: 1, text: 'Buy milk', completed: false },
+    { id: 2, text: 'Clean house', completed: true }
+  ]
+};
+
+// Derive data when needed
+const completedTodos = state.todos.filter(todo => todo.completed);
+const incompleteTodos = state.todos.filter(todo => !todo.completed);
+```
+
+### 2. Use Immutable Updates
+
+Always update state immutably:
+
+```jsx
+// BAD: Mutating state directly
+function reducer(state, action) {
+  if (action.type === 'ADD_TODO') {
+    // This mutates the original array
+    state.todos.push(action.payload);
+    return state;
+  }
+  return state;
+}
+
+// GOOD: Immutable updates
+function reducer(state, action) {
+  if (action.type === 'ADD_TODO') {
+    // This creates a new array
+    return {
+      ...state,
+      todos: [...state.todos, action.payload]
+    };
+  }
+  return state;
+}
+```
+
+### 3. Document Your State Shape
+
+Document your state shape to make it easier for other developers to understand:
+
+```jsx
+/**
+ * Application State Shape
+ * 
+ * @typedef {Object} AppState
+ * @property {Object} auth - Authentication state
+ * @property {boolean} auth.isAuthenticated - Whether the user is authenticated
+ * @property {Object|null} auth.user - Current user information
+ * @property {string} auth.token - Authentication token
+ * 
+ * @property {Object} products - Products state
+ * @property {Object.<string, Product>} products.byId - Products indexed by ID
+ * @property {string[]} products.allIds - All product IDs
+ * @property {boolean} products.loading - Whether products are loading
+ * @property {string|null} products.error - Error message if loading failed
+ */
+
+// Initial state
+const initialState = {
+  auth: {
+    isAuthenticated: false,
+    user: null,
+    token: null
+  },
+  products: {
+    byId: {},
+    allIds: [],
+    loading: false,
+    error: null
+  }
+};
+```
+
+## Interview Tips
+
+- Explain that global state management is about managing state that's shared across multiple components
+- Discuss the trade-offs between built-in React solutions and third-party libraries
+- Highlight the importance of performance optimization in global state management
+- Be prepared to discuss how you would structure global state for different types of applications
+- Explain how you would decide which state should be local vs. global
+- Mention that the choice of state management solution depends on the specific requirements of the application
+- Be familiar with the core concepts of popular state management libraries like Redux, Zustand, Recoil, and Jotai

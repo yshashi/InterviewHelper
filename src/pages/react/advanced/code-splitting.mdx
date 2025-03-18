@@ -1,0 +1,435 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Code Splitting in React
+---
+
+# Code Splitting in React
+
+## What is Code Splitting?
+
+Code splitting is a technique that allows you to split your JavaScript bundle into smaller chunks that can be loaded on demand or in parallel, rather than loading the entire application code upfront. This significantly improves initial load time and performance, especially for larger applications.
+
+```jsx
+// Without code splitting - one large bundle
+import LargeComponent from './LargeComponent';
+import AnotherLargeComponent from './AnotherLargeComponent';
+
+function App() {
+  return (
+    <div>
+      <LargeComponent />
+      <AnotherLargeComponent />
+    </div>
+  );
+}
+```
+
+## Why Use Code Splitting?
+
+### 1. Improved Initial Load Time
+
+Without code splitting, users must download, parse, and execute the entire application JavaScript before they can interact with it, even if they only use a small portion of the application.
+
+### 2. Reduced Memory Usage
+
+Loading only the necessary code reduces the memory footprint of your application, which is especially important for mobile devices.
+
+### 3. Better Resource Utilization
+
+Code splitting allows browsers to better utilize caching mechanisms, as smaller chunks can be cached independently and updated only when necessary.
+
+## Dynamic Imports
+
+The most basic form of code splitting in JavaScript uses the dynamic `import()` syntax, which returns a Promise:
+
+```javascript
+// Static import (loaded at startup)
+import { add } from './math';
+
+// Dynamic import (loaded on demand)
+button.addEventListener('click', async () => {
+  const { multiply } = await import('./math');
+  console.log(multiply(4, 5));
+});
+```
+
+## React.lazy and Suspense
+
+React provides built-in support for code splitting using `React.lazy` and `Suspense`:
+
+```jsx
+import React, { Suspense, lazy } from 'react';
+
+// Lazy load the component
+const LazyComponent = lazy(() => import('./LazyComponent'));
+
+function App() {
+  return (
+    <div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+### How React.lazy Works
+
+1. `React.lazy` takes a function that calls `import()` to load a component
+2. The component is only loaded when it's rendered for the first time
+3. `Suspense` provides a fallback UI while the lazy component is loading
+
+## Code Splitting with React Router
+
+One of the most common use cases for code splitting is route-based splitting:
+
+```jsx
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// Lazy load route components
+const Home = lazy(() => import('./routes/Home'));
+const About = lazy(() => import('./routes/About'));
+const UserProfile = lazy(() => import('./routes/UserProfile'));
+
+function App() {
+  return (
+    <Router>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/user/:id" element={<UserProfile />} />
+        </Routes>
+      </Suspense>
+    </div>
+  );
+}
+```
+
+## Component-Level Code Splitting
+
+You can also split code at the component level, especially for large components that aren't immediately visible:
+
+```jsx
+import React, { Suspense, lazy, useState } from 'react';
+
+// Lazy load a complex component
+const DataVisualization = lazy(() => import('./DataVisualization'));
+
+function Dashboard() {
+  const [showVisualization, setShowVisualization] = useState(false);
+  
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <button onClick={() => setShowVisualization(true)}>
+        Show Visualization
+      </button>
+      
+      {showVisualization && (
+        <Suspense fallback={<div>Loading visualization...</div>}>
+          <DataVisualization />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+```
+
+## Advanced Code Splitting Techniques
+
+### 1. Preloading Components
+
+You can preload components before they're needed to improve perceived performance:
+
+```jsx
+import React, { Suspense, lazy } from 'react';
+
+// Define the lazy component
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+// Preload function
+const preloadHeavyComponent = () => {
+  // This starts the loading process in the background
+  import('./HeavyComponent');
+};
+
+function App() {
+  return (
+    <div>
+      <button 
+        onMouseEnter={preloadHeavyComponent} // Preload on hover
+        onClick={() => setShowHeavy(true)}
+      >
+        Show Heavy Component
+      </button>
+      
+      {showHeavy && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <HeavyComponent />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+```
+
+### 2. Named Exports with React.lazy
+
+React.lazy only supports default exports by default. For named exports, you need a small wrapper:
+
+```jsx
+// Component with named export
+// FeatureComponent.js
+export const FeatureComponent = () => <div>Feature Component</div>;
+
+// Importing a named export with React.lazy
+const LazyFeatureComponent = lazy(() => 
+  import('./FeatureComponent')
+    .then(module => ({ default: module.FeatureComponent }))
+);
+```
+
+### 3. Error Boundaries with Lazy Loading
+
+Combine error boundaries with lazy loading to handle loading failures:
+
+```jsx
+import React, { Suspense, lazy } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+
+const LazyComponent = lazy(() => import('./LazyComponent'));
+
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div role="alert">
+      <p>Something went wrong:</p>
+      <pre>{error.message}</pre>
+      <button onClick={resetErrorBoundary}>Try again</button>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+```
+
+## Code Splitting with Build Tools
+
+### Webpack
+
+Webpack is the most common build tool for React applications and handles code splitting automatically when it encounters dynamic imports:
+
+```javascript
+// webpack.config.js
+module.exports = {
+  // ...
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      minSize: 20000,
+      maxSize: 70000,
+      minChunks: 1,
+      maxAsyncRequests: 30,
+      maxInitialRequests: 30,
+      automaticNameDelimiter: '~',
+      enforceSizeThreshold: 50000,
+      cacheGroups: {
+        defaultVendors: {
+          test: /[\\/]node_modules[\\/]/,
+          priority: -10
+        },
+        default: {
+          minChunks: 2,
+          priority: -20,
+          reuseExistingChunk: true
+        }
+      }
+    }
+  }
+};
+```
+
+### Vite
+
+Vite handles code splitting out of the box:
+
+```javascript
+// vite.config.js
+export default {
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor code into separate chunks
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          // Split specific features
+          charts: ['chart.js', 'd3'],
+        }
+      }
+    }
+  }
+};
+```
+
+## Analyzing Bundle Size
+
+Before implementing code splitting, it's important to analyze your bundle to identify opportunities for splitting:
+
+```bash
+# For Create React App
+npm run build -- --stats
+npx source-map-explorer build/static/js/*.js
+
+# For webpack
+npx webpack-bundle-analyzer
+```
+
+## Best Practices
+
+### 1. Split at Natural Boundaries
+
+```jsx
+// Good splitting boundaries
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
+const UserDashboard = lazy(() => import('./UserDashboard'));
+const Analytics = lazy(() => import('./Analytics'));
+```
+
+Split your code at natural boundaries like routes, tabs, modals, or user roles.
+
+### 2. Balance the Number of Chunks
+
+```jsx
+// Too granular - creates too many small chunks
+const Button = lazy(() => import('./Button'));
+const Input = lazy(() => import('./Input'));
+const Label = lazy(() => import('./Label'));
+
+// Better - group related small components
+const FormElements = lazy(() => import('./FormElements'));
+```
+
+Too many small chunks can lead to overhead from multiple network requests.
+
+### 3. Use Meaningful Chunk Names
+
+```jsx
+// Webpack magic comments for naming chunks
+const UserProfile = lazy(() => 
+  import(/* webpackChunkName: "user-profile" */ './UserProfile')
+);
+
+const Settings = lazy(() => 
+  import(/* webpackChunkName: "settings" */ './Settings')
+);
+```
+
+### 4. Consider the Loading State
+
+```jsx
+// Simple loading state
+<Suspense fallback={<div>Loading...</div>}>
+  <LazyComponent />
+</Suspense>
+
+// Better loading state that matches the layout
+<Suspense 
+  fallback={
+    <div className="card">
+      <div className="card-skeleton-header" />
+      <div className="card-skeleton-body" />
+    </div>
+  }
+>
+  <LazyComponent />
+</Suspense>
+```
+
+Use loading states that match the layout of the component being loaded to reduce layout shifts.
+
+## Common Pitfalls
+
+### 1. Over-Splitting
+
+```jsx
+// Too much splitting can lead to waterfall requests
+function App() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <Layout>
+        <Suspense fallback={<Loading />}>
+          <Header />
+        </Suspense>
+        <Suspense fallback={<Loading />}>
+          <Sidebar />
+        </Suspense>
+        <Suspense fallback={<Loading />}>
+          <Content />
+        </Suspense>
+      </Layout>
+    </Suspense>
+  );
+}
+```
+
+### 2. Not Handling Loading States Properly
+
+```jsx
+// BAD: No loading state
+function App() {
+  return <LazyComponent />;  // Will throw an error without Suspense
+}
+
+// GOOD: Proper loading state
+function App() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <LazyComponent />
+    </Suspense>
+  );
+}
+```
+
+### 3. Forgetting Error Handling
+
+```jsx
+// BAD: No error handling
+function App() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <LazyComponent />
+    </Suspense>
+  );
+}
+
+// GOOD: With error handling
+function App() {
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <Suspense fallback={<Loading />}>
+        <LazyComponent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+```
+
+## Interview Tips
+
+- Explain that code splitting is primarily about improving initial load time and performance
+- Discuss the difference between static imports and dynamic imports
+- Highlight how React.lazy and Suspense make code splitting declarative
+- Mention that route-based code splitting is the most common approach
+- Explain how code splitting works with the underlying bundler (Webpack, Vite, etc.)
+- Discuss strategies for determining what to split and how granular to make the chunks
+- Be prepared to talk about the trade-offs between fewer large chunks vs. many small chunks

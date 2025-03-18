@@ -1,0 +1,711 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Server-Side Rendering (SSR) in React
+---
+
+# Server-Side Rendering (SSR) in React
+
+## What is Server-Side Rendering?
+
+Server-Side Rendering (SSR) is a technique where a React application is rendered on the server rather than in the browser. The server sends fully rendered HTML to the client, which can then be hydrated with JavaScript to make it interactive.
+
+```jsx
+// Traditional client-side rendering
+// index.html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My React App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/bundle.js"></script>
+  </body>
+</html>
+
+// vs.
+
+// Server-side rendering
+// Server response
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My React App</title>
+  </head>
+  <body>
+    <div id="root">
+      <div class="app">
+        <header>
+          <h1>Welcome to My App</h1>
+          <nav>...</nav>
+        </header>
+        <main>
+          <article>...</article>
+        </main>
+        <footer>...</footer>
+      </div>
+    </div>
+    <script src="/bundle.js"></script>
+  </body>
+</html>
+```
+
+## Benefits of Server-Side Rendering
+
+### 1. Improved Initial Load Performance
+
+SSR provides a faster First Contentful Paint (FCP) and Time to Interactive (TTI), especially on slower devices or networks:
+
+```jsx
+// Client-side rendering flow
+1. Browser requests page
+2. Server sends minimal HTML
+3. Browser downloads JavaScript
+4. Browser executes JavaScript
+5. React renders the app
+6. User sees content and can interact
+
+// Server-side rendering flow
+1. Browser requests page
+2. Server renders React to HTML
+3. Server sends complete HTML
+4. User sees content immediately
+5. Browser downloads JavaScript
+6. JavaScript hydrates the page for interactivity
+```
+
+### 2. Better SEO
+
+Search engines can more easily index content that's rendered on the server:
+
+```jsx
+// Client-side rendering
+// What search engines might see initially
+<div id="root"></div>
+
+// Server-side rendering
+// What search engines see
+<div id="root">
+  <div class="app">
+    <h1>Product: Premium Headphones</h1>
+    <p>High-quality wireless headphones with noise cancellation...</p>
+    <div class="reviews">
+      <h2>Customer Reviews</h2>
+      <div class="review">...</div>
+      <div class="review">...</div>
+    </div>
+  </div>
+</div>
+```
+
+### 3. Improved Social Media Sharing
+
+Social media platforms can display rich previews of your content:
+
+```html
+<!-- Meta tags for social media sharing -->
+<meta property="og:title" content="Premium Headphones" />
+<meta property="og:description" content="High-quality wireless headphones with noise cancellation..." />
+<meta property="og:image" content="https://example.com/headphones.jpg" />
+```
+
+### 4. Better Performance on Low-End Devices
+
+Users with less powerful devices benefit from receiving pre-rendered content:
+
+```jsx
+// With client-side rendering, a low-end device might take seconds to render
+// With server-side rendering, content is visible immediately
+```
+
+## Implementing SSR with Next.js
+
+Next.js is a React framework that provides built-in support for server-side rendering:
+
+### 1. Basic Next.js Setup
+
+```jsx
+// pages/index.js
+export default function Home() {
+  return (
+    <div>
+      <h1>Welcome to my Next.js app</h1>
+      <p>This page is server-side rendered by default</p>
+    </div>
+  );
+}
+```
+
+### 2. Data Fetching with getServerSideProps
+
+```jsx
+// pages/products/[id].js
+export default function Product({ product }) {
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <p>{product.description}</p>
+      <p>Price: ${product.price}</p>
+    </div>
+  );
+}
+
+// This function runs on every request
+export async function getServerSideProps(context) {
+  const { id } = context.params;
+  
+  // Fetch data from an API
+  const res = await fetch(`https://api.example.com/products/${id}`);
+  const product = await res.json();
+  
+  // Pass data to the page via props
+  return {
+    props: { product }
+  };
+}
+```
+
+### 3. Static Generation with getStaticProps
+
+Next.js also supports Static Site Generation (SSG), where pages are pre-rendered at build time:
+
+```jsx
+// pages/blog/[slug].js
+export default function BlogPost({ post }) {
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <div dangerouslySetInnerHTML={{ __html: post.content }} />
+    </article>
+  );
+}
+
+// This function runs at build time
+export async function getStaticProps({ params }) {
+  const { slug } = params;
+  
+  // Fetch data from an API or CMS
+  const post = await fetchBlogPost(slug);
+  
+  return {
+    props: { post },
+    // Re-generate the page at most once per hour
+    revalidate: 3600
+  };
+}
+
+// This function specifies which paths to pre-render
+export async function getStaticPaths() {
+  // Fetch all blog posts
+  const posts = await fetchAllBlogPosts();
+  
+  // Get the paths we want to pre-render
+  const paths = posts.map(post => ({
+    params: { slug: post.slug }
+  }));
+  
+  // We'll pre-render only these paths at build time
+  // { fallback: 'blocking' } means other routes will be rendered on-demand
+  return { paths, fallback: 'blocking' };
+}
+```
+
+### 4. API Routes in Next.js
+
+Next.js allows you to create API endpoints as part of your application:
+
+```jsx
+// pages/api/products.js
+export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    // Fetch products from database
+    const products = await fetchProductsFromDB();
+    
+    // Return the products
+    res.status(200).json(products);
+  } else {
+    res.setHeader('Allow', ['GET']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+}
+```
+
+### 5. Custom App Component
+
+You can customize the initialization of pages by creating a custom `_app.js` file:
+
+```jsx
+// pages/_app.js
+import '../styles/globals.css';
+import Layout from '../components/Layout';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  );
+}
+
+export default MyApp;
+```
+
+### 6. Custom Document Component
+
+For customizing the HTML document structure, you can create a `_document.js` file:
+
+```jsx
+// pages/_document.js
+import { Html, Head, Main, NextScript } from 'next/document';
+
+export default function Document() {
+  return (
+    <Html lang="en">
+      <Head>
+        <meta charSet="utf-8" />
+        <link rel="icon" href="/favicon.ico" />
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" 
+          rel="stylesheet" 
+        />
+      </Head>
+      <body>
+        <Main />
+        <NextScript />
+      </body>
+    </Html>
+  );
+}
+```
+
+## Advanced SSR Concepts
+
+### 1. Hydration
+
+Hydration is the process where React attaches event listeners to the server-rendered HTML:
+
+```jsx
+// Client-side entry point
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+
+// Hydrate the app
+ReactDOM.hydrate(
+  <App />,
+  document.getElementById('root')
+);
+```
+
+### 2. Data Fetching Strategies
+
+Next.js provides multiple data fetching strategies:
+
+```jsx
+// Server-Side Rendering (SSR)
+// Data fetched on every request
+export async function getServerSideProps() {
+  // ...
+}
+
+// Static Site Generation (SSG)
+// Data fetched at build time
+export async function getStaticProps() {
+  // ...
+}
+
+// Incremental Static Regeneration (ISR)
+// Pages re-generated in the background
+export async function getStaticProps() {
+  return {
+    props: { ... },
+    revalidate: 60 // Regenerate after 60 seconds
+  };
+}
+
+// Client-side data fetching
+// For data that doesn't need SEO
+import useSWR from 'swr';
+
+function Profile() {
+  const { data, error } = useSWR('/api/user', fetcher);
+  
+  if (error) return <div>Failed to load</div>;
+  if (!data) return <div>Loading...</div>;
+  
+  return <div>Hello {data.name}!</div>;
+}
+```
+
+### 3. Managing State in SSR
+
+When using global state management with SSR, you need to initialize the state on both server and client:
+
+```jsx
+// With Redux and Next.js
+import { createWrapper } from 'next-redux-wrapper';
+import { configureStore } from '@reduxjs/toolkit';
+import rootReducer from './reducers';
+
+// Create a makeStore function
+const makeStore = () => configureStore({
+  reducer: rootReducer
+});
+
+// Export an enhanced App component with the store wrapper
+export const wrapper = createWrapper(makeStore);
+
+// In _app.js
+import { wrapper } from '../store';
+
+function MyApp({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+
+export default wrapper.withRedux(MyApp);
+
+// In a page component
+export const getServerSideProps = wrapper.getServerSideProps(
+  store => async ({ params }) => {
+    // Dispatch actions to populate the store
+    await store.dispatch(fetchProduct(params.id));
+    
+    return {
+      props: {}
+    };
+  }
+);
+```
+
+### 4. Performance Optimization
+
+Optimize your SSR application for better performance:
+
+```jsx
+// 1. Use dynamic imports for code splitting
+import dynamic from 'next/dynamic';
+
+const DynamicComponent = dynamic(() => import('../components/HeavyComponent'), {
+  loading: () => <p>Loading...</p>,
+  ssr: false // Only render on client-side
+});
+
+// 2. Optimize images
+import Image from 'next/image';
+
+function MyImage() {
+  return (
+    <Image
+      src="/profile.jpg"
+      alt="Profile"
+      width={500}
+      height={300}
+      priority // Load this image immediately
+    />
+  );
+}
+
+// 3. Use next/script for optimized script loading
+import Script from 'next/script';
+
+function MyComponent() {
+  return (
+    <>
+      <Script
+        src="https://www.google-analytics.com/analytics.js"
+        strategy="afterInteractive" // Load after page becomes interactive
+      />
+    </>
+  );
+}
+```
+
+## Common Challenges with SSR
+
+### 1. Browser-Specific Code
+
+When rendering on the server, you don't have access to browser APIs:
+
+```jsx
+// BAD: Using browser APIs directly
+function Component() {
+  useEffect(() => {
+    // This is fine in useEffect
+    window.localStorage.setItem('visited', 'true');
+  }, []);
+  
+  // This will break SSR
+  const screenWidth = window.innerWidth;
+  
+  return <div>Screen width: {screenWidth}</div>;
+}
+
+// GOOD: Check for browser environment
+function Component() {
+  const [screenWidth, setScreenWidth] = useState(0);
+  
+  useEffect(() => {
+    // Safe to use browser APIs in useEffect
+    setScreenWidth(window.innerWidth);
+    window.localStorage.setItem('visited', 'true');
+  }, []);
+  
+  return <div>Screen width: {screenWidth}</div>;
+}
+```
+
+### 2. Managing Environment Variables
+
+Different environment variables might be needed for server and client:
+
+```jsx
+// next.config.js
+module.exports = {
+  env: {
+    // Available on both client and server
+    API_URL: process.env.API_URL,
+  },
+  serverRuntimeConfig: {
+    // Only available on the server
+    API_SECRET: process.env.API_SECRET,
+  },
+  publicRuntimeConfig: {
+    // Available on both client and server
+    FEATURE_FLAGS: process.env.FEATURE_FLAGS,
+  },
+};
+
+// Usage in a component
+import getConfig from 'next/config';
+
+function Component() {
+  const { publicRuntimeConfig, serverRuntimeConfig } = getConfig();
+  
+  // This is safe to use on client and server
+  const apiUrl = publicRuntimeConfig.API_URL;
+  
+  // This will be undefined on the client
+  const apiSecret = serverRuntimeConfig?.API_SECRET;
+  
+  // ...
+}
+```
+
+### 3. Handling Authentication
+
+Authentication needs special handling with SSR:
+
+```jsx
+// pages/profile.js
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useAuth } from '../hooks/auth';
+
+export default function Profile({ user }) {
+  const { user: clientUser, loading } = useAuth();
+  const router = useRouter();
+  
+  // Client-side redirect if not authenticated
+  useEffect(() => {
+    if (!loading && !clientUser) {
+      router.replace('/login');
+    }
+  }, [clientUser, loading, router]);
+  
+  if (loading) return <div>Loading...</div>;
+  if (!user && !clientUser) return null; // Prevent flash of unauthenticated content
+  
+  return (
+    <div>
+      <h1>Welcome, {user?.name || clientUser?.name}</h1>
+      {/* ... */}
+    </div>
+  );
+}
+
+// Server-side authentication check
+export async function getServerSideProps(context) {
+  const { req, res } = context;
+  const session = await getSession(req);
+  
+  if (!session) {
+    // Redirect to login if not authenticated
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {
+      user: session.user,
+    },
+  };
+}
+```
+
+## Implementing SSR from Scratch
+
+While frameworks like Next.js handle most of the complexity, understanding how to implement SSR from scratch is valuable:
+
+### 1. Basic Express Server with React SSR
+
+```jsx
+// server.js
+import express from 'express';
+import React from 'react';
+import { renderToString } from 'react-dom/server';
+import { StaticRouter } from 'react-router-dom/server';
+import App from './src/App';
+
+const app = express();
+
+// Serve static files
+app.use(express.static('build/public'));
+
+// Handle all requests
+app.get('*', (req, res) => {
+  // Initial data that will be hydrated on the client
+  const initialData = {
+    user: null,
+    products: []
+  };
+  
+  // Render the app to a string
+  const appHtml = renderToString(
+    <StaticRouter location={req.url}>
+      <App initialData={initialData} />
+    </StaticRouter>
+  );
+  
+  // Create the full HTML response
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>My React App</title>
+        <link rel="stylesheet" href="/css/main.css">
+        <script>
+          window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};
+        </script>
+      </head>
+      <body>
+        <div id="root">${appHtml}</div>
+        <script src="/js/bundle.js"></script>
+      </body>
+    </html>
+  `;
+  
+  // Send the response
+  res.send(html);
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server is listening on port 3000');
+});
+```
+
+### 2. Client-Side Hydration
+
+```jsx
+// client.js
+import React from 'react';
+import { hydrateRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+
+// Get the initial data from the server
+const initialData = window.__INITIAL_DATA__;
+
+// Hydrate the app
+hydrateRoot(
+  document.getElementById('root'),
+  <BrowserRouter>
+    <App initialData={initialData} />
+  </BrowserRouter>
+);
+```
+
+### 3. Data Loading with SSR
+
+```jsx
+// server.js (extended)
+app.get('*', async (req, res) => {
+  try {
+    // Fetch initial data based on the route
+    const initialData = await fetchDataForRoute(req.url);
+    
+    // Render the app with the data
+    const appHtml = renderToString(
+      <StaticRouter location={req.url}>
+        <App initialData={initialData} />
+      </StaticRouter>
+    );
+    
+    // Create the HTML response
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>My React App</title>
+          <link rel="stylesheet" href="/css/main.css">
+          <script>
+            window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};
+          </script>
+        </head>
+        <body>
+          <div id="root">${appHtml}</div>
+          <script src="/js/bundle.js"></script>
+        </body>
+      </html>
+    `;
+    
+    // Send the response
+    res.send(html);
+  } catch (error) {
+    console.error('Error rendering app:', error);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Helper function to fetch data based on the route
+async function fetchDataForRoute(url) {
+  // Parse the URL to determine what data to fetch
+  const parsedUrl = new URL(url, 'http://localhost');
+  const path = parsedUrl.pathname;
+  
+  if (path === '/') {
+    return {
+      page: 'home',
+      featuredProducts: await fetchFeaturedProducts()
+    };
+  }
+  
+  if (path.startsWith('/products/')) {
+    const productId = path.split('/')[2];
+    return {
+      page: 'product',
+      product: await fetchProduct(productId)
+    };
+  }
+  
+  // Default data
+  return {
+    page: '404'
+  };
+}
+```
+
+## Interview Tips
+
+- Explain that SSR renders React components on the server and sends HTML to the client
+- Highlight the benefits: improved initial load time, better SEO, and enhanced user experience
+- Discuss the trade-offs: increased server load, more complex setup, and potential for hydration issues
+- Mention that Next.js is the most popular solution for React SSR
+- Explain the difference between SSR, SSG, and ISR in Next.js
+- Be prepared to discuss how to handle browser-specific code in an SSR environment
+- Highlight the importance of proper hydration to ensure the client-side app works correctly
+- Discuss strategies for optimizing SSR performance
