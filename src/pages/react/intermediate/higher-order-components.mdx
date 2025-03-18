@@ -1,0 +1,323 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Higher-Order Components (HOCs) in React
+---
+
+# Higher-Order Components (HOCs) in React
+
+## What are Higher-Order Components?
+
+A Higher-Order Component (HOC) is an advanced pattern in React that involves a function that takes a component and returns a new enhanced component. HOCs allow you to reuse component logic, add additional props, and modify the behavior of components without modifying their implementation.
+
+```jsx
+// Basic HOC pattern
+function withExtraProps(WrappedComponent) {
+  // Return a new enhanced component
+  return function EnhancedComponent(props) {
+    // Add extra props
+    const extraProps = { extraData: 'Some data' };
+    
+    // Return the wrapped component with combined props
+    return <WrappedComponent {...props} {...extraProps} />;
+  };
+}
+
+// Usage
+const EnhancedComponent = withExtraProps(MyComponent);
+```
+
+## How HOCs Work
+
+HOCs follow a simple principle: they take a component as input and return a new component with enhanced capabilities. They don't modify the original component but compose it with new functionality.
+
+```jsx
+// HOC that adds logging
+function withLogging(WrappedComponent) {
+  return function WithLogging(props) {
+    console.log(`Component ${WrappedComponent.name} rendering with props:`, props);
+    
+    return <WrappedComponent {...props} />;
+  };
+}
+
+// Original component
+function UserProfile({ name, email }) {
+  return (
+    <div>
+      <h2>{name}</h2>
+      <p>{email}</p>
+    </div>
+  );
+}
+
+// Enhanced component with logging
+const UserProfileWithLogging = withLogging(UserProfile);
+
+// Usage
+<UserProfileWithLogging name="John" email="john@example.com" />
+```
+
+## Common Use Cases for HOCs
+
+### 1. Code Reuse and Cross-Cutting Concerns
+
+HOCs are excellent for sharing code between components:
+
+```jsx
+// HOC for handling loading states
+function withLoader(WrappedComponent, loadingMessage = 'Loading...') {
+  return function WithLoader({ isLoading, ...props }) {
+    if (isLoading) {
+      return <div className="loader">{loadingMessage}</div>;
+    }
+    
+    return <WrappedComponent {...props} />;
+  };
+}
+
+// Usage
+const UserListWithLoader = withLoader(UserList);
+const ProductListWithLoader = withLoader(ProductList, 'Fetching products...');
+```
+
+### 2. Props Manipulation
+
+HOCs can add, modify, or filter props:
+
+```jsx
+// HOC that injects a theme prop
+function withTheme(WrappedComponent) {
+  return function WithTheme(props) {
+    // Get theme from context or configuration
+    const theme = useContext(ThemeContext);
+    
+    // Pass theme as a prop
+    return <WrappedComponent {...props} theme={theme} />;
+  };
+}
+```
+
+### 3. State Abstraction
+
+HOCs can manage state and pass it as props:
+
+```jsx
+// HOC that manages form state
+function withFormState(WrappedComponent, initialState = {}) {
+  return function WithFormState(props) {
+    const [formData, setFormData] = useState(initialState);
+    
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setFormData(prevData => ({
+        ...prevData,
+        [name]: value
+      }));
+    };
+    
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      console.log('Form submitted with:', formData);
+      // Additional submission logic
+    };
+    
+    return (
+      <WrappedComponent
+        {...props}
+        formData={formData}
+        handleChange={handleChange}
+        handleSubmit={handleSubmit}
+      />
+    );
+  };
+}
+
+// Usage
+function LoginForm({ formData, handleChange, handleSubmit }) {
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        name="username"
+        value={formData.username || ''}
+        onChange={handleChange}
+        placeholder="Username"
+      />
+      <input
+        type="password"
+        name="password"
+        value={formData.password || ''}
+        onChange={handleChange}
+        placeholder="Password"
+      />
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+const LoginFormWithState = withFormState(LoginForm, { username: '', password: '' });
+```
+
+### 4. Conditional Rendering
+
+HOCs can conditionally render components:
+
+```jsx
+// HOC for authentication protection
+function withAuth(WrappedComponent) {
+  return function WithAuth(props) {
+    const { isAuthenticated, user } = useAuth();
+    
+    if (!isAuthenticated) {
+      return <Navigate to="/login" />;
+    }
+    
+    return <WrappedComponent {...props} user={user} />;
+  };
+}
+
+// Usage
+const ProtectedDashboard = withAuth(Dashboard);
+```
+
+## HOC Composition
+
+Multiple HOCs can be composed together:
+
+```jsx
+// Compose multiple HOCs
+const EnhancedComponent = withAuth(withTheme(withLoader(MyComponent)));
+
+// Using a compose utility for better readability
+const enhance = compose(
+  withAuth,
+  withTheme,
+  withLoader
+);
+
+const EnhancedComponent = enhance(MyComponent);
+```
+
+## HOCs vs. Hooks
+
+With the introduction of Hooks in React 16.8, many use cases for HOCs can now be handled with custom hooks:
+
+```jsx
+// HOC approach
+const UserProfileWithData = withUser(UserProfile);
+
+// Hook approach
+function UserProfile() {
+  const user = useUser();
+  
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+```
+
+### When to Use HOCs vs. Hooks:
+
+- **Use HOCs when**:
+  - You need to wrap a component with additional JSX
+  - You want to reuse the same enhancement across many components
+  - You need to work with class components
+
+- **Use Hooks when**:
+  - You want to reuse stateful logic without changing component hierarchy
+  - You want to split one component into smaller functions
+  - You want simpler, more readable code
+
+## Best Practices for HOCs
+
+### 1. Use Descriptive Names
+
+Name your HOCs and wrapped components clearly:
+
+```jsx
+// Good
+const withLoader = (WrappedComponent) => {
+  function WithLoader(props) { /* ... */ }
+  return WithLoader;
+};
+
+// Better: Add displayName for debugging
+const withLoader = (WrappedComponent) => {
+  function WithLoader(props) { /* ... */ }
+  WithLoader.displayName = `WithLoader(${getDisplayName(WrappedComponent)})`;
+  return WithLoader;
+};
+
+function getDisplayName(WrappedComponent) {
+  return WrappedComponent.displayName || WrappedComponent.name || 'Component';
+}
+```
+
+### 2. Don't Mutate the Original Component
+
+Create a new component instead of modifying the input:
+
+```jsx
+// Bad
+function withStyles(WrappedComponent) {
+  WrappedComponent.prototype.componentDidMount = function() {
+    // Mutation!
+  };
+  return WrappedComponent;
+}
+
+// Good
+function withStyles(WrappedComponent) {
+  return function WithStyles(props) {
+    // No mutation, just composition
+    return <WrappedComponent {...props} className="styled" />;
+  };
+}
+```
+
+### 3. Pass Unrelated Props Through
+
+Forward props that aren't used by the HOC:
+
+```jsx
+function withTheme(WrappedComponent) {
+  return function WithTheme({ specificThemeProp, ...restProps }) {
+    // Use specificThemeProp for HOC logic
+    const theme = determineTheme(specificThemeProp);
+    
+    // Pass all other props through
+    return <WrappedComponent {...restProps} theme={theme} />;
+  };
+}
+```
+
+### 4. Maximize Composability
+
+Design HOCs to be easily composable with other HOCs:
+
+```jsx
+// Each HOC does one thing well
+const withData = (WrappedComponent) => { /* ... */ };
+const withLoading = (WrappedComponent) => { /* ... */ };
+const withErrorHandling = (WrappedComponent) => { /* ... */ };
+
+// Compose them together
+const enhance = compose(
+  withData,
+  withLoading,
+  withErrorHandling
+);
+
+const EnhancedComponent = enhance(MyComponent);
+```
+
+## Interview Tips
+
+- Explain that HOCs are a pattern for reusing component logic, not a React API feature
+- Discuss the difference between HOCs, render props, and hooks for code reuse
+- Mention common libraries that use HOCs (Redux's connect, React Router's withRouter)
+- Be prepared to discuss HOC limitations (wrapper hell, naming collisions, static methods)
+- Explain how HOCs fit into modern React development with hooks
+- Demonstrate understanding of when HOCs are still valuable despite hooks

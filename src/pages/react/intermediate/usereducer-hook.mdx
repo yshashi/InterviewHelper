@@ -1,0 +1,447 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the purpose of the useReducer hook, and how does it compare to useState?
+---
+
+# What is the purpose of the useReducer hook, and how does it compare to useState?
+
+The `useReducer` hook is a built-in React hook that provides an alternative to `useState` for managing complex state logic in functional components. It is inspired by the reducer pattern popularized by Redux and is particularly useful when the next state depends on the previous state or when state transitions involve multiple sub-values.
+
+## Basic Syntax and Behavior
+
+The `useReducer` hook takes a reducer function and an initial state, and returns the current state and a dispatch function:
+
+```jsx
+const [state, dispatch] = useReducer(reducer, initialState, init);
+```
+
+- **reducer**: A function that takes the current state and an action, and returns the new state
+- **initialState**: The initial state value
+- **init** (optional): A function to lazily initialize the state
+- **state**: The current state
+- **dispatch**: A function to dispatch actions to update the state
+
+## Basic Example: Counter
+
+Here's a simple counter example using `useReducer`:
+
+```jsx
+import React, { useReducer } from 'react';
+
+// Reducer function
+function counterReducer(state, action) {
+  switch (action.type) {
+    case 'INCREMENT':
+      return { count: state.count + 1 };
+    case 'DECREMENT':
+      return { count: state.count - 1 };
+    case 'RESET':
+      return { count: 0 };
+    default:
+      return state;
+  }
+}
+
+function Counter() {
+  // Initialize useReducer with the reducer function and initial state
+  const [state, dispatch] = useReducer(counterReducer, { count: 0 });
+  
+  return (
+    <div>
+      <p>Count: {state.count}</p>
+      <button onClick={() => dispatch({ type: 'INCREMENT' })}>
+        Increment
+      </button>
+      <button onClick={() => dispatch({ type: 'DECREMENT' })}>
+        Decrement
+      </button>
+      <button onClick={() => dispatch({ type: 'RESET' })}>
+        Reset
+      </button>
+    </div>
+  );
+}
+```
+
+## useReducer vs. useState
+
+### When to Use useState
+
+- For simple state values (strings, numbers, booleans)
+- When state transitions are straightforward
+- When you have independent state values
+- For smaller components with less complex logic
+
+```jsx
+function SimpleCounter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
+    </div>
+  );
+}
+```
+
+### When to Use useReducer
+
+- For complex state objects with multiple sub-values
+- When the next state depends on the previous state
+- When state transitions have side effects or business logic
+- When you need a more predictable state transition pattern
+- For testing state transitions in isolation
+
+```jsx
+function ComplexCounter() {
+  const [state, dispatch] = useReducer(
+    (state, action) => {
+      switch (action.type) {
+        case 'INCREMENT':
+          return {
+            ...state,
+            count: state.count + 1,
+            history: [...state.history, { type: 'INCREMENT', timestamp: Date.now() }]
+          };
+        case 'DECREMENT':
+          return {
+            ...state,
+            count: state.count - 1,
+            history: [...state.history, { type: 'DECREMENT', timestamp: Date.now() }]
+          };
+        case 'RESET':
+          return {
+            ...state,
+            count: 0,
+            history: [...state.history, { type: 'RESET', timestamp: Date.now() }]
+          };
+        default:
+          return state;
+      }
+    },
+    { count: 0, history: [] }
+  );
+  
+  return (
+    <div>
+      <p>Count: {state.count}</p>
+      <button onClick={() => dispatch({ type: 'INCREMENT' })}>
+        Increment
+      </button>
+      <button onClick={() => dispatch({ type: 'DECREMENT' })}>
+        Decrement
+      </button>
+      <button onClick={() => dispatch({ type: 'RESET' })}>
+        Reset
+      </button>
+      <div>
+        <h3>History:</h3>
+        <ul>
+          {state.history.map((record, index) => (
+            <li key={index}>
+              {record.type} at {new Date(record.timestamp).toLocaleTimeString()}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+```
+
+### Comparison Table
+
+| Feature | useState | useReducer |
+|---------|----------|------------|
+| Syntax complexity | Simple | More complex |
+| Use case | Simple state | Complex state logic |
+| State updates | Direct | Through actions and reducers |
+| Predictability | Less predictable for complex state | More predictable with explicit actions |
+| Testing | Harder to test state transitions | Easier to test (pure functions) |
+| Code organization | Less boilerplate | More boilerplate but better organized |
+| Performance | Re-renders on every state change | Can optimize with action types |
+| Debugging | Harder to track state changes | Easier with explicit actions |
+
+## Advanced useReducer Patterns
+
+### 1. Lazy Initialization
+
+You can initialize state lazily by passing a third argument to `useReducer`:
+
+```jsx
+function init(initialCount) {
+  return { count: initialCount, history: [] };
+}
+
+function Counter({ initialCount = 0 }) {
+  const [state, dispatch] = useReducer(counterReducer, initialCount, init);
+  
+  // Component code
+}
+```
+
+### 2. Using Action Creators
+
+Action creators help standardize action objects and reduce errors:
+
+```jsx
+// Action creators
+const increment = (amount = 1) => ({ type: 'INCREMENT', payload: amount });
+const decrement = (amount = 1) => ({ type: 'DECREMENT', payload: amount });
+const reset = () => ({ type: 'RESET' });
+
+function counterReducer(state, action) {
+  switch (action.type) {
+    case 'INCREMENT':
+      return { 
+        ...state, 
+        count: state.count + (action.payload || 1) 
+      };
+    case 'DECREMENT':
+      return { 
+        ...state, 
+        count: state.count - (action.payload || 1) 
+      };
+    case 'RESET':
+      return { ...state, count: 0 };
+    default:
+      return state;
+  }
+}
+
+function Counter() {
+  const [state, dispatch] = useReducer(counterReducer, { count: 0 });
+  
+  return (
+    <div>
+      <p>Count: {state.count}</p>
+      <button onClick={() => dispatch(increment())}>+1</button>
+      <button onClick={() => dispatch(increment(5))}>+5</button>
+      <button onClick={() => dispatch(decrement())}>-1</button>
+      <button onClick={() => dispatch(reset())}>Reset</button>
+    </div>
+  );
+}
+```
+
+### 3. Combining Multiple Reducers
+
+For complex state, you can split reducers and combine them:
+
+```jsx
+// User reducer
+function userReducer(state, action) {
+  switch (action.type) {
+    case 'SET_USER':
+      return { ...state, user: action.payload };
+    case 'CLEAR_USER':
+      return { ...state, user: null };
+    default:
+      return state;
+  }
+}
+
+// Preferences reducer
+function preferencesReducer(state, action) {
+  switch (action.type) {
+    case 'SET_THEME':
+      return { ...state, theme: action.payload };
+    case 'TOGGLE_NOTIFICATIONS':
+      return { ...state, notifications: !state.notifications };
+    default:
+      return state;
+  }
+}
+
+// Combined reducer
+function appReducer(state, action) {
+  return {
+    user: userReducer(state.user, action),
+    preferences: preferencesReducer(state.preferences, action)
+  };
+}
+
+function App() {
+  const [state, dispatch] = useReducer(appReducer, {
+    user: { user: null },
+    preferences: { theme: 'light', notifications: true }
+  });
+  
+  // Component code
+}
+```
+
+### 4. Using TypeScript with useReducer
+
+TypeScript can provide type safety for your reducers:
+
+```tsx
+// Define action types
+type Action =
+  | { type: 'INCREMENT'; payload?: number }
+  | { type: 'DECREMENT'; payload?: number }
+  | { type: 'RESET' };
+
+// Define state type
+interface State {
+  count: number;
+  history: Array<{ action: string; timestamp: number }>;
+}
+
+// Type-safe reducer
+function counterReducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'INCREMENT':
+      return {
+        ...state,
+        count: state.count + (action.payload || 1),
+        history: [...state.history, { action: 'INCREMENT', timestamp: Date.now() }]
+      };
+    case 'DECREMENT':
+      return {
+        ...state,
+        count: state.count - (action.payload || 1),
+        history: [...state.history, { action: 'DECREMENT', timestamp: Date.now() }]
+      };
+    case 'RESET':
+      return {
+        ...state,
+        count: 0,
+        history: [...state.history, { action: 'RESET', timestamp: Date.now() }]
+      };
+  }
+}
+
+function Counter() {
+  const [state, dispatch] = useReducer(counterReducer, {
+    count: 0,
+    history: []
+  });
+  
+  // Component code
+}
+```
+
+## Best Practices for useReducer
+
+### 1. Keep reducers pure
+
+Reducers should be pure functions without side effects:
+
+```jsx
+// Good - pure reducer
+function reducer(state, action) {
+  switch (action.type) {
+    case 'INCREMENT':
+      return { count: state.count + 1 };
+    default:
+      return state;
+  }
+}
+
+// Bad - impure reducer with side effects
+function reducer(state, action) {
+  switch (action.type) {
+    case 'INCREMENT':
+      // Side effect!
+      localStorage.setItem('count', state.count + 1);
+      return { count: state.count + 1 };
+    default:
+      return state;
+  }
+}
+```
+
+### 2. Use action constants
+
+Define action types as constants to avoid typos:
+
+```jsx
+// Define action types
+const ACTIONS = {
+  INCREMENT: 'INCREMENT',
+  DECREMENT: 'DECREMENT',
+  RESET: 'RESET'
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case ACTIONS.INCREMENT:
+      return { count: state.count + 1 };
+    case ACTIONS.DECREMENT:
+      return { count: state.count - 1 };
+    case ACTIONS.RESET:
+      return { count: 0 };
+    default:
+      return state;
+  }
+}
+```
+
+### 3. Use immutable updates
+
+Always create new state objects instead of mutating existing state:
+
+```jsx
+// Good - immutable update
+function reducer(state, action) {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return {
+        ...state,
+        todos: [...state.todos, action.payload]
+      };
+    default:
+      return state;
+  }
+}
+
+// Bad - mutating state
+function reducer(state, action) {
+  switch (action.type) {
+    case 'ADD_TODO':
+      // Don't mutate state!
+      state.todos.push(action.payload);
+      return state;
+    default:
+      return state;
+  }
+}
+```
+
+### 4. Use meaningful action names
+
+Choose descriptive action names that clearly communicate intent:
+
+```jsx
+// Good - descriptive action names
+dispatch({ type: 'ADD_USER', payload: userData });
+dispatch({ type: 'REMOVE_USER', payload: userId });
+dispatch({ type: 'UPDATE_USER_PROFILE', payload: profileData });
+
+// Bad - vague action names
+dispatch({ type: 'ADD', payload: userData });
+dispatch({ type: 'REMOVE', payload: userId });
+dispatch({ type: 'UPDATE', payload: profileData });
+```
+
+## Interview Tips
+
+1. **Explain the concept**: useReducer is a hook for managing complex state logic through a reducer function, similar to how Redux works.
+
+2. **Compare with useState**: Be ready to explain when to use useReducer instead of useState (complex state objects, state transitions that depend on previous state).
+
+3. **Reducer pattern**: Describe the reducer pattern (pure function that takes state and action, returns new state) and its benefits for predictability.
+
+4. **Action structure**: Discuss the typical structure of actions (type and payload) and how they drive state updates.
+
+5. **Performance benefits**: Mention that useReducer can be more efficient than useState for complex state updates, as it batches updates.
+
+6. **Combination with Context**: Explain how useReducer combined with Context API can create a Redux-like state management system.
+
+7. **Testing advantages**: Highlight that reducers are pure functions, making them easier to test in isolation.
+
+8. **Real-world examples**: Share examples of when you've used useReducer in your projects, such as form state management, authentication flow, or data fetching.

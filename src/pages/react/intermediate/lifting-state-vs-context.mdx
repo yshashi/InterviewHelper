@@ -1,0 +1,228 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Lifting State Up vs Context API
+---
+
+# Lifting State Up vs Context API
+
+## What is Lifting State Up?
+
+Lifting state up is a pattern in React where state is moved from a child component to its parent component to share that state with sibling components. This approach follows React's unidirectional data flow principle.
+
+```jsx
+function Parent() {
+  // State is lifted up to the parent
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <ChildA count={count} setCount={setCount} />
+      <ChildB count={count} />
+    </div>
+  );
+}
+
+function ChildA({ count, setCount }) {
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Increment: {count}
+    </button>
+  );
+}
+
+function ChildB({ count }) {
+  return <div>Count: {count}</div>;
+}
+```
+
+## What is Context API?
+
+Context API is a React feature that allows you to share state across the component tree without passing props manually at every level. It's designed to share data that can be considered "global" for a tree of React components.
+
+```jsx
+// Create a context
+const CountContext = React.createContext();
+
+function CountProvider({ children }) {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <CountContext.Provider value={{ count, setCount }}>
+      {children}
+    </CountContext.Provider>
+  );
+}
+
+function App() {
+  return (
+    <CountProvider>
+      <div>
+        <ChildA />
+        <ChildB />
+      </div>
+    </CountProvider>
+  );
+}
+
+function ChildA() {
+  const { count, setCount } = useContext(CountContext);
+  
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Increment: {count}
+    </button>
+  );
+}
+
+function ChildB() {
+  const { count } = useContext(CountContext);
+  
+  return <div>Count: {count}</div>;
+}
+```
+
+## Key Differences
+
+### 1. Explicitness vs Implicitness
+
+**Lifting State Up:**
+- Explicit data flow through props
+- Clear parent-child relationships
+- Easy to trace where data comes from
+
+**Context API:**
+- Implicit data flow
+- Components can consume context without parent awareness
+- Can be harder to trace data sources
+
+### 2. Component Coupling
+
+**Lifting State Up:**
+- Tightly couples parent and child components
+- Changes to parent state affect all children directly
+- Components are less reusable independently
+
+**Context API:**
+- Loosely couples components
+- Components can be used in different contexts
+- Better separation of concerns
+
+### 3. Performance Considerations
+
+**Lifting State Up:**
+- Can cause unnecessary re-renders in intermediate components
+- Prop changes trigger re-renders down the tree
+- More predictable rendering behavior
+
+**Context API:**
+- Can optimize rendering with proper memoization
+- Only components that consume context re-render
+- Potential for performance issues if context value changes frequently
+
+### 4. Code Organization
+
+**Lifting State Up:**
+- Keeps related state and handlers together
+- Simpler for smaller component trees
+- Can lead to prop drilling in deeper trees
+
+**Context API:**
+- Separates state from UI components
+- Better for global or widely-used state
+- Reduces component complexity
+
+## When to Use Each Approach
+
+### Use Lifting State Up When:
+
+1. Sharing state between a few closely related components
+2. The component tree is relatively shallow
+3. You want to maintain clear data flow
+4. The state is specific to a particular UI section
+5. You want to avoid the complexity of Context
+
+```jsx
+// Good use case for lifting state up
+function SearchableList() {
+  const [query, setQuery] = useState('');
+  
+  return (
+    <div>
+      <SearchBar query={query} setQuery={setQuery} />
+      <ResultsList query={query} />
+    </div>
+  );
+}
+```
+
+### Use Context API When:
+
+1. Sharing state across many components at different nesting levels
+2. The component tree is deep
+3. You want to avoid prop drilling
+4. The state is truly global (themes, user data, language preferences)
+5. You need to separate state management from UI components
+
+```jsx
+// Good use case for Context API
+function App() {
+  return (
+    <ThemeProvider>
+      <UserProvider>
+        <Layout>
+          <Sidebar />
+          <MainContent>
+            <Dashboard />
+          </MainContent>
+        </Layout>
+      </UserProvider>
+    </ThemeProvider>
+  );
+}
+```
+
+## Combining Both Approaches
+
+In real applications, you'll often use both approaches:
+
+```jsx
+// Using both approaches together
+function App() {
+  return (
+    <ThemeContext.Provider value={theme}>
+      <UserContext.Provider value={user}>
+        <Dashboard />
+      </UserContext.Provider>
+    </ThemeContext.Provider>
+  );
+}
+
+function Dashboard() {
+  // Local state lifted up within Dashboard
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  return (
+    <div>
+      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <TabContent activeTab={activeTab} />
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+1. **Start with lifting state up** for simpler cases
+2. **Introduce Context** when prop drilling becomes problematic
+3. **Keep Context focused** on specific domains (theme, auth, etc.)
+4. **Memoize Context values** to prevent unnecessary re-renders
+5. **Split Context providers** instead of having one giant context
+
+## Interview Tips
+
+- Explain that both approaches solve the same problem (sharing state) but in different ways
+- Discuss the trade-offs in terms of explicitness, performance, and maintainability
+- Mention that modern React applications typically use both approaches where appropriate
+- Demonstrate understanding of when each approach is most suitable
+- Explain how Context API is not a complete state management solution by itself
+- Discuss how hooks like useReducer can enhance both approaches

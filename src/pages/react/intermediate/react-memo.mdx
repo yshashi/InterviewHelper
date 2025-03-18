@@ -1,0 +1,239 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Optimizing Rendering with React.memo
+---
+
+# Optimizing Rendering with React.memo
+
+## What is React.memo?
+
+`React.memo` is a higher-order component (HOC) that memoizes a component, preventing unnecessary re-renders when its props haven't changed. It performs a shallow comparison of props to determine if a re-render is necessary.
+
+```jsx
+const MemoizedComponent = React.memo(function MyComponent(props) {
+  // Your component logic
+  return <div>{props.name}</div>;
+});
+```
+
+## How React.memo Works
+
+1. When a parent component re-renders, all its child components typically re-render by default
+2. `React.memo` checks if the new props are the same as the previous props (using shallow comparison)
+3. If props are the same, React skips rendering the component and reuses the last rendered result
+4. If props have changed, React re-renders the component
+
+```jsx
+// Parent component
+function App() {
+  const [count, setCount] = useState(0);
+  const [name, setName] = useState('John');
+  
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>
+        Increment count: {count}
+      </button>
+      <button onClick={() => setName(name === 'John' ? 'Jane' : 'John')}>
+        Toggle name
+      </button>
+      
+      {/* Will only re-render when name changes */}
+      <MemoizedProfile name={name} />
+      
+      {/* Will re-render on every count change */}
+      <ExpensiveComponent />
+    </div>
+  );
+}
+
+// Memoized component
+const MemoizedProfile = React.memo(function Profile({ name }) {
+  console.log('Profile rendered');
+  return <div>Name: {name}</div>;
+});
+
+// Non-memoized component
+function ExpensiveComponent() {
+  console.log('ExpensiveComponent rendered');
+  return <div>I re-render on every parent update</div>;
+}
+```
+
+## When to Use React.memo
+
+### Good Use Cases:
+
+1. **Pure functional components**: Components that render the same output given the same props
+2. **Components that render often**: Components in lists or frequently updating parts of the UI
+3. **Expensive rendering components**: Components with complex calculations or large DOM trees
+4. **Components that receive the same props**: Components that often receive identical props
+
+```jsx
+// Good use case: Item in a large list
+const TodoItem = React.memo(function TodoItem({ todo, onToggle }) {
+  console.log(`Todo rendered: ${todo.text}`);
+  
+  return (
+    <li>
+      <input
+        type="checkbox"
+        checked={todo.completed}
+        onChange={() => onToggle(todo.id)}
+      />
+      {todo.text}
+    </li>
+  );
+});
+
+function TodoList({ todos, onToggleTodo }) {
+  return (
+    <ul>
+      {todos.map(todo => (
+        <TodoItem 
+          key={todo.id} 
+          todo={todo} 
+          onToggle={onToggleTodo} 
+        />
+      ))}
+    </ul>
+  );
+}
+```
+
+### When Not to Use React.memo:
+
+1. **Components that almost always receive different props**
+2. **Very simple components** where memoization overhead exceeds rendering cost
+3. **Components that need to re-render when parent renders** (by design)
+
+## Custom Comparison Function
+
+React.memo accepts an optional second argument - a custom comparison function:
+
+```jsx
+function arePropsEqual(prevProps, nextProps) {
+  // Return true if passing nextProps to render would return
+  // the same result as passing prevProps to render,
+  // otherwise return false
+  return prevProps.id === nextProps.id && 
+         prevProps.name === nextProps.name;
+  // Ignores changes to other props
+}
+
+const MemoizedComponent = React.memo(MyComponent, arePropsEqual);
+```
+
+This is useful when:
+- You need deep comparison for certain props
+- You want to ignore changes to specific props
+- You have complex objects that need custom comparison logic
+
+## Common Pitfalls
+
+### 1. Object and Function Props
+
+React.memo uses shallow comparison, which doesn't work well with new object or function references:
+
+```jsx
+// BAD: Creates new object on every render
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>
+        Increment: {count}
+      </button>
+      
+      {/* MemoizedChild will re-render despite memoization */}
+      <MemoizedChild 
+        data={{ id: 1, name: 'Item' }} 
+        onClick={() => console.log('Clicked')} 
+      />
+    </div>
+  );
+}
+
+// GOOD: Use useMemo and useCallback
+function ImprovedParentComponent() {
+  const [count, setCount] = useState(0);
+  
+  // Memoized object
+  const data = useMemo(() => ({ id: 1, name: 'Item' }), []);
+  
+  // Memoized function
+  const handleClick = useCallback(() => console.log('Clicked'), []);
+  
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>
+        Increment: {count}
+      </button>
+      
+      {/* Now MemoizedChild won't re-render */}
+      <MemoizedChild data={data} onClick={handleClick} />
+    </div>
+  );
+}
+```
+
+### 2. Over-Optimization
+
+Applying `React.memo` indiscriminately can lead to:
+- Increased code complexity
+- Memory overhead from storing previous renders
+- Difficult-to-debug rendering issues
+
+## React.memo vs. Other Optimization Techniques
+
+### React.memo vs. useMemo
+
+- `React.memo`: Memoizes an entire component
+- `useMemo`: Memoizes a value within a component
+
+```jsx
+// React.memo memoizes the entire component
+const MemoizedComponent = React.memo(ExpensiveComponent);
+
+// useMemo memoizes a specific value
+function Component() {
+  const expensiveValue = useMemo(() => computeExpensiveValue(), []);
+  return <div>{expensiveValue}</div>;
+}
+```
+
+### React.memo vs. PureComponent
+
+- `React.memo`: For function components
+- `PureComponent`: For class components
+
+```jsx
+// Function component with React.memo
+const MemoizedFunctionalComponent = React.memo(function({ name }) {
+  return <div>{name}</div>;
+});
+
+// Class component with PureComponent
+class PureClassComponent extends React.PureComponent {
+  render() {
+    return <div>{this.props.name}</div>;
+  }
+}
+```
+
+## Best Practices
+
+1. **Be selective**: Only memoize components that benefit from it
+2. **Use with useCallback and useMemo**: For props that are objects or functions
+3. **Profile before optimizing**: Measure performance to identify actual bottlenecks
+4. **Consider component design**: Sometimes restructuring components is better than memoization
+
+## Interview Tips
+
+- Explain that React.memo is not a silver bullet for performance issues
+- Demonstrate understanding of when memoization is beneficial vs. when it's overhead
+- Discuss the limitations of shallow comparison and how to address them
+- Mention that React's rendering is already quite fast, so memoization should be applied judiciously
+- Explain how React.memo fits into React's reconciliation process
+- Be prepared to discuss other performance optimization techniques in React

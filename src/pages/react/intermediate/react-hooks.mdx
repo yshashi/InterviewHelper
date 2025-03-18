@@ -1,0 +1,218 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are React Hooks, and why were they introduced?
+---
+
+# What are React Hooks, and why were they introduced?
+
+React Hooks are functions that allow you to "hook into" React state and lifecycle features from functional components. They were introduced in React 16.8 to solve several problems that developers faced when building React applications with class components.
+
+## Introduction to React Hooks
+
+Hooks enable you to use state and other React features without writing a class. They let you reuse stateful logic between components, organize related code better, and use React features without classes.
+
+```jsx
+import React, { useState, useEffect } from 'react';
+
+function Counter() {
+  // Using the useState Hook to add state to a functional component
+  const [count, setCount] = useState(0);
+  
+  // Using the useEffect Hook to perform side effects
+  useEffect(() => {
+    document.title = `You clicked ${count} times`;
+  }, [count]);
+  
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+## Why Hooks Were Introduced
+
+### 1. Difficulty in Reusing Stateful Logic
+
+Before Hooks, patterns like render props and higher-order components were used to reuse stateful logic. These patterns required restructuring your components, making code harder to follow and creating "wrapper hell" in component trees.
+
+Hooks allow you to extract stateful logic from components so it can be tested and reused independently, without changing your component hierarchy.
+
+### 2. Complex Components Became Hard to Understand
+
+Class components often contained unrelated logic in lifecycle methods. For example, data fetching in `componentDidMount` and `componentDidUpdate`, event listeners in `componentDidMount` with cleanup in `componentWillUnmount`. This made components harder to understand and maintain.
+
+Hooks let you split components into smaller functions based on related pieces of functionality, rather than forcing a split based on lifecycle methods.
+
+```jsx
+// Before Hooks (Class Component)
+class UserProfile extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      user: null,
+      isLoading: true
+    };
+  }
+  
+  componentDidMount() {
+    this.fetchUser();
+    window.addEventListener('resize', this.handleResize);
+  }
+  
+  componentDidUpdate(prevProps) {
+    if (prevProps.userId !== this.props.userId) {
+      this.fetchUser();
+    }
+  }
+  
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleResize);
+  }
+  
+  fetchUser() {
+    this.setState({ isLoading: true });
+    fetchUserData(this.props.userId)
+      .then(userData => {
+        this.setState({ user: userData, isLoading: false });
+      });
+  }
+  
+  handleResize = () => {
+    // Handle window resize
+  };
+  
+  render() {
+    // Render component
+  }
+}
+
+// After Hooks (Functional Component)
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Separate effect for fetching user data
+  useEffect(() => {
+    setIsLoading(true);
+    fetchUserData(userId)
+      .then(userData => {
+        setUser(userData);
+        setIsLoading(false);
+      });
+  }, [userId]);
+  
+  // Separate effect for window resize event
+  useEffect(() => {
+    const handleResize = () => {
+      // Handle window resize
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
+  // Render component
+}
+```
+
+### 3. Classes Confused Both People and Machines
+
+Classes presented several challenges:
+- `this` keyword in JavaScript behaves differently than in most languages
+- Event handlers needed to be bound correctly
+- Classes didn't minify well and made hot reloading less reliable
+
+Hooks let you use React features without classes, making your code more concise and easier to understand.
+
+## Built-in Hooks
+
+React provides several built-in Hooks:
+
+### Basic Hooks
+- **useState**: Adds state to functional components
+- **useEffect**: Performs side effects in functional components
+- **useContext**: Subscribes to React context
+
+### Additional Hooks
+- **useReducer**: State management for complex state logic
+- **useCallback**: Returns a memoized callback function
+- **useMemo**: Returns a memoized value
+- **useRef**: Creates a mutable reference
+- **useLayoutEffect**: Similar to useEffect, but fires synchronously after DOM mutations
+- **useDebugValue**: Displays a label for custom hooks in React DevTools
+
+## Rules of Hooks
+
+To use Hooks correctly, you must follow two rules:
+
+1. **Only call Hooks at the top level**. Don't call Hooks inside loops, conditions, or nested functions.
+2. **Only call Hooks from React function components or custom Hooks**. Don't call Hooks from regular JavaScript functions.
+
+React provides an ESLint plugin called `eslint-plugin-react-hooks` that enforces these rules.
+
+## Real-World Example
+
+Here's a simple theme switcher component using Hooks:
+
+```jsx
+import React, { useState, useEffect } from 'react';
+
+function ThemeSwitcher() {
+  // State for current theme
+  const [theme, setTheme] = useState('light');
+  
+  // Effect to update body class when theme changes
+  useEffect(() => {
+    document.body.className = theme;
+    // Save theme preference to localStorage
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  
+  // Effect to load saved theme on initial render
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+  
+  return (
+    <button 
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      className={`theme-switch ${theme}`}
+    >
+      Switch to {theme === 'light' ? 'dark' : 'light'} mode
+    </button>
+  );
+}
+```
+
+This example demonstrates:
+- Using `useState` to track the current theme
+- Using `useEffect` to apply the theme to the document and save preferences
+- Using another `useEffect` with an empty dependency array to load saved preferences once on mount
+
+## Interview Tips
+
+1. **Explain the motivation**: Hooks were introduced to solve specific problems in React's component model, particularly around reusing stateful logic and organizing code.
+
+2. **Emphasize simplicity**: Highlight how Hooks simplify component code by allowing related logic to be grouped together.
+
+3. **Mention rules**: Always mention the Rules of Hooks and why they're important (they ensure the state is preserved correctly between renders).
+
+4. **Compare with classes**: Be ready to compare Hook-based components with class components to show your understanding of both approaches.
+
+5. **Discuss limitations**: Acknowledge that Hooks can't be used in class components and that they require a different mental model.
+
+6. **Highlight custom Hooks**: Mention that one of the most powerful features of Hooks is the ability to create custom Hooks to extract and reuse stateful logic.
+
+7. **Performance considerations**: Discuss how Hooks like useCallback and useMemo can help optimize performance in functional components.
+
+8. **Real-world applications**: Share examples of how you've used Hooks to solve real problems in your projects.

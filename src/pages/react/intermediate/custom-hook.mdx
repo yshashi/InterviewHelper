@@ -1,0 +1,546 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How can you create a custom hook in React?
+---
+
+# How can you create a custom hook in React?
+
+Custom hooks are JavaScript functions that start with the prefix "use" and allow you to extract and reuse stateful logic from components. They enable you to share logic between components without duplicating code or using complex patterns like render props or higher-order components.
+
+## Basic Structure of a Custom Hook
+
+Creating a custom hook follows these simple rules:
+
+1. The function name must start with "use" (e.g., `useCustomHook`)
+2. The hook can call other hooks (built-in or custom)
+3. The hook should return values that components can use
+
+```jsx
+import { useState, useEffect } from 'react';
+
+// Basic custom hook structure
+function useCustomHook(initialValue) {
+  // Can use React hooks inside
+  const [value, setValue] = useState(initialValue);
+  
+  // Can contain any logic
+  useEffect(() => {
+    // Effect logic
+  }, []);
+  
+  // Can return anything
+  return { value, setValue };
+}
+```
+
+## Simple Custom Hook Example
+
+Let's create a basic custom hook for managing form input:
+
+```jsx
+import { useState } from 'react';
+
+function useInput(initialValue = '') {
+  const [value, setValue] = useState(initialValue);
+  
+  // Handle input change
+  const handleChange = (e) => {
+    setValue(e.target.value);
+  };
+  
+  // Reset input value
+  const reset = () => {
+    setValue(initialValue);
+  };
+  
+  // Return values and functions
+  return {
+    value,
+    onChange: handleChange,
+    reset,
+    // Spread attribute for convenience
+    inputProps: {
+      value,
+      onChange: handleChange
+    }
+  };
+}
+
+// Usage in a component
+function LoginForm() {
+  const email = useInput('');
+  const password = useInput('');
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Submitted:', email.value, password.value);
+    email.reset();
+    password.reset();
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Email:</label>
+        <input 
+          type="email" 
+          {...email.inputProps} 
+          required 
+        />
+      </div>
+      
+      <div>
+        <label>Password:</label>
+        <input 
+          type="password" 
+          {...password.inputProps} 
+          required 
+        />
+      </div>
+      
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+```
+
+## Practical Custom Hooks
+
+### 1. useLocalStorage - Persist State in localStorage
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function useLocalStorage(key, initialValue) {
+  // Get stored value from localStorage or use initialValue
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(error);
+      return initialValue;
+    }
+  });
+  
+  // Update localStorage when state changes
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [key, storedValue]);
+  
+  return [storedValue, setStoredValue];
+}
+
+// Usage
+function ThemeToggle() {
+  const [theme, setTheme] = useLocalStorage('theme', 'light');
+  
+  return (
+    <div className={`app ${theme}`}>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
+      </button>
+      <p>Current theme: {theme}</p>
+    </div>
+  );
+}
+```
+
+### 2. useFetch - Data Fetching Hook
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function useFetch(url) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    // Reset states
+    setLoading(true);
+    setData(null);
+    setError(null);
+    
+    // Create abort controller for cleanup
+    const controller = new AbortController();
+    
+    fetch(url, { signal: controller.signal })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        setData(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        // Don't update state if the fetch was aborted
+        if (error.name === 'AbortError') return;
+        
+        setError(error.message);
+        setLoading(false);
+      });
+    
+    // Cleanup function to abort fetch on unmount or url change
+    return () => controller.abort();
+  }, [url]);
+  
+  return { data, loading, error };
+}
+
+// Usage
+function ProductList() {
+  const { data, loading, error } = useFetch('https://api.example.com/products');
+  
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+  
+  return (
+    <ul>
+      {data && data.map(product => (
+        <li key={product.id}>{product.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### 3. useMediaQuery - Responsive Design Hook
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function useMediaQuery(query) {
+  // Initialize with null to handle SSR
+  const [matches, setMatches] = useState(null);
+  
+  useEffect(() => {
+    // Set initial value once we're in the browser
+    setMatches(window.matchMedia(query).matches);
+    
+    // Create media query list
+    const mediaQueryList = window.matchMedia(query);
+    
+    // Update state when matches change
+    const handleChange = (event) => {
+      setMatches(event.matches);
+    };
+    
+    // Add listener (with compatibility for older browsers)
+    if (mediaQueryList.addEventListener) {
+      mediaQueryList.addEventListener('change', handleChange);
+    } else {
+      // Fallback for older browsers
+      mediaQueryList.addListener(handleChange);
+    }
+    
+    // Cleanup
+    return () => {
+      if (mediaQueryList.removeEventListener) {
+        mediaQueryList.removeEventListener('change', handleChange);
+      } else {
+        // Fallback for older browsers
+        mediaQueryList.removeListener(handleChange);
+      }
+    };
+  }, [query]);
+  
+  return matches;
+}
+
+// Usage
+function ResponsiveComponent() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  return (
+    <div>
+      {isMobile ? (
+        <p>Mobile view</p>
+      ) : (
+        <p>Desktop view</p>
+      )}
+    </div>
+  );
+}
+```
+
+## Combining Multiple Hooks
+
+Custom hooks can be composed by using other hooks:
+
+```jsx
+import { useState } from 'react';
+
+// Custom hook for form validation
+function useFormValidation(initialValues, validate) {
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Update form values
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setValues({
+      ...values,
+      [name]: value
+    });
+  };
+  
+  // Validate form
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const validationErrors = validate(values);
+    setErrors(validationErrors);
+    setIsSubmitting(Object.keys(validationErrors).length === 0);
+  };
+  
+  return {
+    values,
+    errors,
+    isSubmitting,
+    handleChange,
+    handleSubmit
+  };
+}
+
+// Combine with useLocalStorage hook
+function useFormWithStorage(formName, initialValues, validate) {
+  // Use our previously defined useLocalStorage hook
+  const [storedValues, setStoredValues] = useLocalStorage(
+    formName, 
+    initialValues
+  );
+  
+  // Use our form validation hook with stored values
+  const form = useFormValidation(storedValues, validate);
+  
+  // Override handleChange to also update localStorage
+  const handleChange = (e) => {
+    form.handleChange(e);
+    
+    const { name, value } = e.target;
+    setStoredValues({
+      ...form.values,
+      [name]: value
+    });
+  };
+  
+  return {
+    ...form,
+    handleChange
+  };
+}
+```
+
+## Real-World Example
+
+Here's a practical example of a custom hook for handling API requests with loading, error states, and caching:
+
+```jsx
+import { useState, useEffect, useCallback } from 'react';
+
+function useApi(initialUrl = null, initialOptions = {}) {
+  const [url, setUrl] = useState(initialUrl);
+  const [options, setOptions] = useState(initialOptions);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [cache, setCache] = useState({});
+  
+  // Function to make the API call
+  const fetchData = useCallback(async (url, options = {}) => {
+    // Don't fetch if no URL
+    if (!url) return;
+    
+    // Check cache first
+    const cacheKey = `${url}-${JSON.stringify(options)}`;
+    if (cache[cacheKey]) {
+      setData(cache[cacheKey]);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(url, options);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Update cache
+      setCache(prevCache => ({
+        ...prevCache,
+        [cacheKey]: result
+      }));
+      
+      setData(result);
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }, [cache]);
+  
+  // Fetch when url or options change
+  useEffect(() => {
+    fetchData(url, options);
+  }, [url, options, fetchData]);
+  
+  // Function to manually trigger a fetch
+  const doFetch = useCallback((newUrl = url, newOptions = {}) => {
+    setUrl(newUrl);
+    setOptions(newOptions);
+  }, [url]);
+  
+  // Function to clear cache
+  const clearCache = useCallback(() => {
+    setCache({});
+  }, []);
+  
+  return { 
+    data, 
+    loading, 
+    error, 
+    doFetch, 
+    clearCache 
+  };
+}
+
+// Usage in a component
+function UserProfile({ userId }) {
+  const { 
+    data: user, 
+    loading, 
+    error, 
+    doFetch 
+  } = useApi(`https://api.example.com/users/${userId}`);
+  
+  // Refresh user data
+  const handleRefresh = () => {
+    doFetch();
+  };
+  
+  if (loading) return <p>Loading user data...</p>;
+  if (error) return <p>Error: {error}</p>;
+  if (!user) return <p>No user data</p>;
+  
+  return (
+    <div className="user-profile">
+      <h2>{user.name}</h2>
+      <p>Email: {user.email}</p>
+      <button onClick={handleRefresh}>Refresh</button>
+    </div>
+  );
+}
+```
+
+## Best Practices for Custom Hooks
+
+### 1. Name hooks with the "use" prefix
+
+This is not just a convention but helps the React linter enforce the Rules of Hooks:
+
+```jsx
+// Good
+function useWindowSize() { /* ... */ }
+
+// Bad - React won't recognize this as a hook
+function getWindowSize() { /* ... */ }
+```
+
+### 2. Keep hooks focused on a single concern
+
+Each hook should handle one specific piece of functionality:
+
+```jsx
+// Good - separate concerns
+function useUserData(userId) { /* ... */ }
+function useUserPermissions(userId) { /* ... */ }
+
+// Bad - too many responsibilities
+function useUserEverything(userId) { /* ... */ }
+```
+
+### 3. Return values in a flexible format
+
+Return an object for named values or an array for destructuring:
+
+```jsx
+// Object return (named values)
+function useFormField(initialValue) {
+  const [value, setValue] = useState(initialValue);
+  return { value, setValue };
+}
+
+// Array return (for destructuring)
+function useCounter(initialValue) {
+  const [count, setCount] = useState(initialValue);
+  const increment = () => setCount(c => c + 1);
+  const decrement = () => setCount(c => c - 1);
+  
+  return [count, increment, decrement];
+}
+```
+
+### 4. Handle cleanup properly
+
+Always clean up side effects in your hooks:
+
+```jsx
+function useEventListener(eventName, handler, element = window) {
+  useEffect(() => {
+    element.addEventListener(eventName, handler);
+    
+    // Clean up
+    return () => {
+      element.removeEventListener(eventName, handler);
+    };
+  }, [eventName, handler, element]);
+}
+```
+
+### 5. Document your hooks
+
+Add comments to explain what your hook does, its parameters, and return values:
+
+```jsx
+/**
+ * Custom hook to manage pagination state
+ * @param {number} initialPage - Starting page number (default: 1)
+ * @param {number} itemsPerPage - Number of items per page (default: 10)
+ * @param {number} totalItems - Total number of items to paginate
+ * @returns {Object} Pagination state and controls
+ */
+function usePagination(initialPage = 1, itemsPerPage = 10, totalItems = 0) {
+  // Hook implementation
+}
+```
+
+## Interview Tips
+
+1. **Explain the concept**: Custom hooks are a way to extract and reuse stateful logic between components.
+
+2. **Emphasize naming convention**: Always mention that custom hooks must start with "use" to follow React's conventions and enable linting.
+
+3. **Compare with alternatives**: Be ready to explain how custom hooks improve code organization compared to render props or higher-order components.
+
+4. **Rules of Hooks**: Remember that custom hooks must follow the same rules as built-in hooks (only call at the top level, only call from React functions).
+
+5. **Real-world examples**: Share examples of custom hooks you've created in your projects and how they improved code reusability.
+
+6. **Testing hooks**: Discuss how you would test custom hooks (usually with React Testing Library's renderHook function).
+
+7. **Composition**: Explain how custom hooks can be composed by calling other hooks, both built-in and custom.
+
+8. **Performance considerations**: Mention that custom hooks can help with performance by allowing components to share stateful logic without unnecessary re-renders.

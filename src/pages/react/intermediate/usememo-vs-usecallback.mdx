@@ -1,0 +1,374 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: useMemo vs useCallback in React
+---
+
+# useMemo vs useCallback in React
+
+## Overview of useMemo and useCallback
+
+Both `useMemo` and `useCallback` are React hooks designed for performance optimization through memoization. They help prevent unnecessary calculations and re-renders in your React components.
+
+```jsx
+// useMemo syntax
+const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+
+// useCallback syntax
+const memoizedCallback = useCallback(() => {
+  doSomething(a, b);
+}, [a, b]);
+```
+
+## Core Differences
+
+### 1. What They Memoize
+
+- **useMemo**: Memoizes the **result** of a function
+- **useCallback**: Memoizes the **function itself**
+
+```jsx
+// useMemo memoizes the computed result
+const memoizedValue = useMemo(() => {
+  console.log('Computing value');
+  return a + b;
+}, [a, b]);
+
+// useCallback memoizes the function reference
+const memoizedFunction = useCallback(() => {
+  console.log('Function called');
+  return a + b;
+}, [a, b]);
+```
+
+### 2. Return Value
+
+- **useMemo**: Returns the cached value from the function execution
+- **useCallback**: Returns the cached function (not the result of calling it)
+
+```jsx
+// This returns the calculated sum
+const sum = useMemo(() => a + b, [a, b]);
+console.log(sum); // Outputs: the sum of a and b
+
+// This returns the function itself
+const calculateSum = useCallback(() => a + b, [a, b]);
+console.log(calculateSum); // Outputs: function
+console.log(calculateSum()); // Outputs: the sum of a and b
+```
+
+### 3. Typical Use Cases
+
+- **useMemo**: For expensive calculations, derived state, or creating objects for props
+- **useCallback**: For event handlers, callbacks passed to child components, or functions used in dependency arrays
+
+## When to Use useMemo
+
+### 1. Expensive Calculations
+
+```jsx
+function ProductList({ products, filter }) {
+  // Memoize filtered products to avoid recalculation on every render
+  const filteredProducts = useMemo(() => {
+    console.log('Filtering products');
+    return products.filter(product => {
+      return product.name.toLowerCase().includes(filter.toLowerCase());
+    });
+  }, [products, filter]);
+  
+  return (
+    <ul>
+      {filteredProducts.map(product => (
+        <li key={product.id}>{product.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### 2. Creating Objects for Props
+
+```jsx
+function ParentComponent() {
+  const [width, setWidth] = useState(window.innerWidth);
+  
+  // Without useMemo, this object would be recreated on every render
+  // causing the child component to re-render unnecessarily
+  const dimensions = useMemo(() => ({
+    width,
+    height: window.innerHeight
+  }), [width]);
+  
+  return <ChildComponent dimensions={dimensions} />;
+}
+
+const ChildComponent = React.memo(({ dimensions }) => {
+  // This component only re-renders when dimensions object reference changes
+  return <div>Width: {dimensions.width}, Height: {dimensions.height}</div>;
+});
+```
+
+### 3. Derived State
+
+```jsx
+function Dashboard({ sales }) {
+  // Memoize statistics derived from props
+  const statistics = useMemo(() => {
+    return {
+      total: sales.reduce((sum, sale) => sum + sale.amount, 0),
+      average: sales.length > 0 
+        ? sales.reduce((sum, sale) => sum + sale.amount, 0) / sales.length 
+        : 0,
+      max: Math.max(...sales.map(sale => sale.amount), 0),
+      min: Math.min(...sales.map(sale => sale.amount), 0)
+    };
+  }, [sales]);
+  
+  return (
+    <div>
+      <h2>Sales Dashboard</h2>
+      <p>Total: ${statistics.total}</p>
+      <p>Average: ${statistics.average.toFixed(2)}</p>
+      <p>Highest: ${statistics.max}</p>
+      <p>Lowest: ${statistics.min}</p>
+    </div>
+  );
+}
+```
+
+## When to Use useCallback
+
+### 1. Event Handlers Passed to Optimized Child Components
+
+```jsx
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+  
+  // Memoize the callback to prevent TodoItem from re-rendering unnecessarily
+  const handleToggle = useCallback((id) => {
+    setTodos(prevTodos =>
+      prevTodos.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  }, []);
+  
+  return (
+    <ul>
+      {todos.map(todo => (
+        <TodoItem 
+          key={todo.id} 
+          todo={todo} 
+          onToggle={handleToggle} 
+        />
+      ))}
+    </ul>
+  );
+}
+
+// Optimized with React.memo to prevent unnecessary re-renders
+const TodoItem = React.memo(({ todo, onToggle }) => {
+  console.log(`Rendering TodoItem: ${todo.text}`);
+  
+  return (
+    <li>
+      <input
+        type="checkbox"
+        checked={todo.completed}
+        onChange={() => onToggle(todo.id)}
+      />
+      <span>{todo.text}</span>
+    </li>
+  );
+});
+```
+
+### 2. Functions as Dependencies in useEffect
+
+```jsx
+function SearchComponent({ onSearch }) {
+  const [query, setQuery] = useState('');
+  
+  // Memoize the search function
+  const handleSearch = useCallback(() => {
+    console.log(`Searching for: ${query}`);
+    onSearch(query);
+  }, [query, onSearch]);
+  
+  // Use the memoized function in useEffect
+  useEffect(() => {
+    const timerId = setTimeout(handleSearch, 500);
+    return () => clearTimeout(timerId);
+  }, [handleSearch]); // handleSearch is a dependency
+  
+  return (
+    <input
+      type="text"
+      value={query}
+      onChange={e => setQuery(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+### 3. Callbacks in Custom Hooks
+
+```jsx
+function useCounter(initialValue = 0) {
+  const [count, setCount] = useState(initialValue);
+  
+  // Memoize these functions so consumers don't get new references
+  const increment = useCallback(() => {
+    setCount(c => c + 1);
+  }, []);
+  
+  const decrement = useCallback(() => {
+    setCount(c => c - 1);
+  }, []);
+  
+  return { count, increment, decrement };
+}
+```
+
+## Choosing Between useMemo and useCallback
+
+### Use useMemo When:
+
+1. You need to memoize the **result** of a calculation
+2. The computation is expensive
+3. You're creating objects or arrays that should maintain referential equality
+4. You need to derive complex state from props or other state
+
+```jsx
+// Good use of useMemo
+const sortedItems = useMemo(() => {
+  return [...items].sort((a, b) => a.name.localeCompare(b.name));
+}, [items]);
+```
+
+### Use useCallback When:
+
+1. You need to memoize a **function reference**
+2. You're passing callbacks to optimized child components
+3. You need to include a function in a dependency array of another hook
+4. You're working with event handlers that shouldn't change on every render
+
+```jsx
+// Good use of useCallback
+const handleSubmit = useCallback((values) => {
+  console.log('Submitting:', values);
+  submitToApi(values);
+}, []);
+```
+
+## Equivalent Patterns
+
+It's worth noting that `useCallback` can be implemented using `useMemo`:
+
+```jsx
+// These are equivalent:
+const memoizedCallback = useCallback(() => {
+  doSomething(a, b);
+}, [a, b]);
+
+const memoizedCallback = useMemo(() => {
+  return () => {
+    doSomething(a, b);
+  };
+}, [a, b]);
+```
+
+The difference is that `useCallback` provides a clearer intent and more concise syntax.
+
+## Performance Considerations
+
+### When Memoization Helps
+
+Memoization is beneficial when:
+
+1. The calculation or function creation is more expensive than the memoization itself
+2. The component renders frequently with the same props
+3. Child components rely on referential equality of props
+
+### When Memoization Might Not Help
+
+Memoization might not be beneficial when:
+
+1. The calculation is simple and fast
+2. The dependencies change on most renders anyway
+3. The component rarely re-renders
+
+```jsx
+// Probably not worth memoizing
+const isEven = useMemo(() => {
+  return count % 2 === 0;
+}, [count]);
+
+// Simple enough to just do inline
+return <div>{count % 2 === 0 ? 'Even' : 'Odd'}</div>;
+```
+
+## Common Mistakes
+
+### 1. Forgetting Dependencies
+
+```jsx
+// BAD: Missing dependency
+const calculateTotal = useCallback(() => {
+  return cart.items.reduce((total, item) => total + item.price, 0);
+}, []); // cart.items is missing from dependencies
+
+// GOOD: Include all dependencies
+const calculateTotal = useCallback(() => {
+  return cart.items.reduce((total, item) => total + item.price, 0);
+}, [cart.items]);
+```
+
+### 2. Using the Wrong Hook for the Job
+
+```jsx
+// BAD: Using useMemo for a function that will be passed as a prop
+const handleClick = useMemo(() => {
+  return () => {
+    console.log('Clicked');
+  };
+}, []);
+
+// GOOD: Use useCallback for functions passed as props
+const handleClick = useCallback(() => {
+  console.log('Clicked');
+}, []);
+```
+
+### 3. Overusing Memoization
+
+```jsx
+// Unnecessary memoization for simple values
+const doubledValue = useMemo(() => value * 2, [value]);
+
+// Just calculate it directly
+return <div>{value * 2}</div>;
+```
+
+## Best Practices
+
+1. **Use the right hook for the job**:
+   - `useMemo` for values
+   - `useCallback` for functions
+
+2. **Include all dependencies** in the dependency array
+
+3. **Measure performance** before and after optimization
+
+4. **Don't memoize everything** - focus on expensive calculations and callbacks passed to memoized children
+
+5. **Use the React DevTools Profiler** to identify unnecessary re-renders
+
+## Interview Tips
+
+- Explain that both hooks are for performance optimization, not for correctness
+- Clearly articulate the difference: `useMemo` caches a computed value, while `useCallback` caches a function reference
+- Discuss how they help with React's reconciliation process by maintaining referential equality
+- Mention that premature optimization can sometimes make code more complex without significant performance benefits
+- Be prepared to provide examples of when each hook is appropriate
+- Explain how these hooks relate to other React features like `React.memo`

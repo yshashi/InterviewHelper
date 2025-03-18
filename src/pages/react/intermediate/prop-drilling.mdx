@@ -1,0 +1,214 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Prop Drilling in React
+---
+
+# Prop Drilling in React
+
+## What is Prop Drilling?
+
+Prop drilling (also called "threading") refers to the process of passing props through multiple nested components, even when some intermediate components don't need those props. This happens when a deeply nested component needs data from a component higher up in the component tree.
+
+```jsx
+function App() {
+  const [user, setUser] = useState({ name: 'John', role: 'Admin' });
+  
+  return (
+    <div>
+      <Header user={user} />
+    </div>
+  );
+}
+
+function Header({ user }) {
+  return (
+    <header>
+      <Navigation user={user} />
+    </header>
+  );
+}
+
+function Navigation({ user }) {
+  return (
+    <nav>
+      <UserProfile user={user} />
+    </nav>
+  );
+}
+
+function UserProfile({ user }) {
+  return <div>Welcome, {user.name}!</div>;
+}
+```
+
+In this example, the `user` prop is passed through `Header` and `Navigation` components, even though they don't directly use it. They only pass it down to `UserProfile`.
+
+## Problems with Prop Drilling
+
+1. **Maintenance issues**: When component hierarchies change, you need to update the props in multiple places.
+2. **Readability**: Code becomes harder to read and understand with many props being passed through components.
+3. **Refactoring challenges**: Adding or removing intermediate components requires updating prop passing.
+4. **Unnecessary re-renders**: When props change, all components in the chain may re-render, even if they don't use the props.
+
+## Solutions to Avoid Prop Drilling
+
+### 1. React Context API
+
+Context provides a way to share values between components without explicitly passing props through every level:
+
+```jsx
+// Create a context
+const UserContext = React.createContext();
+
+function App() {
+  const [user, setUser] = useState({ name: 'John', role: 'Admin' });
+  
+  return (
+    <UserContext.Provider value={user}>
+      <div>
+        <Header />
+      </div>
+    </UserContext.Provider>
+  );
+}
+
+function Header() {
+  return (
+    <header>
+      <Navigation />
+    </header>
+  );
+}
+
+function Navigation() {
+  return (
+    <nav>
+      <UserProfile />
+    </nav>
+  );
+}
+
+function UserProfile() {
+  const user = useContext(UserContext);
+  return <div>Welcome, {user.name}!</div>;
+}
+```
+
+### 2. Component Composition
+
+Restructure your components to use composition, passing children as props:
+
+```jsx
+function App() {
+  const [user, setUser] = useState({ name: 'John', role: 'Admin' });
+  
+  return (
+    <div>
+      <Header>
+        <UserProfile user={user} />
+      </Header>
+    </div>
+  );
+}
+
+function Header({ children }) {
+  return (
+    <header>
+      <Navigation>{children}</Navigation>
+    </header>
+  );
+}
+
+function Navigation({ children }) {
+  return <nav>{children}</nav>;
+}
+
+function UserProfile({ user }) {
+  return <div>Welcome, {user.name}!</div>;
+}
+```
+
+### 3. Custom Hooks
+
+Create a custom hook to share state and logic:
+
+```jsx
+function useUser() {
+  const [user, setUser] = useState({ name: 'John', role: 'Admin' });
+  return { user, setUser };
+}
+
+function App() {
+  return (
+    <div>
+      <Header />
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <header>
+      <Navigation />
+    </header>
+  );
+}
+
+function Navigation() {
+  return (
+    <nav>
+      <UserProfile />
+    </nav>
+  );
+}
+
+function UserProfile() {
+  const { user } = useUser();
+  return <div>Welcome, {user.name}!</div>;
+}
+```
+
+### 4. State Management Libraries
+
+For complex applications, consider using state management libraries:
+
+```jsx
+// Using Redux (simplified example)
+function App() {
+  return (
+    <Provider store={store}>
+      <div>
+        <Header />
+      </div>
+    </Provider>
+  );
+}
+
+function UserProfile() {
+  const user = useSelector(state => state.user);
+  return <div>Welcome, {user.name}!</div>;
+}
+```
+
+## When to Use Each Solution
+
+1. **Context API**: Good for global state that many components need (theme, user data, language).
+2. **Component Composition**: Ideal for passing JSX elements through intermediate components.
+3. **Custom Hooks**: Best for sharing stateful logic between components.
+4. **State Management Libraries**: For complex applications with many state interactions.
+
+## Best Practices
+
+1. **Identify prop drilling early**: Recognize when you're passing props through multiple levels.
+2. **Start simple**: Use component composition before reaching for Context or state management libraries.
+3. **Be strategic with Context**: Don't overuse Context for everything; it's best for truly global state.
+4. **Consider performance**: Context can cause unnecessary re-renders if not structured properly.
+
+## Interview Tips
+
+- Explain prop drilling clearly with a simple example.
+- Demonstrate knowledge of multiple solutions and their trade-offs.
+- Discuss how to choose the right solution based on the specific use case.
+- Mention that prop drilling isn't always bad for shallow component trees.
+- Show awareness of performance implications of different solutions.
+- Discuss how modern React features like hooks have made solving prop drilling easier.

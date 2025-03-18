@@ -1,0 +1,282 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between useEffect and useLayoutEffect?
+---
+
+# What is the difference between useEffect and useLayoutEffect?
+
+While `useEffect` and `useLayoutEffect` share the same API and appear similar at first glance, they have a critical difference in their timing of execution that affects when side effects are applied and how they impact the user experience.
+
+## Execution Timing
+
+The main difference between these hooks is when they execute in relation to the browser's paint cycle:
+
+- **useEffect**: Runs asynchronously after the browser has painted, allowing the browser to paint first before executing the effect.
+- **useLayoutEffect**: Runs synchronously after React has performed all DOM mutations but before the browser has painted, blocking the browser from painting until the effect has completed.
+
+```jsx
+// Simplified execution flow
+// 1. React renders and commits updates to the DOM
+// 2. useLayoutEffect runs synchronously (browser painting is blocked)
+// 3. Browser paints the screen
+// 4. useEffect runs asynchronously (after painting)
+```
+
+## Syntax Comparison
+
+Both hooks share the same API:
+
+```jsx
+// useEffect
+useEffect(() => {
+  // Effect code
+  return () => {
+    // Cleanup code
+  };
+}, [dependencies]);
+
+// useLayoutEffect
+useLayoutEffect(() => {
+  // Effect code
+  return () => {
+    // Cleanup code
+  };
+}, [dependencies]);
+```
+
+## When to Use Each Hook
+
+### Use useEffect (most of the time) for:
+
+- Data fetching
+- Subscriptions
+- Setting up timers
+- Logging
+- Any side effect that doesn't need to block painting
+
+```jsx
+import React, { useState, useEffect } from 'react';
+
+function DataFetcher() {
+  const [data, setData] = useState(null);
+  
+  useEffect(() => {
+    // This doesn't need to block rendering
+    fetch('https://api.example.com/data')
+      .then(response => response.json())
+      .then(data => setData(data));
+  }, []);
+  
+  return (
+    <div>
+      {data ? <div>Data: {JSON.stringify(data)}</div> : <div>Loading...</div>}
+    </div>
+  );
+}
+```
+
+### Use useLayoutEffect for:
+
+- DOM measurements and manipulations that need to happen before painting
+- Preventing visual flickers
+- Synchronous re-renders based on DOM measurements
+- Tooltip positioning
+- Animations that must start immediately
+
+```jsx
+import React, { useState, useLayoutEffect, useRef } from 'react';
+
+function Tooltip({ text, targetRect }) {
+  const tooltipRef = useRef(null);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  
+  useLayoutEffect(() => {
+    if (!tooltipRef.current || !targetRect) return;
+    
+    // Get tooltip dimensions
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    
+    // Calculate position to center tooltip above target
+    const newPosition = {
+      top: targetRect.top - tooltipRect.height - 10,
+      left: targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2)
+    };
+    
+    // Update position state - this will be applied before browser paint
+    setPosition(newPosition);
+  }, [targetRect]);
+  
+  return (
+    <div 
+      ref={tooltipRef}
+      className="tooltip"
+      style={{ 
+        position: 'absolute',
+        top: `${position.top}px`,
+        left: `${position.left}px`
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+```
+
+## Visual Comparison: Preventing Flicker
+
+Here's an example that demonstrates the difference between `useEffect` and `useLayoutEffect` when it comes to visual flickering:
+
+```jsx
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+
+// Component using useEffect - may cause flicker
+function WithUseEffect() {
+  const [width, setWidth] = useState(0);
+  
+  useEffect(() => {
+    // This measurement and update happens after painting
+    // User might see element at width 0 briefly before it updates
+    setWidth(document.getElementById('effect-box').offsetWidth);
+  }, []);
+  
+  return (
+    <div>
+      <div id="effect-box" style={{ width: '100%', height: '50px', background: 'lightblue' }}>
+        Box with useEffect
+      </div>
+      <p>Width: {width}px</p>
+    </div>
+  );
+}
+
+// Component using useLayoutEffect - no flicker
+function WithUseLayoutEffect() {
+  const [width, setWidth] = useState(0);
+  
+  useLayoutEffect(() => {
+    // This measurement and update happens before painting
+    // User never sees element at width 0
+    setWidth(document.getElementById('layout-box').offsetWidth);
+  }, []);
+  
+  return (
+    <div>
+      <div id="layout-box" style={{ width: '100%', height: '50px', background: 'lightgreen' }}>
+        Box with useLayoutEffect
+      </div>
+      <p>Width: {width}px</p>
+    </div>
+  );
+}
+```
+
+## Performance Implications
+
+- **useEffect** is generally better for performance as it doesn't block the browser from painting
+- **useLayoutEffect** can delay painting, potentially causing performance issues if the effect takes a long time to execute
+
+## Real-World Example
+
+Here's a simple collapsible component that demonstrates a practical use case for `useLayoutEffect`:
+
+```jsx
+import React, { useState, useRef, useLayoutEffect } from 'react';
+
+function Collapsible({ title, children }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [contentHeight, setContentHeight] = useState(0);
+  const contentRef = useRef(null);
+  
+  // Measure content height synchronously before painting
+  useLayoutEffect(() => {
+    if (contentRef.current) {
+      // Get the scrollHeight (height of all content, including overflow)
+      const height = contentRef.current.scrollHeight;
+      setContentHeight(height);
+    }
+  }, [isOpen, children]); // Re-measure when content or open state changes
+  
+  return (
+    <div className="collapsible">
+      <button 
+        className="collapsible-header"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {title} {isOpen ? '▲' : '▼'}
+      </button>
+      
+      <div 
+        className="collapsible-content"
+        ref={contentRef}
+        style={{
+          height: isOpen ? `${contentHeight}px` : '0',
+          overflow: 'hidden',
+          transition: 'height 0.3s ease-out'
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+```
+
+In this example, `useLayoutEffect` is appropriate because:
+1. We need to measure the DOM element's height
+2. We need this measurement before the browser paints to prevent a visual jump
+3. The animation needs to start from the correct height immediately
+
+## Server-Side Rendering Considerations
+
+`useLayoutEffect` triggers a warning when used in server-side rendering (SSR) because it cannot run during server rendering (there is no DOM to measure).
+
+For components that use `useLayoutEffect` and need to work with SSR, you can use this pattern:
+
+```jsx
+import React, { useEffect, useLayoutEffect } from 'react';
+
+// Use useLayoutEffect in the browser, fall back to useEffect during SSR
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' 
+  ? useLayoutEffect 
+  : useEffect;
+
+function SSRSafeComponent() {
+  useIsomorphicLayoutEffect(() => {
+    // This will use useLayoutEffect in the browser
+    // and useEffect during server rendering
+  }, []);
+  
+  return <div>SSR-safe component</div>;
+}
+```
+
+## Common Use Cases Comparison
+
+| Task | Recommended Hook | Reason |
+|------|-----------------|--------|
+| Data fetching | useEffect | Doesn't need to block painting |
+| Event listeners | useEffect | Setup can happen after paint |
+| DOM measurements | useLayoutEffect | Need measurements before paint |
+| Tooltip positioning | useLayoutEffect | Prevents positioning flicker |
+| Animation setup | useLayoutEffect | Ensures smooth start of animations |
+| Scroll position restoration | useLayoutEffect | Prevents visual jump |
+| Form validation | useEffect | Can happen after paint |
+| Third-party library integration | Depends on library | Use useLayoutEffect if visual updates are involved |
+
+## Interview Tips
+
+1. **Explain the key difference**: The main difference is timing - useLayoutEffect runs synchronously before browser painting, while useEffect runs asynchronously after painting.
+
+2. **Default recommendation**: Mention that useEffect should be your default choice, with useLayoutEffect reserved for specific visual update scenarios.
+
+3. **Performance implications**: Discuss how useLayoutEffect can impact performance by blocking painting, while useEffect allows the browser to paint first.
+
+4. **Visual examples**: Be ready to describe scenarios where useLayoutEffect prevents flickering that would occur with useEffect.
+
+5. **SSR considerations**: Mention the challenges with useLayoutEffect in server-side rendering and how to address them.
+
+6. **Use cases**: Provide clear examples of when each hook is appropriate, focusing on DOM measurements and visual updates for useLayoutEffect.
+
+7. **Mental model**: Suggest thinking of useLayoutEffect as similar to componentDidMount and componentDidUpdate in the class component lifecycle.
+
+8. **Debugging tip**: Share that if you see flickering in your UI when using useEffect for DOM measurements, it might be a sign to switch to useLayoutEffect.

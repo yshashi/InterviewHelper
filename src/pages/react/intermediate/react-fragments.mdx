@@ -1,0 +1,153 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: React Fragments
+---
+
+# React Fragments
+
+## What are React Fragments?
+
+React Fragments are a feature in React that allow you to group multiple elements without adding an extra node to the DOM. Fragments let you return multiple elements from a component's render method without creating an unnecessary parent div or span element.
+
+```jsx
+// Using the explicit React.Fragment syntax
+return (
+  <React.Fragment>
+    <h1>Title</h1>
+    <p>Paragraph</p>
+  </React.Fragment>
+);
+
+// Using the shorthand syntax
+return (
+  <>
+    <h1>Title</h1>
+    <p>Paragraph</p>
+  </>
+);
+```
+
+## Why are Fragments Useful?
+
+### 1. Avoid Unnecessary DOM Nodes
+
+Without fragments, you would need to wrap your elements in a container div, which adds an extra node to the DOM:
+
+```jsx
+// Without fragments - adds extra div to DOM
+return (
+  <div>
+    <h1>Title</h1>
+    <p>Paragraph</p>
+  </div>
+);
+```
+
+This can lead to:
+- Unnecessary DOM bloat
+- CSS styling issues (when the extra div interferes with your layout)
+- Accessibility issues (especially with semantic HTML structures)
+
+### 2. Working with Flexbox and Grid Layouts
+
+When working with CSS Flexbox or Grid, adding extra divs can break your layout:
+
+```jsx
+function ColumnItems() {
+  return (
+    <>
+      <div className="item">Item 1</div>
+      <div className="item">Item 2</div>
+      <div className="item">Item 3</div>
+    </>
+  );
+}
+
+// Parent component
+function GridLayout() {
+  return (
+    <div className="grid-container">
+      <ColumnItems />
+    </div>
+  );
+}
+```
+
+### 3. Returning Multiple Elements from a Component
+
+Fragments are essential when you need to return multiple elements from a component:
+
+```jsx
+function ListItems() {
+  return (
+    <>
+      <li>Item 1</li>
+      <li>Item 2</li>
+      <li>Item 3</li>
+    </>
+  );
+}
+
+// Parent component
+function List() {
+  return (
+    <ul>
+      <ListItems />
+    </ul>
+  );
+}
+```
+
+Without fragments, the above example would require an extra wrapper, breaking the HTML semantics of the list.
+
+## Fragment Syntax Options
+
+### 1. Long Syntax with Keys
+
+The explicit syntax allows you to pass a `key` prop, which is useful when mapping arrays to fragments:
+
+```jsx
+function Glossary({ items }) {
+  return (
+    <dl>
+      {items.map(item => (
+        <React.Fragment key={item.id}>
+          <dt>{item.term}</dt>
+          <dd>{item.description}</dd>
+        </React.Fragment>
+      ))}
+    </dl>
+  );
+}
+```
+
+### 2. Short Syntax
+
+The shorthand syntax is more concise but doesn't support keys or attributes:
+
+```jsx
+function SimpleList() {
+  return (
+    <>
+      <li>Item 1</li>
+      <li>Item 2</li>
+    </>
+  );
+}
+```
+
+## Best Practices
+
+1. **Use the shorthand syntax** (`<></>`) when you don't need to provide a key.
+2. **Use the long syntax** (`<React.Fragment>`) when you need to provide a key in a list.
+3. **Prefer fragments over container divs** when no styling or event handling is needed.
+4. **Consider fragments for component composition** to maintain clean HTML semantics.
+
+## Interview Tips
+
+- Explain that fragments solve the problem of returning multiple elements without adding extra nodes to the DOM.
+- Mention both syntaxes and when to use each one.
+- Highlight use cases like lists, tables, and flex/grid layouts where fragments are particularly useful.
+- Discuss how fragments help maintain proper HTML semantics and avoid styling issues.
+- Point out that fragments were introduced in React 16.2 (December 2017).
+- If asked about performance, note that fragments are slightly more performant than adding extra DOM nodes.

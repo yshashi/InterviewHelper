@@ -1,0 +1,312 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: useCallback Hook in React
+---
+
+# useCallback Hook in React
+
+## What is useCallback?
+
+`useCallback` is a React hook that returns a memoized callback function. It only changes if one of its dependencies changes. This is useful when passing callbacks to optimized child components that rely on reference equality to prevent unnecessary renders.
+
+```jsx
+const memoizedCallback = useCallback(
+  () => {
+    doSomething(a, b);
+  },
+  [a, b], // dependencies array
+);
+```
+
+## Purpose of useCallback
+
+The primary purpose of `useCallback` is to optimize performance by:
+
+1. Preventing unnecessary re-creation of function references
+2. Avoiding unnecessary re-renders of child components that receive callbacks as props
+3. Maintaining referential equality between renders
+
+## Basic Syntax and Usage
+
+```jsx
+import React, { useState, useCallback } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  const [otherState, setOtherState] = useState(0);
+  
+  // Without useCallback - new function reference on every render
+  const incrementWithoutCallback = () => {
+    setCount(c => c + 1);
+  };
+  
+  // With useCallback - same function reference unless dependencies change
+  const incrementWithCallback = useCallback(() => {
+    setCount(c => c + 1);
+  }, []); // Empty dependency array means function never changes
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Other state: {otherState}</p>
+      
+      <button onClick={incrementWithCallback}>
+        Increment with useCallback
+      </button>
+      
+      <button onClick={() => setOtherState(s => s + 1)}>
+        Update other state
+      </button>
+      
+      {/* Child component receives the callback */}
+      <ButtonComponent onClick={incrementWithCallback} />
+    </div>
+  );
+}
+
+// Memoized child component that only re-renders when props change
+const ButtonComponent = React.memo(function ButtonComponent({ onClick }) {
+  console.log('ButtonComponent rendered');
+  return <button onClick={onClick}>Click me</button>;
+});
+```
+
+## When to Use useCallback
+
+### 1. When Passing Callbacks to Memoized Child Components
+
+The most common use case for `useCallback` is when passing callbacks to child components that are optimized with `React.memo`:
+
+```jsx
+function ParentComponent() {
+  const [todos, setTodos] = useState([]);
+  const [filter, setFilter] = useState('all');
+  
+  // Memoize the callback to maintain reference equality
+  const handleAddTodo = useCallback((text) => {
+    const newTodo = { id: Date.now(), text, completed: false };
+    setTodos(prevTodos => [...prevTodos, newTodo]);
+  }, []); // No dependencies, so function reference never changes
+  
+  const handleToggleTodo = useCallback((id) => {
+    setTodos(prevTodos =>
+      prevTodos.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  }, []); // No dependencies, so function reference never changes
+  
+  // Filter todos based on current filter
+  const filteredTodos = useMemo(() => {
+    switch (filter) {
+      case 'active': return todos.filter(todo => !todo.completed);
+      case 'completed': return todos.filter(todo => todo.completed);
+      default: return todos;
+    }
+  }, [todos, filter]);
+  
+  return (
+    <div>
+      <AddTodoForm onAddTodo={handleAddTodo} />
+      <FilterButtons filter={filter} onFilterChange={setFilter} />
+      <TodoList todos={filteredTodos} onToggleTodo={handleToggleTodo} />
+    </div>
+  );
+}
+
+// Memoized components that only re-render when props change
+const AddTodoForm = React.memo(function AddTodoForm({ onAddTodo }) {
+  // Component implementation
+});
+
+const TodoList = React.memo(function TodoList({ todos, onToggleTodo }) {
+  // Component implementation
+});
+```
+
+### 2. When a Callback is a Dependency in Other Hooks
+
+When a function is used as a dependency in `useEffect`, `useMemo`, or another `useCallback`:
+
+```jsx
+function SearchComponent({ onSearch }) {
+  const [query, setQuery] = useState('');
+  
+  // Memoize the debounced search function
+  const debouncedSearch = useCallback(
+    debounce((searchTerm) => {
+      onSearch(searchTerm);
+    }, 500),
+    [onSearch] // Re-create when onSearch changes
+  );
+  
+  // Use the memoized callback in useEffect
+  useEffect(() => {
+    if (query) {
+      debouncedSearch(query);
+    }
+  }, [query, debouncedSearch]); // debouncedSearch is a dependency
+  
+  return (
+    <input
+      type="text"
+      value={query}
+      onChange={e => setQuery(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+### 3. When Working with Custom Hooks
+
+When creating custom hooks that return callbacks:
+
+```jsx
+function useCounter(initialValue = 0) {
+  const [count, setCount] = useState(initialValue);
+  
+  // Memoize these functions so consumers don't get new references
+  const increment = useCallback(() => {
+    setCount(c => c + 1);
+  }, []);
+  
+  const decrement = useCallback(() => {
+    setCount(c => c - 1);
+  }, []);
+  
+  const reset = useCallback(() => {
+    setCount(initialValue);
+  }, [initialValue]); // Re-create when initialValue changes
+  
+  return { count, increment, decrement, reset };
+}
+
+// Usage in a component
+function CounterComponent() {
+  const { count, increment, decrement, reset } = useCounter(0);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>+</button>
+      <button onClick={decrement}>-</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+## Dependencies Array
+
+The second argument to `useCallback` is the dependencies array:
+
+```jsx
+const memoizedCallback = useCallback(
+  () => {
+    doSomething(a, b);
+  },
+  [a, b], // Only re-create callback if a or b changes
+);
+```
+
+- **Empty array `[]`**: Callback is created once and never changes
+- **With dependencies `[a, b]`**: Callback is re-created when any dependency changes
+- **No array provided**: Callback is re-created on every render (defeats the purpose)
+
+## Common Pitfalls
+
+### 1. Missing Dependencies
+
+Forgetting to include values used inside the callback:
+
+```jsx
+// BAD: Missing dependency
+const [count, setCount] = useState(0);
+
+const handleClick = useCallback(() => {
+  console.log(`Clicked ${count} times`);
+  // count is used but not listed as a dependency
+}, []); // ESLint will warn about this
+
+// GOOD: Include all dependencies
+const handleClick = useCallback(() => {
+  console.log(`Clicked ${count} times`);
+}, [count]); // Re-creates function when count changes
+```
+
+### 2. Unnecessary useCallback
+
+Using `useCallback` when it doesn't provide any benefit:
+
+```jsx
+// Unnecessary - no child components rely on reference equality
+function SimpleComponent() {
+  // This doesn't help performance
+  const handleClick = useCallback(() => {
+    console.log('Clicked');
+  }, []);
+  
+  return <button onClick={handleClick}>Click me</button>;
+}
+```
+
+### 3. Inline Function Dependencies
+
+Creating new functions inside `useCallback`:
+
+```jsx
+// BAD: Creates a new formatter function on every render
+const formatData = useCallback((data) => {
+  // This creates a new function reference on every render
+  const formatter = (item) => `${item.name}: ${item.value}`;
+  return data.map(formatter);
+}, []);
+
+// GOOD: Move the formatter outside or memoize it
+const formatter = useCallback(
+  (item) => `${item.name}: ${item.value}`,
+  []
+);
+
+const formatData = useCallback((data) => {
+  return data.map(formatter);
+}, [formatter]);
+```
+
+## useCallback vs. useMemo
+
+- `useCallback(fn, deps)` returns a memoized callback function
+- `useMemo(() => fn, deps)` returns a memoized value (the result of calling the function)
+
+```jsx
+// useCallback memoizes the function itself
+const memoizedFunction = useCallback(() => {
+  return expensiveComputation(a, b);
+}, [a, b]);
+
+// useMemo memoizes the result of the function
+const memoizedResult = useMemo(() => {
+  return expensiveComputation(a, b);
+}, [a, b]);
+
+// Equivalent to:
+// const memoizedFunction = useMemo(() => () => expensiveComputation(a, b), [a, b]);
+```
+
+## Best Practices
+
+1. **Use with React.memo**: Combine `useCallback` with `React.memo` for optimized child components
+2. **Include all dependencies**: Always include all values from the component scope that the callback uses
+3. **Create event handlers inline** for simple components without memoized children
+4. **Extract complex callbacks** outside the component when they don't depend on props or state
+5. **Use the ESLint plugin** for React Hooks to catch missing dependencies
+
+## Interview Tips
+
+- Explain that `useCallback` is primarily a performance optimization, not necessary for correctness
+- Discuss how it works with React's reconciliation process and memoization
+- Mention that premature optimization with `useCallback` can sometimes hurt performance
+- Demonstrate understanding of the relationship between `useCallback` and `React.memo`
+- Be prepared to discuss when `useCallback` provides real benefits vs. when it's unnecessary
+- Explain how `useCallback` differs from `useMemo` and when to use each

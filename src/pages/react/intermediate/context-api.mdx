@@ -1,0 +1,468 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the Context API, and how do you use it to manage state?
+---
+
+# What is the Context API, and how do you use it to manage state?
+
+The Context API is a built-in feature in React that provides a way to share data between components without having to explicitly pass props through every level of the component tree. It's designed to solve the problem of "prop drilling" - passing props through intermediate components that don't need the data but only serve as a means to pass it down.
+
+## Core Components of Context API
+
+The Context API consists of three main parts:
+
+1. **React.createContext**: Creates a Context object
+2. **Context.Provider**: Provides the context value to components
+3. **Context.Consumer** or **useContext** hook: Consumes the context value
+
+## Creating and Using Context
+
+### Step 1: Create a Context
+
+```jsx
+import React, { createContext } from 'react';
+
+// Create a context with a default value
+const ThemeContext = createContext('light');
+
+// Export the context for use in other components
+export default ThemeContext;
+```
+
+### Step 2: Provide the Context
+
+```jsx
+import React, { useState } from 'react';
+import ThemeContext from './ThemeContext';
+
+function App() {
+  const [theme, setTheme] = useState('light');
+  
+  return (
+    <ThemeContext.Provider value={theme}>
+      <div className={`app ${theme}`}>
+        <Header />
+        <MainContent />
+        <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          Toggle Theme
+        </button>
+      </div>
+    </ThemeContext.Provider>
+  );
+}
+```
+
+### Step 3: Consume the Context
+
+#### Using useContext Hook (Functional Components)
+
+```jsx
+import React, { useContext } from 'react';
+import ThemeContext from './ThemeContext';
+
+function ThemedButton() {
+  // Get the current theme value from context
+  const theme = useContext(ThemeContext);
+  
+  return (
+    <button className={`button-${theme}`}>
+      I'm styled based on the theme!
+    </button>
+  );
+}
+```
+
+#### Using Context.Consumer (Class or Functional Components)
+
+```jsx
+import React from 'react';
+import ThemeContext from './ThemeContext';
+
+function ThemedButton() {
+  return (
+    <ThemeContext.Consumer>
+      {theme => (
+        <button className={`button-${theme}`}>
+          I'm styled based on the theme!
+        </button>
+      )}
+    </ThemeContext.Consumer>
+  );
+}
+```
+
+#### Using contextType (Class Components Only)
+
+```jsx
+import React from 'react';
+import ThemeContext from './ThemeContext';
+
+class ThemedButton extends React.Component {
+  // Set the context type
+  static contextType = ThemeContext;
+  
+  render() {
+    const theme = this.context;
+    
+    return (
+      <button className={`button-${theme}`}>
+        I'm styled based on the theme!
+      </button>
+    );
+  }
+}
+```
+
+## Managing State with Context
+
+While Context itself is just a mechanism for passing data, it's commonly used with React's state management to create a simple state management solution.
+
+### Basic State Management Pattern
+
+```jsx
+import React, { createContext, useState, useContext } from 'react';
+
+// Step 1: Create context with a default value
+const CounterContext = createContext({
+  count: 0,
+  increment: () => {},
+  decrement: () => {}
+});
+
+// Step 2: Create a provider component
+export function CounterProvider({ children }) {
+  const [count, setCount] = useState(0);
+  
+  const increment = () => setCount(prevCount => prevCount + 1);
+  const decrement = () => setCount(prevCount => prevCount - 1);
+  
+  // Create the value object that will be provided
+  const value = {
+    count,
+    increment,
+    decrement
+  };
+  
+  return (
+    <CounterContext.Provider value={value}>
+      {children}
+    </CounterContext.Provider>
+  );
+}
+
+// Step 3: Create a custom hook for consuming the context
+export function useCounter() {
+  const context = useContext(CounterContext);
+  
+  if (context === undefined) {
+    throw new Error('useCounter must be used within a CounterProvider');
+  }
+  
+  return context;
+}
+
+// Step 4: Use the provider at the top level
+function App() {
+  return (
+    <CounterProvider>
+      <div className="app">
+        <Counter />
+        <OtherComponent />
+      </div>
+    </CounterProvider>
+  );
+}
+
+// Step 5: Consume the context in components
+function Counter() {
+  const { count, increment, decrement } = useCounter();
+  
+  return (
+    <div>
+      <h2>Count: {count}</h2>
+      <button onClick={increment}>+</button>
+      <button onClick={decrement}>-</button>
+    </div>
+  );
+}
+
+function OtherComponent() {
+  const { count } = useCounter();
+  
+  return (
+    <div>
+      <p>The current count is: {count}</p>
+    </div>
+  );
+}
+```
+
+## Using Context with useReducer
+
+For more complex state logic, you can combine Context with `useReducer`:
+
+```jsx
+import React, { createContext, useReducer, useContext } from 'react';
+
+// Step 1: Define the initial state
+const initialState = {
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null
+};
+
+// Step 2: Create a reducer function
+function authReducer(state, action) {
+  switch (action.type) {
+    case 'LOGIN_REQUEST':
+      return {
+        ...state,
+        isLoading: true,
+        error: null
+      };
+    case 'LOGIN_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: true,
+        user: action.payload,
+        error: null
+      };
+    case 'LOGIN_FAILURE':
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: false,
+        user: null,
+        error: action.payload
+      };
+    case 'LOGOUT':
+      return {
+        ...state,
+        isAuthenticated: false,
+        user: null
+      };
+    default:
+      return state;
+  }
+}
+
+// Step 3: Create the context
+const AuthContext = createContext();
+
+// Step 4: Create a provider component
+export function AuthProvider({ children }) {
+  const [state, dispatch] = useReducer(authReducer, initialState);
+  
+  // Define actions
+  const login = async (credentials) => {
+    try {
+      dispatch({ type: 'LOGIN_REQUEST' });
+      
+      // Simulate API call
+      const response = await fakeAuthApi.login(credentials);
+      
+      dispatch({ 
+        type: 'LOGIN_SUCCESS', 
+        payload: response.user 
+      });
+    } catch (error) {
+      dispatch({ 
+        type: 'LOGIN_FAILURE', 
+        payload: error.message 
+      });
+    }
+  };
+  
+  const logout = () => {
+    dispatch({ type: 'LOGOUT' });
+  };
+  
+  // Create value object with state and actions
+  const value = {
+    ...state,
+    login,
+    logout
+  };
+  
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Step 5: Create a custom hook for consuming the context
+export function useAuth() {
+  const context = useContext(AuthContext);
+  
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  
+  return context;
+}
+
+// Fake auth API for the example
+const fakeAuthApi = {
+  login: async (credentials) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (credentials.username === 'user' && credentials.password === 'pass') {
+          resolve({
+            user: {
+              id: 1,
+              username: 'user',
+              name: 'Test User'
+            }
+          });
+        } else {
+          reject(new Error('Invalid credentials'));
+        }
+      }, 1000);
+    });
+  }
+};
+```
+
+## Multiple Contexts
+
+You can use multiple contexts in your application for different concerns:
+
+```jsx
+function App() {
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <CartProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </CartProvider>
+      </ThemeProvider>
+    </AuthProvider>
+  );
+}
+```
+
+## Context API Best Practices
+
+### 1. Split contexts by domain
+
+Create separate contexts for different domains of your application:
+
+```jsx
+// Good: Separate contexts
+const UserContext = createContext();
+const ThemeContext = createContext();
+const CartContext = createContext();
+
+// Avoid: One giant context
+const AppContext = createContext();
+```
+
+### 2. Provide default values
+
+Always provide meaningful default values for your contexts:
+
+```jsx
+// With default value
+const ThemeContext = createContext({ theme: 'light', toggleTheme: () => {} });
+
+// Without default value (less ideal)
+const ThemeContext = createContext();
+```
+
+### 3. Create custom hooks
+
+Create custom hooks to consume your contexts:
+
+```jsx
+function useTheme() {
+  const context = useContext(ThemeContext);
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+}
+```
+
+### 4. Optimize renders
+
+Use React.memo and careful context structure to prevent unnecessary re-renders:
+
+```jsx
+// Split state and dispatch into separate contexts
+const CountStateContext = createContext();
+const CountDispatchContext = createContext();
+
+function CountProvider({ children }) {
+  const [count, dispatch] = useReducer(countReducer, 0);
+  
+  return (
+    <CountStateContext.Provider value={count}>
+      <CountDispatchContext.Provider value={dispatch}>
+        {children}
+      </CountDispatchContext.Provider>
+    </CountStateContext.Provider>
+  );
+}
+```
+
+### 5. Keep provider components close to where they're needed
+
+Don't always put all providers at the root level:
+
+```jsx
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Route path="/admin">
+          {/* AdminProvider only used in admin section */}
+          <AdminProvider>
+            <AdminDashboard />
+          </AdminProvider>
+        </Route>
+        <Route path="/shop">
+          {/* CartProvider only used in shop section */}
+          <CartProvider>
+            <Shop />
+          </CartProvider>
+        </Route>
+      </Router>
+    </AuthProvider>
+  );
+}
+```
+
+## Context API vs. Other State Management Solutions
+
+| Feature | Context API | Redux | MobX |
+|---------|-------------|-------|------|
+| Learning curve | Low | Medium-High | Medium |
+| Boilerplate | Minimal | Significant | Minimal |
+| Debugging tools | Limited | Excellent | Good |
+| Performance | Good for small-medium apps | Excellent for large apps | Good |
+| Middleware support | Manual implementation | Built-in | Manual implementation |
+| Time travel debugging | No | Yes | No |
+| Best suited for | Small-medium apps, component-specific state | Large apps, complex state logic | Medium-large apps |
+
+## Interview Tips
+
+1. **Explain the purpose**: Context API solves the problem of prop drilling by providing a way to share values between components without passing props through every level.
+
+2. **Describe the components**: Be ready to explain the three main parts: createContext, Provider, and Consumer/useContext.
+
+3. **Compare with prop drilling**: Highlight the benefits of Context over passing props through multiple levels of components.
+
+4. **Discuss performance implications**: Mention that Context is not optimized for high-frequency updates and may cause re-renders in all consuming components.
+
+5. **Compare with other state management**: Be prepared to compare Context with Redux, MobX, or other state management libraries.
+
+6. **Mention best practices**: Discuss splitting contexts by domain, providing default values, and creating custom hooks.
+
+7. **Real-world examples**: Share examples of how you've used Context API in your projects, such as for theme switching, authentication, or shopping carts.
+
+8. **Limitations**: Acknowledge that Context is not a complete state management solution and may not be suitable for all use cases, especially those requiring high-performance updates.
