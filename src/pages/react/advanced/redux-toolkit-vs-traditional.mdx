@@ -1,0 +1,545 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between Redux Toolkit and traditional Redux?
+---
+
+# What is the difference between Redux Toolkit and traditional Redux?
+
+## Traditional Redux: The Foundation
+
+Traditional Redux is a state management library for JavaScript applications that follows three core principles:
+
+1. **Single source of truth**: The entire application state is stored in a single store.
+2. **State is read-only**: The only way to change state is by dispatching actions.
+3. **Changes are made with pure functions**: Reducers are pure functions that take the previous state and an action to return the next state.
+
+Here's how traditional Redux is typically implemented:
+
+```jsx
+// Action Types
+const ADD_TODO = 'ADD_TODO';
+const TOGGLE_TODO = 'TOGGLE_TODO';
+const SET_VISIBILITY_FILTER = 'SET_VISIBILITY_FILTER';
+
+// Action Creators
+const addTodo = (text) => ({
+  type: ADD_TODO,
+  payload: {
+    id: Date.now(),
+    text,
+    completed: false
+  }
+});
+
+const toggleTodo = (id) => ({
+  type: TOGGLE_TODO,
+  payload: { id }
+});
+
+const setVisibilityFilter = (filter) => ({
+  type: SET_VISIBILITY_FILTER,
+  payload: { filter }
+});
+
+// Reducers
+const initialTodosState = [];
+
+const todosReducer = (state = initialTodosState, action) => {
+  switch (action.type) {
+    case ADD_TODO:
+      return [...state, action.payload];
+    case TOGGLE_TODO:
+      return state.map(todo =>
+        todo.id === action.payload.id
+          ? { ...todo, completed: !todo.completed }
+          : todo
+      );
+    default:
+      return state;
+  }
+};
+
+const initialFilterState = 'SHOW_ALL';
+
+const filterReducer = (state = initialFilterState, action) => {
+  switch (action.type) {
+    case SET_VISIBILITY_FILTER:
+      return action.payload.filter;
+    default:
+      return state;
+  }
+};
+
+// Combine Reducers
+import { combineReducers, createStore } from 'redux';
+
+const rootReducer = combineReducers({
+  todos: todosReducer,
+  visibilityFilter: filterReducer
+});
+
+// Create Store
+const store = createStore(rootReducer);
+```
+
+## Redux Toolkit: The Modern Approach
+
+Redux Toolkit (RTK) is the official, opinionated, batteries-included toolset for efficient Redux development. It was created to address three common concerns about Redux:
+
+1. "Configuring a Redux store is too complicated"
+2. "I have to add a lot of packages to get Redux to do anything useful"
+3. "Redux requires too much boilerplate code"
+
+Here's the same application implemented with Redux Toolkit:
+
+```jsx
+import { createSlice, configureStore } from '@reduxjs/toolkit';
+
+// Create a slice for todos (combines actions and reducers)
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: {
+      reducer: (state, action) => {
+        state.push(action.payload);
+      },
+      prepare: (text) => ({
+        payload: {
+          id: Date.now(),
+          text,
+          completed: false
+        }
+      })
+    },
+    toggleTodo: (state, action) => {
+      const todo = state.find(todo => todo.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed;
+      }
+    }
+  }
+});
+
+// Create a slice for visibility filter
+const filterSlice = createSlice({
+  name: 'visibilityFilter',
+  initialState: 'SHOW_ALL',
+  reducers: {
+    setVisibilityFilter: (state, action) => action.payload
+  }
+});
+
+// Extract action creators and reducers
+export const { addTodo, toggleTodo } = todosSlice.actions;
+export const { setVisibilityFilter } = filterSlice.actions;
+
+// Configure store (combines reducers automatically)
+const store = configureStore({
+  reducer: {
+    todos: todosSlice.reducer,
+    visibilityFilter: filterSlice.reducer
+  }
+});
+```
+
+## Key Differences Between Redux Toolkit and Traditional Redux
+
+### 1. Reduced Boilerplate Code
+
+**Traditional Redux:**
+- Requires manually defining action types, action creators, and reducers separately
+- Needs explicit immutable state updates
+- Requires manual store configuration with middleware
+
+**Redux Toolkit:**
+- `createSlice` combines action types, action creators, and reducers
+- Automatically generates action types and action creators
+- `configureStore` sets up the store with sensible defaults
+
+### 2. Immutability Handling
+
+**Traditional Redux:**
+- Requires manual immutable updates (using spread operators or libraries like Immer)
+- Easy to accidentally mutate state
+
+```jsx
+// Traditional Redux - manual immutability
+const todosReducer = (state = [], action) => {
+  switch (action.type) {
+    case ADD_TODO:
+      return [...state, action.payload]; // Create new array
+    case TOGGLE_TODO:
+      return state.map(todo => 
+        todo.id === action.payload.id
+          ? { ...todo, completed: !todo.completed } // Create new object
+          : todo
+      );
+    default:
+      return state;
+  }
+};
+```
+
+**Redux Toolkit:**
+- Uses Immer internally to allow "mutating" code that actually produces immutable updates
+- Safer and more intuitive state updates
+
+```jsx
+// Redux Toolkit - "mutating" code that's actually safe
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: (state, action) => {
+      state.push(action.payload); // Looks like mutation but is safe
+    },
+    toggleTodo: (state, action) => {
+      const todo = state.find(todo => todo.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed; // Looks like mutation but is safe
+      }
+    }
+  }
+});
+```
+
+### 3. DevTools Integration
+
+**Traditional Redux:**
+- Requires manual setup for Redux DevTools
+- Often needs additional middleware configuration
+
+```jsx
+import { createStore, applyMiddleware, compose } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers';
+
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+const store = createStore(
+  rootReducer,
+  composeEnhancers(applyMiddleware(thunk))
+);
+```
+
+**Redux Toolkit:**
+- DevTools are set up automatically with `configureStore`
+- Includes useful development checks (e.g., for accidental state mutations)
+
+```jsx
+import { configureStore } from '@reduxjs/toolkit';
+import rootReducer from './reducers';
+
+const store = configureStore({
+  reducer: rootReducer
+  // DevTools extension is included by default
+  // Thunk middleware is included by default
+});
+```
+
+### 4. Middleware Configuration
+
+**Traditional Redux:**
+- Requires explicit middleware setup
+- Middleware like thunk needs to be installed and configured separately
+
+```jsx
+import { createStore, applyMiddleware } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers';
+
+const store = createStore(
+  rootReducer,
+  applyMiddleware(thunk)
+);
+```
+
+**Redux Toolkit:**
+- Includes common middleware by default (Redux Thunk)
+- Simplified middleware configuration
+
+```jsx
+import { configureStore } from '@reduxjs/toolkit';
+import rootReducer from './reducers';
+
+const store = configureStore({
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(customMiddleware)
+});
+```
+
+### 5. Async Logic
+
+**Traditional Redux:**
+- Requires additional middleware (e.g., redux-thunk, redux-saga)
+- Verbose action creators for async operations
+
+```jsx
+// Traditional Redux with Thunk
+import { createStore, applyMiddleware } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers';
+
+const store = createStore(
+  rootReducer,
+  applyMiddleware(thunk)
+);
+
+// Action Types
+const FETCH_TODOS_REQUEST = 'FETCH_TODOS_REQUEST';
+const FETCH_TODOS_SUCCESS = 'FETCH_TODOS_SUCCESS';
+const FETCH_TODOS_FAILURE = 'FETCH_TODOS_FAILURE';
+
+// Action Creators
+const fetchTodosRequest = () => ({ type: FETCH_TODOS_REQUEST });
+const fetchTodosSuccess = (todos) => ({ 
+  type: FETCH_TODOS_SUCCESS, 
+  payload: todos 
+});
+const fetchTodosFailure = (error) => ({ 
+  type: FETCH_TODOS_FAILURE, 
+  payload: error 
+});
+
+// Async Action Creator
+const fetchTodos = () => {
+  return async (dispatch) => {
+    dispatch(fetchTodosRequest());
+    try {
+      const response = await fetch('/api/todos');
+      const data = await response.json();
+      dispatch(fetchTodosSuccess(data));
+    } catch (error) {
+      dispatch(fetchTodosFailure(error.message));
+    }
+  };
+};
+
+// Reducer
+const todosReducer = (state = { loading: false, data: [], error: null }, action) => {
+  switch (action.type) {
+    case FETCH_TODOS_REQUEST:
+      return { ...state, loading: true };
+    case FETCH_TODOS_SUCCESS:
+      return { ...state, loading: false, data: action.payload };
+    case FETCH_TODOS_FAILURE:
+      return { ...state, loading: false, error: action.payload };
+    default:
+      return state;
+  }
+};
+```
+
+**Redux Toolkit:**
+- Provides `createAsyncThunk` for simplified async operations
+- Automatically generates pending/fulfilled/rejected action types
+- Simplifies handling loading states and errors
+
+```jsx
+// Redux Toolkit with createAsyncThunk
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+
+// Async thunk action
+export const fetchTodos = createAsyncThunk(
+  'todos/fetchTodos',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/todos');
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Slice with async logic
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: {
+    data: [],
+    loading: false,
+    error: null
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTodos.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTodos.fulfilled, (state, action) => {
+        state.loading = false;
+        state.data = action.payload;
+      })
+      .addCase(fetchTodos.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  }
+});
+```
+
+### 6. Entity Management
+
+**Traditional Redux:**
+- No built-in solution for normalized data
+- Requires manual normalization and denormalization
+
+**Redux Toolkit:**
+- Provides `createEntityAdapter` for normalized state management
+- Includes CRUD operations for collections of entities
+
+```jsx
+import { createEntityAdapter, createSlice } from '@reduxjs/toolkit';
+
+// Create an entity adapter
+const todosAdapter = createEntityAdapter({
+  // Assume todos have an `id` field as the primary key
+  selectId: (todo) => todo.id,
+  // Optional: Sort by completion status
+  sortComparer: (a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1)
+});
+
+// The entity adapter provides selectors and CRUD reducers
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: todosAdapter.getInitialState({
+    loading: false,
+    error: null
+  }),
+  reducers: {
+    // Use the adapter's CRUD methods
+    todoAdded: todosAdapter.addOne,
+    todosReceived: todosAdapter.setAll,
+    todoToggled(state, action) {
+      const id = action.payload;
+      const todo = state.entities[id];
+      if (todo) {
+        todo.completed = !todo.completed;
+      }
+    }
+  }
+});
+
+// Extract the action creators
+export const { todoAdded, todosReceived, todoToggled } = todosSlice.actions;
+
+// The adapter provides a set of selectors
+export const {
+  selectAll: selectAllTodos,
+  selectById: selectTodoById,
+  selectIds: selectTodoIds
+} = todosAdapter.getSelectors((state) => state.todos);
+```
+
+## When to Use Redux Toolkit vs. Traditional Redux
+
+### Use Redux Toolkit When:
+
+1. **Starting a new project**: RTK provides the best defaults and simplifies setup.
+2. **Refactoring an existing Redux application**: RTK can reduce boilerplate and improve maintainability.
+3. **Learning Redux**: RTK follows best practices and reduces common mistakes.
+4. **Working with a team**: RTK enforces consistent patterns and reduces the learning curve.
+5. **Dealing with complex state**: RTK's entity adapters and async thunks simplify complex state management.
+
+### Consider Traditional Redux When:
+
+1. **Legacy projects**: If you have a large existing codebase using traditional Redux, a full migration might be costly.
+2. **Specific customization needs**: If you need very specific middleware or store enhancer configurations.
+3. **Learning the fundamentals**: Understanding traditional Redux can help grasp the core concepts before using RTK.
+
+## Performance Considerations
+
+Both traditional Redux and Redux Toolkit have similar performance characteristics since RTK is built on top of Redux. However, RTK can lead to better performance in some cases:
+
+1. **Reduced re-renders**: RTK's `createEntityAdapter` helps with normalized state, which can reduce unnecessary re-renders.
+2. **Optimized selectors**: RTK encourages the use of memoized selectors with `createSelector`.
+3. **Efficient updates**: Immer's structural sharing ensures only changed parts of the state are updated.
+
+```jsx
+// Redux Toolkit with createSelector for memoized selectors
+import { createSelector } from '@reduxjs/toolkit';
+
+// Base selectors
+const selectTodos = state => state.todos;
+const selectFilter = state => state.filter;
+
+// Memoized selector that only recalculates when todos or filter changes
+export const selectFilteredTodos = createSelector(
+  [selectTodos, selectFilter],
+  (todos, filter) => {
+    switch (filter) {
+      case 'COMPLETED':
+        return todos.filter(todo => todo.completed);
+      case 'ACTIVE':
+        return todos.filter(todo => !todo.completed);
+      default:
+        return todos;
+    }
+  }
+);
+```
+
+## Best Practices
+
+### Redux Toolkit Best Practices
+
+1. **Use slices for feature-based state management**:
+   - Organize your Redux code by feature, with each feature having its own slice.
+
+2. **Leverage Immer for immutable updates**:
+   - Take advantage of the "mutating" syntax in reducers for cleaner code.
+
+3. **Use createAsyncThunk for async operations**:
+   - Simplify async logic with automatic handling of pending/fulfilled/rejected states.
+
+4. **Use createEntityAdapter for collections**:
+   - Normalize your data and use the adapter's CRUD operations.
+
+5. **Use the Redux DevTools Extension**:
+   - RTK configures this automatically, so make use of it for debugging.
+
+### Traditional Redux Best Practices
+
+1. **Follow the Redux style guide**:
+   - Use the official Redux style guide for consistent patterns.
+
+2. **Use action creators and action types constants**:
+   - Keep your action creation consistent and avoid typos.
+
+3. **Keep reducers pure and focused**:
+   - Each reducer should handle a specific part of the state.
+
+4. **Normalize complex state**:
+   - Use a normalized state structure for relational data.
+
+5. **Use middleware for side effects**:
+   - Keep your reducers pure by handling side effects in middleware.
+
+## Interview Tips
+
+When discussing Redux Toolkit vs. traditional Redux in an interview:
+
+1. **Demonstrate understanding of core Redux principles**:
+   - Explain that RTK is built on top of Redux and follows the same principles.
+   - Show that you understand the single source of truth, immutability, and pure reducers.
+
+2. **Highlight the benefits of Redux Toolkit**:
+   - Less boilerplate code
+   - Built-in immutability with Immer
+   - Simplified async logic with createAsyncThunk
+   - Better developer experience
+
+3. **Discuss migration strategies**:
+   - Explain how to gradually migrate from traditional Redux to RTK
+   - Mention that both can coexist in the same application
+
+4. **Show awareness of when to use each approach**:
+   - Discuss scenarios where RTK is preferable
+   - Acknowledge situations where traditional Redux might still be appropriate
+
+5. **Demonstrate practical knowledge**:
+   - Be prepared to write code examples for both approaches
+   - Show how to implement common patterns like async operations in both

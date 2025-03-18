@@ -1,0 +1,1093 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Integrating React with Redux for State Management
+---
+
+# How to Integrate React with Redux for State Management
+
+## Understanding Redux and Its Core Principles
+
+Redux is a predictable state container for JavaScript applications, commonly used with React. It helps manage the state of your application in a consistent way, making state changes predictable and traceable.
+
+Redux is built on three fundamental principles:
+
+```jsx
+// 1. Single source of truth: The state of your entire application is stored in a single store
+// 2. State is read-only: The only way to change state is to emit an action
+// 3. Changes are made with pure functions: Reducers are pure functions that take the previous state and an action
+```
+
+## Core Redux Concepts
+
+### 1. Store
+
+The store holds the application state and provides a few helper methods to access the state, dispatch actions, and register listeners:
+
+```jsx
+import { createStore } from 'redux';
+import rootReducer from './reducers';
+
+const store = createStore(rootReducer);
+
+console.log(store.getState()); // Get the current state
+```
+
+### 2. Actions
+
+Actions are plain JavaScript objects that represent an intention to change the state. They must have a `type` property:
+
+```jsx
+// Action types (constants)
+const ADD_TODO = 'ADD_TODO';
+const TOGGLE_TODO = 'TOGGLE_TODO';
+
+// Action creators
+function addTodo(text) {
+  return {
+    type: ADD_TODO,
+    payload: {
+      id: Date.now(),
+      text,
+      completed: false
+    }
+  };
+}
+
+function toggleTodo(id) {
+  return {
+    type: TOGGLE_TODO,
+    payload: { id }
+  };
+}
+```
+
+### 3. Reducers
+
+Reducers specify how the application's state changes in response to actions. They are pure functions that take the previous state and an action, and return the next state:
+
+```jsx
+// Initial state
+const initialState = {
+  todos: []
+};
+
+// Reducer
+function todoReducer(state = initialState, action) {
+  switch (action.type) {
+    case ADD_TODO:
+      return {
+        ...state,
+        todos: [...state.todos, action.payload]
+      };
+    
+    case TOGGLE_TODO:
+      return {
+        ...state,
+        todos: state.todos.map(todo =>
+          todo.id === action.payload.id
+            ? { ...todo, completed: !todo.completed }
+            : todo
+        )
+      };
+    
+    default:
+      return state;
+  }
+}
+```
+
+### 4. Dispatch
+
+Dispatch is the method used to send actions to the store:
+
+```jsx
+// Dispatching an action
+store.dispatch(addTodo('Learn Redux'));
+```
+
+## Setting Up Redux in a React Application
+
+### Step 1: Install Required Packages
+
+```bash
+npm install redux react-redux
+```
+
+### Step 2: Create a Redux Store
+
+```jsx
+// src/store/index.js
+import { createStore } from 'redux';
+import rootReducer from './reducers';
+
+const store = createStore(
+  rootReducer,
+  // Optional: Add Redux DevTools Extension support
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
+
+export default store;
+```
+
+### Step 3: Create Action Types, Action Creators, and Reducers
+
+```jsx
+// src/store/types.js
+export const INCREMENT = 'INCREMENT';
+export const DECREMENT = 'DECREMENT';
+export const RESET = 'RESET';
+
+// src/store/actions.js
+import { INCREMENT, DECREMENT, RESET } from './types';
+
+export const increment = () => ({
+  type: INCREMENT
+});
+
+export const decrement = () => ({
+  type: DECREMENT
+});
+
+export const reset = () => ({
+  type: RESET
+});
+
+// src/store/reducers.js
+import { INCREMENT, DECREMENT, RESET } from './types';
+
+const initialState = {
+  count: 0
+};
+
+const counterReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case INCREMENT:
+      return {
+        ...state,
+        count: state.count + 1
+      };
+    
+    case DECREMENT:
+      return {
+        ...state,
+        count: state.count - 1
+      };
+    
+    case RESET:
+      return {
+        ...state,
+        count: 0
+      };
+    
+    default:
+      return state;
+  }
+};
+
+export default counterReducer;
+```
+
+### Step 4: Combine Multiple Reducers (if needed)
+
+```jsx
+// src/store/reducers.js
+import { combineReducers } from 'redux';
+import counterReducer from './counterReducer';
+import todosReducer from './todosReducer';
+import userReducer from './userReducer';
+
+const rootReducer = combineReducers({
+  counter: counterReducer,
+  todos: todosReducer,
+  user: userReducer
+});
+
+export default rootReducer;
+```
+
+### Step 5: Provide the Redux Store to React Components
+
+```jsx
+// src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import store from './store';
+import App from './App';
+
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+);
+```
+
+## Connecting React Components to Redux
+
+### Using the connect Function (Traditional Approach)
+
+The `connect` function from `react-redux` is a higher-order component (HOC) that connects a React component to the Redux store:
+
+```jsx
+// src/components/Counter.js
+import React from 'react';
+import { connect } from 'react-redux';
+import { increment, decrement, reset } from '../store/actions';
+
+function Counter({ count, increment, decrement, reset }) {
+  return (
+    <div>
+      <h2>Counter: {count}</h2>
+      <button onClick={increment}>Increment</button>
+      <button onClick={decrement}>Decrement</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
+// mapStateToProps: Maps Redux state to component props
+const mapStateToProps = (state) => ({
+  count: state.count
+});
+
+// mapDispatchToProps: Maps Redux actions to component props
+const mapDispatchToProps = {
+  increment,
+  decrement,
+  reset
+};
+
+// Connect the component to Redux
+export default connect(mapStateToProps, mapDispatchToProps)(Counter);
+```
+
+### Using React-Redux Hooks (Modern Approach)
+
+React-Redux provides hooks that simplify the process of connecting components to the Redux store:
+
+```jsx
+// src/components/Counter.js
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { increment, decrement, reset } from '../store/actions';
+
+function Counter() {
+  // useSelector: Extract data from the Redux store state
+  const count = useSelector(state => state.count);
+  
+  // useDispatch: Returns a reference to the dispatch function
+  const dispatch = useDispatch();
+  
+  return (
+    <div>
+      <h2>Counter: {count}</h2>
+      <button onClick={() => dispatch(increment())}>Increment</button>
+      <button onClick={() => dispatch(decrement())}>Decrement</button>
+      <button onClick={() => dispatch(reset())}>Reset</button>
+    </div>
+  );
+}
+
+export default Counter;
+```
+
+## Building a Complete Todo Application with React and Redux
+
+Let's build a more comprehensive example of a todo application:
+
+### Step 1: Define Action Types
+
+```jsx
+// src/store/types.js
+export const ADD_TODO = 'ADD_TODO';
+export const TOGGLE_TODO = 'TOGGLE_TODO';
+export const DELETE_TODO = 'DELETE_TODO';
+export const SET_FILTER = 'SET_FILTER';
+
+export const FILTERS = {
+  ALL: 'ALL',
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED'
+};
+```
+
+### Step 2: Create Action Creators
+
+```jsx
+// src/store/actions.js
+import { ADD_TODO, TOGGLE_TODO, DELETE_TODO, SET_FILTER } from './types';
+
+let nextTodoId = 0;
+
+export const addTodo = text => ({
+  type: ADD_TODO,
+  payload: {
+    id: nextTodoId++,
+    text,
+    completed: false
+  }
+});
+
+export const toggleTodo = id => ({
+  type: TOGGLE_TODO,
+  payload: { id }
+});
+
+export const deleteTodo = id => ({
+  type: DELETE_TODO,
+  payload: { id }
+});
+
+export const setFilter = filter => ({
+  type: SET_FILTER,
+  payload: { filter }
+});
+```
+
+### Step 3: Create Reducers
+
+```jsx
+// src/store/reducers/todosReducer.js
+import { ADD_TODO, TOGGLE_TODO, DELETE_TODO } from '../types';
+
+const initialState = [];
+
+const todosReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case ADD_TODO:
+      return [...state, action.payload];
+    
+    case TOGGLE_TODO:
+      return state.map(todo =>
+        todo.id === action.payload.id
+          ? { ...todo, completed: !todo.completed }
+          : todo
+      );
+    
+    case DELETE_TODO:
+      return state.filter(todo => todo.id !== action.payload.id);
+    
+    default:
+      return state;
+  }
+};
+
+export default todosReducer;
+
+// src/store/reducers/filterReducer.js
+import { SET_FILTER, FILTERS } from '../types';
+
+const initialState = FILTERS.ALL;
+
+const filterReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case SET_FILTER:
+      return action.payload.filter;
+    
+    default:
+      return state;
+  }
+};
+
+export default filterReducer;
+
+// src/store/reducers/index.js
+import { combineReducers } from 'redux';
+import todosReducer from './todosReducer';
+import filterReducer from './filterReducer';
+
+const rootReducer = combineReducers({
+  todos: todosReducer,
+  filter: filterReducer
+});
+
+export default rootReducer;
+```
+
+### Step 4: Create the Redux Store
+
+```jsx
+// src/store/index.js
+import { createStore } from 'redux';
+import rootReducer from './reducers';
+
+const store = createStore(
+  rootReducer,
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
+
+export default store;
+```
+
+### Step 5: Create React Components
+
+```jsx
+// src/components/TodoForm.js
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { addTodo } from '../store/actions';
+
+function TodoForm() {
+  const [text, setText] = useState('');
+  const dispatch = useDispatch();
+  
+  const handleSubmit = e => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    dispatch(addTodo(text));
+    setText('');
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Add a todo"
+      />
+      <button type="submit">Add</button>
+    </form>
+  );
+}
+
+export default TodoForm;
+
+// src/components/TodoList.js
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { toggleTodo, deleteTodo } from '../store/actions';
+import { FILTERS } from '../store/types';
+
+function TodoList() {
+  const todos = useSelector(state => state.todos);
+  const filter = useSelector(state => state.filter);
+  const dispatch = useDispatch();
+  
+  const filteredTodos = todos.filter(todo => {
+    switch (filter) {
+      case FILTERS.ACTIVE:
+        return !todo.completed;
+      case FILTERS.COMPLETED:
+        return todo.completed;
+      default:
+        return true;
+    }
+  });
+  
+  return (
+    <ul>
+      {filteredTodos.map(todo => (
+        <li
+          key={todo.id}
+          style={{
+            textDecoration: todo.completed ? 'line-through' : 'none',
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: '8px'
+          }}
+        >
+          <span onClick={() => dispatch(toggleTodo(todo.id))}>
+            {todo.text}
+          </span>
+          <button onClick={() => dispatch(deleteTodo(todo.id))}>
+            Delete
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default TodoList;
+
+// src/components/FilterButtons.js
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { setFilter } from '../store/actions';
+import { FILTERS } from '../store/types';
+
+function FilterButtons() {
+  const currentFilter = useSelector(state => state.filter);
+  const dispatch = useDispatch();
+  
+  return (
+    <div>
+      <button
+        onClick={() => dispatch(setFilter(FILTERS.ALL))}
+        disabled={currentFilter === FILTERS.ALL}
+      >
+        All
+      </button>
+      <button
+        onClick={() => dispatch(setFilter(FILTERS.ACTIVE))}
+        disabled={currentFilter === FILTERS.ACTIVE}
+      >
+        Active
+      </button>
+      <button
+        onClick={() => dispatch(setFilter(FILTERS.COMPLETED))}
+        disabled={currentFilter === FILTERS.COMPLETED}
+      >
+        Completed
+      </button>
+    </div>
+  );
+}
+
+export default FilterButtons;
+
+// src/components/TodoApp.js
+import React from 'react';
+import TodoForm from './TodoForm';
+import TodoList from './TodoList';
+import FilterButtons from './FilterButtons';
+
+function TodoApp() {
+  return (
+    <div>
+      <h1>Todo App with Redux</h1>
+      <TodoForm />
+      <FilterButtons />
+      <TodoList />
+    </div>
+  );
+}
+
+export default TodoApp;
+```
+
+### Step 6: Connect the App to Redux
+
+```jsx
+// src/App.js
+import React from 'react';
+import { Provider } from 'react-redux';
+import store from './store';
+import TodoApp from './components/TodoApp';
+
+function App() {
+  return (
+    <Provider store={store}>
+      <TodoApp />
+    </Provider>
+  );
+}
+
+export default App;
+```
+
+## Handling Asynchronous Operations with Redux
+
+Redux itself is synchronous, but you can handle asynchronous operations using middleware like Redux Thunk:
+
+### Step 1: Install Redux Thunk
+
+```bash
+npm install redux-thunk
+```
+
+### Step 2: Apply the Middleware
+
+```jsx
+// src/store/index.js
+import { createStore, applyMiddleware, compose } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers';
+
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+const store = createStore(
+  rootReducer,
+  composeEnhancers(applyMiddleware(thunk))
+);
+
+export default store;
+```
+
+### Step 3: Create Async Action Creators
+
+```jsx
+// src/store/actions.js
+import { FETCH_TODOS_REQUEST, FETCH_TODOS_SUCCESS, FETCH_TODOS_FAILURE } from './types';
+
+// Synchronous action creators
+export const fetchTodosRequest = () => ({
+  type: FETCH_TODOS_REQUEST
+});
+
+export const fetchTodosSuccess = todos => ({
+  type: FETCH_TODOS_SUCCESS,
+  payload: { todos }
+});
+
+export const fetchTodosFailure = error => ({
+  type: FETCH_TODOS_FAILURE,
+  payload: { error }
+});
+
+// Asynchronous action creator (thunk)
+export const fetchTodos = () => {
+  return async dispatch => {
+    dispatch(fetchTodosRequest());
+    
+    try {
+      const response = await fetch('https://jsonplaceholder.typicode.com/todos');
+      const data = await response.json();
+      
+      dispatch(fetchTodosSuccess(data));
+    } catch (error) {
+      dispatch(fetchTodosFailure(error.message));
+    }
+  };
+};
+```
+
+### Step 4: Update the Reducer
+
+```jsx
+// src/store/reducers/todosReducer.js
+import {
+  FETCH_TODOS_REQUEST,
+  FETCH_TODOS_SUCCESS,
+  FETCH_TODOS_FAILURE,
+  ADD_TODO,
+  TOGGLE_TODO,
+  DELETE_TODO
+} from '../types';
+
+const initialState = {
+  items: [],
+  loading: false,
+  error: null
+};
+
+const todosReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case FETCH_TODOS_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null
+      };
+    
+    case FETCH_TODOS_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        items: action.payload.todos
+      };
+    
+    case FETCH_TODOS_FAILURE:
+      return {
+        ...state,
+        loading: false,
+        error: action.payload.error
+      };
+    
+    case ADD_TODO:
+      return {
+        ...state,
+        items: [...state.items, action.payload]
+      };
+    
+    case TOGGLE_TODO:
+      return {
+        ...state,
+        items: state.items.map(todo =>
+          todo.id === action.payload.id
+            ? { ...todo, completed: !todo.completed }
+            : todo
+        )
+      };
+    
+    case DELETE_TODO:
+      return {
+        ...state,
+        items: state.items.filter(todo => todo.id !== action.payload.id)
+      };
+    
+    default:
+      return state;
+  }
+};
+
+export default todosReducer;
+```
+
+### Step 5: Use Async Actions in Components
+
+```jsx
+// src/components/TodoList.js
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchTodos, toggleTodo, deleteTodo } from '../store/actions';
+
+function TodoList() {
+  const { items, loading, error } = useSelector(state => state.todos);
+  const filter = useSelector(state => state.filter);
+  const dispatch = useDispatch();
+  
+  useEffect(() => {
+    dispatch(fetchTodos());
+  }, [dispatch]);
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  // Filter logic...
+  
+  return (
+    <ul>
+      {/* Render todos... */}
+    </ul>
+  );
+}
+
+export default TodoList;
+```
+
+## Redux Middleware
+
+Middleware provides a way to intercept dispatched actions before they reach the reducer:
+
+```jsx
+// Custom logger middleware
+const logger = store => next => action => {
+  console.group(action.type);
+  console.log('Dispatching:', action);
+  const result = next(action);
+  console.log('Next state:', store.getState());
+  console.groupEnd();
+  return result;
+};
+
+// Apply multiple middleware
+import { createStore, applyMiddleware } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers';
+
+const store = createStore(
+  rootReducer,
+  applyMiddleware(thunk, logger)
+);
+```
+
+## Redux Selectors
+
+Selectors are functions that extract specific pieces of information from the store state:
+
+```jsx
+// src/store/selectors.js
+import { createSelector } from 'reselect';
+import { FILTERS } from './types';
+
+// Simple selector
+export const getTodos = state => state.todos.items;
+export const getFilter = state => state.filter;
+
+// Memoized selector with reselect
+export const getVisibleTodos = createSelector(
+  [getTodos, getFilter],
+  (todos, filter) => {
+    switch (filter) {
+      case FILTERS.ACTIVE:
+        return todos.filter(todo => !todo.completed);
+      case FILTERS.COMPLETED:
+        return todos.filter(todo => todo.completed);
+      default:
+        return todos;
+    }
+  }
+);
+
+// Usage in component
+import { useSelector } from 'react-redux';
+import { getVisibleTodos } from '../store/selectors';
+
+function TodoList() {
+  const visibleTodos = useSelector(getVisibleTodos);
+  // ...
+}
+```
+
+## Redux DevTools
+
+Redux DevTools is a powerful debugging tool for Redux applications:
+
+```jsx
+// src/store/index.js
+import { createStore, applyMiddleware, compose } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers';
+
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+const store = createStore(
+  rootReducer,
+  composeEnhancers(applyMiddleware(thunk))
+);
+
+export default store;
+```
+
+## Best Practices for React-Redux Integration
+
+### 1. Normalize State Shape
+
+```jsx
+// BAD: Nested state
+const state = {
+  users: [
+    {
+      id: 1,
+      name: 'John',
+      posts: [
+        { id: 1, title: 'Post 1' },
+        { id: 2, title: 'Post 2' }
+      ]
+    }
+  ]
+};
+
+// GOOD: Normalized state
+const state = {
+  users: {
+    byId: {
+      1: { id: 1, name: 'John', postIds: [1, 2] }
+    },
+    allIds: [1]
+  },
+  posts: {
+    byId: {
+      1: { id: 1, title: 'Post 1', userId: 1 },
+      2: { id: 2, title: 'Post 2', userId: 1 }
+    },
+    allIds: [1, 2]
+  }
+};
+```
+
+### 2. Use Action Creators
+
+```jsx
+// BAD: Dispatching action objects directly
+dispatch({
+  type: 'ADD_TODO',
+  payload: { text: 'Learn Redux' }
+});
+
+// GOOD: Using action creators
+dispatch(addTodo('Learn Redux'));
+```
+
+### 3. Keep Reducers Pure
+
+```jsx
+// BAD: Impure reducer
+function badReducer(state = initialState, action) {
+  switch (action.type) {
+    case 'ADD_TODO':
+      // Mutating state directly
+      state.todos.push(action.payload);
+      return state;
+    default:
+      return state;
+  }
+}
+
+// GOOD: Pure reducer
+function goodReducer(state = initialState, action) {
+  switch (action.type) {
+    case 'ADD_TODO':
+      // Creating a new state object
+      return {
+        ...state,
+        todos: [...state.todos, action.payload]
+      };
+    default:
+      return state;
+  }
+}
+```
+
+### 4. Use Selectors for Derived Data
+
+```jsx
+// BAD: Calculating derived data in component
+function TodoStats() {
+  const todos = useSelector(state => state.todos);
+  
+  const completedCount = todos.filter(todo => todo.completed).length;
+  const totalCount = todos.length;
+  
+  // ...
+}
+
+// GOOD: Using selectors
+// selectors.js
+export const getTodos = state => state.todos;
+export const getCompletedCount = state => 
+  state.todos.filter(todo => todo.completed).length;
+export const getTotalCount = state => state.todos.length;
+
+// component
+function TodoStats() {
+  const completedCount = useSelector(getCompletedCount);
+  const totalCount = useSelector(getTotalCount);
+  
+  // ...
+}
+```
+
+### 5. Structure Your Files Properly
+
+```
+src/
+├── components/
+│   ├── TodoForm.js
+│   ├── TodoList.js
+│   └── TodoItem.js
+├── store/
+│   ├── actions/
+│   │   ├── todoActions.js
+│   │   └── filterActions.js
+│   ├── reducers/
+│   │   ├── todoReducer.js
+│   │   ├── filterReducer.js
+│   │   └── index.js
+│   ├── selectors/
+│   │   └── todoSelectors.js
+│   ├── types.js
+│   └── index.js
+└── App.js
+```
+
+## Common Pitfalls and Solutions
+
+### 1. Mutating State in Reducers
+
+```jsx
+// BAD: Mutating state
+function badReducer(state = initialState, action) {
+  switch (action.type) {
+    case 'UPDATE_USER':
+      // This mutates the state
+      state.user.name = action.payload.name;
+      return state;
+    default:
+      return state;
+  }
+}
+
+// GOOD: Creating new state
+function goodReducer(state = initialState, action) {
+  switch (action.type) {
+    case 'UPDATE_USER':
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          name: action.payload.name
+        }
+      };
+    default:
+      return state;
+  }
+}
+```
+
+### 2. Overusing Redux
+
+```jsx
+// BAD: Using Redux for local state
+function Counter() {
+  // This should be local state, not in Redux
+  const count = useSelector(state => state.count);
+  const dispatch = useDispatch();
+  
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={() => dispatch(increment())}>+</button>
+    </div>
+  );
+}
+
+// GOOD: Using local state for component-specific data
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={() => setCount(count + 1)}>+</button>
+    </div>
+  );
+}
+```
+
+### 3. Not Using Middleware for Async Operations
+
+```jsx
+// BAD: Async logic in component
+function UserList() {
+  const dispatch = useDispatch();
+  const users = useSelector(state => state.users);
+  
+  useEffect(() => {
+    fetch('/api/users')
+      .then(response => response.json())
+      .then(data => {
+        dispatch({ type: 'FETCH_USERS_SUCCESS', payload: data });
+      })
+      .catch(error => {
+        dispatch({ type: 'FETCH_USERS_FAILURE', payload: error });
+      });
+  }, [dispatch]);
+  
+  // ...
+}
+
+// GOOD: Using thunk middleware
+// actions.js
+export const fetchUsers = () => {
+  return async dispatch => {
+    dispatch({ type: 'FETCH_USERS_REQUEST' });
+    
+    try {
+      const response = await fetch('/api/users');
+      const data = await response.json();
+      dispatch({ type: 'FETCH_USERS_SUCCESS', payload: data });
+    } catch (error) {
+      dispatch({ type: 'FETCH_USERS_FAILURE', payload: error });
+    }
+  };
+};
+
+// component
+function UserList() {
+  const dispatch = useDispatch();
+  const users = useSelector(state => state.users);
+  
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
+  
+  // ...
+}
+```
+
+## Interview Tips
+
+- Explain that Redux provides a predictable state container for JavaScript applications
+- Highlight the three principles: single source of truth, state is read-only, and changes are made with pure functions
+- Discuss the core Redux concepts: store, actions, reducers, and dispatch
+- Explain the difference between the `connect` HOC and React-Redux hooks
+- Mention that Redux is particularly useful for complex applications with shared state across components
+- Be prepared to discuss middleware, especially for handling asynchronous operations
+- Emphasize the importance of keeping reducers pure and not mutating state
+- Discuss how to structure a Redux application for maintainability
+- Mention Redux DevTools as a powerful debugging tool
+- Explain when to use Redux versus local component state

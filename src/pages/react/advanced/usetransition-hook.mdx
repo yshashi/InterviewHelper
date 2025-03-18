@@ -1,0 +1,863 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: The useTransition Hook in React 18
+---
+
+# The Purpose of the useTransition Hook in React 18
+
+## Introduction to useTransition
+
+The `useTransition` hook is one of the key features introduced in React 18 as part of the Concurrent Rendering features. It allows you to mark certain state updates as non-urgent, giving React the ability to pause these updates if there are more urgent updates (like user input) that need to be processed first.
+
+```jsx
+import { useTransition } from 'react';
+
+function MyComponent() {
+  const [isPending, startTransition] = useTransition();
+  
+  // Use these values in your component...
+}
+```
+
+## The Problem useTransition Solves
+
+Before React 18, all state updates were treated with the same priority. This could lead to unresponsive user interfaces when performing expensive operations:
+
+```jsx
+// Before React 18 - All updates have the same priority
+function FilterableList({ items }) {
+  const [filterText, setFilterText] = useState('');
+  const filteredItems = items.filter(item => 
+    item.text.includes(filterText)
+  );
+  
+  return (
+    <div>
+      <input 
+        value={filterText}
+        onChange={e => {
+          // This update could block the UI if items is large
+          setFilterText(e.target.value);
+        }}
+      />
+      
+      <ul>
+        {filteredItems.map(item => (
+          <li key={item.id}>{item.text}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+In this example, typing in the input could feel sluggish if the list is large, because React needs to re-render the entire list on every keystroke.
+
+## How useTransition Works
+
+The `useTransition` hook returns an array with two elements:
+
+1. `isPending`: A boolean that tells you whether there's a pending transition
+2. `startTransition`: A function that lets you mark a state update as a transition
+
+```jsx
+import { useState, useTransition } from 'react';
+
+function FilterableList({ items }) {
+  const [filterText, setFilterText] = useState('');
+  const [isPending, startTransition] = useTransition();
+  const filteredItems = items.filter(item => 
+    item.text.includes(filterText)
+  );
+  
+  return (
+    <div>
+      <input 
+        value={filterText}
+        onChange={e => {
+          // Urgent: Update the input immediately
+          const value = e.target.value;
+          
+          // Non-urgent: Filter the list inside a transition
+          startTransition(() => {
+            setFilterText(value);
+          });
+        }}
+      />
+      
+      {isPending && <div>Updating list...</div>}
+      
+      <ul>
+        {filteredItems.map(item => (
+          <li key={item.id}>{item.text}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Key Benefits of useTransition
+
+### 1. Improved User Experience
+
+By prioritizing updates, React ensures that the UI remains responsive even during intensive operations:
+
+```jsx
+function SearchResults() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [isPending, startTransition] = useTransition();
+  
+  const handleSearch = (e) => {
+    const newQuery = e.target.value;
+    
+    // Update the input immediately
+    setQuery(newQuery);
+    
+    // Fetch and update results in a transition
+    startTransition(() => {
+      fetchResults(newQuery).then(data => {
+        setResults(data);
+      });
+    });
+  };
+  
+  return (
+    <div>
+      <input 
+        value={query} 
+        onChange={handleSearch} 
+        placeholder="Search..."
+      />
+      
+      {isPending ? (
+        <div>Loading results...</div>
+      ) : (
+        <ul>
+          {results.map(result => (
+            <li key={result.id}>{result.title}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+### 2. Avoiding Unnecessary Loading States
+
+With `useTransition`, you can avoid showing loading indicators for fast transitions:
+
+```jsx
+function TabContainer() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [isPending, startTransition] = useTransition();
+  
+  const selectTab = (tab) => {
+    startTransition(() => {
+      setActiveTab(tab);
+    });
+  };
+  
+  return (
+    <div>
+      <nav>
+        <button 
+          className={activeTab === 'home' ? 'active' : ''}
+          onClick={() => selectTab('home')}
+        >
+          Home
+        </button>
+        <button 
+          className={activeTab === 'about' ? 'active' : ''}
+          onClick={() => selectTab('about')}
+        >
+          About
+        </button>
+        <button 
+          className={activeTab === 'contact' ? 'active' : ''}
+          onClick={() => selectTab('contact')}
+        >
+          Contact
+        </button>
+      </nav>
+      
+      {isPending && <div>Changing tab...</div>}
+      
+      <div className="tab-content">
+        {activeTab === 'home' && <HomeTab />}
+        {activeTab === 'about' && <AboutTab />}
+        {activeTab === 'contact' && <ContactTab />}
+      </div>
+    </div>
+  );
+}
+```
+
+### 3. Keeping Previous UI Visible During Transitions
+
+React will keep the previous UI visible while the new UI is being prepared:
+
+```jsx
+function ProductPage() {
+  const [productId, setProductId] = useState(1);
+  const [product, setProduct] = useState(null);
+  const [isPending, startTransition] = useTransition();
+  
+  useEffect(() => {
+    fetchProduct(productId).then(data => {
+      setProduct(data);
+    });
+  }, [productId]);
+  
+  const nextProduct = () => {
+    startTransition(() => {
+      setProductId(prevId => prevId + 1);
+    });
+  };
+  
+  if (!product) return <div>Loading...</div>;
+  
+  return (
+    <div className={isPending ? 'pending' : ''}>
+      <h1>{product.name}</h1>
+      <p>{product.description}</p>
+      <button onClick={nextProduct} disabled={isPending}>
+        Next Product
+      </button>
+      
+      {isPending && <div className="transition-indicator">Loading next product...</div>}
+    </div>
+  );
+}
+```
+
+## useTransition vs. useDeferredValue
+
+React 18 also introduced another hook called `useDeferredValue`, which is related to `useTransition` but serves a slightly different purpose:
+
+```jsx
+import { useState, useDeferredValue } from 'react';
+
+function SearchResults() {
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+  
+  // This will use the deferred value for expensive calculations
+  const results = searchItems(deferredQuery);
+  
+  const isStale = query !== deferredQuery;
+  
+  return (
+    <div>
+      <input 
+        value={query} 
+        onChange={e => setQuery(e.target.value)} 
+      />
+      
+      <div className={isStale ? 'stale' : ''}>
+        {results.map(result => (
+          <div key={result.id}>{result.name}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+The key differences are:
+
+1. `useTransition` is for wrapping state updates, while `useDeferredValue` is for deferring a value
+2. `useTransition` gives you an `isPending` boolean, while with `useDeferredValue` you need to compare the original and deferred values
+3. `useTransition` requires you to wrap the state update, while `useDeferredValue` can be used with values from props or other sources
+
+## Practical Examples of useTransition
+
+### Example 1: Filtering a Large List
+
+```jsx
+import { useState, useTransition } from 'react';
+
+function FilterableList() {
+  const [items] = useState(generateLargeList(10000));
+  const [filterText, setFilterText] = useState('');
+  const [isPending, startTransition] = useTransition();
+  
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(filterText.toLowerCase())
+  );
+  
+  function handleFilterChange(e) {
+    const value = e.target.value;
+    
+    // Update the input immediately
+    setFilterText(value);
+    
+    // Filter the list in a transition
+    startTransition(() => {
+      setFilterText(value);
+    });
+  }
+  
+  return (
+    <div>
+      <input
+        value={filterText}
+        onChange={handleFilterChange}
+        placeholder="Filter list..."
+      />
+      
+      {isPending ? (
+        <div>Filtering...</div>
+      ) : (
+        <ul>
+          {filteredItems.map(item => (
+            <li key={item.id}>{item.name}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function generateLargeList(count) {
+  return Array(count).fill().map((_, i) => ({
+    id: i,
+    name: `Item ${i + 1}`
+  }));
+}
+```
+
+### Example 2: Navigating Between Pages
+
+```jsx
+import { useState, useTransition } from 'react';
+
+const pages = {
+  home: { title: 'Home', content: <HomePage /> },
+  about: { title: 'About', content: <AboutPage /> },
+  contact: { title: 'Contact', content: <ContactPage /> },
+  products: { title: 'Products', content: <ProductsPage /> }
+};
+
+function App() {
+  const [currentPage, setCurrentPage] = useState('home');
+  const [isPending, startTransition] = useTransition();
+  
+  function navigate(page) {
+    startTransition(() => {
+      setCurrentPage(page);
+    });
+  }
+  
+  const { title, content } = pages[currentPage];
+  
+  return (
+    <div>
+      <header>
+        <h1>My Website</h1>
+        <nav>
+          {Object.keys(pages).map(page => (
+            <button
+              key={page}
+              onClick={() => navigate(page)}
+              disabled={isPending}
+              className={currentPage === page ? 'active' : ''}
+            >
+              {pages[page].title}
+            </button>
+          ))}
+        </nav>
+      </header>
+      
+      <main className={isPending ? 'pending' : ''}>
+        {isPending && <div className="loading-indicator">Loading page...</div>}
+        <h2>{title}</h2>
+        {content}
+      </main>
+    </div>
+  );
+}
+```
+
+### Example 3: Data Visualization with Complex Calculations
+
+```jsx
+import { useState, useTransition } from 'react';
+import { Chart } from 'chart-library';
+
+function DataDashboard() {
+  const [data, setData] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [isPending, startTransition] = useTransition();
+  
+  useEffect(() => {
+    fetchData().then(rawData => {
+      setData(rawData);
+    });
+  }, []);
+  
+  function applyFilter(newFilter) {
+    // Update the filter selector immediately
+    setFilter(newFilter);
+    
+    // Process data in a transition
+    startTransition(() => {
+      setFilter(newFilter);
+    });
+  }
+  
+  // Expensive calculation
+  const processedData = useMemo(() => {
+    if (!data.length) return [];
+    
+    // Simulate expensive data processing
+    console.log('Processing data with filter:', filter);
+    return processData(data, filter);
+  }, [data, filter]);
+  
+  return (
+    <div>
+      <div className="controls">
+        <select 
+          value={filter} 
+          onChange={e => applyFilter(e.target.value)}
+          disabled={isPending}
+        >
+          <option value="all">All Data</option>
+          <option value="lastWeek">Last Week</option>
+          <option value="lastMonth">Last Month</option>
+          <option value="lastYear">Last Year</option>
+        </select>
+      </div>
+      
+      {isPending ? (
+        <div className="chart-skeleton">
+          <div>Updating chart...</div>
+        </div>
+      ) : (
+        <Chart data={processedData} />
+      )}
+    </div>
+  );
+}
+
+function processData(data, filter) {
+  // Simulate expensive calculation
+  const start = performance.now();
+  while (performance.now() - start < 200) {
+    // Artificial delay to simulate complex processing
+  }
+  
+  // Actual data processing logic
+  switch (filter) {
+    case 'lastWeek':
+      return data.filter(item => isWithinLastWeek(item.date));
+    case 'lastMonth':
+      return data.filter(item => isWithinLastMonth(item.date));
+    case 'lastYear':
+      return data.filter(item => isWithinLastYear(item.date));
+    default:
+      return data;
+  }
+}
+```
+
+## Advanced Patterns with useTransition
+
+### Pattern 1: Coordinating Multiple Transitions
+
+```jsx
+function Dashboard() {
+  const [isPending, startTransition] = useTransition();
+  const [activeView, setActiveView] = useState('overview');
+  const [timeRange, setTimeRange] = useState('week');
+  
+  function updateDashboard(view, range) {
+    // Group multiple state updates in a single transition
+    startTransition(() => {
+      setActiveView(view);
+      setTimeRange(range);
+    });
+  }
+  
+  return (
+    <div>
+      <DashboardControls 
+        activeView={activeView}
+        timeRange={timeRange}
+        onUpdate={updateDashboard}
+        disabled={isPending}
+      />
+      
+      {isPending ? (
+        <DashboardSkeleton />
+      ) : (
+        <DashboardContent 
+          view={activeView} 
+          timeRange={timeRange} 
+        />
+      )}
+    </div>
+  );
+}
+```
+
+### Pattern 2: Nested Transitions
+
+```jsx
+function NestedTransitions() {
+  const [outerIsPending, startOuterTransition] = useTransition();
+  const [section, setSection] = useState('main');
+  
+  function SectionContent({ section }) {
+    const [innerIsPending, startInnerTransition] = useTransition();
+    const [tab, setTab] = useState('first');
+    
+    function changeTab(newTab) {
+      startInnerTransition(() => {
+        setTab(newTab);
+      });
+    }
+    
+    return (
+      <div>
+        <TabSelector 
+          activeTab={tab} 
+          onChange={changeTab} 
+          disabled={innerIsPending}
+        />
+        
+        {innerIsPending ? (
+          <div>Loading tab...</div>
+        ) : (
+          <TabContent tab={tab} section={section} />
+        )}
+      </div>
+    );
+  }
+  
+  function changeSection(newSection) {
+    startOuterTransition(() => {
+      setSection(newSection);
+    });
+  }
+  
+  return (
+    <div>
+      <SectionSelector 
+        activeSection={section} 
+        onChange={changeSection} 
+        disabled={outerIsPending}
+      />
+      
+      {outerIsPending ? (
+        <div>Loading section...</div>
+      ) : (
+        <SectionContent section={section} />
+      )}
+    </div>
+  );
+}
+```
+
+### Pattern 3: Transition with Suspense
+
+```jsx
+import { Suspense, useState, useTransition } from 'react';
+
+// Data fetching component that suspends
+const DataComponent = ({ id }) => {
+  const data = useData(id); // Custom hook that might suspend
+  return <div>{data.name}</div>;
+};
+
+function App() {
+  const [id, setId] = useState(1);
+  const [isPending, startTransition] = useTransition();
+  
+  return (
+    <div>
+      <button
+        onClick={() => {
+          startTransition(() => {
+            setId(id + 1);
+          });
+        }}
+        disabled={isPending}
+      >
+        Next Item
+      </button>
+      
+      {isPending && <div>Loading next item...</div>}
+      
+      <Suspense fallback={<div>Loading data...</div>}>
+        <DataComponent id={id} />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+## Performance Considerations
+
+### When to Use useTransition
+
+```jsx
+// GOOD: Use for expensive operations
+startTransition(() => {
+  setFilteredItems(items.filter(complexFilterFunction));
+});
+
+// GOOD: Use for navigation
+startTransition(() => {
+  setCurrentPage('dashboard');
+});
+
+// BAD: Don't use for immediate feedback
+// This should be an urgent update
+startTransition(() => {
+  setIsButtonPressed(true);
+});
+```
+
+### Balancing Transitions and User Feedback
+
+```jsx
+function SearchComponent() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [isPending, startTransition] = useTransition();
+  const [isStale, setIsStale] = useState(false);
+  
+  const handleSearch = (e) => {
+    const newQuery = e.target.value;
+    setQuery(newQuery);
+    
+    // Mark results as stale immediately
+    setIsStale(true);
+    
+    // Update results in a transition
+    startTransition(() => {
+      const newResults = searchDatabase(newQuery);
+      setResults(newResults);
+      setIsStale(false);
+    });
+  };
+  
+  return (
+    <div>
+      <input 
+        value={query} 
+        onChange={handleSearch} 
+      />
+      
+      <div className={isStale ? 'stale-results' : ''}>
+        {isPending && <div>Updating results...</div>}
+        
+        <ul>
+          {results.map(result => (
+            <li key={result.id}>{result.title}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+```
+
+## Common Pitfalls and Solutions
+
+### Pitfall 1: Overusing Transitions
+
+```jsx
+// BAD: Using transitions for everything
+function BadComponent() {
+  const [count, setCount] = useState(0);
+  const [isPending, startTransition] = useTransition();
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button
+        onClick={() => {
+          // This is a simple update that doesn't need a transition
+          startTransition(() => {
+            setCount(count + 1);
+          });
+        }}
+      >
+        Increment
+      </button>
+    </div>
+  );
+}
+
+// GOOD: Only use transitions for expensive updates
+function GoodComponent() {
+  const [count, setCount] = useState(0);
+  const [items, setItems] = useState([]);
+  const [isPending, startTransition] = useTransition();
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button
+        onClick={() => {
+          // Simple update - no transition needed
+          setCount(count + 1);
+          
+          // Expensive update - use transition
+          startTransition(() => {
+            setItems(generateLargeArray(count));
+          });
+        }}
+      >
+        Increment and Update Items
+      </button>
+      
+      {isPending ? (
+        <div>Updating items...</div>
+      ) : (
+        <ItemList items={items} />
+      )}
+    </div>
+  );
+}
+```
+
+### Pitfall 2: Not Handling Stale Closures
+
+```jsx
+// BAD: Potential stale closure issue
+function BadComponent() {
+  const [query, setQuery] = useState('');
+  const [isPending, startTransition] = useTransition();
+  
+  function handleChange(e) {
+    const value = e.target.value;
+    
+    // This creates a closure over the current value
+    startTransition(() => {
+      // By the time this runs, 'value' might be stale
+      fetchResults(value).then(results => {
+        // ...
+      });
+    });
+  }
+  
+  // ...
+}
+
+// GOOD: Using function updates to avoid stale closures
+function GoodComponent() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [isPending, startTransition] = useTransition();
+  
+  // Store the latest query in a ref
+  const latestQueryRef = useRef('');
+  
+  function handleChange(e) {
+    const value = e.target.value;
+    setQuery(value);
+    latestQueryRef.current = value;
+    
+    startTransition(() => {
+      // Use the ref to get the latest value
+      fetchResults(latestQueryRef.current).then(data => {
+        setResults(data);
+      });
+    });
+  }
+  
+  // ...
+}
+```
+
+### Pitfall 3: Ignoring the isPending State
+
+```jsx
+// BAD: Not using isPending
+function BadComponent() {
+  const [tab, setTab] = useState('home');
+  const [isPending, startTransition] = useTransition();
+  
+  return (
+    <div>
+      <nav>
+        <button onClick={() => {
+          startTransition(() => {
+            setTab('home');
+          });
+        }}>Home</button>
+        <button onClick={() => {
+          startTransition(() => {
+            setTab('about');
+          });
+        }}>About</button>
+      </nav>
+      
+      {/* No indication that a transition is happening */}
+      <div>
+        {tab === 'home' && <HomeContent />}
+        {tab === 'about' && <AboutContent />}
+      </div>
+    </div>
+  );
+}
+
+// GOOD: Properly using isPending
+function GoodComponent() {
+  const [tab, setTab] = useState('home');
+  const [isPending, startTransition] = useTransition();
+  
+  return (
+    <div>
+      <nav>
+        <button 
+          onClick={() => {
+            startTransition(() => {
+              setTab('home');
+            });
+          }}
+          disabled={isPending}
+          className={tab === 'home' ? 'active' : ''}
+        >
+          Home
+        </button>
+        <button 
+          onClick={() => {
+            startTransition(() => {
+              setTab('about');
+            });
+          }}
+          disabled={isPending}
+          className={tab === 'about' ? 'active' : ''}
+        >
+          About
+        </button>
+      </nav>
+      
+      <div className={isPending ? 'content-pending' : ''}>
+        {isPending && <div className="loading-indicator">Loading...</div>}
+        
+        {tab === 'home' && <HomeContent />}
+        {tab === 'about' && <AboutContent />}
+      </div>
+    </div>
+  );
+}
+```
+
+## Interview Tips
+
+- Explain that `useTransition` is a React 18 hook that helps prioritize state updates
+- Highlight that it improves user experience by keeping the UI responsive during expensive operations
+- Mention that it works by marking certain updates as "transitions" which can be interrupted by more urgent updates
+- Explain the difference between `useTransition` and `useDeferredValue`
+- Be ready to discuss real-world scenarios where `useTransition` would be beneficial
+- Emphasize that `useTransition` is part of React's Concurrent Rendering features
+- Mention that it returns an `isPending` boolean that can be used to show loading states
+- Discuss how it can be combined with Suspense for more advanced patterns

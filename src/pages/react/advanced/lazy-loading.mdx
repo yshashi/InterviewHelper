@@ -1,0 +1,588 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Improving React Performance with Lazy Loading
+---
+
+# Improving React Performance with Lazy Loading
+
+## What is Lazy Loading?
+
+Lazy loading is a performance optimization technique that delays the loading of non-critical resources until they are actually needed. In React, this typically means loading components or data only when they are required, rather than loading everything upfront when the application first loads.
+
+```jsx
+// Without lazy loading - everything loads at once
+import HeavyComponent from './HeavyComponent';
+import AnotherHeavyComponent from './AnotherHeavyComponent';
+
+function App() {
+  return (
+    <div>
+      <HeavyComponent />
+      <AnotherHeavyComponent />
+    </div>
+  );
+}
+```
+
+## Why Use Lazy Loading?
+
+Lazy loading provides several key benefits:
+
+1. **Reduced initial load time**: Users can see and interact with your application faster
+2. **Smaller initial bundle size**: Less code to download, parse, and execute on initial load
+3. **Better resource utilization**: Memory and CPU resources are used more efficiently
+4. **Improved user experience**: Critical content appears quickly, while non-critical content loads as needed
+
+## React.lazy and Suspense
+
+React provides built-in support for component lazy loading through the `React.lazy` function and `Suspense` component:
+
+```jsx
+import React, { Suspense, lazy } from 'react';
+
+// Lazy load the component
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+function App() {
+  return (
+    <div>
+      <h1>My Application</h1>
+      
+      <Suspense fallback={<div>Loading...</div>}>
+        <HeavyComponent />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+### How React.lazy Works
+
+1. `React.lazy` takes a function that calls `import()` to load a component dynamically
+2. The import is only triggered when the component is rendered
+3. The function must return a Promise that resolves to a module with a default export containing a React component
+
+### Suspense Component
+
+The `Suspense` component lets you specify a loading state while waiting for lazy-loaded components to load:
+
+```jsx
+<Suspense fallback={<LoadingSpinner />}>
+  {/* Lazy-loaded components go here */}
+  <LazyComponent />
+</Suspense>
+```
+
+You can wrap multiple lazy components with a single `Suspense` component:
+
+```jsx
+<Suspense fallback={<LoadingSpinner />}>
+  <LazyComponentA />
+  <LazyComponentB />
+  <LazyComponentC />
+</Suspense>
+```
+
+## Implementing Lazy Loading in Different Scenarios
+
+### 1. Route-Based Lazy Loading
+
+One of the most common and effective uses of lazy loading is with routes:
+
+```jsx
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// Eagerly loaded components
+import Header from './components/Header';
+import Footer from './components/Footer';
+
+// Lazy loaded route components
+const Home = lazy(() => import('./routes/Home'));
+const Dashboard = lazy(() => import('./routes/Dashboard'));
+const Profile = lazy(() => import('./routes/Profile'));
+const Settings = lazy(() => import('./routes/Settings'));
+
+function App() {
+  return (
+    <Router>
+      <Header />
+      
+      <Suspense fallback={<div className="page-loader">Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </Suspense>
+      
+      <Footer />
+    </Router>
+  );
+}
+```
+
+### 2. Conditional Lazy Loading
+
+Load components only when certain conditions are met:
+
+```jsx
+import React, { Suspense, lazy, useState } from 'react';
+
+const HeavyAnalyticsDashboard = lazy(() => 
+  import('./components/HeavyAnalyticsDashboard')
+);
+
+function App() {
+  const [showDashboard, setShowDashboard] = useState(false);
+  
+  return (
+    <div>
+      <h1>Analytics Tool</h1>
+      
+      <button onClick={() => setShowDashboard(true)}>
+        Show Analytics Dashboard
+      </button>
+      
+      {showDashboard && (
+        <Suspense fallback={<div>Loading dashboard...</div>}>
+          <HeavyAnalyticsDashboard />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+```
+
+### 3. Lazy Loading Based on Viewport Visibility
+
+Load components when they become visible in the viewport:
+
+```jsx
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+
+const LazyComponent = lazy(() => import('./LazyComponent'));
+
+function VisibilityBasedLoader() {
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    
+    return () => {
+      if (containerRef.current) {
+        observer.disconnect();
+      }
+    };
+  }, []);
+  
+  return (
+    <div ref={containerRef} style={{ minHeight: '100px' }}>
+      {isVisible ? (
+        <Suspense fallback={<div>Loading...</div>}>
+          <LazyComponent />
+        </Suspense>
+      ) : (
+        <div>Scroll down to load component</div>
+      )}
+    </div>
+  );
+}
+```
+
+## Advanced Lazy Loading Techniques
+
+### 1. Preloading Components
+
+Preload components before they're needed to improve perceived performance:
+
+```jsx
+import React, { Suspense, lazy, useState } from 'react';
+
+// Define the lazy component
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+// Preload function
+const preloadHeavyComponent = () => {
+  import('./HeavyComponent');
+};
+
+function App() {
+  const [showComponent, setShowComponent] = useState(false);
+  
+  return (
+    <div>
+      <button 
+        onMouseEnter={preloadHeavyComponent} // Preload on hover
+        onClick={() => setShowComponent(true)}
+      >
+        Show Heavy Component
+      </button>
+      
+      {showComponent && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <HeavyComponent />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+```
+
+### 2. Prioritized Loading with Multiple Suspense Boundaries
+
+Use multiple `Suspense` boundaries to prioritize loading of different parts of your application:
+
+```jsx
+import React, { Suspense, lazy } from 'react';
+
+const PriorityContent = lazy(() => import('./PriorityContent'));
+const SecondaryContent = lazy(() => import('./SecondaryContent'));
+const TertiaryContent = lazy(() => import('./TertiaryContent'));
+
+function App() {
+  return (
+    <div>
+      <Header />
+      
+      {/* Critical content loads first */}
+      <Suspense fallback={<PriorityContentSkeleton />}>
+        <PriorityContent />
+      </Suspense>
+      
+      {/* Secondary content loads next */}
+      <Suspense fallback={<SecondaryContentSkeleton />}>
+        <SecondaryContent />
+      </Suspense>
+      
+      {/* Non-critical content loads last */}
+      <Suspense fallback={<TertiaryContentSkeleton />}>
+        <TertiaryContent />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+### 3. Dynamic Imports with Named Exports
+
+React.lazy only supports default exports by default. For named exports, you need a small wrapper:
+
+```jsx
+// Component with named export
+// FeatureComponent.js
+export const FeatureComponent = () => <div>Feature Component</div>;
+
+// Importing a named export with React.lazy
+const LazyFeatureComponent = lazy(() => 
+  import('./FeatureComponent')
+    .then(module => ({ default: module.FeatureComponent }))
+);
+```
+
+## Lazy Loading Data
+
+Lazy loading isn't just for components; you can also lazy load data:
+
+```jsx
+import React, { useState, useEffect } from 'react';
+
+function LazyDataComponent() {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      // Lazy load data only when needed
+      const response = await fetch('https://api.example.com/large-dataset');
+      const result = await response.json();
+      setData(result);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <div>
+      {!data && !isLoading && (
+        <button onClick={loadData}>Load Data</button>
+      )}
+      
+      {isLoading && <div>Loading data...</div>}
+      
+      {data && (
+        <div>
+          {/* Render your data here */}
+          <pre>{JSON.stringify(data, null, 2)}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Lazy Loading Images and Media
+
+For images and media, you can use native lazy loading or implement custom solutions:
+
+```jsx
+// Native lazy loading for images
+function ImageGallery({ images }) {
+  return (
+    <div className="gallery">
+      {images.map(image => (
+        <img 
+          key={image.id}
+          src={image.url}
+          alt={image.alt}
+          loading="lazy" // Native browser lazy loading
+          width={300}
+          height={200}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Custom lazy loading for images
+function LazyImage({ src, alt, ...props }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef(null);
+  
+  useEffect(() => {
+    if (!imgRef.current) return;
+    
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setIsLoaded(true);
+          observer.disconnect();
+        }
+      });
+    });
+    
+    observer.observe(imgRef.current);
+    
+    return () => {
+      if (imgRef.current) {
+        observer.disconnect();
+      }
+    };
+  }, []);
+  
+  return (
+    <div ref={imgRef} className="lazy-image-container">
+      {isLoaded ? (
+        <img src={src} alt={alt} {...props} />
+      ) : (
+        <div className="image-placeholder" />
+      )}
+    </div>
+  );
+}
+```
+
+## Measuring the Impact of Lazy Loading
+
+To ensure your lazy loading implementation is effective, measure key performance metrics:
+
+```jsx
+// Example of measuring load time
+function MeasuredLazyComponent() {
+  const [loadTime, setLoadTime] = useState(null);
+  const startTime = useRef(Date.now());
+  
+  const handleComponentLoaded = () => {
+    const endTime = Date.now();
+    setLoadTime(endTime - startTime.current);
+  };
+  
+  return (
+    <div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent onLoad={handleComponentLoaded} />
+      </Suspense>
+      
+      {loadTime && (
+        <div>Component loaded in {loadTime}ms</div>
+      )}
+    </div>
+  );
+}
+```
+
+Use browser developer tools and performance monitoring services to track:
+
+1. **Initial load time**: How quickly does your application become interactive?
+2. **Bundle sizes**: How much has your main bundle size decreased?
+3. **Time to interactive**: How quickly can users interact with your application?
+4. **First contentful paint**: How quickly does meaningful content appear?
+
+## Common Pitfalls and Solutions
+
+### 1. Too Many Small Chunks
+
+```jsx
+// BAD: Too many small chunks
+const Button = lazy(() => import('./Button'));
+const Input = lazy(() => import('./Input'));
+const Label = lazy(() => import('./Label'));
+
+// GOOD: Group related small components
+const FormElements = lazy(() => import('./FormElements'));
+```
+
+### 2. Loading Waterfalls
+
+```jsx
+// BAD: Creates a loading waterfall
+function NestedLazy() {
+  return (
+    <Suspense fallback={<Loading1 />}>
+      <LazyComponent1>
+        <Suspense fallback={<Loading2 />}>
+          <LazyComponent2>
+            <Suspense fallback={<Loading3 />}>
+              <LazyComponent3 />
+            </Suspense>
+          </LazyComponent2>
+        </Suspense>
+      </LazyComponent1>
+    </Suspense>
+  );
+}
+
+// GOOD: Parallel loading
+function ParallelLazy() {
+  return (
+    <div>
+      <Suspense fallback={<Loading1 />}>
+        <LazyComponent1 />
+      </Suspense>
+      
+      <Suspense fallback={<Loading2 />}>
+        <LazyComponent2 />
+      </Suspense>
+      
+      <Suspense fallback={<Loading3 />}>
+        <LazyComponent3 />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+### 3. Not Handling Errors
+
+```jsx
+// BAD: No error handling
+function App() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <LazyComponent />
+    </Suspense>
+  );
+}
+
+// GOOD: With error handling
+import { ErrorBoundary } from 'react-error-boundary';
+
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div role="alert">
+      <p>Something went wrong:</p>
+      <pre>{error.message}</pre>
+      <button onClick={resetErrorBoundary}>Try again</button>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <Suspense fallback={<Loading />}>
+        <LazyComponent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Choose the Right Granularity
+
+```jsx
+// Too coarse-grained
+const EntireApplication = lazy(() => import('./EntireApplication'));
+
+// Too fine-grained
+const Button = lazy(() => import('./Button'));
+
+// Just right
+const UserDashboard = lazy(() => import('./UserDashboard'));
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
+const Settings = lazy(() => import('./Settings'));
+```
+
+### 2. Use Meaningful Loading States
+
+```jsx
+// Basic loading state
+<Suspense fallback={<div>Loading...</div>}>
+  <LazyComponent />
+</Suspense>
+
+// Better loading state that matches the layout
+<Suspense 
+  fallback={
+    <div className="card skeleton-card">
+      <div className="skeleton-header" />
+      <div className="skeleton-body" />
+      <div className="skeleton-footer" />
+    </div>
+  }
+>
+  <ProductCard />
+</Suspense>
+```
+
+### 3. Combine with Other Performance Techniques
+
+```jsx
+// Combine lazy loading with memoization
+const MemoizedLazyComponent = lazy(() => 
+  import('./HeavyComponent').then(module => {
+    // Wrap the component with React.memo
+    const Component = module.default;
+    return { default: React.memo(Component) };
+  })
+);
+```
+
+## Interview Tips
+
+- Explain that lazy loading is a technique to defer loading non-critical resources until they're needed
+- Highlight how React.lazy and Suspense make component lazy loading straightforward
+- Discuss the impact on initial load time and bundle size
+- Mention that route-based code splitting is the most common and effective approach
+- Explain the importance of proper loading states and error boundaries
+- Be prepared to discuss the trade-offs between fewer large chunks vs. many small chunks
+- Mention that lazy loading should be measured to ensure it's providing real performance benefits

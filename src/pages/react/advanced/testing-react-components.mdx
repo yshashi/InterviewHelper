@@ -1,0 +1,910 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you test React components using Jest and React Testing Library?
+---
+
+# How do you test React components using Jest and React Testing Library?
+
+## Introduction to Testing React Components
+
+Testing is a crucial part of developing robust React applications. Two of the most popular tools for testing React components are:
+
+1. **Jest**: A JavaScript testing framework developed by Facebook that works well with React
+2. **React Testing Library**: A testing utility that encourages testing components as users would interact with them
+
+Together, these tools provide a powerful combination for writing maintainable tests that give you confidence in your code.
+
+```jsx
+// A simple React component
+function Button({ onClick, children }) {
+  return (
+    <button onClick={onClick} className="button">
+      {children}
+    </button>
+  );
+}
+
+// A Jest test using React Testing Library
+import { render, screen, fireEvent } from '@testing-library/react';
+import Button from './Button';
+
+test('calls onClick when button is clicked', () => {
+  const handleClick = jest.fn();
+  render(<Button onClick={handleClick}>Click Me</Button>);
+  
+  fireEvent.click(screen.getByText('Click Me'));
+  
+  expect(handleClick).toHaveBeenCalledTimes(1);
+});
+```
+
+## Setting Up the Testing Environment
+
+### Installing Dependencies
+
+To get started with Jest and React Testing Library, you need to install the necessary packages:
+
+```bash
+# If you're using Create React App, Jest is already included
+# Otherwise, install Jest
+npm install --save-dev jest
+
+# Install React Testing Library
+npm install --save-dev @testing-library/react @testing-library/jest-dom
+
+# For testing user events more realistically
+npm install --save-dev @testing-library/user-event
+```
+
+### Configuring Jest
+
+If you're not using Create React App, you'll need to configure Jest in your project:
+
+```javascript
+// jest.config.js
+module.exports = {
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleNameMapper: {
+    // Handle CSS imports (with CSS modules)
+    '^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
+    // Handle CSS imports (without CSS modules)
+    '^.+\\.(css|sass|scss)$': '<rootDir>/__mocks__/styleMock.js',
+    // Handle image imports
+    '^.+\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.js'
+  }
+};
+
+// jest.setup.js
+import '@testing-library/jest-dom';
+```
+
+## Writing Basic Component Tests
+
+### Rendering Components
+
+The first step in testing a component is rendering it in the test environment:
+
+```jsx
+import { render, screen } from '@testing-library/react';
+import Header from './Header';
+
+test('renders the header with correct text', () => {
+  render(<Header title="My App" />);
+  
+  // Check if the header is in the document
+  const headingElement = screen.getByText(/my app/i);
+  expect(headingElement).toBeInTheDocument();
+});
+```
+
+### Querying Elements
+
+React Testing Library provides several query methods to find elements in the rendered component:
+
+```jsx
+// Component to test
+function UserProfile({ user }) {
+  return (
+    <div>
+      <h1 data-testid="user-name">{user.name}</h1>
+      <p className="user-email">{user.email}</p>
+      <span role="status">Active</span>
+    </div>
+  );
+}
+
+// Test file
+test('renders user profile correctly', () => {
+  const user = { name: 'John Doe', email: 'john@example.com' };
+  render(<UserProfile user={user} />);
+  
+  // Different ways to query elements
+  expect(screen.getByText('John Doe')).toBeInTheDocument();
+  expect(screen.getByTestId('user-name')).toHaveTextContent('John Doe');
+  expect(screen.getByRole('heading')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('Active');
+  expect(screen.getByText('john@example.com')).toBeInTheDocument();
+});
+```
+
+### Query Priority
+
+React Testing Library encourages a specific priority for queries to make your tests more resilient:
+
+1. **Queries accessible to everyone**:
+   - `getByRole` - queries elements by their ARIA role
+   - `getByLabelText` - finds form elements by their associated label
+   - `getByPlaceholderText` - finds input elements by placeholder
+   - `getByText` - finds elements by their text content
+
+2. **Semantic queries**:
+   - `getByAltText` - finds elements with alt text (like images)
+   - `getByTitle` - finds elements with a title attribute
+
+3. **Test IDs**:
+   - `getByTestId` - finds elements with a `data-testid` attribute
+
+```jsx
+// Example of query priority in practice
+function LoginForm() {
+  return (
+    <form>
+      <label htmlFor="username">Username</label>
+      <input id="username" placeholder="Enter username" />
+      
+      <label htmlFor="password">Password</label>
+      <input id="password" type="password" placeholder="Enter password" />
+      
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+test('renders login form with accessible elements', () => {
+  render(<LoginForm />);
+  
+  // Preferred: getByRole with name option
+  const usernameInput = screen.getByRole('textbox', { name: /username/i });
+  
+  // Alternative: getByLabelText
+  const passwordInput = screen.getByLabelText(/password/i);
+  
+  // Alternative: getByPlaceholderText
+  const usernamePlaceholder = screen.getByPlaceholderText(/enter username/i);
+  
+  // For the button: getByRole
+  const submitButton = screen.getByRole('button', { name: /login/i });
+  
+  expect(usernameInput).toBeInTheDocument();
+  expect(passwordInput).toBeInTheDocument();
+  expect(usernamePlaceholder).toBeInTheDocument();
+  expect(submitButton).toBeInTheDocument();
+});
+```
+
+## Testing User Interactions
+
+### Simulating Events
+
+To test user interactions, you can use `fireEvent` from React Testing Library or the more realistic `userEvent` from `@testing-library/user-event`:
+
+```jsx
+// Component to test
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+    </div>
+  );
+}
+
+// Test with fireEvent
+test('counter increments and decrements when buttons are clicked', () => {
+  render(<Counter />);
+  
+  // Initial state
+  expect(screen.getByText('Count: 0')).toBeInTheDocument();
+  
+  // Click increment button
+  fireEvent.click(screen.getByText('Increment'));
+  expect(screen.getByText('Count: 1')).toBeInTheDocument();
+  
+  // Click decrement button
+  fireEvent.click(screen.getByText('Decrement'));
+  expect(screen.getByText('Count: 0')).toBeInTheDocument();
+});
+
+// Test with userEvent (more realistic)
+import userEvent from '@testing-library/user-event';
+
+test('counter increments and decrements with userEvent', async () => {
+  render(<Counter />);
+  
+  // Initial state
+  expect(screen.getByText('Count: 0')).toBeInTheDocument();
+  
+  // Click increment button
+  await userEvent.click(screen.getByText('Increment'));
+  expect(screen.getByText('Count: 1')).toBeInTheDocument();
+  
+  // Click decrement button
+  await userEvent.click(screen.getByText('Decrement'));
+  expect(screen.getByText('Count: 0')).toBeInTheDocument();
+});
+```
+
+### Testing Form Interactions
+
+Forms are a common UI element that require comprehensive testing:
+
+```jsx
+// Component to test
+function LoginForm({ onSubmit }) {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+        />
+      </div>
+      <div>
+        <label htmlFor="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+        />
+      </div>
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+// Test file
+test('submits the form with user input', async () => {
+  const handleSubmit = jest.fn();
+  render(<LoginForm onSubmit={handleSubmit} />);
+  
+  // Get form elements
+  const usernameInput = screen.getByLabelText(/username/i);
+  const passwordInput = screen.getByLabelText(/password/i);
+  const submitButton = screen.getByRole('button', { name: /login/i });
+  
+  // Fill out the form
+  await userEvent.type(usernameInput, 'testuser');
+  await userEvent.type(passwordInput, 'password123');
+  
+  // Submit the form
+  await userEvent.click(submitButton);
+  
+  // Check if onSubmit was called with the correct data
+  expect(handleSubmit).toHaveBeenCalledWith({
+    username: 'testuser',
+    password: 'password123'
+  });
+});
+```
+
+## Testing Asynchronous Behavior
+
+### Testing Loading States
+
+Many components have loading states while waiting for data:
+
+```jsx
+// Component with loading state
+function UserData({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/users/${userId}`);
+        const data = await response.json();
+        setUser(data);
+      } catch (err) {
+        setError('Failed to fetch user');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchUser();
+  }, [userId]);
+  
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+  if (!user) return null;
+  
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+
+// Test file
+test('shows loading state and then user data', async () => {
+  // Mock fetch
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      json: () => Promise.resolve({ name: 'John Doe', email: 'john@example.com' })
+    })
+  );
+  
+  render(<UserData userId="123" />);
+  
+  // Check loading state
+  expect(screen.getByText('Loading...')).toBeInTheDocument();
+  
+  // Wait for user data to load
+  const userName = await screen.findByText('John Doe');
+  expect(userName).toBeInTheDocument();
+  expect(screen.getByText('john@example.com')).toBeInTheDocument();
+  
+  // Verify fetch was called correctly
+  expect(global.fetch).toHaveBeenCalledWith('/api/users/123');
+});
+```
+
+### Testing Error States
+
+It's important to test how your components handle errors:
+
+```jsx
+test('shows error message when fetch fails', async () => {
+  // Mock fetch to reject
+  global.fetch = jest.fn(() => Promise.reject(new Error('Network error')));
+  
+  render(<UserData userId="123" />);
+  
+  // Check loading state
+  expect(screen.getByText('Loading...')).toBeInTheDocument();
+  
+  // Wait for error message
+  const errorMessage = await screen.findByText('Failed to fetch user');
+  expect(errorMessage).toBeInTheDocument();
+});
+```
+
+## Mocking API Calls and Dependencies
+
+### Mocking Fetch or Axios
+
+When testing components that make API calls, you'll want to mock those calls:
+
+```jsx
+// Using Jest's mock function for fetch
+beforeEach(() => {
+  global.fetch = jest.fn();
+});
+
+afterEach(() => {
+  jest.resetAllMocks();
+});
+
+test('fetches and displays data', async () => {
+  // Mock successful response
+  global.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ data: 'mocked data' })
+  });
+  
+  render(<DataFetcher url="/api/data" />);
+  
+  // Wait for the data to be displayed
+  const dataElement = await screen.findByText('mocked data');
+  expect(dataElement).toBeInTheDocument();
+  expect(global.fetch).toHaveBeenCalledWith('/api/data');
+});
+
+// For axios
+jest.mock('axios');
+
+test('fetches and displays data with axios', async () => {
+  // Import axios after mocking
+  const axios = require('axios');
+  
+  // Mock successful response
+  axios.get.mockResolvedValueOnce({ data: { data: 'mocked data' } });
+  
+  render(<DataFetcher url="/api/data" />);
+  
+  // Wait for the data to be displayed
+  const dataElement = await screen.findByText('mocked data');
+  expect(dataElement).toBeInTheDocument();
+  expect(axios.get).toHaveBeenCalledWith('/api/data');
+});
+```
+
+### Mocking Modules and Components
+
+Sometimes you need to mock entire modules or child components:
+
+```jsx
+// Mocking a module
+jest.mock('./utils', () => ({
+  formatDate: jest.fn(() => 'mocked date'),
+  calculateTotal: jest.fn(() => 100)
+}));
+
+// Mocking a child component
+jest.mock('./ComplexChart', () => {
+  return function MockedChart(props) {
+    return <div data-testid="mocked-chart">{props.data.length} items</div>;
+  };
+});
+
+test('uses mocked modules and components', () => {
+  const utils = require('./utils');
+  render(<Dashboard data={[1, 2, 3]} />);
+  
+  expect(utils.formatDate).toHaveBeenCalled();
+  expect(screen.getByTestId('mocked-chart')).toHaveTextContent('3 items');
+});
+```
+
+## Testing Hooks
+
+### Testing Custom Hooks
+
+To test custom hooks, you can use the `renderHook` function from `@testing-library/react-hooks`:
+
+```jsx
+// Custom hook
+function useCounter(initialValue = 0) {
+  const [count, setCount] = useState(initialValue);
+  
+  const increment = () => setCount(prev => prev + 1);
+  const decrement = () => setCount(prev => prev - 1);
+  const reset = () => setCount(initialValue);
+  
+  return { count, increment, decrement, reset };
+}
+
+// Test file
+import { renderHook, act } from '@testing-library/react-hooks';
+
+test('should increment counter', () => {
+  const { result } = renderHook(() => useCounter());
+  
+  act(() => {
+    result.current.increment();
+  });
+  
+  expect(result.current.count).toBe(1);
+});
+
+test('should decrement counter', () => {
+  const { result } = renderHook(() => useCounter());
+  
+  act(() => {
+    result.current.decrement();
+  });
+  
+  expect(result.current.count).toBe(-1);
+});
+
+test('should reset counter', () => {
+  const { result } = renderHook(() => useCounter(10));
+  
+  act(() => {
+    result.current.increment();
+    result.current.reset();
+  });
+  
+  expect(result.current.count).toBe(10);
+});
+```
+
+### Testing Components with Hooks
+
+When testing components that use hooks, you test the component's behavior rather than the hook directly:
+
+```jsx
+// Component using a hook
+function CounterComponent() {
+  const { count, increment, decrement } = useCounter();
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>Increment</button>
+      <button onClick={decrement}>Decrement</button>
+    </div>
+  );
+}
+
+// Test file
+test('counter component uses the useCounter hook correctly', async () => {
+  render(<CounterComponent />);
+  
+  // Initial state
+  expect(screen.getByText('Count: 0')).toBeInTheDocument();
+  
+  // Increment
+  await userEvent.click(screen.getByText('Increment'));
+  expect(screen.getByText('Count: 1')).toBeInTheDocument();
+  
+  // Decrement
+  await userEvent.click(screen.getByText('Decrement'));
+  expect(screen.getByText('Count: 0')).toBeInTheDocument();
+});
+```
+
+## Testing Context Providers and Consumers
+
+### Setting Up Context for Testing
+
+When testing components that use React Context, you need to wrap them in the appropriate providers:
+
+```jsx
+// Theme context
+const ThemeContext = React.createContext('light');
+
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light');
+  
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
+  
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+// Component using the context
+function ThemedButton() {
+  const { theme, toggleTheme } = useContext(ThemeContext);
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      style={{ background: theme === 'light' ? '#fff' : '#333' }}
+    >
+      Current theme: {theme}
+    </button>
+  );
+}
+
+// Test file
+test('themed button shows the current theme and toggles it', async () => {
+  render(
+    <ThemeProvider>
+      <ThemedButton />
+    </ThemeProvider>
+  );
+  
+  // Initial state
+  const button = screen.getByRole('button');
+  expect(button).toHaveTextContent('Current theme: light');
+  
+  // Toggle theme
+  await userEvent.click(button);
+  expect(button).toHaveTextContent('Current theme: dark');
+});
+```
+
+### Testing with Custom Render Function
+
+For components that always need certain providers, you can create a custom render function:
+
+```jsx
+// test-utils.js
+import { render } from '@testing-library/react';
+import { ThemeProvider } from './ThemeContext';
+import { UserProvider } from './UserContext';
+
+function AllTheProviders({ children }) {
+  return (
+    <ThemeProvider>
+      <UserProvider>
+        {children}
+      </UserProvider>
+    </ThemeProvider>
+  );
+}
+
+const customRender = (ui, options) =>
+  render(ui, { wrapper: AllTheProviders, ...options });
+
+// Re-export everything
+export * from '@testing-library/react';
+export { customRender as render };
+
+// Usage in tests
+import { render, screen } from './test-utils';
+
+test('component uses theme and user context', () => {
+  render(<ProfilePage />);
+  // Now ProfilePage is wrapped with all necessary providers
+});
+```
+
+## Testing Redux-Connected Components
+
+### Testing Connected Components
+
+When testing components connected to Redux, you can either:
+1. Test the connected component with a real or mock store
+2. Test the unconnected component directly
+
+```jsx
+// Connected component
+function Counter({ count, increment, decrement }) {
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>Increment</button>
+      <button onClick={decrement}>Decrement</button>
+    </div>
+  );
+}
+
+// Redux connection
+const mapStateToProps = state => ({
+  count: state.counter.count
+});
+
+const mapDispatchToProps = {
+  increment: () => ({ type: 'INCREMENT' }),
+  decrement: () => ({ type: 'DECREMENT' })
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Counter);
+
+// Testing the connected component
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import rootReducer from './reducers';
+import ConnectedCounter from './ConnectedCounter';
+
+test('connected counter works with Redux store', async () => {
+  const store = createStore(rootReducer, { counter: { count: 5 } });
+  
+  render(
+    <Provider store={store}>
+      <ConnectedCounter />
+    </Provider>
+  );
+  
+  // Initial state from store
+  expect(screen.getByText('Count: 5')).toBeInTheDocument();
+  
+  // Dispatch through connected component
+  await userEvent.click(screen.getByText('Increment'));
+  expect(screen.getByText('Count: 6')).toBeInTheDocument();
+});
+
+// Testing the unconnected component
+test('unconnected counter calls increment and decrement', async () => {
+  const increment = jest.fn();
+  const decrement = jest.fn();
+  
+  render(<Counter count={10} increment={increment} decrement={decrement} />);
+  
+  expect(screen.getByText('Count: 10')).toBeInTheDocument();
+  
+  await userEvent.click(screen.getByText('Increment'));
+  expect(increment).toHaveBeenCalledTimes(1);
+  
+  await userEvent.click(screen.getByText('Decrement'));
+  expect(decrement).toHaveBeenCalledTimes(1);
+});
+```
+
+### Testing Redux Slices
+
+For Redux Toolkit, you can test slices directly:
+
+```jsx
+// counterSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { count: 0 },
+  reducers: {
+    increment: state => {
+      state.count += 1;
+    },
+    decrement: state => {
+      state.count -= 1;
+    }
+  }
+});
+
+export const { increment, decrement } = counterSlice.actions;
+export default counterSlice.reducer;
+
+// Test file
+import reducer, { increment, decrement } from './counterSlice';
+
+test('should return the initial state', () => {
+  expect(reducer(undefined, {})).toEqual({ count: 0 });
+});
+
+test('should handle increment', () => {
+  expect(reducer({ count: 1 }, increment())).toEqual({ count: 2 });
+});
+
+test('should handle decrement', () => {
+  expect(reducer({ count: 1 }, decrement())).toEqual({ count: 0 });
+});
+```
+
+## Best Practices and Common Patterns
+
+### Test Structure
+
+Follow the Arrange-Act-Assert pattern for clear, maintainable tests:
+
+```jsx
+test('component behaves correctly', async () => {
+  // Arrange: Set up the test
+  const handleSubmit = jest.fn();
+  render(<Form onSubmit={handleSubmit} />);
+  
+  // Act: Perform actions
+  await userEvent.type(screen.getByLabelText('Name'), 'John');
+  await userEvent.click(screen.getByRole('button', { name: /submit/i }));
+  
+  // Assert: Check the results
+  expect(handleSubmit).toHaveBeenCalledWith({ name: 'John' });
+});
+```
+
+### Testing Accessibility
+
+Ensure your components are accessible by testing with accessibility in mind:
+
+```jsx
+test('form is accessible', () => {
+  render(<Form />);
+  
+  // Check for proper labels
+  expect(screen.getByLabelText('Email')).toBeInTheDocument();
+  
+  // Check for ARIA attributes
+  expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Submit form');
+  
+  // Check for focus management
+  const emailInput = screen.getByLabelText('Email');
+  emailInput.focus();
+  expect(emailInput).toHaveFocus();
+});
+```
+
+### Snapshot Testing
+
+Snapshot testing can be useful for detecting unexpected UI changes:
+
+```jsx
+test('matches snapshot', () => {
+  const { container } = render(<Button>Click me</Button>);
+  expect(container).toMatchSnapshot();
+});
+```
+
+### Test Coverage
+
+Aim for high test coverage, but focus on testing behavior rather than implementation details:
+
+```bash
+# Run tests with coverage report
+npm test -- --coverage
+```
+
+### Common Patterns
+
+1. **Testing conditional rendering**:
+   ```jsx
+   test('shows different content based on props', () => {
+     const { rerender } = render(<Message type="success" text="It worked!" />);
+     expect(screen.getByText('It worked!')).toHaveClass('success');
+     
+     rerender(<Message type="error" text="It failed!" />);
+     expect(screen.getByText('It failed!')).toHaveClass('error');
+   });
+   ```
+
+2. **Testing lists of items**:
+   ```jsx
+   test('renders a list of items', () => {
+     const items = [
+       { id: 1, name: 'Item 1' },
+       { id: 2, name: 'Item 2' },
+       { id: 3, name: 'Item 3' }
+     ];
+     
+     render(<ItemList items={items} />);
+     
+     items.forEach(item => {
+       expect(screen.getByText(item.name)).toBeInTheDocument();
+     });
+     
+     expect(screen.getAllByRole('listitem')).toHaveLength(3);
+   });
+   ```
+
+3. **Testing routes and navigation**:
+   ```jsx
+   import { MemoryRouter, Routes, Route } from 'react-router-dom';
+   
+   test('navigates to the correct page', async () => {
+     render(
+       <MemoryRouter initialEntries={['/']}>
+         <Routes>
+           <Route path="/" element={<Home />} />
+           <Route path="/about" element={<About />} />
+         </Routes>
+       </MemoryRouter>
+     );
+     
+     expect(screen.getByText('Home Page')).toBeInTheDocument();
+     
+     await userEvent.click(screen.getByText('Go to About'));
+     expect(screen.getByText('About Page')).toBeInTheDocument();
+   });
+   ```
+
+## Interview Tips
+
+When discussing React testing in an interview:
+
+1. **Emphasize the importance of testing behavior, not implementation**:
+   - Focus on what the user sees and interacts with
+   - Avoid testing implementation details that might change
+
+2. **Demonstrate knowledge of testing best practices**:
+   - Arrange-Act-Assert pattern
+   - Testing accessibility
+   - Mocking external dependencies
+
+3. **Show understanding of different types of tests**:
+   - Unit tests for individual components
+   - Integration tests for component interactions
+   - End-to-end tests for complete user flows
+
+4. **Discuss the testing pyramid**:
+   - Many unit tests
+   - Fewer integration tests
+   - Even fewer end-to-end tests
+
+5. **Highlight the benefits of React Testing Library's approach**:
+   - Testing from the user's perspective
+   - Resilient tests that don't break with implementation changes
+   - Accessibility-focused queries
