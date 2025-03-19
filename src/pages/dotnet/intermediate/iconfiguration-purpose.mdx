@@ -1,0 +1,176 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the purpose of IConfiguration in ASP.NET Core?
+---
+
+# What is the purpose of IConfiguration in ASP.NET Core?
+
+`IConfiguration` is a key interface in ASP.NET Core that provides a unified way to access application configuration settings from various sources such as JSON files, environment variables, command-line arguments, Azure Key Vault, and more.
+
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Hierarchical Data** | Access nested settings using colon notation (`"Section:Key"`) |
+| **Multiple Sources** | Combine configuration from different providers |
+| **Override Capability** | Later sources override values from earlier ones |
+| **Change Notification** | Support for reloading when configuration changes |
+| **Strongly-typed Binding** | Map configuration sections to POCO classes |
+
+## Basic Usage
+
+```csharp
+// Injecting and using IConfiguration
+public class HomeController : Controller
+{
+    private readonly IConfiguration _configuration;
+    
+    public HomeController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+    
+    public IActionResult Index()
+    {
+        // Reading simple values
+        string appName = _configuration["AppName"];
+        
+        // Reading nested values
+        string apiUrl = _configuration["Services:ApiService:Url"];
+        
+        // Using GetConnectionString helper
+        string connString = _configuration.GetConnectionString("DefaultConnection");
+        
+        return View();
+    }
+}
+```
+
+## Configuration Sources
+
+```csharp
+// Program.cs in ASP.NET Core 6+
+var builder = WebApplication.CreateBuilder(args);
+
+// Default sources already added: appsettings.json, 
+// appsettings.{Environment}.json, environment variables, command line
+
+// Adding custom sources
+builder.Configuration
+    .AddJsonFile("custom.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables("MYAPP_")
+    .AddUserSecrets<Program>()
+    .AddKeyVault();
+```
+
+## Configuration Priority (Highest to Lowest)
+
+1. Command-line arguments
+2. Environment variables
+3. User secrets (Development)
+4. `appsettings.{Environment}.json`
+5. `appsettings.json`
+
+## Strongly-typed Configuration
+
+```csharp
+// POCO class
+public class EmailSettings
+{
+    public string SmtpServer { get; set; }
+    public int Port { get; set; }
+    public string SenderEmail { get; set; }
+}
+
+// Registration in Program.cs
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
+
+// Usage in a service
+public class EmailService
+{
+    private readonly EmailSettings _settings;
+    
+    public EmailService(IOptions<EmailSettings> options)
+    {
+        _settings = options.Value;
+    }
+}
+```
+
+## Options Pattern Interfaces
+
+| Interface | Lifetime | Reloading | Use Case |
+|-----------|----------|-----------|----------|
+| `IOptions<T>` | Singleton | No | Configuration that never changes |
+| `IOptionsSnapshot<T>` | Scoped | Yes | Per-request configuration access |
+| `IOptionsMonitor<T>` | Singleton | Yes | Long-lived services that need config updates |
+
+```csharp
+// IOptionsMonitor with change tracking
+public class ConfigAwareService
+{
+    private EmailSettings _settings;
+    
+    public ConfigAwareService(IOptionsMonitor<EmailSettings> monitor)
+    {
+        _settings = monitor.CurrentValue;
+        
+        // Register for notifications when EmailSettings change
+        monitor.OnChange(settings => {
+            _settings = settings;
+            Console.WriteLine("Config changed!");
+        });
+    }
+}
+```
+
+## Configuration Validation
+
+```csharp
+// Validating configuration values
+builder.Services.AddOptions<EmailSettings>()
+    .Bind(builder.Configuration.GetSection("EmailSettings"))
+    .ValidateDataAnnotations()
+    .Validate(settings => {
+        return !string.IsNullOrEmpty(settings.SmtpServer) 
+            && settings.Port > 0;
+    }, "SMTP configuration is invalid");
+```
+
+## Protecting Sensitive Configuration
+
+```csharp
+// Using user secrets in development
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=..."
+  }
+}
+
+// Command line
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=..."
+
+// Using Azure Key Vault in production
+builder.Configuration.AddAzureKeyVault(
+    new Uri("https://mykeyvault.vault.azure.net/"),
+    new DefaultAzureCredential());
+```
+
+## Interview Tips
+
+1. **Explain the configuration hierarchy**: Describe how ASP.NET Core builds a layered configuration system where later sources can override earlier ones.
+
+2. **Discuss environment-specific configuration**: Highlight how `appsettings.{Environment}.json` files allow for different settings in development vs. production.
+
+3. **Compare options interfaces**: Know the differences between `IOptions`, `IOptionsSnapshot`, and `IOptionsMonitor` and when to use each.
+
+4. **Security best practices**: Emphasize never storing secrets in code or appsettings files, instead using user secrets, environment variables, or Azure Key Vault.
+
+5. **Configuration binding**: Demonstrate understanding of binding configuration sections to strongly-typed classes for better type safety and IntelliSense.
+
+6. **Reloading configuration**: Explain how to handle configuration changes at runtime without restarting the application.
+
+7. **Real-world examples**: Provide examples like database connection strings, feature flags, or API endpoints that typically use configuration.
+
+8. **Configuration validation**: Mention how to validate configuration at startup to fail fast if required settings are missing or invalid.

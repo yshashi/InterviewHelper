@@ -1,0 +1,193 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between IEnumerable and IQueryable in .NET?
+---
+
+# What is the difference between IEnumerable and IQueryable in .NET?
+
+## Understanding IEnumerable and IQueryable
+
+Both `IEnumerable<T>` and `IQueryable<T>` are interfaces used for working with collections of data in .NET, but they have significant differences in how they process and execute queries.
+
+```csharp
+// Basic usage of both interfaces
+IEnumerable<Customer> customers1 = dbContext.Customers.ToList();
+IQueryable<Customer> customers2 = dbContext.Customers;
+```
+
+## Key Differences
+
+### 1. Query Execution Location
+
+- **IEnumerable**: Queries are executed in-memory (client-side)
+- **IQueryable**: Queries are translated to the data source's query language (server-side)
+
+```csharp
+// IEnumerable example (client-side filtering)
+// The entire customer table is retrieved, then filtered in memory
+var youngCustomers = dbContext.Customers
+    .ToList() // Converts to IEnumerable by fetching all data
+    .Where(c => c.Age < 30); // Filtering happens in application memory
+
+// IQueryable example (server-side filtering)
+// Only the filtered data is retrieved from the database
+var youngCustomers = dbContext.Customers
+    .Where(c => c.Age < 30) // Translated to SQL WHERE clause
+    .ToList(); // Executes the query with the filter
+```
+
+### 2. Deferred Execution
+
+Both support deferred execution, but in different ways:
+
+```csharp
+// IEnumerable deferred execution
+IEnumerable<Customer> customers = GetCustomers(); // Query not executed yet
+// Execution happens when you iterate:
+foreach (var customer in customers) // Query executes here
+{
+    Console.WriteLine(customer.Name);
+}
+
+// IQueryable deferred execution
+IQueryable<Customer> customers = dbContext.Customers
+    .Where(c => c.IsActive)
+    .OrderBy(c => c.Name); // Query not executed yet
+    
+// Execution happens when you materialize:
+var result = customers.ToList(); // Query executes here
+```
+
+### 3. Expression Trees vs. Delegates
+
+- **IEnumerable**: Uses delegates for filtering/projection
+- **IQueryable**: Uses expression trees that can be translated to other query languages
+
+```csharp
+// IEnumerable uses delegates (Func<T, bool>)
+Func<Customer, bool> predicate = c => c.Age > 30;
+var olderCustomers = customerList.Where(predicate);
+
+// IQueryable uses expression trees
+Expression<Func<Customer, bool>> expression = c => c.Age > 30;
+var olderCustomers = customerQuery.Where(expression);
+```
+
+### 4. Provider Model
+
+- **IEnumerable**: Works with in-memory collections
+- **IQueryable**: Works with query providers (e.g., LINQ to SQL, Entity Framework)
+
+```csharp
+// IQueryable uses a provider to translate expressions
+var query = dbContext.Customers.Where(c => c.Name.Contains("John"));
+// The query provider translates this to:
+// SELECT * FROM Customers WHERE Name LIKE '%John%'
+```
+
+## Performance Implications
+
+```csharp
+// Poor performance (fetches all records, then filters)
+var inactiveCustomers = dbContext.Customers
+    .AsEnumerable() // Converts to IEnumerable
+    .Where(c => !c.IsActive)
+    .Take(10)
+    .ToList();
+
+// Better performance (filters at database, fetches only what's needed)
+var inactiveCustomers = dbContext.Customers
+    .Where(c => !c.IsActive) // Translated to SQL
+    .Take(10) // Translated to SQL TOP or LIMIT
+    .ToList();
+```
+
+## When to Use Each
+
+### Use IEnumerable When:
+
+- Working with in-memory collections
+- The data is already loaded
+- Using methods not supported by the query provider
+- Performing complex operations that can't be translated to SQL
+
+```csharp
+// Good use of IEnumerable
+var localList = new List<int> { 1, 2, 3, 4, 5 };
+var evenNumbers = localList.Where(n => n % 2 == 0);
+
+// When using custom logic that can't be translated to SQL
+var customers = dbContext.Customers.ToList(); // Get all to memory
+var specialCustomers = customers.Where(c => CustomBusinessLogic(c));
+```
+
+### Use IQueryable When:
+
+- Working with database queries
+- Need to build queries dynamically
+- Performance is critical with large datasets
+- Filtering/sorting should happen at the data source
+
+```csharp
+// Good use of IQueryable
+var query = dbContext.Products.AsQueryable();
+
+// Dynamic query building
+if (!string.IsNullOrEmpty(searchTerm))
+{
+    query = query.Where(p => p.Name.Contains(searchTerm));
+}
+
+if (categoryId.HasValue)
+{
+    query = query.Where(p => p.CategoryId == categoryId.Value);
+}
+
+// Execute the query only after all conditions are applied
+var results = query.ToList();
+```
+
+## Common Pitfalls
+
+### 1. Method Not Supported by Provider
+
+```csharp
+// This will throw an exception
+var customers = dbContext.Customers
+    .Where(c => CustomMethod(c.Name)) // Can't be translated to SQL
+    .ToList();
+
+// Solution: Use AsEnumerable() to switch to client-side
+var customers = dbContext.Customers
+    .AsEnumerable() // Switch to LINQ to Objects
+    .Where(c => CustomMethod(c.Name))
+    .ToList();
+```
+
+### 2. Multiple Enumerations
+
+```csharp
+// Bad: Query is executed multiple times
+var query = dbContext.Customers.Where(c => c.IsActive);
+Console.WriteLine($"Count: {query.Count()}"); // First execution
+var firstCustomer = query.FirstOrDefault(); // Second execution
+
+// Good: Execute once and store results
+var activeCustomers = dbContext.Customers.Where(c => c.IsActive).ToList();
+Console.WriteLine($"Count: {activeCustomers.Count}");
+var firstCustomer = activeCustomers.FirstOrDefault();
+```
+
+## Interview Tips
+
+1. **Execution location**: IEnumerable executes in-memory, IQueryable executes at the data source.
+
+2. **Performance implications**: Explain how IQueryable can be more efficient with large datasets by filtering at the source.
+
+3. **Expression trees**: Mention that IQueryable uses expression trees that can be translated to SQL or other query languages.
+
+4. **Practical examples**: Provide examples of when to use each interface based on the scenario.
+
+5. **Method support**: Note that not all LINQ methods can be translated to SQL when using IQueryable.
+
+6. **Inheritance relationship**: `IQueryable<T>` inherits from `IEnumerable<T>`, so an IQueryable can be used anywhere an IEnumerable is expected.

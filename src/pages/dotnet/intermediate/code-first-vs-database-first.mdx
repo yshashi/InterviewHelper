@@ -1,0 +1,396 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between Code-First and Database-First approaches in Entity Framework?
+---
+
+# What is the difference between Code-First and Database-First approaches in Entity Framework?
+
+## Understanding Development Approaches in Entity Framework
+
+Entity Framework supports multiple development approaches for working with databases:
+
+1. **Code-First**: Create domain classes first, then generate the database from them
+2. **Database-First**: Start with an existing database, then generate entity classes
+3. **Model-First**: Create a visual model first, then generate both database and classes (less common, primarily in EF6)
+
+## Code-First Approach
+
+In the Code-First approach, you start by defining your domain model using C# classes, and Entity Framework creates the database schema based on these classes.
+
+### How Code-First Works
+
+```csharp
+// 1. Define entity classes
+public class Student
+{
+    public int StudentId { get; set; }
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public DateTime EnrollmentDate { get; set; }
+    
+    public virtual ICollection<Enrollment> Enrollments { get; set; }
+}
+
+public class Course
+{
+    public int CourseId { get; set; }
+    public string Title { get; set; }
+    public int Credits { get; set; }
+    
+    public virtual ICollection<Enrollment> Enrollments { get; set; }
+}
+
+public class Enrollment
+{
+    public int EnrollmentId { get; set; }
+    public int CourseId { get; set; }
+    public int StudentId { get; set; }
+    public Grade? Grade { get; set; }
+    
+    public virtual Course Course { get; set; }
+    public virtual Student Student { get; set; }
+}
+
+public enum Grade
+{
+    A, B, C, D, F
+}
+
+// 2. Create a context class
+public class SchoolContext : DbContext
+{
+    public DbSet<Student> Students { get; set; }
+    public DbSet<Course> Courses { get; set; }
+    public DbSet<Enrollment> Enrollments { get; set; }
+    
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(
+            @"Server=(localdb)\mssqllocaldb;Database=SchoolDB;Trusted_Connection=True");
+    }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configure the model using Fluent API
+        modelBuilder.Entity<Student>()
+            .HasIndex(s => s.LastName);
+            
+        modelBuilder.Entity<Enrollment>()
+            .HasOne(e => e.Student)
+            .WithMany(s => s.Enrollments)
+            .HasForeignKey(e => e.StudentId);
+    }
+}
+
+// 3. Create and apply migrations
+// dotnet ef migrations add InitialCreate
+// dotnet ef database update
+```
+
+### Customizing the Model with Data Annotations
+
+```csharp
+public class Student
+{
+    [Key]
+    public int StudentId { get; set; }
+    
+    [Required]
+    [StringLength(50)]
+    [Display(Name = "First Name")]
+    public string FirstName { get; set; }
+    
+    [Required]
+    [StringLength(50)]
+    [Display(Name = "Last Name")]
+    public string LastName { get; set; }
+    
+    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
+    [Display(Name = "Enrollment Date")]
+    public DateTime EnrollmentDate { get; set; }
+    
+    public virtual ICollection<Enrollment> Enrollments { get; set; }
+}
+```
+
+### Customizing the Model with Fluent API
+
+```csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<Student>(entity =>
+    {
+        entity.ToTable("Student");
+        
+        entity.HasKey(e => e.StudentId);
+        
+        entity.Property(e => e.FirstName)
+            .IsRequired()
+            .HasMaxLength(50);
+            
+        entity.Property(e => e.LastName)
+            .IsRequired()
+            .HasMaxLength(50);
+            
+        entity.HasIndex(e => e.LastName);
+        
+        entity.HasMany(e => e.Enrollments)
+            .WithOne(e => e.Student)
+            .HasForeignKey(e => e.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+}
+```
+
+### Advantages of Code-First
+
+1. **Full control over domain model**: Design your classes according to object-oriented principles
+2. **Version control friendly**: Track changes to your model in source control
+3. **Testability**: Easier to mock and test your domain model
+4. **Migrations**: Built-in support for evolving the database schema
+5. **No dependency on database tools**: Work entirely in your IDE
+
+### Disadvantages of Code-First
+
+1. **Learning curve**: Requires understanding of EF conventions and configurations
+2. **Complex for existing databases**: May be challenging to map to complex existing schemas
+3. **Performance tuning**: May require additional configuration for optimal database design
+
+## Database-First Approach
+
+In the Database-First approach, you start with an existing database and Entity Framework generates the entity classes and context based on the database schema.
+
+### How Database-First Works
+
+```csharp
+// Entity Framework Core 6+ with Database-First
+// 1. Install required packages
+// dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+// dotnet add package Microsoft.EntityFrameworkCore.Design
+// dotnet add package Microsoft.EntityFrameworkCore.Tools
+
+// 2. Scaffold the DbContext and entity classes from the database
+// dotnet ef dbcontext scaffold "Server=(localdb)\mssqllocaldb;Database=SchoolDB;Trusted_Connection=True" Microsoft.EntityFrameworkCore.SqlServer -o Models
+
+// The command above generates classes like:
+public partial class SchoolDBContext : DbContext
+{
+    public SchoolDBContext()
+    {
+    }
+
+    public SchoolDBContext(DbContextOptions<SchoolDBContext> options)
+        : base(options)
+    {
+    }
+
+    public virtual DbSet<Course> Courses { get; set; }
+    public virtual DbSet<Enrollment> Enrollments { get; set; }
+    public virtual DbSet<Student> Students { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=SchoolDB;Trusted_Connection=True");
+        }
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Auto-generated configuration based on database schema
+        modelBuilder.Entity<Course>(entity =>
+        {
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<Enrollment>(entity =>
+        {
+            entity.HasOne(d => d.Course)
+                .WithMany(p => p.Enrollments)
+                .HasForeignKey(d => d.CourseId);
+
+            entity.HasOne(d => d.Student)
+                .WithMany(p => p.Enrollments)
+                .HasForeignKey(d => d.StudentId);
+        });
+
+        OnModelCreatingPartial(modelBuilder);
+    }
+
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+}
+```
+
+### Customizing Database-First Generated Code
+
+```csharp
+// Using partial classes to extend generated entities
+public partial class Student
+{
+    public string FullName => $"{FirstName} {LastName}";
+    
+    public bool IsHonorStudent()
+    {
+        return Enrollments?.All(e => e.Grade == Grade.A || e.Grade == Grade.B) ?? false;
+    }
+}
+
+// Customizing the context
+public partial class SchoolDBContext
+{
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
+    {
+        // Add custom configurations here
+        modelBuilder.Entity<Student>()
+            .HasIndex(s => s.Email)
+            .IsUnique();
+    }
+}
+```
+
+### Advantages of Database-First
+
+1. **Existing databases**: Ideal for working with legacy or pre-existing databases
+2. **Database-driven design**: Useful when the database schema is the source of truth
+3. **Complex schemas**: Better for complex database schemas with specific optimizations
+4. **DBA collaboration**: Easier collaboration with database administrators
+5. **Stored procedures**: Better support for databases with complex stored procedures
+
+### Disadvantages of Database-First
+
+1. **Less control over domain model**: Entity classes are generated based on the database
+2. **Regeneration challenges**: Changes to the database require regeneration of code
+3. **Version control issues**: Generated code may cause merge conflicts
+4. **Less object-oriented**: May not follow ideal object-oriented design principles
+
+## Key Differences
+
+| Feature | Code-First | Database-First |
+|---------|------------|----------------|
+| Starting point | C# classes | Database schema |
+| Control over model | High | Limited |
+| Learning curve | Steeper | Gentler for database-focused developers |
+| Workflow | Write code → Generate database | Create database → Generate code |
+| Schema changes | Through migrations | In database, then regenerate |
+| Best for | New projects, domain-driven design | Existing databases, database-driven design |
+
+## When to Choose Each Approach
+
+### Choose Code-First When:
+
+- Starting a new project without an existing database
+- Following Domain-Driven Design principles
+- Need fine-grained control over the domain model
+- Want to use migrations for database versioning
+- Working in a developer-centric team
+
+```csharp
+// Example: New project using Code-First
+public class BloggingContext : DbContext
+{
+    public DbSet<Blog> Blogs { get; set; }
+    public DbSet<Post> Posts { get; set; }
+    
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(
+            @"Server=(localdb)\mssqllocaldb;Database=BloggingDB;Trusted_Connection=True");
+    }
+}
+
+public class Blog
+{
+    public int BlogId { get; set; }
+    public string Name { get; set; }
+    public string Url { get; set; }
+    
+    public List<Post> Posts { get; set; }
+}
+
+public class Post
+{
+    public int PostId { get; set; }
+    public string Title { get; set; }
+    public string Content { get; set; }
+    
+    public int BlogId { get; set; }
+    public Blog Blog { get; set; }
+}
+```
+
+### Choose Database-First When:
+
+- Working with an existing database that cannot be modified
+- Database schema is designed by database specialists
+- Complex database with optimized schema and stored procedures
+- Database is shared with other applications
+- Working in a database-centric team
+
+```csharp
+// Example: Using Database-First with an existing database
+// dotnet ef dbcontext scaffold "Server=myserver;Database=Northwind;User=sa;Password=mypassword;" Microsoft.EntityFrameworkCore.SqlServer -o Models -t Customer -t Order -t OrderDetail
+```
+
+## Hybrid Approaches
+
+In practice, many projects use a hybrid approach:
+
+### 1. Code-First with Existing Database
+
+```csharp
+// Code-First with an existing database
+public class ExistingDbContext : DbContext
+{
+    public DbSet<Customer> Customers { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Map to existing tables and columns
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.ToTable("Customers", "dbo");
+            entity.Property(e => e.CustomerId).HasColumnName("CustomerID");
+            entity.Property(e => e.Name).HasColumnName("CompanyName");
+        });
+    }
+}
+```
+
+### 2. Database-First with Custom Entities
+
+```csharp
+// Generate initial models from database
+// dotnet ef dbcontext scaffold "connection-string" Microsoft.EntityFrameworkCore.SqlServer -o Models
+
+// Then customize and extend with partial classes
+public partial class Customer
+{
+    // Custom properties and methods
+    public string FullAddress => $"{Address}, {City}, {Region}, {PostalCode}, {Country}";
+    
+    public decimal CalculateTotalOrders()
+    {
+        return Orders.Sum(o => o.OrderDetails.Sum(od => od.UnitPrice * od.Quantity));
+    }
+}
+```
+
+## Interview Tips
+
+1. **Clear definitions**: Explain that Code-First starts with C# classes and generates the database, while Database-First starts with an existing database and generates classes.
+
+2. **Appropriate scenarios**: Discuss when each approach is most appropriate (new vs. existing projects, developer vs. database-centric teams).
+
+3. **Advantages and disadvantages**: Highlight the key pros and cons of each approach.
+
+4. **Migrations**: Explain how migrations work in Code-First to evolve the database schema.
+
+5. **Tooling**: Mention the tools used for each approach (EF Core CLI commands, Package Manager Console).
+
+6. **Customization options**: Discuss how to customize models using Data Annotations and Fluent API in Code-First, and partial classes in Database-First.
+
+7. **Real-world examples**: Provide examples of when you've used each approach and why it was the right choice.

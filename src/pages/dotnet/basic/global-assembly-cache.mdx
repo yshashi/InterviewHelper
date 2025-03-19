@@ -1,0 +1,106 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the Global Assembly Cache (GAC)?
+---
+
+# What is the Global Assembly Cache (GAC)?
+
+The Global Assembly Cache (GAC) is a machine-wide cache for .NET Framework assemblies that are specifically designated to be shared by multiple applications on a computer. It provides a centralized repository for storing and managing shared assemblies, ensuring version control and security.
+
+In modern .NET (Core, 5+), the traditional GAC has been replaced with alternative sharing mechanisms like NuGet packages and the runtime assembly store, emphasizing application-local deployment rather than machine-wide sharing.
+
+## Key Characteristics
+
+| Feature | Description |
+|---------|-------------|
+| Strong Naming | Assemblies must be strong-named (signed with a cryptographic key) to be installed in the GAC |
+| Side-by-Side Versioning | Multiple versions of the same assembly can coexist in the GAC |
+| Security | GAC assemblies have a higher level of trust than private assemblies |
+| Administrative Access | Installing to the GAC requires administrative privileges |
+| Centralized Management | Provides a single location for managing shared assemblies |
+
+## GAC Locations
+
+- **.NET Framework (up to 4.0)**: `%windir%\assembly`
+- **.NET Framework 4.0+**: `%windir%\Microsoft.NET\assembly`
+- **.NET Core/5+**: No traditional GAC (uses different mechanisms)
+
+## Working with the GAC
+
+### Installing Assemblies
+
+```bash
+# Using gacutil.exe (requires .NET Framework SDK)
+gacutil /i SharedLibrary.dll
+
+# Uninstalling
+gacutil /u SharedLibrary
+```
+
+### Referencing GAC Assemblies
+
+```xml
+<!-- Strong-named reference to a GAC assembly -->
+<Reference Include="SharedLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+```
+
+### Strong Naming (Required for GAC)
+
+```csharp
+// Generate key pair (using Developer Command Prompt)
+// sn -k MyKeyPair.snk
+
+// Sign the assembly in project file
+<PropertyGroup>
+  <SignAssembly>true</SignAssembly>
+  <AssemblyOriginatorKeyFile>MyKeyPair.snk</AssemblyOriginatorKeyFile>
+</PropertyGroup>
+```
+
+## Modern Alternatives (.NET Core/5+)
+
+Since .NET Core and .NET 5+, the GAC concept has changed:
+
+1. **NuGet Packages**: Primary mechanism for sharing code
+   ```xml
+   <PackageReference Include="SharedLibrary" Version="1.0.0" />
+   ```
+
+2. **Runtime Store**: For shared framework components
+   ```bash
+   dotnet store --manifest packages.manifest.csproj --runtime win-x64
+   ```
+
+3. **Assembly Load Context**: For more controlled assembly loading
+
+## When to Use the GAC
+
+### Appropriate Use Cases
+- Shared components used by multiple applications
+- Common libraries across an organization
+- Security-sensitive code requiring higher trust
+
+### When to Avoid
+- Application-specific assemblies
+- Frequently updated code
+- Modern .NET Core/5+ applications
+- When deployment simplicity is important
+
+## Common Issues
+
+1. **Assembly Binding Redirects**: Required when using different versions
+   ```xml
+   <bindingRedirect oldVersion="1.0.0.0-1.9.9.9" newVersion="2.0.0.0" />
+   ```
+
+2. **Deployment Complexity**: Requires administrative access and careful versioning
+
+3. **DLL Hell**: The GAC was designed to solve "DLL Hell" but can create its own versioning challenges
+
+## Best Practices
+
+1. For **.NET Framework**: Use the GAC only for truly shared components
+2. For **.NET Core/5+**: Use NuGet packages instead of the GAC
+3. Always **strong-name** assemblies intended for the GAC
+4. Use **assembly binding redirects** when needed
+5. Consider **deployment implications** when deciding to use the GAC

@@ -1,0 +1,373 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is dependency injection, and how is it implemented in .NET?
+---
+
+# What is dependency injection, and how is it implemented in .NET?
+
+## Understanding Dependency Injection
+
+Dependency Injection (DI) is a design pattern that implements Inversion of Control (IoC) for resolving dependencies. Instead of creating dependencies inside a class, they are "injected" from the outside, making code more modular, testable, and maintainable.
+
+```csharp
+// Without dependency injection
+public class CustomerService
+{
+    private readonly DatabaseConnection _connection;
+    
+    public CustomerService()
+    {
+        // Direct dependency - tightly coupled
+        _connection = new DatabaseConnection("connection_string");
+    }
+}
+
+// With dependency injection
+public class CustomerService
+{
+    private readonly IDatabaseConnection _connection;
+    
+    public CustomerService(IDatabaseConnection connection)
+    {
+        // Injected dependency - loosely coupled
+        _connection = connection;
+    }
+}
+```
+
+## Benefits of Dependency Injection
+
+1. **Loose coupling**: Classes depend on abstractions, not concrete implementations
+2. **Testability**: Dependencies can be easily mocked for unit testing
+3. **Flexibility**: Implementations can be swapped without changing dependent code
+4. **Lifetime management**: The DI container manages object lifetimes
+5. **Cross-cutting concerns**: Simplifies implementation of logging, caching, etc.
+
+## Types of Dependency Injection
+
+### 1. Constructor Injection
+
+Dependencies are provided through a class constructor.
+
+```csharp
+public class OrderService
+{
+    private readonly IOrderRepository _repository;
+    private readonly ILogger<OrderService> _logger;
+    
+    // Constructor injection
+    public OrderService(IOrderRepository repository, ILogger<OrderService> logger)
+    {
+        _repository = repository;
+        _logger = logger;
+    }
+    
+    public Order GetOrder(int id)
+    {
+        _logger.LogInformation($"Getting order {id}");
+        return _repository.GetById(id);
+    }
+}
+```
+
+### 2. Property Injection
+
+Dependencies are set through public properties.
+
+```csharp
+public class ProductService
+{
+    // Property injection
+    public IProductRepository Repository { get; set; }
+    
+    public Product GetProduct(int id)
+    {
+        if (Repository == null)
+            throw new InvalidOperationException("Repository is not set");
+            
+        return Repository.GetById(id);
+    }
+}
+```
+
+### 3. Method Injection
+
+Dependencies are provided to specific methods that need them.
+
+```csharp
+public class NotificationService
+{
+    public void SendNotification(string message, INotificationChannel channel)
+    {
+        // Method injection
+        channel.Send(message);
+    }
+}
+```
+
+## Dependency Injection in .NET Core and .NET 5+
+
+.NET Core and later versions include a built-in DI container in the Microsoft.Extensions.DependencyInjection package.
+
+### Setting Up DI in a Console Application
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureServices((context, services) =>
+            {
+                // Register services
+                services.AddTransient<IOrderRepository, OrderRepository>();
+                services.AddScoped<IOrderService, OrderService>();
+                services.AddSingleton<IConfigurationService, ConfigurationService>();
+            })
+            .Build();
+            
+        var orderService = host.Services.GetRequiredService<IOrderService>();
+        var order = orderService.GetOrder(123);
+    }
+}
+```
+
+### Setting Up DI in ASP.NET Core
+
+```csharp
+// Program.cs in ASP.NET Core 6+
+var builder = WebApplication.CreateBuilder(args);
+
+// Register services
+builder.Services.AddControllers();
+builder.Services.AddTransient<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
+
+var app = builder.Build();
+app.MapControllers();
+app.Run();
+```
+
+## Service Lifetimes
+
+.NET's DI container supports three service lifetimes:
+
+### 1. Transient
+
+A new instance is created each time the service is requested.
+
+```csharp
+services.AddTransient<IOrderProcessor, OrderProcessor>();
+```
+
+Use for: Lightweight, stateless services.
+
+### 2. Scoped
+
+A single instance is created per scope (e.g., per HTTP request in web apps).
+
+```csharp
+services.AddScoped<IOrderRepository, OrderRepository>();
+```
+
+Use for: Services that maintain state for the duration of a request.
+
+### 3. Singleton
+
+A single instance is created for the entire application lifetime.
+
+```csharp
+services.AddSingleton<ICacheService, CacheService>();
+```
+
+Use for: Services that maintain application-wide state.
+
+## Dependency Injection Best Practices
+
+### 1. Depend on Abstractions
+
+```csharp
+// Good: Depending on an interface
+public class CustomerService(ICustomerRepository repository)
+
+// Avoid: Depending on concrete implementation
+public class CustomerService(SqlCustomerRepository repository)
+```
+
+### 2. Constructor Injection for Required Dependencies
+
+```csharp
+// Good: Required dependencies in constructor
+public class OrderService
+{
+    private readonly IOrderRepository _repository;
+    
+    public OrderService(IOrderRepository repository)
+    {
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    }
+}
+```
+
+### 3. Avoid Service Locator Pattern
+
+```csharp
+// Avoid: Service locator pattern
+public class OrderService
+{
+    public Order GetOrder(int id)
+    {
+        // Anti-pattern: resolving dependencies at runtime
+        var repository = ServiceLocator.Current.GetInstance<IOrderRepository>();
+        return repository.GetById(id);
+    }
+}
+```
+
+### 4. Be Mindful of Service Lifetimes
+
+```csharp
+// Potential issue: Singleton depending on scoped service
+public class SingletonService
+{
+    private readonly IScopedService _scopedService;
+    
+    // This can cause issues because the scoped service
+    // will effectively become a singleton
+    public SingletonService(IScopedService scopedService)
+    {
+        _scopedService = scopedService;
+    }
+}
+```
+
+## Advanced DI Features in .NET
+
+### 1. Factory-Based Services
+
+```csharp
+// Register a factory for creating services
+services.AddTransient<IOrderProcessor>(serviceProvider => {
+    var logger = serviceProvider.GetRequiredService<ILogger<OrderProcessor>>();
+    var repository = serviceProvider.GetRequiredService<IOrderRepository>();
+    return new OrderProcessor(logger, repository, "custom_parameter");
+});
+```
+
+### 2. Named Services with Factory Pattern
+
+```csharp
+// Register multiple implementations
+services.AddTransient<SqlOrderRepository>();
+services.AddTransient<MongoOrderRepository>();
+
+// Factory to select implementation
+services.AddTransient<IOrderRepository>(serviceProvider => {
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    string dbType = configuration["DatabaseType"];
+    
+    return dbType.ToLower() switch
+    {
+        "sql" => serviceProvider.GetRequiredService<SqlOrderRepository>(),
+        "mongo" => serviceProvider.GetRequiredService<MongoOrderRepository>(),
+        _ => throw new InvalidOperationException($"Unsupported database type: {dbType}")
+    };
+});
+```
+
+### 3. Decorators
+
+```csharp
+// Register the base implementation
+services.AddTransient<IOrderRepository, OrderRepository>();
+
+// Replace with decorator
+services.Decorate<IOrderRepository, CachingOrderRepositoryDecorator>();
+services.Decorate<IOrderRepository, LoggingOrderRepositoryDecorator>();
+
+// Implementation of a decorator
+public class CachingOrderRepositoryDecorator : IOrderRepository
+{
+    private readonly IOrderRepository _inner;
+    private readonly ICache _cache;
+    
+    public CachingOrderRepositoryDecorator(IOrderRepository inner, ICache cache)
+    {
+        _inner = inner;
+        _cache = cache;
+    }
+    
+    public Order GetById(int id)
+    {
+        string key = $"order_{id}";
+        if (_cache.TryGetValue(key, out Order cachedOrder))
+            return cachedOrder;
+            
+        var order = _inner.GetById(id);
+        _cache.Set(key, order);
+        return order;
+    }
+}
+```
+
+## Testing with Dependency Injection
+
+```csharp
+// Class to test
+public class OrderService
+{
+    private readonly IOrderRepository _repository;
+    
+    public OrderService(IOrderRepository repository)
+    {
+        _repository = repository;
+    }
+    
+    public bool PlaceOrder(Order order)
+    {
+        // Validate order
+        if (order.Items.Count == 0)
+            return false;
+            
+        // Save order
+        return _repository.Save(order);
+    }
+}
+
+// Unit test with mocked dependency
+[Fact]
+public void PlaceOrder_WithEmptyItems_ReturnsFalse()
+{
+    // Arrange
+    var mockRepository = new Mock<IOrderRepository>();
+    var service = new OrderService(mockRepository.Object);
+    var emptyOrder = new Order { Items = new List<OrderItem>() };
+    
+    // Act
+    bool result = service.PlaceOrder(emptyOrder);
+    
+    // Assert
+    Assert.False(result);
+    mockRepository.Verify(r => r.Save(It.IsAny<Order>()), Times.Never);
+}
+```
+
+## Interview Tips
+
+1. **Define DI clearly**: Dependency Injection is a technique where a class receives its dependencies from external sources rather than creating them.
+
+2. **Explain IoC**: Mention that DI is an implementation of the Inversion of Control principle, where control over dependencies is inverted.
+
+3. **Highlight benefits**: Focus on loose coupling, testability, and maintainability as key benefits.
+
+4. **Know the types**: Be able to explain constructor, property, and method injection, and when to use each.
+
+5. **Discuss lifetimes**: Explain the differences between transient, scoped, and singleton lifetimes and their appropriate use cases.
+
+6. **Mention built-in container**: Note that .NET Core and later versions include a built-in DI container, but also mention that third-party containers like Autofac or Ninject can be used.
+
+7. **Address anti-patterns**: Be prepared to discuss service locator pattern and why it's generally avoided in favor of DI.

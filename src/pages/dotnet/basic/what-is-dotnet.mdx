@@ -1,0 +1,93 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is .NET, and what are its key components?
+---
+
+# What is .NET, and what are its key components?
+
+.NET is a free, open-source, cross-platform developer platform created by Microsoft for building many different types of applications. It consists of programming languages, libraries, frameworks, and tools that enable developers to build web, mobile, desktop, cloud, gaming, IoT, and AI applications.
+
+## Key Components
+
+| Component | Description |
+|-----------|-------------|
+| **Common Language Runtime (CLR)** | Execution engine that manages memory, provides type safety, handles exceptions, and performs JIT compilation |
+| **Base Class Library (BCL)** | Collection of reusable types and APIs that provide core functionality |
+| **Programming Languages** | C#, F#, Visual Basic, each with their own compiler |
+| **Frameworks** | .NET Framework (Windows-only), .NET Core/.NET 5+ (cross-platform) |
+| **Development Tools** | Visual Studio, VS Code, CLI tools, Rider |
+| **NuGet** | Package manager for .NET libraries |
+
+## .NET Implementations
+
+1. **.NET Framework**: The original Windows-only implementation (legacy)
+2. **.NET Core/.NET 5+**: Modern, cross-platform, open-source implementation
+3. **Mono/.NET MAUI**: For mobile and desktop apps
+4. **Xamarin**: For iOS and Android development
+
+## Common Language Runtime (CLR)
+
+The CLR is the foundation of .NET that:
+
+- Manages memory through garbage collection
+- Provides type safety and security
+- Performs Just-In-Time (JIT) compilation
+- Handles exception management
+
+```csharp
+// The CLR manages memory for these objects
+var list = new List<string>();
+list.Add("item");
+// No need to manually free memory
+```
+
+## Base Class Library (BCL)
+
+The BCL provides fundamental types and APIs:
+
+- Collections (`List<T>`, `Dictionary<K,V>`)
+- File I/O operations
+- Networking capabilities
+- String manipulation
+- XML/JSON processing
+
+```csharp
+// Using BCL components
+string text = File.ReadAllText("data.txt");
+var items = JsonSerializer.Deserialize<List<Item>>(jsonString);
+```
+
+## Language Support
+
+.NET supports multiple languages that compile to Common Intermediate Language (CIL):
+
+- **C#**: Object-oriented, type-safe language (most popular)
+- **F#**: Functional-first language
+- **Visual Basic .NET**: Designed for productivity and accessibility
+
+## Application Types
+
+.NET can be used to build:
+
+- **Web Applications**: ASP.NET Core, Blazor
+- **Desktop Applications**: WPF, Windows Forms, .NET MAUI
+- **Mobile Applications**: Xamarin, .NET MAUI
+- **Cloud Services**: Azure Functions, microservices
+- **IoT Applications**: .NET IoT libraries
+- **Game Development**: Unity (uses Mono/.NET)
+
+## Cross-Platform Support
+
+Modern .NET (.NET Core 3.1, .NET 5+) runs on:
+
+- Windows
+- Linux
+- macOS
+- ARM devices
+
+## Performance Features
+
+- **AOT Compilation**: Native Ahead-of-Time compilation
+- **`Span<T>`**: Memory-efficient data structures
+- **ValueTask**: Reduced allocations for async operations
+- **Hardware intrinsics**: CPU-specific optimizations

@@ -1,0 +1,166 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are filters in ASP.NET Core, and how are they used?
+---
+
+# What are filters in ASP.NET Core, and how are they used?
+
+Filters in ASP.NET Core are components that run at specific stages in the request processing pipeline, allowing you to apply cross-cutting concerns like logging, authorization, or exception handling without duplicating code across controllers and actions.
+
+## Filter Types and Execution Order
+
+| Filter Type | Execution Order | Purpose | Interface |
+|-------------|----------------|---------|-----------|
+| **Authorization** | 1st | Determine if user is authorized | `IAuthorizationFilter` |
+| **Resource** | 2nd | Handle caching, can short-circuit | `IResourceFilter` |
+| **Action** | 3rd | Run before/after action execution | `IActionFilter` |
+| **Exception** | 4th | Handle exceptions | `IExceptionFilter` |
+| **Result** | 5th | Run before/after result execution | `IResultFilter` |
+
+## Key Filter Examples
+
+### Authorization Filter
+
+```csharp
+public class CustomAuthFilter : IAuthorizationFilter
+{
+    public void OnAuthorization(AuthorizationFilterContext context)
+    {
+        if (!context.HttpContext.User.Identity.IsAuthenticated)
+        {
+            context.Result = new UnauthorizedResult();
+        }
+    }
+}
+
+// Usage
+[TypeFilter(typeof(CustomAuthFilter))]
+public class AdminController : Controller { }
+```
+
+### Action Filter
+
+```csharp
+public class LogActionFilter : IActionFilter
+{
+    private readonly ILogger _logger;
+    
+    public LogActionFilter(ILogger<LogActionFilter> logger)
+    {
+        _logger = logger;
+    }
+    
+    public void OnActionExecuting(ActionExecutingContext context)
+    {
+        _logger.LogInformation($"Executing: {context.ActionDescriptor.DisplayName}");
+    }
+    
+    public void OnActionExecuted(ActionExecutedContext context)
+    {
+        _logger.LogInformation($"Executed: {context.ActionDescriptor.DisplayName}");
+    }
+}
+
+// Usage
+[ServiceFilter(typeof(LogActionFilter))]
+public IActionResult Index() { return View(); }
+```
+
+### Exception Filter
+
+```csharp
+public class GlobalExceptionFilter : IExceptionFilter
+{
+    private readonly ILogger _logger;
+    
+    public GlobalExceptionFilter(ILogger<GlobalExceptionFilter> logger)
+    {
+        _logger = logger;
+    }
+    
+    public void OnException(ExceptionContext context)
+    {
+        _logger.LogError(context.Exception, "Unhandled exception");
+        
+        context.Result = new ObjectResult(new { 
+            error = "An error occurred"
+        })
+        {
+            StatusCode = 500
+        };
+        
+        context.ExceptionHandled = true;
+    }
+}
+
+// Global registration
+builder.Services.AddControllers(options => {
+    options.Filters.Add<GlobalExceptionFilter>();
+});
+```
+
+## Filter Registration Levels
+
+1. **Global**: Apply to all controllers and actions
+   ```csharp
+   builder.Services.AddControllers(options => {
+       options.Filters.Add<LogActionFilter>();
+   });
+   ```
+
+2. **Controller**: Apply to all actions in a controller
+   ```csharp
+   [ServiceFilter(typeof(LogActionFilter))]
+   public class ProductsController : Controller { }
+   ```
+
+3. **Action**: Apply to a specific action
+   ```csharp
+   [ServiceFilter(typeof(LogActionFilter))]
+   public IActionResult Index() { return View(); }
+   ```
+
+## Filter Attributes vs. Filter Types
+
+| Approach | Description | Example |
+|----------|-------------|---------|
+| **Attribute** | Simple, no DI support | `[Authorize]`, `[RequireHttps]` |
+| **TypeFilter** | Creates filter instance with DI | `[TypeFilter(typeof(LogActionFilter))]` |
+| **ServiceFilter** | Resolves filter from DI container | `[ServiceFilter(typeof(LogActionFilter))]` |
+
+## Async Filters
+
+For better performance, implement async interfaces:
+
+```csharp
+public class AsyncActionFilter : IAsyncActionFilter
+{
+    public async Task OnActionExecutionAsync(
+        ActionExecutingContext context, 
+        ActionExecutionDelegate next)
+    {
+        // Before action
+        var result = await next();
+        // After action
+    }
+}
+```
+
+## Filter Order
+
+Filters execute in a specific order by type, but you can control order within a type:
+
+```csharp
+[TypeFilter(typeof(FirstFilter), Order = 1)]
+[TypeFilter(typeof(SecondFilter), Order = 2)]
+public IActionResult Index() { return View(); }
+```
+
+## Common Use Cases
+
+- **Authentication/Authorization**: Restrict access to resources
+- **Logging**: Track requests and responses
+- **Exception Handling**: Global error management
+- **Caching**: Cache responses for performance
+- **Response Modification**: Add headers, transform content
+- **Validation**: Validate models before action execution

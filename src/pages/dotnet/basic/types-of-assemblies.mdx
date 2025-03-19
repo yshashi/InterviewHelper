@@ -1,0 +1,124 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are the different types of assemblies in .NET?
+---
+
+# What are the different types of assemblies in .NET?
+
+In .NET, an assembly is the fundamental unit of deployment, version control, reuse, and security. It is a compiled code library typically stored as an EXE or DLL file that contains IL (Intermediate Language) code, metadata, and resources.
+
+## Assembly Classification
+
+.NET assemblies can be categorized in several ways:
+
+### 1. By File Type
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **Executable (.exe)** | Contains entry point (Main method) | `MyApp.exe` |
+| **Library (.dll)** | Reusable code without entry point | `MyLibrary.dll` |
+
+```csharp
+// Executable assembly with entry point
+public class Program
+{
+    static void Main(string[] args)
+    {
+        Console.WriteLine("Hello World!");
+    }
+}
+```
+
+### 2. By Accessibility
+
+| Type | Description | Access |
+|------|-------------|--------|
+| **Private Assembly** | Used by a single application | Application directory |
+| **Shared Assembly** | Used by multiple applications | Global Assembly Cache (GAC) |
+
+```csharp
+// Private assembly reference
+<Reference Include="PrivateLibrary" />
+
+// Shared assembly reference (strong-named, in GAC)
+<Reference Include="SharedLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+```
+
+### 3. By Creation Method
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| **Static Assembly** | Created at compile time | Normal application development |
+| **Dynamic Assembly** | Created at runtime | Code generation, reflection |
+
+```csharp
+// Creating a dynamic assembly at runtime
+AssemblyName assemblyName = new AssemblyName("DynamicAssembly");
+AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+    assemblyName, AssemblyBuilderAccess.Run);
+```
+
+### 4. By Composition
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **Single-file Assembly** | All code in one file | Small libraries |
+| **Multi-file Assembly** | Code split across files | Large frameworks |
+
+```csharp
+// Creating a multi-file assembly (using compiler options)
+csc /target:library /out:MyAssembly.dll File1.cs File2.cs
+```
+
+### 5. By Reference Type
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **Strongly Named** | Digitally signed with a key | `System.Data.dll` |
+| **Regular** | Not digitally signed | Simple application libraries |
+
+```csharp
+// Strong naming an assembly
+[assembly: AssemblyKeyFile("MyKey.snk")]
+
+// In modern .NET projects
+<PropertyGroup>
+  <SignAssembly>true</SignAssembly>
+  <AssemblyOriginatorKeyFile>MyKey.snk</AssemblyOriginatorKeyFile>
+</PropertyGroup>
+```
+
+## Assembly Structure
+
+Every .NET assembly contains:
+
+1. **Assembly Manifest**: Metadata about the assembly (version, dependencies)
+2. **Type Metadata**: Information about types defined in the assembly
+3. **IL Code**: Compiled code in Intermediate Language format
+4. **Resources**: Embedded files (images, strings, etc.)
+
+## Assembly Loading
+
+Assemblies are loaded into the CLR using different strategies:
+
+- **Load-by-name**: CLR searches for the assembly in predefined locations
+- **Explicit loading**: Using `Assembly.Load()` or `Assembly.LoadFrom()`
+- **Reflection-only loading**: For inspection without execution
+
+```csharp
+// Explicitly loading an assembly
+Assembly assembly = Assembly.LoadFrom("MyLibrary.dll");
+
+// Creating an instance from a loaded assembly
+Type type = assembly.GetType("MyLibrary.MyClass");
+object instance = Activator.CreateInstance(type);
+```
+
+## Modern .NET Assembly Considerations
+
+In .NET Core and .NET 5+:
+
+- **No GAC**: Shared assemblies use NuGet packages instead
+- **Self-contained deployment**: All dependencies included with the app
+- **Assembly trimming**: Unused parts can be removed
+- **Single-file applications**: All assemblies bundled into one executable

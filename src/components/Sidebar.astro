@@ -265,190 +265,216 @@ const menuItems = [
         title: "React",
         icon: "fab fa-react",
         items: [
-      {
-        title: "Basic Questions",
-        items: [
           {
-            title: "What is React, and how does it differ from other JavaScript frameworks?",
-            path: "/react/basic/what-is-react"
+            title: "Basic Questions",
+            items: [
+              {
+                title:
+                  "What is React, and how does it differ from other JavaScript frameworks?",
+                path: "/react/basic/what-is-react",
+              },
+              {
+                title: "What are the key features of React?",
+                path: "/react/basic/key-features",
+              },
+              {
+                title: "What is JSX, and how does it work in React?",
+                path: "/react/basic/what-is-jsx",
+              },
+              {
+                title: "What is the Virtual DOM, and how does React use it?",
+                path: "/react/basic/virtual-dom",
+              },
+              {
+                title: "What are React components, and how do you create one?",
+                path: "/react/basic/react-components",
+              },
+              {
+                title:
+                  "What is the difference between functional and class components in React?",
+                path: "/react/basic/functional-vs-class-components",
+              },
+              {
+                title: "What are props in React, and how are they used?",
+                path: "/react/basic/props-in-react",
+              },
+              {
+                title:
+                  "What is state in React, and how do you manage it in a functional component?",
+                path: "/react/basic/state-in-react",
+              },
+              {
+                title: "What is the purpose of the useState hook in React?",
+                path: "/react/basic/usestate-hook",
+              },
+              {
+                title: "What are React lifecycle methods in class components?",
+                path: "/react/basic/lifecycle-methods",
+              },
+              {
+                title:
+                  "What is the difference between controlled and uncontrolled components in React?",
+                path: "/react/basic/controlled-vs-uncontrolled-components",
+              },
+              {
+                title: "What is the purpose of keys in React lists?",
+                path: "/react/basic/keys-in-lists",
+              },
+              {
+                title: "How do you handle events in React?",
+                path: "/react/basic/handling-events",
+              },
+              {
+                title:
+                  "What is conditional rendering in React, and how can you implement it?",
+                path: "/react/basic/conditional-rendering",
+              },
+            ],
           },
           {
-            title: "What are the key features of React?",
-            path: "/react/basic/key-features"
+            title: "Intermediate Questions",
+            items: [
+              {
+                title: "What are React Hooks, and why were they introduced?",
+                path: "/react/intermediate/react-hooks",
+              },
+              {
+                title: "Explain the useEffect hook and its common use cases.",
+                path: "/react/intermediate/useeffect-hook",
+              },
+              {
+                title:
+                  "What is the difference between useEffect and useLayoutEffect?",
+                path: "/react/intermediate/useeffect-vs-uselayouteffect",
+              },
+              {
+                title: "How can you create a custom hook in React?",
+                path: "/react/intermediate/custom-hook",
+              },
+              {
+                title:
+                  "What is the Context API, and how do you use it to manage state?",
+                path: "/react/intermediate/context-api",
+              },
+              {
+                title:
+                  "What is the purpose of the useReducer hook, and how does it compare to useState?",
+                path: "/react/intermediate/usereducer-hook",
+              },
+              {
+                title:
+                  "How do you handle forms in React with controlled components?",
+                path: "/react/intermediate/handling-forms",
+              },
+              {
+                title: "What are React Fragments, and why are they useful?",
+                path: "/react/intermediate/react-fragments",
+              },
+              {
+                title: "What is prop drilling, and how can you avoid it?",
+                path: "/react/intermediate/prop-drilling",
+              },
+              {
+                title:
+                  "What is the difference between lifting state up and using Context in React?",
+                path: "/react/intermediate/lifting-state-vs-context",
+              },
+              {
+                title:
+                  "How do you optimize rendering in React using React.memo?",
+                path: "/react/intermediate/react-memo",
+              },
+              {
+                title: "What are higher-order components (HOCs) in React?",
+                path: "/react/intermediate/higher-order-components",
+              },
+              {
+                title:
+                  "What is the purpose of the useCallback hook, and when should you use it?",
+                path: "/react/intermediate/usecallback-hook",
+              },
+              {
+                title:
+                  "What is the difference between useMemo and useCallback?",
+                path: "/react/intermediate/usememo-vs-usecallback",
+              },
+            ],
           },
           {
-            title: "What is JSX, and how does it work in React?",
-            path: "/react/basic/what-is-jsx"
+            title: "Advanced Questions",
+            items: [
+              {
+                title:
+                  "How does React's reconciliation process work under the hood?",
+                path: "/react/advanced/reconciliation-process",
+              },
+              {
+                title:
+                  "What are Concurrent Mode and Suspense in React, and how do they improve performance?",
+                path: "/react/advanced/concurrent-mode-and-suspense",
+              },
+              {
+                title:
+                  "How can you implement code-splitting in a React application?",
+                path: "/react/advanced/code-splitting",
+              },
+              {
+                title:
+                  "What are Error Boundaries in React, and how do you implement them?",
+                path: "/react/advanced/error-boundaries",
+              },
+              {
+                title:
+                  "How do you manage global state in a large React application?",
+                path: "/react/advanced/global-state-management",
+              },
+              {
+                title:
+                  "What is server-side rendering (SSR) in React, and how can you implement it with Next.js?",
+                path: "/react/advanced/server-side-rendering",
+              },
+              {
+                title:
+                  "What are the differences between client-side rendering (CSR) and server-side rendering (SSR)?",
+                path: "/react/advanced/csr-vs-ssr",
+              },
+              {
+                title:
+                  "How can you improve the performance of a React application with lazy loading?",
+                path: "/react/advanced/lazy-loading",
+              },
+              {
+                title:
+                  "What is the purpose of the useTransition hook in React 18?",
+                path: "/react/advanced/usetransition-hook",
+              },
+              {
+                title:
+                  "How does React handle batching of state updates, and how can you control it?",
+                path: "/react/advanced/state-update-batching",
+              },
+              {
+                title: "What are React Portals, and when should you use them?",
+                path: "/react/advanced/react-portals",
+              },
+              {
+                title:
+                  "How can you integrate React with Redux for state management?",
+                path: "/react/advanced/react-with-redux",
+              },
+              {
+                title:
+                  "What is the difference between Redux Toolkit and traditional Redux?",
+                path: "/react/advanced/redux-toolkit-vs-traditional",
+              },
+              {
+                title:
+                  "How do you test React components using Jest and React Testing Library?",
+                path: "/react/advanced/testing-react-components",
+              },
+            ],
           },
-          {
-            title: "What is the Virtual DOM, and how does React use it?",
-            path: "/react/basic/virtual-dom"
-          },
-          {
-            title: "What are React components, and how do you create one?",
-            path: "/react/basic/react-components"
-          },
-          {
-            title: "What is the difference between functional and class components in React?",
-            path: "/react/basic/functional-vs-class-components"
-          },
-          {
-            title: "What are props in React, and how are they used?",
-            path: "/react/basic/props-in-react"
-          },
-          {
-            title: "What is state in React, and how do you manage it in a functional component?",
-            path: "/react/basic/state-in-react"
-          },
-          {
-            title: "What is the purpose of the useState hook in React?",
-            path: "/react/basic/usestate-hook"
-          },
-          {
-            title: "What are React lifecycle methods in class components?",
-            path: "/react/basic/lifecycle-methods"
-          },
-          {
-            title: "What is the difference between controlled and uncontrolled components in React?",
-            path: "/react/basic/controlled-vs-uncontrolled-components"
-          },
-          {
-            title: "What is the purpose of keys in React lists?",
-            path: "/react/basic/keys-in-lists"
-          },
-          {
-            title: "How do you handle events in React?",
-            path: "/react/basic/handling-events"
-          },
-          {
-            title: "What is conditional rendering in React, and how can you implement it?",
-            path: "/react/basic/conditional-rendering"
-          }
-        ]
-      },
-      {
-        title: "Intermediate Questions",
-        items: [
-          {
-            title: "What are React Hooks, and why were they introduced?",
-            path: "/react/intermediate/react-hooks"
-          },
-          {
-            title: "Explain the useEffect hook and its common use cases.",
-            path: "/react/intermediate/useeffect-hook"
-          },
-          {
-            title: "What is the difference between useEffect and useLayoutEffect?",
-            path: "/react/intermediate/useeffect-vs-uselayouteffect"
-          },
-          {
-            title: "How can you create a custom hook in React?",
-            path: "/react/intermediate/custom-hook"
-          },
-          {
-            title: "What is the Context API, and how do you use it to manage state?",
-            path: "/react/intermediate/context-api"
-          },
-          {
-            title: "What is the purpose of the useReducer hook, and how does it compare to useState?",
-            path: "/react/intermediate/usereducer-hook"
-          },
-          {
-            title: "How do you handle forms in React with controlled components?",
-            path: "/react/intermediate/handling-forms"
-          },
-          {
-            title: "What are React Fragments, and why are they useful?",
-            path: "/react/intermediate/react-fragments"
-          },
-          {
-            title: "What is prop drilling, and how can you avoid it?",
-            path: "/react/intermediate/prop-drilling"
-          },
-          {
-            title: "What is the difference between lifting state up and using Context in React?",
-            path: "/react/intermediate/lifting-state-vs-context"
-          },
-          {
-            title: "How do you optimize rendering in React using React.memo?",
-            path: "/react/intermediate/react-memo"
-          },
-          {
-            title: "What are higher-order components (HOCs) in React?",
-            path: "/react/intermediate/higher-order-components"
-          },
-          {
-            title: "What is the purpose of the useCallback hook, and when should you use it?",
-            path: "/react/intermediate/usecallback-hook"
-          },
-          {
-            title: "What is the difference between useMemo and useCallback?",
-            path: "/react/intermediate/usememo-vs-usecallback"
-          }
-        ]
-      },
-      {
-        title: "Advanced Questions",
-        items: [
-          {
-            title: "How does React's reconciliation process work under the hood?",
-            path: "/react/advanced/reconciliation-process"
-          },
-          {
-            title: "What are Concurrent Mode and Suspense in React, and how do they improve performance?",
-            path: "/react/advanced/concurrent-mode-and-suspense"
-          },
-          {
-            title: "How can you implement code-splitting in a React application?",
-            path: "/react/advanced/code-splitting"
-          },
-          {
-            title: "What are Error Boundaries in React, and how do you implement them?",
-            path: "/react/advanced/error-boundaries"
-          },
-          {
-            title: "How do you manage global state in a large React application?",
-            path: "/react/advanced/global-state-management"
-          },
-          {
-            title: "What is server-side rendering (SSR) in React, and how can you implement it with Next.js?",
-            path: "/react/advanced/server-side-rendering"
-          },
-          {
-            title: "What are the differences between client-side rendering (CSR) and server-side rendering (SSR)?",
-            path: "/react/advanced/csr-vs-ssr"
-          },
-          {
-            title: "How can you improve the performance of a React application with lazy loading?",
-            path: "/react/advanced/lazy-loading"
-          },
-          {
-            title: "What is the purpose of the useTransition hook in React 18?",
-            path: "/react/advanced/usetransition-hook"
-          },
-          {
-            title: "How does React handle batching of state updates, and how can you control it?",
-            path: "/react/advanced/state-update-batching"
-          },
-          {
-            title: "What are React Portals, and when should you use them?",
-            path: "/react/advanced/react-portals"
-          },
-          {
-            title: "How can you integrate React with Redux for state management?",
-            path: "/react/advanced/react-with-redux"
-          },
-          {
-            title: "What is the difference between Redux Toolkit and traditional Redux?",
-            path: "/react/advanced/redux-toolkit-vs-traditional"
-          },
-          {
-            title: "How do you test React components using Jest and React Testing Library?",
-            path: "/react/advanced/testing-react-components"
-          }
-        ]
-      }
-    ]
+        ],
       },
     ],
   },
@@ -464,170 +490,181 @@ const menuItems = [
             title: "Basic Questions",
             items: [
               {
-            title: "What is .NET, and what are its key components?",
-            path: "/dotnet/basic/what-is-dotnet"
+                title: "What is .NET, and what are its key components?",
+                path: "/dotnet/basic/what-is-dotnet",
+              },
+              {
+                title:
+                  "What is the difference between .NET Framework and .NET Core?",
+                path: "/dotnet/basic/dotnet-framework-vs-core",
+              },
+              {
+                title: "What is the Common Language Runtime (CLR)?",
+                path: "/dotnet/basic/common-language-runtime",
+              },
+              {
+                title: "What are the different types of assemblies in .NET?",
+                path: "/dotnet/basic/types-of-assemblies",
+              },
+              {
+                title: "What is the Global Assembly Cache (GAC)?",
+                path: "/dotnet/basic/global-assembly-cache",
+              },
+              {
+                title:
+                  "What is the difference between managed and unmanaged code?",
+                path: "/dotnet/basic/managed-vs-unmanaged-code",
+              },
+              {
+                title:
+                  "What is Garbage Collection in .NET, and how does it work?",
+                path: "/dotnet/basic/garbage-collection",
+              },
+              {
+                title: "What is a namespace in .NET?",
+                path: "/dotnet/basic/namespace-in-dotnet",
+              },
+              {
+                title: "What are the access modifiers in C#?",
+                path: "/dotnet/basic/access-modifiers",
+              },
+              {
+                title: "What is the difference between struct and class in C#?",
+                path: "/dotnet/basic/struct-vs-class",
+              },
+              {
+                title: "What is boxing and unboxing in .NET?",
+                path: "/dotnet/basic/boxing-and-unboxing",
+              },
+              {
+                title: "What is the purpose of the using statement in C#?",
+                path: "/dotnet/basic/using-statement",
+              },
+            ],
           },
           {
-            title: "What is the difference between .NET Framework and .NET Core?",
-            path: "/dotnet/basic/dotnet-framework-vs-core"
+            title: "Intermediate Questions",
+            items: [
+              {
+                title:
+                  "What is the difference between IEnumerable and IQueryable in .NET?",
+                path: "/dotnet/intermediate/ienumerable-vs-iqueryable",
+              },
+              {
+                title:
+                  "What is dependency injection, and how is it implemented in .NET?",
+                path: "/dotnet/intermediate/dependency-injection",
+              },
+              {
+                title: "Explain the concept of middleware in ASP.NET Core.",
+                path: "/dotnet/intermediate/middleware-in-aspnet-core",
+              },
+              {
+                title: "What are the different hosting models in ASP.NET Core?",
+                path: "/dotnet/intermediate/hosting-models",
+              },
+              {
+                title: "What is Entity Framework, and what are its advantages?",
+                path: "/dotnet/intermediate/entity-framework",
+              },
+              {
+                title:
+                  "What is the difference between Code-First and Database-First approaches in Entity Framework?",
+                path: "/dotnet/intermediate/code-first-vs-database-first",
+              },
+              {
+                title: "What are LINQ queries, and how do they work in .NET?",
+                path: "/dotnet/intermediate/linq-queries",
+              },
+              {
+                title: "What is the purpose of async and await in C#?",
+                path: "/dotnet/intermediate/async-await",
+              },
+              {
+                title: "What are delegates in C#, and how are they used?",
+                path: "/dotnet/intermediate/delegates-in-csharp",
+              },
+              {
+                title:
+                  "What is the difference between Task and Thread in .NET?",
+                path: "/dotnet/intermediate/task-vs-thread",
+              },
+              {
+                title: "What are extension methods in C#?",
+                path: "/dotnet/intermediate/extension-methods",
+              },
+              {
+                title: "What is the purpose of IConfiguration in ASP.NET Core?",
+                path: "/dotnet/intermediate/iconfiguration-purpose",
+              },
+              {
+                title:
+                  "What are filters in ASP.NET Core, and how are they used?",
+                path: "/dotnet/intermediate/filters-in-aspnet-core",
+              },
+              {
+                title:
+                  "What is the difference between authentication and authorization in .NET?",
+                path: "/dotnet/intermediate/authentication-vs-authorization",
+              },
+            ],
           },
           {
-            title: "What is the Common Language Runtime (CLR)?",
-            path: "/dotnet/basic/common-language-runtime"
+            title: "Advanced Questions",
+            items: [
+              {
+                title:
+                  "What is the purpose of the Span<T> and Memory<T> types in .NET?",
+                path: "/dotnet/advanced/span-and-memory",
+              },
+              {
+                title:
+                  "How does the .NET garbage collector handle memory management in multi-generational heaps?",
+                path: "/dotnet/advanced/garbage-collector-memory-management",
+              },
+              {
+                title:
+                  "What are the differences between AOT (Ahead-of-Time) and JIT (Just-In-Time) compilation in .NET?",
+                path: "/dotnet/advanced/aot-vs-jit-compilation",
+              },
+              {
+                title:
+                  "How can you optimize the performance of an ASP.NET Core application?",
+                path: "/dotnet/advanced/optimize-aspnet-core-performance",
+              },
+              {
+                title:
+                  "What is the role of the ILogger interface in .NET, and how is logging implemented?",
+                path: "/dotnet/advanced/ilogger-and-logging",
+              },
+              {
+                title:
+                  "What are the differences between Blazor Server and Blazor WebAssembly?",
+                path: "/dotnet/advanced/blazor-server-vs-webassembly",
+              },
+              {
+                title:
+                  "How does .NET handle cross-platform development with .NET 8?",
+                path: "/dotnet/advanced/cross-platform-dotnet8",
+              },
+              {
+                title:
+                  "What are gRPC services, and how are they implemented in .NET?",
+                path: "/dotnet/advanced/grpc-services",
+              },
+              {
+                title:
+                  "How can you implement a custom middleware in ASP.NET Core?",
+                path: "/dotnet/advanced/custom-middleware",
+              },
+              {
+                title:
+                  "What is the purpose of the ValueTask type in .NET, and when should it be used?",
+                path: "/dotnet/advanced/valuetask-purpose",
+              },
+            ],
           },
-          {
-            title: "What is the purpose of MSIL (Microsoft Intermediate Language)?",
-            path: "/dotnet/basic/msil-purpose"
-          },
-          {
-            title: "Explain the concept of assemblies in .NET.",
-            path: "/dotnet/basic/assemblies-in-dotnet"
-          },
-          {
-            title: "What are the different types of assemblies in .NET?",
-            path: "/dotnet/basic/types-of-assemblies"
-          },
-          {
-            title: "What is the Global Assembly Cache (GAC)?",
-            path: "/dotnet/basic/global-assembly-cache"
-          },
-          {
-            title: "What is the difference between managed and unmanaged code?",
-            path: "/dotnet/basic/managed-vs-unmanaged-code"
-          },
-          {
-            title: "What is Garbage Collection in .NET, and how does it work?",
-            path: "/dotnet/basic/garbage-collection"
-          },
-          {
-            title: "What is a namespace in .NET?",
-            path: "/dotnet/basic/namespace-in-dotnet"
-          },
-          {
-            title: "What are the access modifiers in C#?",
-            path: "/dotnet/basic/access-modifiers"
-          },
-          {
-            title: "What is the difference between struct and class in C#?",
-            path: "/dotnet/basic/struct-vs-class"
-          },
-          {
-            title: "What is boxing and unboxing in .NET?",
-            path: "/dotnet/basic/boxing-and-unboxing"
-          },
-          {
-            title: "What is the purpose of the using statement in C#?",
-            path: "/dotnet/basic/using-statement"
-          }
-        ]
-      },
-      {
-        title: "Intermediate Questions",
-        items: [
-          {
-            title: "What is the difference between IEnumerable and IQueryable in .NET?",
-            path: "/dotnet/intermediate/ienumerable-vs-iqueryable"
-          },
-          {
-            title: "What is dependency injection, and how is it implemented in .NET?",
-            path: "/dotnet/intermediate/dependency-injection"
-          },
-          {
-            title: "Explain the concept of middleware in ASP.NET Core.",
-            path: "/dotnet/intermediate/middleware-in-aspnet-core"
-          },
-          {
-            title: "What are the different hosting models in ASP.NET Core?",
-            path: "/dotnet/intermediate/hosting-models"
-          },
-          {
-            title: "What is Entity Framework, and what are its advantages?",
-            path: "/dotnet/intermediate/entity-framework"
-          },
-          {
-            title: "What is the difference between Code-First and Database-First approaches in Entity Framework?",
-            path: "/dotnet/intermediate/code-first-vs-database-first"
-          },
-          {
-            title: "What are LINQ queries, and how do they work in .NET?",
-            path: "/dotnet/intermediate/linq-queries"
-          },
-          {
-            title: "What is the purpose of async and await in C#?",
-            path: "/dotnet/intermediate/async-await"
-          },
-          {
-            title: "What are delegates in C#, and how are they used?",
-            path: "/dotnet/intermediate/delegates-in-csharp"
-          },
-          {
-            title: "What is the difference between Task and Thread in .NET?",
-            path: "/dotnet/intermediate/task-vs-thread"
-          },
-          {
-            title: "What are extension methods in C#?",
-            path: "/dotnet/intermediate/extension-methods"
-          },
-          {
-            title: "What is the purpose of IConfiguration in ASP.NET Core?",
-            path: "/dotnet/intermediate/iconfiguration-purpose"
-          },
-          {
-            title: "What are filters in ASP.NET Core, and how are they used?",
-            path: "/dotnet/intermediate/filters-in-aspnet-core"
-          },
-          {
-            title: "What is the difference between authentication and authorization in .NET?",
-            path: "/dotnet/intermediate/authentication-vs-authorization"
-          }
-        ]
-      },
-      {
-        title: "Advanced Questions",
-        items: [
-          {
-            title: "What is the purpose of the Span<T> and Memory<T> types in .NET?",
-            path: "/dotnet/advanced/span-and-memory"
-          },
-          {
-            title: "How does the .NET garbage collector handle memory management in multi-generational heaps?",
-            path: "/dotnet/advanced/garbage-collector-memory-management"
-          },
-          {
-            title: "What are the differences between AOT (Ahead-of-Time) and JIT (Just-In-Time) compilation in .NET?",
-            path: "/dotnet/advanced/aot-vs-jit-compilation"
-          },
-          {
-            title: "How can you optimize the performance of an ASP.NET Core application?",
-            path: "/dotnet/advanced/optimize-aspnet-core-performance"
-          },
-          {
-            title: "What is the role of the ILogger interface in .NET, and how is logging implemented?",
-            path: "/dotnet/advanced/ilogger-and-logging"
-          },
-          {
-            title: "What are the differences between Blazor Server and Blazor WebAssembly?",
-            path: "/dotnet/advanced/blazor-server-vs-webassembly"
-          },
-          {
-            title: "How does .NET handle cross-platform development with .NET 8?",
-            path: "/dotnet/advanced/cross-platform-dotnet8"
-          },
-          {
-            title: "What are gRPC services, and how are they implemented in .NET?",
-            path: "/dotnet/advanced/grpc-services"
-          },
-          {
-            title: "How can you implement a custom middleware in ASP.NET Core?",
-            path: "/dotnet/advanced/custom-middleware"
-          },
-          {
-            title: "What is the purpose of the ValueTask type in .NET, and when should it be used?",
-            path: "/dotnet/advanced/valuetask-purpose"
-          }
-        ]
-      }
-    ]
+        ],
       },
       {
         title: "Node.js",
@@ -638,161 +675,172 @@ const menuItems = [
             items: [
               {
                 title: "What is a first class function in Javascript?",
-                path: "/nodejs/beginner/first-class-function-in-js"
+                path: "/nodejs/beginner/first-class-function-in-js",
               },
               {
                 title: "What is Node.js and how it works?",
-                path: "/nodejs/beginner/how-nodejs-works"
+                path: "/nodejs/beginner/how-nodejs-works",
               },
               {
                 title: "How do you manage packages in your node.js project?",
-                path: "/nodejs/beginner/manage-packages-in-nodejs"
+                path: "/nodejs/beginner/manage-packages-in-nodejs",
               },
               {
-                title: "How is Node.js better than other frameworks most popularly used?",
-                path: "/nodejs/beginner/why-nodejs-better-than-others"
+                title:
+                  "How is Node.js better than other frameworks most popularly used?",
+                path: "/nodejs/beginner/why-nodejs-better-than-others",
               },
               {
-                title: "Explain the steps how “Control Flow” controls the function calls?",
-                path: "/nodejs/beginner/control-flow-in-nodejs"
+                title:
+                  "Explain the steps how “Control Flow” controls the function calls?",
+                path: "/nodejs/beginner/control-flow-in-nodejs",
               },
               {
-                title: "What are some commonly used timing features of Node.js?",
-                path: "/nodejs/beginner/timing-features-in-nodejs"
+                title:
+                  "What are some commonly used timing features of Node.js?",
+                path: "/nodejs/beginner/timing-features-in-nodejs",
               },
               {
-                title: "What are the advantages of using promises instead of callbacks?",
-                path: "/nodejs/beginner/advantages-of-promises"
+                title:
+                  "What are the advantages of using promises instead of callbacks?",
+                path: "/nodejs/beginner/advantages-of-promises",
               },
               {
                 title: "What is fork in node JS?",
-                path: "/nodejs/beginner/fork-in-nodejs"
+                path: "/nodejs/beginner/fork-in-nodejs",
               },
               {
                 title: "Why is Node.js single-threaded?",
-                path: "/nodejs/beginner/why-nodejs-single-threaded"
+                path: "/nodejs/beginner/why-nodejs-single-threaded",
               },
               {
-                title: "How do you create a simple server in Node.js that returns Hello World?",
-                path: "/nodejs/beginner/simple-server-in-nodejs"
+                title:
+                  "How do you create a simple server in Node.js that returns Hello World?",
+                path: "/nodejs/beginner/simple-server-in-nodejs",
               },
               {
                 title: "How many types of API functions are there in Node.js?",
-                path: "/nodejs/beginner/types-of-api-functions"
+                path: "/nodejs/beginner/types-of-api-functions",
               },
               {
                 title: "What is REPL?",
-                path: "/nodejs/beginner/what-is-repl"
+                path: "/nodejs/beginner/what-is-repl",
               },
               {
-                title: "List down the two arguments that async.queue takes as input?",
-                path: "/nodejs/beginner/async-queue-arguments"
+                title:
+                  "List down the two arguments that async.queue takes as input?",
+                path: "/nodejs/beginner/async-queue-arguments",
               },
               {
                 title: "What is the purpose of module.exports?",
-                path: "/nodejs/beginner/module-exports-purpose"
+                path: "/nodejs/beginner/module-exports-purpose",
               },
               {
-                title: "What tools can be used to assure consistent code style?",
-                path: "/nodejs/beginner/tools-for-consistent-code-style"
-              }
-            ]
+                title:
+                  "What tools can be used to assure consistent code style?",
+                path: "/nodejs/beginner/tools-for-consistent-code-style",
+              },
+            ],
           },
           {
             title: "Intermediate Questions",
             items: [
               {
                 title: "What do you understand by callback hell?",
-                path: "/nodejs/intermediate/callback-hell-in-nodejs"
+                path: "/nodejs/intermediate/callback-hell-in-nodejs",
               },
               {
                 title: "What is an event-loop in Node JS?",
-                path: "/nodejs/intermediate/event-loop-in-nodejs"
+                path: "/nodejs/intermediate/event-loop-in-nodejs",
               },
               {
-                title: "If Node.js is single threaded then how does it handle concurrency?",
-                path: "/nodejs/intermediate/concurrency-in-nodejs"
+                title:
+                  "If Node.js is single threaded then how does it handle concurrency?",
+                path: "/nodejs/intermediate/concurrency-in-nodejs",
               },
               {
-                title: "Differentiate between process.nextTick() and setImmediate()?",
-                path: "/nodejs/intermediate/process-nexttick-vs-setimmediate"
+                title:
+                  "Differentiate between process.nextTick() and setImmediate()?",
+                path: "/nodejs/intermediate/process-nexttick-vs-setimmediate",
               },
               {
-                title: "How does Node.js overcome the problem of blocking of I/O operations?",
-                path: "/nodejs/intermediate/non-blocking-io-in-nodejs"
+                title:
+                  "How does Node.js overcome the problem of blocking of I/O operations?",
+                path: "/nodejs/intermediate/non-blocking-io-in-nodejs",
               },
               {
                 title: "How can we use async await in node.js?",
-                path: "/nodejs/intermediate/async-await-in-nodejs"
+                path: "/nodejs/intermediate/async-await-in-nodejs",
               },
               {
                 title: "What is node.js streams?",
-                path: "/nodejs/intermediate/nodejs-streams"
+                path: "/nodejs/intermediate/nodejs-streams",
               },
               {
                 title: "What are node.js buffers?",
-                path: "/nodejs/intermediate/nodejs-buffers"
+                path: "/nodejs/intermediate/nodejs-buffers",
               },
               {
                 title: "What is middleware?",
-                path: "/nodejs/intermediate/what-is-middleware"
+                path: "/nodejs/intermediate/what-is-middleware",
               },
               {
                 title: "Explain what a Reactor Pattern in Node.js?",
-                path: "/nodejs/intermediate/reactor-pattern-in-nodejs"
+                path: "/nodejs/intermediate/reactor-pattern-in-nodejs",
               },
               {
                 title: "Why should you separate Express app and server?",
-                path: "/nodejs/intermediate/separate-express-app-server"
+                path: "/nodejs/intermediate/separate-express-app-server",
               },
               {
                 title: "For Node.js, why Google uses V8 engine?",
-                path: "/nodejs/intermediate/google-v8-engine"
+                path: "/nodejs/intermediate/google-v8-engine",
               },
               {
                 title: "Describe the exit codes of Node.js?",
-                path: "/nodejs/intermediate/nodejs-exit-codes"
+                path: "/nodejs/intermediate/nodejs-exit-codes",
               },
               {
                 title: "Explain the concept of stub in Node.js?",
-                path: "/nodejs/intermediate/concept-of-stub"
-              }
-            ]
+                path: "/nodejs/intermediate/concept-of-stub",
+              },
+            ],
           },
           {
             title: "Advanced Questions",
             items: [
               {
                 title: "What is an Event Emitter in Node.js?",
-                path: "/nodejs/advanced/event-emitter-in-nodejs"
+                path: "/nodejs/advanced/event-emitter-in-nodejs",
               },
               {
                 title: "Enhancing Node.js performance through clustering.",
-                path: "/nodejs/advanced/clustering-for-performance"
+                path: "/nodejs/advanced/clustering-for-performance",
               },
               {
-                title: "What is a thread pool and which library handles it in Node.js?",
-                path: "/nodejs/advanced/thread-pool-in-nodejs"
+                title:
+                  "What is a thread pool and which library handles it in Node.js?",
+                path: "/nodejs/advanced/thread-pool-in-nodejs",
               },
               {
                 title: "What is WASI and why is it being introduced?",
-                path: "/nodejs/advanced/what-is-wasi"
+                path: "/nodejs/advanced/what-is-wasi",
               },
               {
                 title: "How are worker threads different from clusters?",
-                path: "/nodejs/advanced/worker-threads-vs-clusters"
+                path: "/nodejs/advanced/worker-threads-vs-clusters",
               },
               {
                 title: "How to measure the duration of async operations?",
-                path: "/nodejs/advanced/measure-async-duration"
+                path: "/nodejs/advanced/measure-async-duration",
               },
               {
                 title: "How to measure the performance of async operations?",
-                path: "/nodejs/advanced/measure-async-performance"
-              }
-            ]
-    }
-  ]
+                path: "/nodejs/advanced/measure-async-performance",
+              },
+            ],
+          },
+        ],
       },
       {
         title: "EfCore",
@@ -984,185 +1032,214 @@ const menuItems = [
         items: [
           {
             title: "What is DevOps, and what are its core principles?",
-            path: "/devops/basic/what-is-devops"
+            path: "/devops/basic/what-is-devops",
           },
           {
-            title: "What is the difference between DevOps and traditional IT operations?",
-            path: "/devops/basic/devops-vs-traditional-it"
+            title:
+              "What is the difference between DevOps and traditional IT operations?",
+            path: "/devops/basic/devops-vs-traditional-it",
           },
           {
-            title: "What are the key benefits of implementing DevOps in an organization?",
-            path: "/devops/basic/benefits-of-devops"
+            title:
+              "What are the key benefits of implementing DevOps in an organization?",
+            path: "/devops/basic/benefits-of-devops",
           },
           {
-            title: "What is Continuous Integration (CI), and why is it important?",
-            path: "/devops/basic/what-is-ci"
+            title:
+              "What is Continuous Integration (CI), and why is it important?",
+            path: "/devops/basic/what-is-ci",
           },
           {
-            title: "What is Continuous Deployment (CD), and how does it differ from Continuous Delivery?",
-            path: "/devops/basic/what-is-cd"
+            title:
+              "What is Continuous Deployment (CD), and how does it differ from Continuous Delivery?",
+            path: "/devops/basic/what-is-cd",
           },
           {
             title: "What are the main components of a CI/CD pipeline?",
-            path: "/devops/basic/cicd-components"
+            path: "/devops/basic/cicd-components",
           },
           {
-            title: "What is version control, and why is it essential in DevOps?",
-            path: "/devops/basic/version-control"
+            title:
+              "What is version control, and why is it essential in DevOps?",
+            path: "/devops/basic/version-control",
           },
           {
-            title: "What are some popular version control systems used in DevOps?",
-            path: "/devops/basic/version-control-systems"
+            title:
+              "What are some popular version control systems used in DevOps?",
+            path: "/devops/basic/version-control-systems",
           },
           {
             title: "What is the purpose of a build tool in DevOps?",
-            path: "/devops/basic/build-tool-purpose"
+            path: "/devops/basic/build-tool-purpose",
           },
           {
             title: "What is a container, and how does it relate to DevOps?",
-            path: "/devops/basic/what-is-container"
+            path: "/devops/basic/what-is-container",
           },
           {
-            title: "What is the role of a configuration management tool in DevOps?",
-            path: "/devops/basic/configuration-management"
+            title:
+              "What is the role of a configuration management tool in DevOps?",
+            path: "/devops/basic/configuration-management",
           },
           {
-            title: "What is Infrastructure as Code (IaC), and what are its advantages?",
-            path: "/devops/basic/what-is-iac"
+            title:
+              "What is Infrastructure as Code (IaC), and what are its advantages?",
+            path: "/devops/basic/what-is-iac",
           },
           {
-            title: "What is the difference between a monolithic and a microservices architecture?",
-            path: "/devops/basic/monolithic-vs-microservices"
+            title:
+              "What is the difference between a monolithic and a microservices architecture?",
+            path: "/devops/basic/monolithic-vs-microservices",
           },
           {
-            title: "What are the basic steps to deploy an application to a cloud provider?",
-            path: "/devops/basic/deploy-to-cloud"
-          }
-        ]
+            title:
+              "What are the basic steps to deploy an application to a cloud provider?",
+            path: "/devops/basic/deploy-to-cloud",
+          },
+        ],
       },
       {
         title: "Intermediate Questions",
         items: [
           {
             title: "How do you set up a CI/CD pipeline using Jenkins?",
-            path: "/devops/intermediate/jenkins-cicd-setup"
+            path: "/devops/intermediate/jenkins-cicd-setup",
           },
           {
             title: "What is the role of Docker in a DevOps workflow?",
-            path: "/devops/intermediate/docker-in-devops"
+            path: "/devops/intermediate/docker-in-devops",
           },
           {
             title: "How does Kubernetes manage containerized applications?",
-            path: "/devops/intermediate/kubernetes-management"
+            path: "/devops/intermediate/kubernetes-management",
           },
           {
             title: "What is the difference between Docker and Kubernetes?",
-            path: "/devops/intermediate/docker-vs-kubernetes"
+            path: "/devops/intermediate/docker-vs-kubernetes",
           },
           {
-            title: "How can you automate infrastructure provisioning using Terraform?",
-            path: "/devops/intermediate/terraform-automation"
+            title:
+              "How can you automate infrastructure provisioning using Terraform?",
+            path: "/devops/intermediate/terraform-automation",
           },
           {
-            title: "What are the best practices for writing effective IaC scripts?",
-            path: "/devops/intermediate/iac-best-practices"
+            title:
+              "What are the best practices for writing effective IaC scripts?",
+            path: "/devops/intermediate/iac-best-practices",
           },
           {
-            title: "How do you monitor the performance of a deployed application?",
-            path: "/devops/intermediate/monitor-performance"
+            title:
+              "How do you monitor the performance of a deployed application?",
+            path: "/devops/intermediate/monitor-performance",
           },
           {
             title: "What is the purpose of a blue-green deployment strategy?",
-            path: "/devops/intermediate/blue-green-deployment"
+            path: "/devops/intermediate/blue-green-deployment",
           },
           {
-            title: "How do you handle rollback strategies in a deployment process?",
-            path: "/devops/intermediate/rollback-strategies"
+            title:
+              "How do you handle rollback strategies in a deployment process?",
+            path: "/devops/intermediate/rollback-strategies",
           },
           {
-            title: "What is the role of a load balancer in a DevOps deployment?",
-            path: "/devops/intermediate/load-balancer-role"
+            title:
+              "What is the role of a load balancer in a DevOps deployment?",
+            path: "/devops/intermediate/load-balancer-role",
           },
           {
             title: "How do you ensure security in a CI/CD pipeline?",
-            path: "/devops/intermediate/cicd-security"
+            path: "/devops/intermediate/cicd-security",
           },
           {
-            title: "What is the difference between canary deployment and rolling deployment?",
-            path: "/devops/intermediate/canary-vs-rolling"
+            title:
+              "What is the difference between canary deployment and rolling deployment?",
+            path: "/devops/intermediate/canary-vs-rolling",
           },
           {
-            title: "How do you use GitOps to manage infrastructure and applications?",
-            path: "/devops/intermediate/gitops"
+            title:
+              "How do you use GitOps to manage infrastructure and applications?",
+            path: "/devops/intermediate/gitops",
           },
           {
-            title: "What are the key metrics to monitor in a DevOps environment?",
-            path: "/devops/intermediate/devops-metrics"
-          }
-        ]
+            title:
+              "What are the key metrics to monitor in a DevOps environment?",
+            path: "/devops/intermediate/devops-metrics",
+          },
+        ],
       },
       {
         title: "Advanced Questions",
         items: [
           {
-            title: "How do you design a highly available and scalable deployment architecture?",
-            path: "/devops/advanced/high-availability-design"
+            title:
+              "How do you design a highly available and scalable deployment architecture?",
+            path: "/devops/advanced/high-availability-design",
           },
           {
-            title: "What are the challenges of implementing DevOps in a legacy system?",
-            path: "/devops/advanced/devops-in-legacy"
+            title:
+              "What are the challenges of implementing DevOps in a legacy system?",
+            path: "/devops/advanced/devops-in-legacy",
           },
           {
             title: "How can you implement a zero-downtime deployment strategy?",
-            path: "/devops/advanced/zero-downtime-deployment"
+            path: "/devops/advanced/zero-downtime-deployment",
           },
           {
-            title: "What is the role of Service Mesh (e.g., Istio) in a microservices architecture?",
-            path: "/devops/advanced/service-mesh-role"
+            title:
+              "What is the role of Service Mesh (e.g., Istio) in a microservices architecture?",
+            path: "/devops/advanced/service-mesh-role",
           },
           {
-            title: "How do you integrate security practices into a DevOps pipeline (DevSecOps)?",
-            path: "/devops/advanced/devsecops"
+            title:
+              "How do you integrate security practices into a DevOps pipeline (DevSecOps)?",
+            path: "/devops/advanced/devsecops",
           },
           {
-            title: "What are the differences between stateful and stateless applications in deployment?",
-            path: "/devops/advanced/stateful-vs-stateless"
+            title:
+              "What are the differences between stateful and stateless applications in deployment?",
+            path: "/devops/advanced/stateful-vs-stateless",
           },
           {
-            title: "How do you perform chaos engineering to improve system resilience?",
-            path: "/devops/advanced/chaos-engineering"
+            title:
+              "How do you perform chaos engineering to improve system resilience?",
+            path: "/devops/advanced/chaos-engineering",
           },
           {
-            title: "What is the purpose of a GitLab CI/CD pipeline, and how does it compare to Jenkins?",
-            path: "/devops/advanced/gitlab-cicd-vs-jenkins"
+            title:
+              "What is the purpose of a GitLab CI/CD pipeline, and how does it compare to Jenkins?",
+            path: "/devops/advanced/gitlab-cicd-vs-jenkins",
           },
           {
-            title: "How can you optimize a CI/CD pipeline for faster build and deployment times?",
-            path: "/devops/advanced/cicd-optimization"
+            title:
+              "How can you optimize a CI/CD pipeline for faster build and deployment times?",
+            path: "/devops/advanced/cicd-optimization",
           },
           {
-            title: "What are the best practices for managing secrets in a DevOps environment?",
-            path: "/devops/advanced/managing-secrets"
+            title:
+              "What are the best practices for managing secrets in a DevOps environment?",
+            path: "/devops/advanced/managing-secrets",
           },
           {
             title: "How do you implement multi-cloud deployment strategies?",
-            path: "/devops/advanced/multi-cloud-deployment"
+            path: "/devops/advanced/multi-cloud-deployment",
           },
           {
-            title: "What is the role of observability in modern DevOps practices?",
-            path: "/devops/advanced/observability"
+            title:
+              "What is the role of observability in modern DevOps practices?",
+            path: "/devops/advanced/observability",
           },
           {
-            title: "How do you handle data migration during a deployment to a new environment?",
-            path: "/devops/advanced/data-migration"
+            title:
+              "How do you handle data migration during a deployment to a new environment?",
+            path: "/devops/advanced/data-migration",
           },
           {
             title: "How can you automate disaster recovery in a DevOps setup?",
-            path: "/devops/advanced/disaster-recovery"
-          }
-        ]
-      }
-    ]
+            path: "/devops/advanced/disaster-recovery",
+          },
+        ],
+      },
+    ],
   },
   {
     title: "Testing",
@@ -1173,185 +1250,217 @@ const menuItems = [
         items: [
           {
             title: "What is software testing, and why is it important?",
-            path: "/testing/basic/what-is-software-testing"
+            path: "/testing/basic/what-is-software-testing",
           },
           {
-            title: "What is the difference between manual testing and automated testing?",
-            path: "/testing/basic/manual-vs-automated-testing"
+            title:
+              "What is the difference between manual testing and automated testing?",
+            path: "/testing/basic/manual-vs-automated-testing",
           },
           {
-            title: "What are the different levels of software testing (e.g., unit, integration, system)?",
-            path: "/testing/basic/levels-of-testing"
+            title:
+              "What are the different levels of software testing (e.g., unit, integration, system)?",
+            path: "/testing/basic/levels-of-testing",
           },
           {
             title: "What is a test case, and what are its key components?",
-            path: "/testing/basic/what-is-test-case"
+            path: "/testing/basic/what-is-test-case",
           },
           {
             title: "What is the purpose of a test plan in software testing?",
-            path: "/testing/basic/test-plan-purpose"
+            path: "/testing/basic/test-plan-purpose",
           },
           {
-            title: "What are the different types of testing (e.g., functional, non-functional)?",
-            path: "/testing/basic/types-of-testing"
+            title:
+              "What are the different types of testing (e.g., functional, non-functional)?",
+            path: "/testing/basic/types-of-testing",
           },
           {
             title: "What is regression testing, and when is it performed?",
-            path: "/testing/basic/regression-testing"
+            path: "/testing/basic/regression-testing",
           },
           {
-            title: "What is the difference between verification and validation in testing?",
-            path: "/testing/basic/verification-vs-validation"
+            title:
+              "What is the difference between verification and validation in testing?",
+            path: "/testing/basic/verification-vs-validation",
           },
           {
-            title: "What are the common testing techniques (e.g., black-box, white-box)?",
-            path: "/testing/basic/testing-techniques"
+            title:
+              "What are the common testing techniques (e.g., black-box, white-box)?",
+            path: "/testing/basic/testing-techniques",
           },
           {
-            title: "What is a bug, and how is it reported in a testing process?",
-            path: "/testing/basic/what-is-bug"
+            title:
+              "What is a bug, and how is it reported in a testing process?",
+            path: "/testing/basic/what-is-bug",
           },
           {
-            title: "What is the role of a test environment in software testing?",
-            path: "/testing/basic/test-environment"
+            title:
+              "What is the role of a test environment in software testing?",
+            path: "/testing/basic/test-environment",
           },
           {
             title: "What are the qualities of a good test case?",
-            path: "/testing/basic/qualities-of-test-case"
+            path: "/testing/basic/qualities-of-test-case",
           },
           {
-            title: "What is the difference between smoke testing and sanity testing?",
-            path: "/testing/basic/smoke-vs-sanity-testing"
+            title:
+              "What is the difference between smoke testing and sanity testing?",
+            path: "/testing/basic/smoke-vs-sanity-testing",
           },
           {
             title: "What tools are commonly used for manual testing?",
-            path: "/testing/basic/tools-for-manual-testing"
-          }
-        ]
+            path: "/testing/basic/tools-for-manual-testing",
+          },
+        ],
       },
       {
         title: "Intermediate Questions",
         items: [
           {
-            title: "How do you write effective unit tests using a framework like JUnit or NUnit?",
-            path: "/testing/intermediate/unit-tests"
+            title:
+              "How do you write effective unit tests using a framework like JUnit or NUnit?",
+            path: "/testing/intermediate/unit-tests",
           },
           {
-            title: "What is test-driven development (TDD), and how does it work?",
-            path: "/testing/intermediate/test-driven-development"
+            title:
+              "What is test-driven development (TDD), and how does it work?",
+            path: "/testing/intermediate/test-driven-development",
           },
           {
-            title: "How do you perform integration testing for a microservices architecture?",
-            path: "/testing/intermediate/integration-testing-microservices"
+            title:
+              "How do you perform integration testing for a microservices architecture?",
+            path: "/testing/intermediate/integration-testing-microservices",
           },
           {
-            title: "What is the purpose of mocking in unit testing, and how is it implemented?",
-            path: "/testing/intermediate/mocking-in-unit-testing"
+            title:
+              "What is the purpose of mocking in unit testing, and how is it implemented?",
+            path: "/testing/intermediate/mocking-in-unit-testing",
           },
           {
-            title: "How do you handle flaky tests in an automated testing suite?",
-            path: "/testing/intermediate/handling-flaky-tests"
+            title:
+              "How do you handle flaky tests in an automated testing suite?",
+            path: "/testing/intermediate/handling-flaky-tests",
           },
           {
-            title: "What is the difference between end-to-end (E2E) testing and integration testing?",
-            path: "/testing/intermediate/e2e-vs-integration-testing"
+            title:
+              "What is the difference between end-to-end (E2E) testing and integration testing?",
+            path: "/testing/intermediate/e2e-vs-integration-testing",
           },
           {
             title: "How do you use Selenium for automated web testing?",
-            path: "/testing/intermediate/selenium-web-testing"
+            path: "/testing/intermediate/selenium-web-testing",
           },
           {
-            title: "What is the role of continuous testing in a DevOps pipeline?",
-            path: "/testing/intermediate/continuous-testing"
+            title:
+              "What is the role of continuous testing in a DevOps pipeline?",
+            path: "/testing/intermediate/continuous-testing",
           },
           {
             title: "How do you measure the coverage of your test suite?",
-            path: "/testing/intermediate/test-coverage"
+            path: "/testing/intermediate/test-coverage",
           },
           {
-            title: "What is the difference between load testing and stress testing?",
-            path: "/testing/intermediate/load-vs-stress-testing"
+            title:
+              "What is the difference between load testing and stress testing?",
+            path: "/testing/intermediate/load-vs-stress-testing",
           },
           {
             title: "How do you perform security testing for a web application?",
-            path: "/testing/intermediate/security-testing"
+            path: "/testing/intermediate/security-testing",
           },
           {
-            title: "What is the purpose of a test automation framework, and what are some examples?",
-            path: "/testing/intermediate/test-automation-framework"
+            title:
+              "What is the purpose of a test automation framework, and what are some examples?",
+            path: "/testing/intermediate/test-automation-framework",
           },
           {
-            title: "How do you handle test data management in automated testing?",
-            path: "/testing/intermediate/test-data-management"
+            title:
+              "How do you handle test data management in automated testing?",
+            path: "/testing/intermediate/test-data-management",
           },
           {
-            title: "What are the best practices for writing maintainable automated tests?",
-            path: "/testing/intermediate/maintainable-automated-tests"
-          }
-        ]
+            title:
+              "What are the best practices for writing maintainable automated tests?",
+            path: "/testing/intermediate/maintainable-automated-tests",
+          },
+        ],
       },
       {
         title: "Advanced Questions",
         items: [
           {
-            title: "How do you design a comprehensive testing strategy for a large-scale application?",
-            path: "/testing/advanced/testing-strategy"
+            title:
+              "How do you design a comprehensive testing strategy for a large-scale application?",
+            path: "/testing/advanced/testing-strategy",
           },
           {
-            title: "What are the challenges of testing in an agile development environment?",
-            path: "/testing/advanced/testing-in-agile"
+            title:
+              "What are the challenges of testing in an agile development environment?",
+            path: "/testing/advanced/testing-in-agile",
           },
           {
-            title: "How can you implement performance testing using tools like JMeter or LoadRunner?",
-            path: "/testing/advanced/performance-testing"
+            title:
+              "How can you implement performance testing using tools like JMeter or LoadRunner?",
+            path: "/testing/advanced/performance-testing",
           },
           {
-            title: "What is mutation testing, and how does it improve test quality?",
-            path: "/testing/advanced/mutation-testing"
+            title:
+              "What is mutation testing, and how does it improve test quality?",
+            path: "/testing/advanced/mutation-testing",
           },
           {
-            title: "How do you perform accessibility testing for a web application?",
-            path: "/testing/advanced/accessibility-testing"
+            title:
+              "How do you perform accessibility testing for a web application?",
+            path: "/testing/advanced/accessibility-testing",
           },
           {
-            title: "What is the role of AI and machine learning in modern software testing?",
-            path: "/testing/advanced/ai-in-testing"
+            title:
+              "What is the role of AI and machine learning in modern software testing?",
+            path: "/testing/advanced/ai-in-testing",
           },
           {
             title: "How do you implement contract testing for microservices?",
-            path: "/testing/advanced/contract-testing"
+            path: "/testing/advanced/contract-testing",
           },
           {
-            title: "What are the differences between static and dynamic testing techniques?",
-            path: "/testing/advanced/static-vs-dynamic-testing"
+            title:
+              "What are the differences between static and dynamic testing techniques?",
+            path: "/testing/advanced/static-vs-dynamic-testing",
           },
           {
-            title: "How do you handle testing in a continuous deployment environment?",
-            path: "/testing/advanced/testing-in-continuous-deployment"
+            title:
+              "How do you handle testing in a continuous deployment environment?",
+            path: "/testing/advanced/testing-in-continuous-deployment",
           },
           {
-            title: "What is the purpose of chaos testing, and how can it be applied to testing?",
-            path: "/testing/advanced/chaos-testing"
+            title:
+              "What is the purpose of chaos testing, and how can it be applied to testing?",
+            path: "/testing/advanced/chaos-testing",
           },
           {
-            title: "How do you ensure test coverage for edge cases in a complex system?",
-            path: "/testing/advanced/edge-case-coverage"
+            title:
+              "How do you ensure test coverage for edge cases in a complex system?",
+            path: "/testing/advanced/edge-case-coverage",
           },
           {
-            title: "What are the best practices for testing a distributed system?",
-            path: "/testing/advanced/testing-distributed-system"
+            title:
+              "What are the best practices for testing a distributed system?",
+            path: "/testing/advanced/testing-distributed-system",
           },
           {
-            title: "How do you integrate testing into a CI/CD pipeline with parallel execution?",
-            path: "/testing/advanced/cicd-parallel-testing"
+            title:
+              "How do you integrate testing into a CI/CD pipeline with parallel execution?",
+            path: "/testing/advanced/cicd-parallel-testing",
           },
           {
-            title: "How can you use exploratory testing to complement automated testing?",
-            path: "/testing/advanced/exploratory-testing"
-          }
-        ]
-      }
-    ]
+            title:
+              "How can you use exploratory testing to complement automated testing?",
+            path: "/testing/advanced/exploratory-testing",
+          },
+        ],
+      },
+    ],
   },
 ];
 ---

@@ -1,0 +1,206 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is Garbage Collection in .NET, and how does it work?
+---
+
+# What is Garbage Collection in .NET, and how does it work?
+
+## Understanding Garbage Collection
+
+Garbage Collection (GC) in .NET is an automatic memory management feature that frees developers from manually allocating and releasing memory. It efficiently manages the allocation and release of memory for your application.
+
+```csharp
+// You don't need to manually free memory in .NET
+public void CreateObjects()
+{
+    // Memory is automatically allocated
+    var list = new List<string>();
+    
+    for (int i = 0; i < 10000; i++)
+    {
+        list.Add($"Item {i}");
+    }
+    
+    // No need to free the memory - GC will handle it
+    // when these objects are no longer accessible
+}
+```
+
+## How Garbage Collection Works
+
+The .NET Garbage Collector operates on the principle that most objects have short lifetimes, while some live much longer. Based on this, it divides the managed heap into three generations:
+
+### Generations in Garbage Collection
+
+- **Generation 0**: Contains short-lived objects (newest objects)
+- **Generation 1**: Contains objects that have survived one garbage collection
+- **Generation 2**: Contains long-lived objects that have survived multiple collections
+
+```csharp
+// Objects are initially allocated in Generation 0
+var shortLived = new object(); // Gen 0
+
+// After surviving a collection, objects move to Generation 1
+// After surviving more collections, they move to Generation 2
+```
+
+### The Garbage Collection Process
+
+1. **Marking Phase**: The GC identifies which objects are still in use (reachable)
+2. **Relocating Phase**: It compacts the memory by moving reachable objects together
+3. **Sweeping Phase**: It reclaims memory occupied by unreachable objects
+
+```csharp
+using System;
+
+public class GCDemo
+{
+    public static void Main()
+    {
+        // Create objects
+        CreateObjects();
+        
+        // Force garbage collection (for demonstration only)
+        Console.WriteLine("Memory before collection: {0}", GC.GetTotalMemory(false));
+        
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        
+        Console.WriteLine("Memory after collection: {0}", GC.GetTotalMemory(false));
+    }
+    
+    static void CreateObjects()
+    {
+        // Create 10,000 objects that will become eligible for collection
+        for (int i = 0; i < 10000; i++)
+        {
+            var obj = new object();
+        }
+    }
+}
+```
+
+## Garbage Collection Modes
+
+.NET supports different GC modes:
+
+- **Workstation GC**: Optimized for client applications
+- **Server GC**: Optimized for server applications with multiple processors
+- **Background GC**: Performs collection concurrently with application execution
+
+## Memory Management Best Practices
+
+### 1. Dispose Unmanaged Resources
+
+```csharp
+// Properly implement IDisposable for classes with unmanaged resources
+public class ResourceManager : IDisposable
+{
+    private IntPtr nativeResource;
+    private bool disposed = false;
+    
+    public ResourceManager()
+    {
+        // Allocate unmanaged resource
+        nativeResource = AllocateResource();
+    }
+    
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+            }
+            
+            // Free unmanaged resources
+            FreeResource(nativeResource);
+            nativeResource = IntPtr.Zero;
+            
+            disposed = true;
+        }
+    }
+    
+    ~ResourceManager()
+    {
+        Dispose(false);
+    }
+    
+    private IntPtr AllocateResource()
+    {
+        // Code to allocate native resource
+        return IntPtr.Zero; // Placeholder
+    }
+    
+    private void FreeResource(IntPtr resource)
+    {
+        // Code to free native resource
+    }
+}
+```
+
+### 2. Use Using Statement
+
+```csharp
+// The using statement ensures Dispose is called even if an exception occurs
+public void ProcessFile(string path)
+{
+    using (var fileStream = new FileStream(path, FileMode.Open))
+    {
+        // Work with the file
+        byte[] buffer = new byte[1024];
+        fileStream.Read(buffer, 0, buffer.Length);
+        
+        // fileStream.Dispose() is automatically called when the using block exits
+    }
+}
+```
+
+### 3. Avoid Creating Unnecessary Objects
+
+```csharp
+// Bad: Creates many temporary strings
+string result = "";
+for (int i = 0; i < 10000; i++)
+{
+    result += i.ToString();
+}
+
+// Good: Uses StringBuilder to avoid temporary string allocations
+var builder = new StringBuilder();
+for (int i = 0; i < 10000; i++)
+{
+    builder.Append(i);
+}
+string result = builder.ToString();
+```
+
+## Large Object Heap (LOH)
+
+Objects larger than 85,000 bytes are allocated on the Large Object Heap, which is collected less frequently and is not compacted by default.
+
+```csharp
+// This large array will be allocated on the LOH
+byte[] largeArray = new byte[100000];
+```
+
+## Interview Tips
+
+1. **Explain the basics**: Garbage collection automatically manages memory by reclaiming objects that are no longer in use.
+
+2. **Mention generations**: Describe the three generations and how objects move between them.
+
+3. **Discuss collection triggers**: Collections occur when Generation 0 fills up, when explicitly called, or when system memory is low.
+
+4. **Highlight finalization**: Explain that objects with finalizers require two collection cycles to be fully reclaimed.
+
+5. **Mention best practices**: Discuss proper resource management with IDisposable and the using statement.
+
+6. **Address performance**: Explain that while GC is convenient, understanding its behavior is important for performance-critical applications.

@@ -1,0 +1,89 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between .NET Framework and .NET Core?
+---
+
+# What is the difference between .NET Framework and .NET Core?
+
+.NET Framework is the original Windows-only implementation of .NET, while .NET Core (now continued as .NET 5+) is the modern, cross-platform, open-source reimagining of .NET. Both share common principles but differ significantly in design, capabilities, and use cases.
+
+## Evolution Timeline
+
+| Year | Release |
+|------|---------|
+| 2002 | .NET Framework 1.0 |
+| 2016 | .NET Core 1.0 |
+| 2020 | .NET 5 (unification) |
+| 2023 | .NET 8 (LTS) |
+
+## Key Differences
+
+| Feature | .NET Framework | .NET Core/.NET 5+ |
+|---------|---------------|-------------------|
+| **Platform Support** | Windows only | Cross-platform (Windows, Linux, macOS) |
+| **Open Source** | Partially open source | Fully open source |
+| **Deployment** | System-wide installation | Self-contained or framework-dependent |
+| **Updates** | Tied to Windows updates | Independent release cycle |
+| **Performance** | Good | Better (optimized for modern workloads) |
+| **Container Support** | Limited | Excellent (optimized for containers) |
+| **Future Development** | Maintenance mode only | Active development |
+
+## Architecture Differences
+
+### .NET Framework
+- Monolithic framework installed system-wide
+- Tightly coupled with Windows OS
+- Single, large runtime and framework
+
+### .NET Core/.NET 5+
+- Modular architecture with NuGet packages
+- Decoupled from the operating system
+- Smaller, composable framework components
+
+## Component Support
+
+### Exclusive to .NET Framework
+- Windows Forms (now available in .NET Core 3.0+)
+- WPF (now available in .NET Core 3.0+)
+- ASP.NET Web Forms (not ported)
+- WCF Server (not fully ported)
+- .NET Remoting (not ported)
+
+### Exclusive to .NET Core/.NET 5+
+- Blazor WebAssembly
+- Native AOT compilation
+- Enhanced performance APIs (`Span<T>`, `Memory<T>`)
+- Built-in dependency injection
+- Improved configuration system
+
+## Migration Path
+
+.NET Framework applications can be migrated to .NET using:
+- The .NET Upgrade Assistant tool
+- Side-by-side migration approach
+- Shared code libraries targeting .NET Standard
+
+```csharp
+// .NET Standard library that works with both
+<PropertyGroup>
+  <TargetFramework>netstandard2.0</TargetFramework>
+</PropertyGroup>
+```
+
+## When to Choose Each
+
+### Choose .NET Framework for:
+- Existing applications that work well
+- Windows-only applications using unsupported technologies
+- Applications using third-party libraries without .NET Core support
+
+### Choose .NET Core/.NET 5+ for:
+- New application development
+- Cross-platform requirements
+- Microservices and containerized applications
+- Performance-critical applications
+- Cloud-native applications
+
+## Future Direction
+
+Microsoft has unified the .NET platform with .NET 5 and beyond, which continues the cross-platform focus of .NET Core while incorporating the best of .NET Framework. .NET Framework will continue to be supported but will not receive new features.

@@ -1,0 +1,510 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the purpose of async and await in C#?
+---
+
+# What is the purpose of async and await in C#?
+
+## Understanding Asynchronous Programming
+
+Asynchronous programming allows operations to run without blocking the main thread, improving application responsiveness and resource utilization. The `async` and `await` keywords in C# make asynchronous programming simpler and more intuitive.
+
+```csharp
+// Synchronous method (blocks the thread)
+public string DownloadWebPage(string url)
+{
+    using (var client = new WebClient())
+    {
+        return client.DownloadString(url); // Thread is blocked until download completes
+    }
+}
+
+// Asynchronous method (doesn't block the thread)
+public async Task<string> DownloadWebPageAsync(string url)
+{
+    using (var client = new HttpClient())
+    {
+        return await client.GetStringAsync(url); // Thread is released during download
+    }
+}
+```
+
+## The Problem Async/Await Solves
+
+Before `async`/`await`, asynchronous programming was complex, involving callbacks, manual state machines, or the Task Parallel Library (TPL) with continuation methods.
+
+```csharp
+// Old way: Using Task continuations
+public Task<string> GetDataAsync(string url)
+{
+    return httpClient.GetStringAsync(url)
+        .ContinueWith(task =>
+        {
+            if (task.IsFaulted)
+                return "Error: " + task.Exception.InnerException.Message;
+                
+            var data = task.Result;
+            return ProcessData(data);
+        });
+}
+
+// New way: Using async/await
+public async Task<string> GetDataAsync(string url)
+{
+    try
+    {
+        string data = await httpClient.GetStringAsync(url);
+        return ProcessData(data);
+    }
+    catch (Exception ex)
+    {
+        return "Error: " + ex.Message;
+    }
+}
+```
+
+## How Async and Await Work
+
+### The async Keyword
+
+The `async` modifier indicates that a method, lambda expression, or anonymous method is asynchronous and may contain `await` expressions.
+
+```csharp
+// Async method declaration
+public async Task<int> CalculateAsync()
+{
+    // Method body
+}
+
+// Async lambda expression
+Func<int, Task<int>> calculate = async x => {
+    await Task.Delay(100);
+    return x * 2;
+};
+
+// Async anonymous method
+button.Click += async (sender, e) => {
+    await Task.Delay(100);
+    label.Text = "Clicked";
+};
+```
+
+### The await Keyword
+
+The `await` operator suspends execution of the method until the awaited task completes, without blocking the thread.
+
+```csharp
+public async Task ProcessDataAsync()
+{
+    // Start the operation
+    Task<string> dataTask = FetchDataAsync();
+    
+    // Do other work while the operation is in progress
+    PrepareForData();
+    
+    // Suspend execution until the operation completes
+    string data = await dataTask;
+    
+    // Continue execution after the operation completes
+    ProcessResult(data);
+}
+```
+
+### Return Types for Async Methods
+
+Async methods can return:
+- `Task<T>` for methods that return a value
+- `Task` for methods that don't return a value
+- `void` for event handlers (not recommended for other scenarios)
+- `ValueTask<T>` or `ValueTask` for performance optimization (C# 7.0+)
+
+```csharp
+// Returns a value
+public async Task<string> GetNameAsync()
+{
+    await Task.Delay(100);
+    return "John";
+}
+
+// Doesn't return a value
+public async Task UpdateDatabaseAsync()
+{
+    await Task.Delay(100);
+    // Update database
+}
+
+// Event handler (avoid for other scenarios)
+public async void Button_Click(object sender, EventArgs e)
+{
+    await Task.Delay(100);
+    label.Text = "Clicked";
+}
+
+// ValueTask for performance optimization
+public async ValueTask<int> GetCachedValueAsync()
+{
+    if (_cache.TryGetValue("key", out int value))
+        return value; // No Task allocation needed
+        
+    value = await ComputeValueAsync();
+    _cache["key"] = value;
+    return value;
+}
+```
+
+## Asynchronous Patterns
+
+### Sequential Execution
+
+```csharp
+// Execute tasks one after another
+public async Task SequentialExecutionAsync()
+{
+    var result1 = await Task1Async();
+    var result2 = await Task2Async(result1);
+    var result3 = await Task3Async(result2);
+    return result3;
+}
+```
+
+### Parallel Execution
+
+```csharp
+// Execute tasks in parallel
+public async Task ParallelExecutionAsync()
+{
+    Task<int> task1 = Task1Async();
+    Task<int> task2 = Task2Async();
+    Task<int> task3 = Task3Async();
+    
+    // Wait for all tasks to complete
+    await Task.WhenAll(task1, task2, task3);
+    
+    // Use the results
+    int sum = task1.Result + task2.Result + task3.Result;
+    return sum;
+}
+```
+
+### First Completed Task
+
+```csharp
+// Use the first task that completes
+public async Task<string> GetFastestResponseAsync()
+{
+    Task<string> task1 = Service1Async();
+    Task<string> task2 = Service2Async();
+    
+    // Wait for the first task to complete
+    Task<string> completedTask = await Task.WhenAny(task1, task2);
+    
+    // Get the result from the completed task
+    return await completedTask;
+}
+```
+
+## Exception Handling in Async Methods
+
+Exceptions in async methods are captured and placed on the returned Task.
+
+```csharp
+// Exception handling in async methods
+public async Task ExceptionHandlingAsync()
+{
+    try
+    {
+        // This might throw an exception
+        string data = await FetchDataAsync();
+        ProcessData(data);
+    }
+    catch (HttpRequestException ex)
+    {
+        // Handle network error
+        LogError("Network error", ex);
+    }
+    catch (Exception ex)
+    {
+        // Handle other errors
+        LogError("General error", ex);
+    }
+    finally
+    {
+        // Clean up resources
+        CleanUp();
+    }
+}
+```
+
+### Aggregated Exceptions
+
+When using `Task.WhenAll`, multiple exceptions are aggregated into an `AggregateException`.
+
+```csharp
+// Handling multiple exceptions
+public async Task HandleMultipleExceptionsAsync()
+{
+    var tasks = new List<Task>();
+    tasks.Add(Task1Async());
+    tasks.Add(Task2Async());
+    
+    try
+    {
+        await Task.WhenAll(tasks);
+    }
+    catch (Exception ex)
+    {
+        // ex is the first exception that was thrown
+        
+        // To get all exceptions:
+        if (tasks[0].IsFaulted) Console.WriteLine(tasks[0].Exception);
+        if (tasks[1].IsFaulted) Console.WriteLine(tasks[1].Exception);
+        
+        // Or use Task.WhenAll result directly:
+        try
+        {
+            Task.WhenAll(tasks).Wait();
+        }
+        catch (AggregateException ae)
+        {
+            foreach (var innerEx in ae.InnerExceptions)
+            {
+                Console.WriteLine(innerEx);
+            }
+        }
+    }
+}
+```
+
+## Cancellation Support
+
+Async operations often support cancellation using `CancellationToken`.
+
+```csharp
+// Cancellable async method
+public async Task<string> DownloadAsync(string url, CancellationToken cancellationToken)
+{
+    using (var client = new HttpClient())
+    {
+        // Pass the token to the async operation
+        return await client.GetStringAsync(url, cancellationToken);
+    }
+}
+
+// Using cancellation
+public async Task ProcessWithCancellationAsync()
+{
+    // Create a cancellation token source with timeout
+    using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+    {
+        try
+        {
+            string result = await DownloadAsync("https://example.com", cts.Token);
+            ProcessResult(result);
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was cancelled or timed out");
+        }
+    }
+}
+```
+
+## Progress Reporting
+
+Async methods can report progress using `IProgress<T>` and `Progress<T>`.
+
+```csharp
+// Async method with progress reporting
+public async Task<byte[]> DownloadFileAsync(string url, IProgress<int> progress)
+{
+    using (var client = new HttpClient())
+    {
+        // Get the total file size
+        var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+        
+        using (var stream = await response.Content.ReadAsStreamAsync())
+        {
+            var buffer = new byte[8192];
+            var totalBytesRead = 0L;
+            var bytesRead = 0;
+            var data = new MemoryStream();
+            
+            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                await data.WriteAsync(buffer, 0, bytesRead);
+                totalBytesRead += bytesRead;
+                
+                if (totalBytes > 0 && progress != null)
+                {
+                    var progressPercentage = (int)((totalBytesRead * 100) / totalBytes);
+                    progress.Report(progressPercentage);
+                }
+            }
+            
+            return data.ToArray();
+        }
+    }
+}
+
+// Using progress reporting
+public async Task DownloadWithProgressAsync()
+{
+    var progress = new Progress<int>(percent => {
+        progressBar.Value = percent;
+        statusLabel.Text = $"Downloading: {percent}%";
+    });
+    
+    try
+    {
+        byte[] data = await DownloadFileAsync("https://example.com/largefile.zip", progress);
+        File.WriteAllBytes("largefile.zip", data);
+        statusLabel.Text = "Download complete!";
+    }
+    catch (Exception ex)
+    {
+        statusLabel.Text = $"Error: {ex.Message}";
+    }
+}
+```
+
+## Common Async Pitfalls
+
+### 1. Async Void
+
+Avoid `async void` except for event handlers, as exceptions can't be caught and the caller can't await completion.
+
+```csharp
+// Bad: async void
+public async void BadMethod() // Can't be awaited, exceptions are unhandled
+{
+    await Task.Delay(100);
+    throw new Exception("This exception is lost!");
+}
+
+// Good: async Task
+public async Task GoodMethod() // Can be awaited, exceptions are propagated
+{
+    await Task.Delay(100);
+    throw new Exception("This exception can be caught!");
+}
+```
+
+### 2. Blocking on Async Code
+
+Never block on async code using `.Wait()`, `.Result`, or `.GetAwaiter().GetResult()` in synchronous contexts, as it can cause deadlocks.
+
+```csharp
+// Bad: Blocking on async code
+public void BadMethod()
+{
+    // This can deadlock in UI or ASP.NET contexts
+    var result = GetDataAsync().Result;
+    ProcessData(result);
+}
+
+// Good: Keep the async chain
+public async Task GoodMethod()
+{
+    var result = await GetDataAsync();
+    ProcessData(result);
+}
+```
+
+### 3. Forgetting to Await
+
+Forgetting to await an async method means the task runs in the background without waiting for completion.
+
+```csharp
+// Bad: Missing await
+public async Task BadMethod()
+{
+    SaveDataAsync(); // Fire and forget, not awaited
+    return; // Method returns before SaveDataAsync completes
+}
+
+// Good: Using await
+public async Task GoodMethod()
+{
+    await SaveDataAsync(); // Wait for completion
+    return; // Method returns after SaveDataAsync completes
+}
+```
+
+### 4. Unnecessary Async/Await
+
+Don't use async/await when not needed, as it adds overhead.
+
+```csharp
+// Unnecessary async/await
+public async Task<int> UnnecessaryAsync()
+{
+    return await Task.FromResult(42); // Unnecessary await
+}
+
+// Better
+public Task<int> Better()
+{
+    return Task.FromResult(42); // Directly return the task
+}
+```
+
+## Async/Await in ASP.NET Core
+
+Async/await is particularly valuable in web applications for handling concurrent requests efficiently.
+
+```csharp
+// ASP.NET Core controller with async methods
+[ApiController]
+[Route("api/[controller]")]
+public class ProductsController : ControllerBase
+{
+    private readonly IProductRepository _repository;
+    
+    public ProductsController(IProductRepository repository)
+    {
+        _repository = repository;
+    }
+    
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+    {
+        var products = await _repository.GetAllAsync();
+        return Ok(products);
+    }
+    
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Product>> GetProduct(int id)
+    {
+        var product = await _repository.GetByIdAsync(id);
+        
+        if (product == null)
+            return NotFound();
+            
+        return Ok(product);
+    }
+    
+    [HttpPost]
+    public async Task<ActionResult<Product>> CreateProduct(Product product)
+    {
+        await _repository.AddAsync(product);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+    }
+}
+```
+
+## Interview Tips
+
+1. **Define clearly**: Async/await is a language feature that simplifies asynchronous programming by allowing you to write asynchronous code that looks like synchronous code.
+
+2. **Explain the benefits**: Highlight improved responsiveness, scalability, and resource utilization without the complexity of callbacks or manual state machines.
+
+3. **Thread behavior**: Emphasize that await doesn't block the thread but releases it back to the thread pool until the awaited task completes.
+
+4. **Return types**: Know the appropriate return types for async methods (Task, `Task<T>`, ValueTask, ValueTask`<T>`).
+
+5. **Common patterns**: Discuss sequential execution, parallel execution, and exception handling in async code.
+
+6. **Pitfalls**: Be prepared to explain common mistakes like async void, blocking on async code, and forgetting to await.
+
+7. **Real-world examples**: Provide examples of when async/await is particularly valuable, such as I/O operations, network requests, and database access.

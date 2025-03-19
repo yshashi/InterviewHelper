@@ -1,0 +1,95 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between managed and unmanaged code?
+---
+
+# What is the difference between managed and unmanaged code?
+Managed code runs under the CLR, which provides automatic memory management through garbage collection, type safety, and exception handling. It's compiled to Intermediate Language (IL) and then JIT-compiled at runtime, making it platform-independent.
+
+Unmanaged code executes directly by the operating system without CLR services. It requires manual memory management, offers direct hardware access, and typically provides better performance for certain operations but with increased development complexity and risk.
+
+In modern .NET development, we primarily use managed code for most application logic, but can leverage unmanaged code through interoperability features like P/Invoke when we need performance optimization or access to platform-specific features. The IDisposable pattern helps manage unmanaged resources properly when they're wrapped in managed code.
+
+## Key Differences
+
+| Managed Code | Unmanaged Code |
+|--------------|----------------|
+| Executes under CLR supervision | Executes directly by the operating system |
+| Automatic memory management | Manual memory management |
+| Type safety enforced | No automatic type safety |
+| Platform-independent (IL) | Platform-specific |
+| Examples: C#, VB.NET, F# | Examples: C, C++, Assembly |
+
+## Managed Code
+
+Managed code runs under the supervision of the Common Language Runtime (CLR), which provides:
+
+- **Automatic memory management** via garbage collection
+- **Type safety** to prevent memory corruption and type errors
+- **Exception handling** with a consistent mechanism
+- **Platform independence** through Intermediate Language (IL)
+
+```csharp
+// Simple managed code example
+public void ManagedExample()
+{
+    // Memory automatically managed
+    var list = new List<string>();
+    list.Add("Item");
+    
+    // No need to free memory - GC handles it
+}
+```
+
+## Unmanaged Code
+
+Unmanaged code executes directly by the operating system:
+
+- **Manual memory management** - developer allocates and frees memory
+- **Direct hardware access** for performance-critical operations
+- **No runtime services** like garbage collection or type checking
+- **Platform-specific** native code
+
+```cpp
+// Simple unmanaged code example
+void UnmanagedExample()
+{
+    // Manual memory allocation
+    int* array = new int[100];
+    
+    // Use the memory
+    
+    // Must manually free memory
+    delete[] array; // Forgetting causes memory leak
+}
+```
+
+## Interoperability
+
+.NET provides mechanisms to use unmanaged code from managed code:
+
+- **P/Invoke** for calling native functions in DLLs
+- **COM Interop** for using COM components
+- **Unsafe code** blocks in C# for direct memory manipulation
+
+```csharp
+// P/Invoke example
+[DllImport("user32.dll")]
+static extern int MessageBox(IntPtr hWnd, string text, string caption, int type);
+
+public void CallUnmanaged()
+{
+    MessageBox(IntPtr.Zero, "Hello", "Title", 0);
+}
+```
+
+## When to Use Each
+
+| Managed Code | Unmanaged Code |
+|--------------|----------------|
+| Business logic | Performance-critical code |
+| Web applications | System-level programming |
+| Enterprise applications | Device drivers |
+| Rapid development | Graphics processing |
+| When memory safety is critical | When direct hardware access is needed |
+

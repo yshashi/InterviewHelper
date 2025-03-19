@@ -1,0 +1,447 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are delegates in C#, and how are they used?
+---
+
+# What are delegates in C#, and how are they used?
+
+## Understanding Delegates
+
+A delegate in C# is a type that represents references to methods with a specific parameter list and return type. Delegates allow methods to be passed as parameters, stored as variables, and invoked dynamically.
+
+```csharp
+// Basic delegate declaration
+public delegate int MathOperation(int x, int y);
+
+// Methods that match the delegate signature
+public static int Add(int x, int y) => x + y;
+public static int Subtract(int x, int y) => x - y;
+
+// Using the delegate
+public static void Main()
+{
+    // Assign a method to the delegate
+    MathOperation operation = Add;
+    
+    // Invoke the delegate
+    int result = operation(10, 5); // result = 15
+    
+    // Reassign to another method
+    operation = Subtract;
+    result = operation(10, 5); // result = 5
+}
+```
+
+## Delegate Types in C#
+
+### 1. Single-Cast Delegates
+
+A single-cast delegate holds a reference to a single method.
+
+```csharp
+// Single-cast delegate example
+public delegate void Logger(string message);
+
+public class Program
+{
+    public static void LogToConsole(string message)
+    {
+        Console.WriteLine($"Console: {message}");
+    }
+    
+    public static void Main()
+    {
+        Logger log = LogToConsole;
+        log("This is a log message"); // Outputs: Console: This is a log message
+    }
+}
+```
+
+### 2. Multicast Delegates
+
+A multicast delegate holds references to multiple methods that are invoked sequentially.
+
+```csharp
+// Multicast delegate example
+public delegate void Notifier(string message);
+
+public class Program
+{
+    public static void EmailNotification(string message)
+    {
+        Console.WriteLine($"Email sent: {message}");
+    }
+    
+    public static void SMSNotification(string message)
+    {
+        Console.WriteLine($"SMS sent: {message}");
+    }
+    
+    public static void PushNotification(string message)
+    {
+        Console.WriteLine($"Push notification sent: {message}");
+    }
+    
+    public static void Main()
+    {
+        // Create a multicast delegate
+        Notifier notifier = EmailNotification;
+        notifier += SMSNotification;
+        notifier += PushNotification;
+        
+        // Invoke all methods
+        notifier("System maintenance scheduled");
+        
+        // Remove a method
+        notifier -= SMSNotification;
+        
+        // Invoke remaining methods
+        notifier("Update complete");
+    }
+}
+```
+
+### 3. Generic Delegates
+
+C# provides built-in generic delegate types: `Action<T>`, `Func<T>`, and `Predicate<T>`.
+
+```csharp
+// Action<T> - represents a method that takes parameters and returns void
+Action<string> log = message => Console.WriteLine(message);
+log("Hello, World!");
+
+// Action with multiple parameters
+Action<string, int> logWithCount = (message, count) => 
+    Console.WriteLine($"{message} (Count: {count})");
+logWithCount("Items processed", 42);
+
+// Func<T, TResult> - represents a method that takes parameters and returns a value
+Func<int, int, int> add = (x, y) => x + y;
+int sum = add(10, 5); // sum = 15
+
+// Func with multiple parameters
+Func<int, int, string, string> formatSum = (x, y, format) => 
+    string.Format(format, x + y);
+string result = formatSum(10, 5, "The sum is {0}"); // result = "The sum is 15"
+
+// Predicate<T> - represents a method that takes one parameter and returns a boolean
+Predicate<int> isEven = number => number % 2 == 0;
+bool isNumberEven = isEven(4); // isNumberEven = true
+```
+
+## Delegate Use Cases
+
+### 1. Callback Methods
+
+Delegates are often used to implement callback mechanisms.
+
+```csharp
+// Callback example
+public class DataProcessor
+{
+    public void ProcessData(string[] data, Action<string> callback)
+    {
+        foreach (var item in data)
+        {
+            // Process the item
+            string processed = item.ToUpper();
+            
+            // Call the callback with the processed item
+            callback(processed);
+        }
+    }
+}
+
+// Usage
+public static void Main()
+{
+    var processor = new DataProcessor();
+    string[] data = { "apple", "banana", "cherry" };
+    
+    processor.ProcessData(data, item => Console.WriteLine($"Processed: {item}"));
+}
+```
+
+### 2. Event Handling
+
+Delegates are the foundation of the event system in C#.
+
+```csharp
+// Event example
+public class Button
+{
+    // Event declaration using a delegate
+    public event EventHandler Click;
+    
+    // Method to trigger the event
+    public void OnClick()
+    {
+        // Check if there are any subscribers
+        Click?.Invoke(this, EventArgs.Empty);
+    }
+}
+
+// Usage
+public static void Main()
+{
+    var button = new Button();
+    
+    // Subscribe to the event
+    button.Click += (sender, e) => Console.WriteLine("Button was clicked!");
+    
+    // Trigger the event
+    button.OnClick(); // Outputs: Button was clicked!
+}
+```
+
+### 3. Strategy Pattern
+
+Delegates can be used to implement the strategy pattern, allowing algorithms to be selected at runtime.
+
+```csharp
+// Strategy pattern with delegates
+public class SortStrategy
+{
+    public void Sort<T>(List<T> list, Func<T, T, bool> compareStrategy)
+    {
+        for (int i = 0; i < list.Count - 1; i++)
+        {
+            for (int j = i + 1; j < list.Count; j++)
+            {
+                if (compareStrategy(list[j], list[i]))
+                {
+                    // Swap elements
+                    T temp = list[i];
+                    list[i] = list[j];
+                    list[j] = temp;
+                }
+            }
+        }
+    }
+}
+
+// Usage
+public static void Main()
+{
+    var numbers = new List<int> { 5, 2, 8, 1, 3 };
+    var sorter = new SortStrategy();
+    
+    // Ascending sort
+    sorter.Sort(numbers, (a, b) => a < b);
+    Console.WriteLine(string.Join(", ", numbers)); // 1, 2, 3, 5, 8
+    
+    // Descending sort
+    sorter.Sort(numbers, (a, b) => a > b);
+    Console.WriteLine(string.Join(", ", numbers)); // 8, 5, 3, 2, 1
+}
+```
+
+### 4. LINQ Extension Methods
+
+LINQ heavily uses delegates for its query operations.
+
+```csharp
+// LINQ with delegates
+var numbers = new List<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
+// Where uses a Predicate<T> delegate
+var evenNumbers = numbers.Where(n => n % 2 == 0);
+
+// Select uses a Func<T, TResult> delegate
+var squaredNumbers = numbers.Select(n => n * n);
+
+// OrderBy uses a Func<T, TKey> delegate
+var orderedNames = new List<string> { "Charlie", "Alice", "Bob" }
+    .OrderBy(name => name);
+```
+
+### 5. Asynchronous Programming
+
+Delegates are used in asynchronous programming patterns.
+
+```csharp
+// Asynchronous programming with delegates
+public void DownloadData(string url, Action<string> onSuccess, Action<Exception> onError)
+{
+    try
+    {
+        using (var client = new WebClient())
+        {
+            client.DownloadStringCompleted += (sender, e) =>
+            {
+                if (e.Error != null)
+                    onError(e.Error);
+                else
+                    onSuccess(e.Result);
+            };
+            
+            client.DownloadStringAsync(new Uri(url));
+        }
+    }
+    catch (Exception ex)
+    {
+        onError(ex);
+    }
+}
+
+// Usage
+public void StartDownload()
+{
+    DownloadData(
+        "https://example.com",
+        data => Console.WriteLine($"Downloaded {data.Length} bytes"),
+        error => Console.WriteLine($"Error: {error.Message}")
+    );
+}
+```
+
+## Anonymous Methods and Lambda Expressions
+
+C# provides syntax shortcuts for creating delegates.
+
+### Anonymous Methods
+
+```csharp
+// Delegate declaration
+public delegate bool NumberPredicate(int number);
+
+// Using an anonymous method
+NumberPredicate isEven = delegate(int number) {
+    return number % 2 == 0;
+};
+
+bool result = isEven(4); // result = true
+```
+
+### Lambda Expressions
+
+```csharp
+// Lambda expression (expression lambda)
+NumberPredicate isEven = number => number % 2 == 0;
+
+// Lambda expression (statement lambda)
+NumberPredicate isPositive = number => {
+    Console.WriteLine($"Checking if {number} is positive");
+    return number > 0;
+};
+```
+
+## Closures with Delegates
+
+Delegates can capture variables from their containing scope, creating a closure.
+
+```csharp
+// Closure example
+public static Func<int, int> CreateMultiplier(int factor)
+{
+    // The lambda captures the 'factor' parameter
+    return number => number * factor;
+}
+
+// Usage
+public static void Main()
+{
+    var double = CreateMultiplier(2);
+    var triple = CreateMultiplier(3);
+    
+    Console.WriteLine(double(5)); // Outputs: 10
+    Console.WriteLine(triple(5)); // Outputs: 15
+}
+```
+
+## Delegate Internals
+
+Under the hood, delegates are classes derived from `System.MulticastDelegate`, which is derived from `System.Delegate`.
+
+```csharp
+// Delegate declaration
+public delegate void MyDelegate(string message);
+
+// Equivalent to:
+/*
+public sealed class MyDelegate : System.MulticastDelegate
+{
+    public MyDelegate(object target, IntPtr method);
+    
+    public void Invoke(string message);
+    
+    public IAsyncResult BeginInvoke(string message, AsyncCallback callback, object state);
+    
+    public void EndInvoke(IAsyncResult result);
+}
+*/
+```
+
+## Covariance and Contravariance in Delegates
+
+Delegates support covariance (for return types) and contravariance (for parameter types).
+
+```csharp
+// Base and derived classes
+public class Animal { }
+public class Dog : Animal { }
+
+// Delegate declarations
+public delegate Animal AnimalFactory();
+public delegate void AnimalHandler(Dog dog);
+
+// Methods
+public static Dog CreateDog() => new Dog();
+public static void HandleAnimal(Animal animal) { }
+
+// Covariance and contravariance
+public static void Main()
+{
+    // Covariance: Dog return type is compatible with Animal return type
+    AnimalFactory factory = CreateDog;
+    Animal animal = factory();
+    
+    // Contravariance: Animal parameter type is compatible with Dog parameter type
+    AnimalHandler handler = HandleAnimal;
+    handler(new Dog());
+}
+```
+
+## Comparison with Interfaces
+
+Delegates and interfaces can sometimes be used to solve similar problems, but they have different strengths.
+
+```csharp
+// Interface approach
+public interface IComparer<T>
+{
+    int Compare(T x, T y);
+}
+
+public class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
+{
+    public int Compare(T x, T y)
+    {
+        return y.CompareTo(x);
+    }
+}
+
+// Usage with interface
+var list = new List<int> { 3, 1, 4, 1, 5, 9 };
+list.Sort(new DescendingComparer<int>());
+
+// Delegate approach
+var list2 = new List<int> { 3, 1, 4, 1, 5, 9 };
+list2.Sort((x, y) => y.CompareTo(x));
+```
+
+## Interview Tips
+
+1. **Define clearly**: A delegate is a type that represents references to methods with a specific parameter list and return type, allowing methods to be passed as parameters.
+
+2. **Types of delegates**: Explain single-cast delegates, multicast delegates, and built-in generic delegates (Action, Func, Predicate).
+
+3. **Use cases**: Discuss common scenarios like callbacks, event handling, and implementing design patterns.
+
+4. **Syntax options**: Show how delegates can be created using method references, anonymous methods, and lambda expressions.
+
+5. **Multicast behavior**: Explain how multicast delegates invoke multiple methods in sequence and how return values work.
+
+6. **Closures**: Describe how delegates can capture variables from their containing scope.
+
+7. **Comparison with alternatives**: Discuss when to use delegates versus interfaces or other approaches.

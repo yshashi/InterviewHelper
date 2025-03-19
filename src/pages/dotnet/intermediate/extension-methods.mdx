@@ -1,0 +1,271 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are extension methods in C#?
+---
+
+# What are extension methods in C#?
+
+Extension methods in C# allow you to add new methods to existing types without modifying the original type, creating a derived type, or using inheritance. They are static methods that can be called using instance method syntax.
+
+## Key Characteristics
+
+| Feature | Description |
+|---------|-------------|
+| **Static** | Must be defined in a static class |
+| **This Parameter** | First parameter must use the `this` keyword |
+| **Type Extension** | Can extend classes, interfaces, structs, or primitive types |
+| **Namespace Scope** | Only available when their namespace is imported |
+| **Precedence** | Instance methods take precedence over extension methods |
+
+## Basic Syntax
+
+```csharp
+// Extension method definition
+public static class StringExtensions
+{
+    public static bool IsNullOrEmpty(this string str)
+    {
+        return string.IsNullOrEmpty(str);
+    }
+}
+
+// Usage
+string text = "Hello";
+bool isEmpty = text.IsNullOrEmpty(); // false
+
+// What happens under the hood
+bool isEmptyActual = StringExtensions.IsNullOrEmpty(text);
+```
+
+## Common Extension Scenarios
+
+### Extending Primitive Types
+
+```csharp
+public static class IntExtensions
+{
+    public static bool IsEven(this int number) => number % 2 == 0;
+    public static bool IsPrime(this int number)
+    {
+        if (number <= 1) return false;
+        if (number <= 3) return true;
+        
+        if (number % 2 == 0 || number % 3 == 0) return false;
+        
+        for (int i = 5; i * i <= number; i += 6)
+        {
+            if (number % i == 0 || number % (i + 2) == 0)
+                return false;
+        }
+        
+        return true;
+    }
+}
+
+// Usage
+int x = 7;
+Console.WriteLine($"{x} is even: {x.IsEven()}"); // false
+Console.WriteLine($"{x} is prime: {x.IsPrime()}"); // true
+```
+
+### Extending Interfaces
+
+```csharp
+public interface IEntity
+{
+    int Id { get; set; }
+    DateTime CreatedDate { get; set; }
+}
+
+public static class EntityExtensions
+{
+    public static bool IsNew(this IEntity entity) => entity.Id == 0;
+    public static TimeSpan Age(this IEntity entity) => DateTime.Now - entity.CreatedDate;
+}
+
+// Any class implementing IEntity gets these methods
+public class Customer : IEntity
+{
+    public int Id { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public string Name { get; set; }
+}
+
+var customer = new Customer { Id = 0, CreatedDate = DateTime.Now.AddDays(-5) };
+bool isNew = customer.IsNew(); // true
+TimeSpan age = customer.Age(); // 5 days
+```
+
+### Extension Methods with Parameters
+
+```csharp
+public static class ListExtensions
+{
+    public static List<T> Filter<T>(this List<T> source, Func<T, bool> predicate)
+    {
+        var result = new List<T>();
+        foreach (var item in source)
+        {
+            if (predicate(item))
+                result.Add(item);
+        }
+        return result;
+    }
+}
+
+// Usage
+var numbers = new List<int> { 1, 2, 3, 4, 5 };
+var evenNumbers = numbers.Filter(n => n % 2 == 0); // [2, 4]
+```
+
+## LINQ: The Most Common Example
+
+LINQ is built entirely on extension methods for `IEnumerable<T>`:
+
+```csharp
+// These are all extension methods
+var numbers = new[] { 1, 2, 3, 4, 5 };
+var evenNumbers = numbers.Where(n => n % 2 == 0);
+var doubled = numbers.Select(n => n * 2);
+var sum = numbers.Sum();
+var ordered = numbers.OrderByDescending(n => n);
+
+// Creating custom LINQ-style extensions
+public static class EnumerableExtensions
+{
+    public static IEnumerable<T> WhereNot<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+    {
+        return source.Where(item => !predicate(item));
+    }
+}
+
+var adults = people.WhereNot(p => p.Age < 18);
+```
+
+## Creating Fluent Interfaces
+
+Extension methods are ideal for building fluent interfaces:
+
+```csharp
+public class QueryBuilder
+{
+    private readonly StringBuilder _query = new StringBuilder();
+    
+    public string Build() => _query.ToString();
+    internal void Append(string text) => _query.Append(text);
+}
+
+public static class QueryBuilderExtensions
+{
+    public static QueryBuilder Select(this QueryBuilder builder, string columns)
+    {
+        builder.Append($"SELECT {columns} ");
+        return builder;
+    }
+    
+    public static QueryBuilder From(this QueryBuilder builder, string table)
+    {
+        builder.Append($"FROM {table} ");
+        return builder;
+    }
+    
+    public static QueryBuilder Where(this QueryBuilder builder, string condition)
+    {
+        builder.Append($"WHERE {condition} ");
+        return builder;
+    }
+}
+
+// Fluent usage
+var query = new QueryBuilder()
+    .Select("Id, Name")
+    .From("Customers")
+    .Where("Age > 18")
+    .Build();
+```
+
+## Limitations
+
+| Limitation | Description |
+|------------|-------------|
+| **No Access to Private Members** | Cannot access private or protected members of the extended type |
+| **No Method Overriding** | Cannot override existing methods on the extended type |
+| **Static Resolution** | Extension methods are resolved at compile time, not runtime |
+| **Lower Precedence** | Instance methods are always chosen over extension methods with the same signature |
+
+```csharp
+public class MyClass
+{
+    private int _privateField = 42;
+    public void ExistingMethod() => Console.WriteLine("Instance method");
+}
+
+public static class MyClassExtensions
+{
+    // Won't compile - can't access private members
+    public static void AccessPrivate(this MyClass obj)
+    {
+        // Console.WriteLine(obj._privateField); // Error!
+    }
+    
+    // Won't override the instance method
+    public static void ExistingMethod(this MyClass obj)
+    {
+        Console.WriteLine("Extension method");
+    }
+}
+
+var obj = new MyClass();
+obj.ExistingMethod(); // Calls instance method, not extension
+```
+
+## Namespace Importance
+
+Extension methods are only available when their namespace is imported:
+
+```csharp
+// In MyUtilities namespace
+namespace MyUtilities
+{
+    public static class StringExtensions
+    {
+        public static string Truncate(this string str, int maxLength)
+        {
+            return str.Length <= maxLength ? str : str.Substring(0, maxLength) + "...";
+        }
+    }
+}
+
+// In another file
+// Without this, Truncate is not available
+using MyUtilities;
+
+string text = "Long text";
+string truncated = text.Truncate(4); // "Long..."
+```
+
+## Best Practices
+
+1. **Use sparingly** - Don't overuse extension methods
+2. **Pure functions** - Avoid side effects in extension methods
+3. **Don't modify state** - Extension methods should generally be non-mutating
+4. **Meaningful namespaces** - Organize extensions in appropriate namespaces
+5. **Descriptive names** - Use clear, intention-revealing names
+
+## Interview Tips
+
+1. **Definition**: Extension methods let you add methods to existing types without modifying them or using inheritance.
+
+2. **Key syntax**: Emphasize the three requirements - static class, static method, and `this` keyword on first parameter.
+
+3. **LINQ example**: Mention that LINQ is the most prominent example of extension methods in .NET.
+
+4. **Common use cases**: Discuss extending primitive types, interfaces, and creating fluent interfaces.
+
+5. **Limitations vs. instance methods**: Be prepared to explain that extension methods can't access private members or override existing methods.
+
+6. **Namespace importance**: Explain that extension methods must be imported via their namespace to be available.
+
+7. **Performance**: Extension methods have the same performance as static method calls - there's no runtime overhead.
+
+8. **When to use**: Explain that extension methods are best for adding utility functions to types you can't modify.

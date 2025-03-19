@@ -1,0 +1,314 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are the different hosting models in ASP.NET Core?
+---
+
+# What are the different hosting models in ASP.NET Core?
+
+## Understanding Hosting Models
+
+ASP.NET Core applications can be hosted in different environments using various hosting models. The hosting model determines how the application interacts with the server infrastructure.
+
+```csharp
+// Basic ASP.NET Core application setup
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.MapGet("/", () => "Hello World!");
+
+app.Run();
+```
+
+## In-Process Hosting
+
+In-process hosting runs the ASP.NET Core app and the web server in the same process.
+
+### Characteristics
+
+- Application runs in the same process as the web server
+- Direct communication between the server and application
+- Faster performance due to reduced overhead
+- Shares the same memory space as the server
+
+```csharp
+// In-process hosting configuration in .csproj
+<PropertyGroup>
+  <TargetFramework>net6.0</TargetFramework>
+  <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+</PropertyGroup>
+```
+
+### IIS In-Process Hosting
+
+When hosting in IIS, the ASP.NET Core Module (ANCM) loads the CoreCLR and starts the app inside the IIS worker process (w3wp.exe).
+
+```xml
+<!-- web.config for IIS in-process hosting -->
+<configuration>
+  <location path="." inheritInChildApplications="false">
+    <system.webServer>
+      <handlers>
+        <add name="aspNetCore" path="*" verb="*" modules="AspNetCoreModuleV2" resourceType="Unspecified" />
+      </handlers>
+      <aspNetCore processPath="dotnet" 
+                  arguments=".\MyApp.dll" 
+                  stdoutLogEnabled="false" 
+                  stdoutLogFile=".\logs\stdout" 
+                  hostingModel="inprocess" />
+    </system.webServer>
+  </location>
+</configuration>
+```
+
+### Benefits of In-Process Hosting
+
+- Better performance (lower latency)
+- Process management handled by IIS
+- Windows Authentication support
+- Simplified deployment model
+
+## Out-of-Process Hosting
+
+Out-of-process hosting runs the ASP.NET Core app and the web server in separate processes.
+
+### Characteristics
+
+- Application runs in a separate process from the web server
+- Web server acts as a reverse proxy
+- More isolation between the server and application
+- Process independence
+
+```csharp
+// Out-of-process hosting configuration in .csproj
+<PropertyGroup>
+  <TargetFramework>net6.0</TargetFramework>
+  <AspNetCoreHostingModel>OutOfProcess</AspNetCoreHostingModel>
+</PropertyGroup>
+```
+
+### IIS Out-of-Process Hosting
+
+With out-of-process hosting, IIS acts as a reverse proxy, forwarding requests to a backend ASP.NET Core app running the Kestrel server.
+
+```xml
+<!-- web.config for IIS out-of-process hosting -->
+<configuration>
+  <location path="." inheritInChildApplications="false">
+    <system.webServer>
+      <handlers>
+        <add name="aspNetCore" path="*" verb="*" modules="AspNetCoreModuleV2" resourceType="Unspecified" />
+      </handlers>
+      <aspNetCore processPath="dotnet" 
+                  arguments=".\MyApp.dll" 
+                  stdoutLogEnabled="false" 
+                  stdoutLogFile=".\logs\stdout" 
+                  hostingModel="outofprocess" />
+    </system.webServer>
+  </location>
+</configuration>
+```
+
+### Benefits of Out-of-Process Hosting
+
+- Process isolation (app crashes don't affect the web server)
+- Independent versioning of the web server and application
+- More deployment flexibility
+- Can leverage Kestrel's performance optimizations
+
+## Web Server Options
+
+### 1. Kestrel
+
+Kestrel is a cross-platform web server for ASP.NET Core that's included by default in ASP.NET Core project templates.
+
+```csharp
+// Configuring Kestrel in Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxConcurrentConnections = 100;
+    serverOptions.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10 MB
+    serverOptions.ListenLocalhost(5000);
+    serverOptions.ListenLocalhost(5001, listenOptions =>
+    {
+        listenOptions.UseHttps("certificate.pfx", "password");
+    });
+});
+
+var app = builder.Build();
+app.Run();
+```
+
+#### Kestrel Direct Hosting
+
+Kestrel can be used directly as an edge (internet-facing) server.
+
+```
+Client → Kestrel → ASP.NET Core App
+```
+
+#### Kestrel with Reverse Proxy
+
+Kestrel can be used with a reverse proxy server like IIS, Nginx, or Apache.
+
+```
+Client → Reverse Proxy → Kestrel → ASP.NET Core App
+```
+
+### 2. IIS
+
+Internet Information Services (IIS) is Windows-only and requires the ASP.NET Core Module to host ASP.NET Core apps.
+
+```csharp
+// Configuring IIS in Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure IIS
+builder.WebHost.UseIIS()
+    .UseIISIntegration();
+
+var app = builder.Build();
+app.Run();
+```
+
+### 3. HTTP.sys
+
+HTTP.sys is a Windows-only web server that can be used as an alternative to Kestrel.
+
+```csharp
+// Configuring HTTP.sys in Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure HTTP.sys
+builder.WebHost.UseHttpSys(options =>
+{
+    options.Authentication.Schemes = AuthenticationSchemes.NTLM | AuthenticationSchemes.Negotiate;
+    options.Authentication.AllowAnonymous = true;
+    options.MaxConnections = 100;
+    options.MaxRequestBodySize = 30000000;
+    options.UrlPrefixes.Add("http://localhost:5000");
+});
+
+var app = builder.Build();
+app.Run();
+```
+
+## Hosting in Different Environments
+
+### 1. Self-Hosted Console Application
+
+```csharp
+// Self-hosted in a console application
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        CreateHostBuilder(args).Build().Run();
+    }
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>();
+                webBuilder.UseKestrel();
+            });
+}
+```
+
+### 2. Windows Service
+
+```csharp
+// Hosting as a Windows Service
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        CreateHostBuilder(args).Build().Run();
+    }
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .UseWindowsService() // Enable Windows Service support
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>();
+            });
+}
+```
+
+### 3. Docker Container
+
+```dockerfile
+# Dockerfile for ASP.NET Core app
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+COPY ["MyApp.csproj", "./"]
+RUN dotnet restore "MyApp.csproj"
+COPY . .
+RUN dotnet build "MyApp.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "MyApp.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "MyApp.dll"]
+```
+
+## Hosting Model Comparison
+
+| Feature | In-Process | Out-of-Process |
+|---------|------------|----------------|
+| Performance | Faster (lower latency) | Slightly slower due to proxy |
+| Process isolation | Shared with web server | Separate from web server |
+| Memory usage | Shared memory space | Separate memory spaces |
+| Crash impact | Web server affected | Web server isolated |
+| Deployment | Simpler deployment | More flexible deployment |
+| Scalability | Limited by web server | Can scale independently |
+
+## Hosting in .NET 6+ Minimal APIs
+
+With .NET 6 and later, the hosting model configuration remains similar but uses the simplified Program.cs structure:
+
+```csharp
+// .NET 6+ Minimal API hosting
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure hosting model
+builder.WebHost.UseKestrel(options =>
+{
+    options.ListenLocalhost(5000);
+});
+
+// Or for IIS
+// builder.WebHost.UseIIS();
+
+var app = builder.Build();
+app.MapGet("/", () => "Hello World!");
+app.Run();
+```
+
+## Interview Tips
+
+1. **Know the differences**: Clearly explain the difference between in-process and out-of-process hosting models.
+
+2. **Server options**: Be familiar with the main web servers (Kestrel, IIS, HTTP.sys) and their use cases.
+
+3. **Performance implications**: Discuss how hosting models affect performance, especially latency and resource usage.
+
+4. **Security considerations**: Mention security aspects of different hosting models, such as process isolation.
+
+5. **Deployment scenarios**: Describe how hosting models affect deployment in different environments (Windows, Linux, containers).
+
+6. **Configuration**: Know how to configure different hosting models in code and configuration files.
+
+7. **Best practices**: Recommend when to use each hosting model based on application requirements.

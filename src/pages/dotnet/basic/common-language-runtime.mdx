@@ -1,0 +1,118 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the Common Language Runtime (CLR)?
+---
+
+# What is the Common Language Runtime (CLR)?
+
+The Common Language Runtime (CLR) is the virtual machine component of Microsoft's .NET framework that manages the execution of .NET programs. It provides a runtime environment that handles memory management, security, exception handling, and other system-level services.
+
+## Core Components and Services
+
+| Component | Description |
+|-----------|-------------|
+| **JIT Compiler** | Converts Intermediate Language (IL) to native machine code at runtime |
+| **Garbage Collector** | Automatically manages memory allocation and reclamation |
+| **Type System** | Enforces type safety and provides metadata about types |
+| **Exception Manager** | Handles structured exception handling |
+| **Security Manager** | Enforces code access security policies |
+| **Thread Support** | Manages threading and synchronization |
+| **Assembly Loader** | Loads and verifies assemblies |
+
+## Execution Process
+
+1. **Compilation**: Source code is compiled to Intermediate Language (IL)
+   ```csharp
+   // C# source code
+   public int Add(int a, int b) { return a + b; }
+   
+   // Compiled to IL
+   // .method public instance int32 Add(int32, int32) cil managed
+   // {
+   //    ldarg.1
+   //    ldarg.2
+   //    add
+   //    ret
+   // }
+   ```
+
+2. **Assembly Creation**: IL code is packaged into assemblies (.dll or .exe)
+
+3. **Loading**: CLR loads assemblies when needed
+
+4. **Verification**: CLR verifies that IL code is type-safe
+
+5. **JIT Compilation**: IL code is converted to native machine code
+
+6. **Execution**: Native code is executed with runtime services
+
+## Memory Management
+
+The CLR's garbage collector automatically manages memory:
+
+```csharp
+public void MemoryExample()
+{
+    // CLR automatically allocates memory
+    var list = new List<string>();
+    
+    // Add items to the list
+    for (int i = 0; i < 1000; i++)
+    {
+        list.Add($"Item {i}");
+    }
+    
+    // When list goes out of scope and is no longer referenced,
+    // the garbage collector will reclaim the memory
+}
+```
+
+## Type System
+
+The CLR maintains metadata about all types:
+
+- **Common Type System (CTS)**: Defines how types are declared, used, and managed
+- **Metadata**: Information about types, methods, fields, etc.
+- **Reflection**: Runtime inspection of types
+
+```csharp
+// Using reflection to examine types at runtime
+Type type = typeof(string);
+MethodInfo[] methods = type.GetMethods();
+```
+
+## Security Features
+
+The CLR provides several security mechanisms:
+
+- **Verification**: Ensures code meets type safety requirements
+- **Code Access Security**: Controls what resources code can access
+- **Role-Based Security**: User-based permissions
+
+## CLR Versions
+
+| .NET Version | CLR Version | Key Features |
+|--------------|-------------|--------------|
+| .NET Framework 1.0-1.1 | 1.0/1.1 | Basic GC, JIT |
+| .NET Framework 2.0-3.5 | 2.0 | Generics support |
+| .NET Framework 4.0-4.8 | 4.0 | Background GC, better JIT |
+| .NET Core 1.0-3.1 | CoreCLR | Cross-platform, modular |
+| .NET 5+ | CoreCLR | Unified platform, improved performance |
+
+## CoreCLR vs. CLR
+
+CoreCLR (used in .NET Core and .NET 5+) differs from the traditional CLR:
+
+- **Cross-platform**: Runs on Windows, Linux, and macOS
+- **Open-source**: Fully open-source implementation
+- **Modular**: Smaller, more composable components
+- **Performance**: Improved JIT compiler (RyuJIT)
+- **Deployment**: Side-by-side versioning, app-local deployment
+
+## CLR Benefits
+
+- **Language Interoperability**: Different .NET languages can work together
+- **Simplified Development**: Automatic memory management
+- **Type Safety**: Prevents many common programming errors
+- **Platform Independence**: Same IL runs on different platforms
+- **Performance**: JIT optimization for the target platform

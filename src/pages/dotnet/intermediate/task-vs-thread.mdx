@@ -1,0 +1,206 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between Task and Thread in .NET?
+---
+
+# What is the difference between Task and Thread in .NET?
+
+Both `Task` and `Thread` are used for concurrent programming in .NET, but they serve different purposes and operate at different levels of abstraction.
+
+## Core Differences
+
+| Feature | Thread | Task |
+|---------|--------|------|
+| **Abstraction Level** | Low-level OS thread | High-level asynchronous operation |
+| **Resource Usage** | 1MB+ stack per thread | Uses ThreadPool (efficient thread reuse) |
+| **Return Values** | Not directly supported | Built-in with `Task<T>` |
+| **Exception Handling** | Must be handled within thread | Automatically propagated to awaiter |
+| **Cancellation** | Manual implementation | Built-in with `CancellationToken` |
+| **Composition** | Not supported | Rich API for continuations and chaining |
+| **Async/Await** | Not directly compatible | Designed for async/await pattern |
+
+## Basic Usage
+
+```csharp
+// Thread example
+Thread thread = new Thread(() => {
+    Console.WriteLine("Thread is running");
+});
+thread.Start();
+thread.Join(); // Wait for completion
+
+// Task example
+Task task = Task.Run(() => {
+    Console.WriteLine("Task is running");
+});
+await task; // Wait for completion
+```
+
+## Thread Features
+
+```csharp
+// Thread properties and control
+Thread thread = new Thread(() => ProcessData());
+thread.Name = "Worker";
+thread.IsBackground = true; // Won't keep app running
+thread.Priority = ThreadPriority.AboveNormal;
+thread.Start();
+
+// Thread state
+bool isAlive = thread.IsAlive;
+ThreadState state = thread.ThreadState;
+
+// Thread-specific storage
+ThreadLocal<int> threadId = new ThreadLocal<int>(() => 
+    Thread.CurrentThread.ManagedThreadId);
+```
+
+## Task Features
+
+```csharp
+// Task with return value
+Task<int> task = Task.Run(() => {
+    return CalculateResult();
+});
+int result = await task;
+
+// Exception handling
+try {
+    await Task.Run(() => {
+        throw new Exception("Task failed");
+    });
+} catch (Exception ex) {
+    // Exception is propagated here
+    Console.WriteLine(ex.Message);
+}
+
+// Cancellation
+CancellationTokenSource cts = new CancellationTokenSource();
+Task task = Task.Run(() => {
+    while (true) {
+        cts.Token.ThrowIfCancellationRequested();
+        DoWork();
+    }
+}, cts.Token);
+cts.Cancel(); // Request cancellation
+```
+
+## Task Composition
+
+```csharp
+// Continuations
+Task<int> task = Task.Run(() => CalculateValue())
+    .ContinueWith(t => t.Result * 2);
+
+// Parallel execution
+Task<int> task1 = Task.Run(() => GetValue1());
+Task<int> task2 = Task.Run(() => GetValue2());
+
+// Wait for all tasks
+await Task.WhenAll(task1, task2);
+int sum = task1.Result + task2.Result;
+
+// Wait for first task
+Task<int> completedTask = await Task.WhenAny(task1, task2);
+int firstResult = await completedTask;
+```
+
+## Performance Comparison
+
+```csharp
+// Creating 1000 threads (expensive)
+for (int i = 0; i < 1000; i++) {
+    new Thread(() => Thread.Sleep(100)).Start();
+}
+
+// Creating 1000 tasks (efficient)
+var tasks = Enumerable.Range(0, 1000)
+    .Select(_ => Task.Run(() => Thread.Sleep(100)))
+    .ToArray();
+await Task.WhenAll(tasks);
+```
+
+## When to Use Thread
+
+Use `Thread` when you need:
+
+1. Direct control over thread properties
+2. Thread affinity (keeping operations on the same thread)
+3. Specific thread priority settings
+4. UI thread management (WPF/WinForms)
+5. Long-running dedicated threads
+
+```csharp
+// UI thread example (WPF)
+Thread uiThread = new Thread(() => {
+    var app = new Application();
+    app.Run(new MainWindow());
+});
+uiThread.SetApartmentState(ApartmentState.STA);
+uiThread.Start();
+```
+
+## When to Use Task
+
+Use `Task` when you need:
+
+1. Efficient resource usage
+2. Return values from async operations
+3. Exception propagation
+4. Composition and continuations
+5. Cancellation support
+6. Integration with async/await
+
+```csharp
+// Modern async pattern
+public async Task<string> GetDataAsync(string url)
+{
+    using var client = new HttpClient();
+    return await client.GetStringAsync(url);
+}
+```
+
+## Best Practices
+
+1. **Prefer Task over Thread** for most scenarios in modern .NET
+2. **Use Task.Run for CPU-bound work**
+3. **Use async/await directly for I/O-bound operations**
+4. **Use TaskCompletionSource for custom async operations**
+5. **Consider ThreadPool for simple work items**
+
+```csharp
+// CPU-bound work
+Task<int> cpuTask = Task.Run(() => PerformCalculation());
+
+// I/O-bound work (no Task.Run needed)
+Task<string> ioTask = File.ReadAllTextAsync("file.txt");
+
+// Custom async operation
+public Task<int> ReadSensorAsync()
+{
+    var tcs = new TaskCompletionSource<int>();
+    _sensor.ReadingComplete += (s, e) => {
+        tcs.SetResult(e.Reading);
+    };
+    _sensor.StartReading();
+    return tcs.Task;
+}
+```
+
+## Interview Tips
+
+1. **Abstraction difference**: Thread is a direct wrapper around OS threads, while Task represents an asynchronous operation that may or may not use threads.
+
+2. **Resource efficiency**: Emphasize that creating threads is expensive (1MB+ stack each) while Tasks use the ThreadPool which efficiently manages a limited set of worker threads.
+
+3. **Feature comparison**: Highlight Task's advantages in modern code: return values, exception handling, cancellation, and composition.
+
+4. **Async/await integration**: Explain that Task is designed to work with async/await, while Thread requires manual synchronization.
+
+5. **Use case examples**: Provide concrete examples of when to use each (Thread for UI threads, Task for most async operations).
+
+6. **Performance implications**: Be ready to discuss the overhead of creating threads versus using tasks, especially at scale.
+
+7. **Modern best practices**: Recommend using Task and async/await for most scenarios in modern .NET development.
+
+8. **ThreadPool knowledge**: Demonstrate understanding of how the ThreadPool works and its relationship with Task.

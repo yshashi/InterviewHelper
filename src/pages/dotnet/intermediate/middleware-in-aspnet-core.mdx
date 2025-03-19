@@ -1,0 +1,353 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Explain the concept of middleware in ASP.NET Core.
+---
+
+# Explain the concept of middleware in ASP.NET Core
+
+## What is Middleware?
+
+Middleware in ASP.NET Core is software that's assembled into an application pipeline to handle requests and responses. Each component:
+- Chooses whether to pass the request to the next component in the pipeline
+- Can perform work before and after the next component in the pipeline
+
+```csharp
+// Basic middleware pipeline setup
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+```
+
+## Middleware Pipeline
+
+The middleware pipeline is a series of components that process HTTP requests and responses sequentially. Each middleware component can:
+
+1. Process an incoming request
+2. Pass control to the next middleware
+3. Process the outgoing response after the next middleware completes
+
+```
+Request → [Middleware 1] → [Middleware 2] → [Middleware 3] → Endpoint
+                                                                 ↓
+Response ← [Middleware 1] ← [Middleware 2] ← [Middleware 3] ← Endpoint
+```
+
+## Built-in Middleware Components
+
+ASP.NET Core includes several built-in middleware components:
+
+```csharp
+// Common built-in middleware
+app.UseExceptionHandler("/Error");  // Exception handling
+app.UseHsts();                      // HTTP Strict Transport Security
+app.UseHttpsRedirection();          // HTTPS redirection
+app.UseStaticFiles();               // Static files (CSS, JS, images)
+app.UseCookiePolicy();              // Cookie policy enforcement
+app.UseRouting();                   // Endpoint routing
+app.UseCors();                      // Cross-Origin Resource Sharing
+app.UseAuthentication();            // Authentication
+app.UseAuthorization();             // Authorization
+app.UseSession();                   // Session state
+app.UseResponseCompression();       // Response compression
+app.UseResponseCaching();           // Response caching
+```
+
+## Creating Custom Middleware
+
+### 1. Inline Middleware (Using Use, Map, and Run)
+
+```csharp
+// Using Use - processes request and calls next middleware
+app.Use(async (context, next) =>
+{
+    // Do work before the next middleware
+    Console.WriteLine($"Request: {context.Request.Path}");
+    
+    await next.Invoke();  // Call the next middleware
+    
+    // Do work after the next middleware
+    Console.WriteLine($"Response: {context.Response.StatusCode}");
+});
+
+// Using Map - branches the pipeline
+app.Map("/branch", branch =>
+{
+    branch.Run(async context =>
+    {
+        await context.Response.WriteAsync("Branched pipeline");
+    });
+});
+
+// Using Run - terminates the pipeline (doesn't call next)
+app.Run(async context =>
+{
+    await context.Response.WriteAsync("Hello World!");
+});
+```
+
+### 2. Middleware Class
+
+```csharp
+// Custom middleware class
+public class RequestLoggingMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly ILogger<RequestLoggingMiddleware> _logger;
+
+    public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+    {
+        _next = next;
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        _logger.LogInformation($"Request started: {context.Request.Method} {context.Request.Path}");
+        
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            await _next(context);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            _logger.LogInformation($"Request completed in {stopwatch.ElapsedMilliseconds}ms with status code {context.Response.StatusCode}");
+        }
+    }
+}
+
+// Extension method for clean registration
+public static class RequestLoggingMiddlewareExtensions
+{
+    public static IApplicationBuilder UseRequestLogging(this IApplicationBuilder builder)
+    {
+        return builder.UseMiddleware<RequestLoggingMiddleware>();
+    }
+}
+
+// Usage in Program.cs
+app.UseRequestLogging();
+```
+
+### 3. Factory-Based Middleware
+
+```csharp
+// Factory-based middleware
+app.Use((context, next) =>
+{
+    var connectionId = context.Connection.Id;
+    var traceId = Guid.NewGuid().ToString();
+    
+    // Add custom headers
+    context.Response.OnStarting(() => {
+        context.Response.Headers["X-Connection-Id"] = connectionId;
+        context.Response.Headers["X-Trace-Id"] = traceId;
+        return Task.CompletedTask;
+    });
+    
+    return next(context);
+});
+```
+
+## Middleware Order
+
+The order in which middleware is added to the pipeline is critical:
+
+```csharp
+// Recommended middleware order
+app.UseExceptionHandler("/Error");
+app.UseHsts();
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseCookiePolicy();
+app.UseRouting();
+app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseSession();
+app.UseResponseCompression();
+app.UseResponseCaching();
+app.MapControllers();
+```
+
+Important considerations:
+- Exception handling middleware should be registered first
+- Security-related middleware should be early in the pipeline
+- Middleware that terminates the pipeline should be last
+
+## Short-Circuiting the Pipeline
+
+Middleware can short-circuit the pipeline by not calling the next delegate:
+
+```csharp
+app.Use(async (context, next) =>
+{
+    // Check condition
+    if (context.Request.Path.StartsWithSegments("/api/health"))
+    {
+        // Short-circuit the pipeline
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("Service is healthy");
+        return; // Do not call next
+    }
+    
+    // Continue to next middleware
+    await next();
+});
+```
+
+## Middleware vs. Filters
+
+Middleware and filters serve different purposes:
+
+| Middleware | Filters |
+|------------|---------|
+| Operates on the HTTP level | Operates on the MVC action level |
+| Processes all requests | Processes only requests that reach MVC |
+| Configured in Program.cs | Applied to controllers or actions |
+| Executes in a defined order | Executes in a filter pipeline |
+| Can short-circuit the pipeline | Can short-circuit action execution |
+
+```csharp
+// Middleware example
+app.Use(async (context, next) =>
+{
+    // Process all requests
+    await next();
+});
+
+// Filter example
+[TypeFilter(typeof(LoggingActionFilter))]
+public IActionResult Index()
+{
+    // Filter applies only to this action
+    return View();
+}
+```
+
+## Common Middleware Scenarios
+
+### 1. Exception Handling
+
+```csharp
+// Global exception handling
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        
+        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+        var exception = exceptionHandlerPathFeature?.Error;
+        
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
+            error = "An error occurred while processing your request.",
+            detail = exception?.Message
+        }));
+    });
+});
+```
+
+### 2. Authentication and Authorization
+
+```csharp
+// Authentication and authorization middleware
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Custom authentication check
+app.Use(async (context, next) =>
+{
+    if (context.Request.Headers.TryGetValue("API-Key", out var apiKey))
+    {
+        // Validate API key
+        if (apiKey == "valid-api-key")
+        {
+            // Set user identity
+            var claims = new[] { new Claim(ClaimTypes.Name, "API User") };
+            var identity = new ClaimsIdentity(claims, "ApiKey");
+            context.User = new ClaimsPrincipal(identity);
+        }
+    }
+    
+    await next();
+});
+```
+
+### 3. Request/Response Modification
+
+```csharp
+// Response modification middleware
+app.Use(async (context, next) =>
+{
+    // Store original body stream
+    var originalBodyStream = context.Response.Body;
+    
+    // Create a new memory stream
+    using var responseBody = new MemoryStream();
+    context.Response.Body = responseBody;
+    
+    // Call the next middleware
+    await next();
+    
+    // Reset position to read from the beginning
+    responseBody.Seek(0, SeekOrigin.Begin);
+    
+    // Read the response
+    var responseText = await new StreamReader(responseBody).ReadToEndAsync();
+    
+    // Modify the response
+    var modifiedResponse = responseText.Replace("Original", "Modified");
+    
+    // Reset the response stream
+    context.Response.Body = originalBodyStream;
+    
+    // Write the modified response
+    await context.Response.WriteAsync(modifiedResponse);
+});
+```
+
+## Middleware in Minimal APIs
+
+In ASP.NET Core 6+ with minimal APIs, middleware concepts remain the same:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+// Middleware setup
+app.UseHttpsRedirection();
+
+// Endpoint handlers (similar to terminal middleware)
+app.MapGet("/", () => "Hello World!");
+app.MapGet("/users/{id}", (int id) => $"User {id}");
+
+app.Run();
+```
+
+## Interview Tips
+
+1. **Explain the pipeline**: Describe middleware as a pipeline where each component can process requests and responses in sequence.
+
+2. **Order matters**: Emphasize that the order in which middleware is added to the pipeline is critical for proper application behavior.
+
+3. **Built-in vs. custom**: Be able to list common built-in middleware components and explain how to create custom middleware.
+
+4. **Short-circuiting**: Explain how middleware can short-circuit the pipeline by not calling the next delegate.
+
+5. **Use vs. Run**: Differentiate between `Use` (continues pipeline) and `Run` (terminates pipeline).
+
+6. **Performance considerations**: Mention that middleware should be designed to be efficient since it processes every request.
+
+7. **Real-world examples**: Provide examples of common middleware scenarios like logging, authentication, and exception handling.

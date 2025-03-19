@@ -1,0 +1,356 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between struct and class in C#?
+---
+
+# What is the difference between struct and class in C#?
+
+## Understanding Structs and Classes
+
+In C#, both structs and classes are used to create custom data types, but they have fundamental differences in behavior and usage. The main difference is that structs are value types, while classes are reference types.
+
+```csharp
+// Class example
+public class Person
+{
+    public string Name { get; set; }
+    public int Age { get; set; }
+    
+    public Person(string name, int age)
+    {
+        Name = name;
+        Age = age;
+    }
+}
+
+// Struct example
+public struct Point
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+    
+    public Point(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+}
+```
+
+## Key Differences
+
+### 1. Value Type vs Reference Type
+
+- **Structs** are value types, stored on the stack
+- **Classes** are reference types, stored on the heap
+
+```csharp
+// Value type behavior (struct)
+Point p1 = new Point(10, 20);
+Point p2 = p1; // Creates a copy
+p2.X = 30;     // Modifies only p2
+Console.WriteLine($"p1: {p1.X}, {p1.Y}"); // Output: p1: 10, 20
+Console.WriteLine($"p2: {p2.X}, {p2.Y}"); // Output: p2: 30, 20
+
+// Reference type behavior (class)
+Person person1 = new Person("John", 30);
+Person person2 = person1; // Both variables reference the same object
+person2.Age = 40;         // Modifies the shared object
+Console.WriteLine($"person1: {person1.Name}, {person1.Age}"); // Output: person1: John, 40
+Console.WriteLine($"person2: {person2.Name}, {person2.Age}"); // Output: person2: John, 40
+```
+
+### 2. Memory Allocation
+
+- **Structs** are typically allocated on the stack (unless they're part of a reference type)
+- **Classes** are always allocated on the heap
+
+```csharp
+// Memory allocation visualization
+public void MemoryExample()
+{
+    // Stack allocation
+    int number = 42;
+    Point point = new Point(10, 20);
+    
+    // Heap allocation
+    Person person = new Person("Alice", 25);
+    string name = "Bob";
+    
+    // Mixed allocation
+    Person[] people = new Person[2]; // Array on heap
+    people[0] = new Person("Charlie", 30); // Person objects on heap
+    
+    Point[] points = new Point[2]; // Array on heap
+    points[0] = new Point(5, 10); // Point values inside the array
+}
+```
+
+### 3. Inheritance
+
+- **Structs** cannot inherit from other structs or classes, but can implement interfaces
+- **Classes** can inherit from other classes and implement interfaces
+
+```csharp
+// Class inheritance
+public class Animal
+{
+    public string Name { get; set; }
+    public virtual void MakeSound() { }
+}
+
+public class Dog : Animal // Inheritance works with classes
+{
+    public override void MakeSound()
+    {
+        Console.WriteLine("Woof!");
+    }
+}
+
+// Struct limitations
+public struct Size
+{
+    public int Width { get; set; }
+    public int Height { get; set; }
+}
+
+// This would be invalid:
+// public struct Rectangle : Size { } // Structs cannot inherit
+
+// But structs can implement interfaces
+public interface IDrawable
+{
+    void Draw();
+}
+
+public struct Circle : IDrawable // Valid
+{
+    public double Radius { get; set; }
+    
+    public void Draw()
+    {
+        Console.WriteLine($"Drawing circle with radius {Radius}");
+    }
+}
+```
+
+### 4. Default Constructors
+
+- **Structs** have an implicit default constructor that initializes all fields to their default values
+- **Classes** have an implicit default constructor only if no other constructor is defined
+
+```csharp
+// Default constructors
+public class Customer
+{
+    public string Name { get; set; } // Default: null
+    public int Age { get; set; }     // Default: 0
+    
+    // If we add a constructor, the default constructor is no longer available
+    // unless explicitly defined
+    public Customer(string name)
+    {
+        Name = name;
+    }
+    
+    // Explicit default constructor
+    public Customer() { }
+}
+
+public struct Coordinate
+{
+    public int X { get; set; } // Default: 0
+    public int Y { get; set; } // Default: 0
+    
+    // Custom constructor
+    public Coordinate(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+    
+    // The default constructor is always available for structs
+}
+
+// Usage
+Customer c1 = new Customer(); // Valid because we defined a default constructor
+Coordinate coord1 = new Coordinate(); // Always valid for structs
+```
+
+### 5. Nullability
+
+- **Structs** are non-nullable by default (in pre-C# 8.0)
+- **Classes** are nullable
+
+```csharp
+// Nullability
+Person person = null; // Valid for classes
+// Point point = null; // Invalid for structs (compile-time error)
+
+// With nullable value types
+int? nullableInt = null; // Valid
+Point? nullablePoint = null; // Valid with nullable value type
+```
+
+### 6. Performance Implications
+
+- **Structs** can be more efficient for small, short-lived data structures
+- **Classes** are better for larger objects or when inheritance is needed
+
+```csharp
+// Performance considerations
+public void ProcessLargeArray()
+{
+    // More efficient with structs for small data
+    Point[] points = new Point[1000000];
+    for (int i = 0; i < points.Length; i++)
+    {
+        points[i] = new Point(i, i);
+    }
+    
+    // Less efficient with classes for small data
+    Person[] people = new Person[1000000];
+    for (int i = 0; i < people.Length; i++)
+    {
+        people[i] = new Person($"Person {i}", i);
+    }
+}
+```
+
+## When to Use Struct vs Class
+
+### Use Struct When:
+
+1. The object is small and simple
+2. The object is commonly passed by value
+3. The object is short-lived
+4. The object is immutable
+5. The object will not be boxed frequently
+
+```csharp
+// Good struct examples
+public struct Point3D
+{
+    public float X { get; }
+    public float Y { get; }
+    public float Z { get; }
+    
+    public Point3D(float x, float y, float z)
+    {
+        X = x;
+        Y = y;
+        Z = z;
+    }
+    
+    // Immutable struct with value semantics
+}
+
+public struct Money
+{
+    public decimal Amount { get; }
+    public string Currency { get; }
+    
+    public Money(decimal amount, string currency)
+    {
+        Amount = amount;
+        Currency = currency;
+    }
+}
+```
+
+### Use Class When:
+
+1. The object is large or complex
+2. Reference semantics are desired
+3. The object will have a longer lifetime
+4. Inheritance is needed
+5. The object will be frequently modified
+
+```csharp
+// Good class examples
+public class Customer
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public List<Order> Orders { get; set; } = new List<Order>();
+    
+    public void AddOrder(Order order)
+    {
+        Orders.Add(order);
+    }
+}
+
+public class BankAccount
+{
+    public string AccountNumber { get; }
+    public string OwnerName { get; set; }
+    private decimal balance;
+    
+    public decimal Balance 
+    { 
+        get { return balance; }
+        private set { balance = value; }
+    }
+    
+    public void Deposit(decimal amount)
+    {
+        Balance += amount;
+    }
+    
+    public bool Withdraw(decimal amount)
+    {
+        if (amount <= Balance)
+        {
+            Balance -= amount;
+            return true;
+        }
+        return false;
+    }
+}
+```
+
+## Comparison Table
+
+| Feature | Struct | Class |
+|---------|--------|-------|
+| Type | Value type | Reference type |
+| Storage | Stack (typically) | Heap |
+| Assignment | Creates a copy | Copies the reference |
+| Default value | Zero-initialized | null |
+| Inheritance | Cannot inherit | Can inherit |
+| Destructors | Not supported | Supported |
+| Performance | Better for small data | Better for large data |
+| Nullability | Non-nullable by default | Nullable |
+| Default constructor | Always available | Only if no other constructors |
+
+## Record Types (C# 9+)
+
+C# 9 introduced record types, which provide value-like semantics with reference types.
+
+```csharp
+// Record type (reference type with value semantics)
+public record Person(string FirstName, string LastName, int Age);
+
+// Usage
+var person1 = new Person("John", "Doe", 30);
+var person2 = person1 with { Age = 31 }; // Non-destructive mutation
+
+Console.WriteLine(person1); // Person { FirstName = John, LastName = Doe, Age = 30 }
+Console.WriteLine(person2); // Person { FirstName = John, LastName = Doe, Age = 31 }
+Console.WriteLine(person1 == person2); // False - value-based equality
+```
+
+## Interview Tips
+
+1. **Emphasize value vs. reference**: The fundamental difference is that structs are value types and classes are reference types.
+
+2. **Discuss memory allocation**: Explain how structs are typically stack-allocated while classes are heap-allocated.
+
+3. **Mention inheritance limitations**: Structs cannot inherit from other types but can implement interfaces.
+
+4. **Highlight performance implications**: Structs can be more efficient for small, short-lived data.
+
+5. **Provide usage guidelines**: Explain when to use structs (small, immutable data) vs. classes (complex objects, inheritance).
+
+6. **Mention C# 9+ records**: If relevant, discuss how records provide value-like semantics with reference types.

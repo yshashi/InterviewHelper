@@ -1,0 +1,438 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are LINQ queries, and how do they work in .NET?
+---
+
+# What are LINQ queries, and how do they work in .NET?
+
+## Understanding LINQ
+
+Language Integrated Query (LINQ) is a set of features in .NET that provides a consistent, expressive, and type-safe way to query and manipulate data from different sources. LINQ bridges the gap between the world of objects and the world of data.
+
+```csharp
+// Basic LINQ query example
+var numbers = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
+// Query syntax
+var evenNumbersQuery = from n in numbers
+                       where n % 2 == 0
+                       select n;
+
+// Method syntax
+var evenNumbersMethod = numbers.Where(n => n % 2 == 0);
+
+foreach (var number in evenNumbersQuery)
+{
+    Console.WriteLine(number); // Outputs: 2, 4, 6, 8, 10
+}
+```
+
+## LINQ Providers
+
+LINQ can work with different data sources through various providers:
+
+- **LINQ to Objects**: Query in-memory collections that implement `IEnumerable<T>`
+- **LINQ to Entities**: Query databases through Entity Framework
+- **LINQ to SQL**: Query SQL Server databases (older technology)
+- **LINQ to XML**: Query and manipulate XML documents
+- **LINQ to DataSet**: Query ADO.NET DataSets
+- **Custom LINQ Providers**: Query custom data sources
+
+```csharp
+// LINQ to Objects
+var numbers = new List<int> { 1, 2, 3, 4, 5 };
+var evenNumbers = numbers.Where(n => n % 2 == 0);
+
+// LINQ to Entities (Entity Framework)
+var youngCustomers = dbContext.Customers
+    .Where(c => c.Age < 30)
+    .OrderBy(c => c.LastName)
+    .ToList();
+
+// LINQ to XML
+XDocument doc = XDocument.Load("data.xml");
+var elements = from e in doc.Descendants("Customer")
+               where (int)e.Attribute("Age") < 30
+               select e;
+
+// LINQ to DataSet
+var youngCustomers = dataSet.Tables["Customers"].AsEnumerable()
+    .Where(row => row.Field<int>("Age") < 30)
+    .CopyToDataTable();
+```
+
+## Query Syntax vs. Method Syntax
+
+LINQ provides two syntax options for writing queries:
+
+### Query Syntax
+
+```csharp
+// Query syntax (SQL-like)
+var result = from c in customers
+             where c.City == "London"
+             orderby c.Name
+             select new { c.Name, c.Phone };
+```
+
+### Method Syntax
+
+```csharp
+// Method syntax (using extension methods)
+var result = customers
+    .Where(c => c.City == "London")
+    .OrderBy(c => c.Name)
+    .Select(c => new { c.Name, c.Phone });
+```
+
+Both syntaxes are functionally equivalent, but:
+- Query syntax is often more readable for complex queries
+- Method syntax provides more functionality and flexibility
+
+## Key LINQ Operations
+
+### Filtering
+
+```csharp
+// Where - filter elements based on a predicate
+var adults = people.Where(p => p.Age >= 18);
+
+// OfType - filter elements based on type
+var strings = mixedList.OfType<string>();
+```
+
+### Sorting
+
+```csharp
+// OrderBy - sort in ascending order
+var orderedByName = people.OrderBy(p => p.LastName);
+
+// OrderByDescending - sort in descending order
+var orderedByAgeDesc = people.OrderByDescending(p => p.Age);
+
+// ThenBy - secondary sort
+var orderedPeople = people
+    .OrderBy(p => p.LastName)
+    .ThenBy(p => p.FirstName);
+```
+
+### Projection
+
+```csharp
+// Select - transform elements
+var names = people.Select(p => p.Name);
+
+// SelectMany - flatten nested collections
+var allPhoneNumbers = customers.SelectMany(c => c.PhoneNumbers);
+
+// Anonymous types
+var customerInfo = customers.Select(c => new { c.Name, c.City, IsAdult = c.Age >= 18 });
+```
+
+### Joining
+
+```csharp
+// Join - inner join
+var query = from c in customers
+            join o in orders on c.CustomerId equals o.CustomerId
+            select new { c.Name, o.OrderDate, o.Amount };
+
+// Method syntax join
+var result = customers.Join(
+    orders,
+    customer => customer.CustomerId,
+    order => order.CustomerId,
+    (customer, order) => new { customer.Name, order.OrderDate, order.Amount }
+);
+
+// GroupJoin - left outer join with grouping
+var customerOrders = from c in customers
+                     join o in orders on c.CustomerId equals o.CustomerId into customerOrders
+                     select new { Customer = c, Orders = customerOrders };
+```
+
+### Grouping
+
+```csharp
+// GroupBy - group elements by a key
+var customersByCity = customers.GroupBy(c => c.City);
+
+// Using grouping
+foreach (var cityGroup in customersByCity)
+{
+    Console.WriteLine($"City: {cityGroup.Key}");
+    foreach (var customer in cityGroup)
+    {
+        Console.WriteLine($"  {customer.Name}");
+    }
+}
+
+// Query syntax with grouping
+var ordersByCustomer = from o in orders
+                       group o by o.CustomerId into customerOrders
+                       select new
+                       {
+                           CustomerId = customerOrders.Key,
+                           OrderCount = customerOrders.Count(),
+                           TotalAmount = customerOrders.Sum(o => o.Amount)
+                       };
+```
+
+### Aggregation
+
+```csharp
+// Count - count elements
+int count = numbers.Count();
+int evenCount = numbers.Count(n => n % 2 == 0);
+
+// Sum - sum values
+decimal totalAmount = orders.Sum(o => o.Amount);
+
+// Min/Max - find minimum/maximum values
+int minAge = people.Min(p => p.Age);
+int maxAge = people.Max(p => p.Age);
+
+// Average - calculate average
+double averageAge = people.Average(p => p.Age);
+
+// Aggregate - custom aggregation
+int product = numbers.Aggregate(1, (acc, n) => acc * n);
+```
+
+### Element Operations
+
+```csharp
+// First/FirstOrDefault - get first element
+var firstCustomer = customers.First();
+var firstLondonCustomer = customers.First(c => c.City == "London");
+var firstOrDefault = customers.FirstOrDefault(c => c.City == "Paris"); // null if none found
+
+// Last/LastOrDefault - get last element
+var lastCustomer = customers.Last();
+var lastOrDefault = customers.LastOrDefault(c => c.City == "Paris");
+
+// Single/SingleOrDefault - get single element (throws if multiple)
+var uniqueCustomer = customers.Single(c => c.CustomerId == 12345);
+var uniqueOrDefault = customers.SingleOrDefault(c => c.CustomerId == 12345);
+
+// ElementAt/ElementAtOrDefault - get element at index
+var thirdCustomer = customers.ElementAt(2);
+var tenthOrDefault = customers.ElementAtOrDefault(9); // default if out of range
+```
+
+### Set Operations
+
+```csharp
+// Distinct - remove duplicates
+var uniqueNames = names.Distinct();
+
+// Union - combine sets, remove duplicates
+var allCustomers = ukCustomers.Union(usCustomers);
+
+// Intersect - common elements
+var customersInBothLists = listA.Intersect(listB);
+
+// Except - elements in first set but not in second
+var customersOnlyInA = listA.Except(listB);
+```
+
+### Quantifiers
+
+```csharp
+// Any - check if any element satisfies condition
+bool hasAdults = people.Any(p => p.Age >= 18);
+
+// All - check if all elements satisfy condition
+bool allAdults = people.All(p => p.Age >= 18);
+
+// Contains - check if collection contains element
+bool containsJohn = names.Contains("John");
+```
+
+### Partitioning
+
+```csharp
+// Take - get first n elements
+var topFive = customers.OrderByDescending(c => c.Purchases).Take(5);
+
+// Skip - skip first n elements
+var afterTopFive = customers.OrderByDescending(c => c.Purchases).Skip(5);
+
+// TakeLast - get last n elements (EF Core 2.1+)
+var bottomFive = customers.OrderByDescending(c => c.Purchases).TakeLast(5);
+
+// SkipLast - skip last n elements (EF Core 2.1+)
+var notBottomFive = customers.OrderByDescending(c => c.Purchases).SkipLast(5);
+
+// TakeWhile - take elements while condition is true
+var takeWhileUnder40 = ages.TakeWhile(age => age < 40);
+
+// SkipWhile - skip elements while condition is true
+var skipWhileUnder40 = ages.SkipWhile(age => age < 40);
+```
+
+## Deferred Execution
+
+LINQ queries use deferred execution, meaning they're not executed until the results are actually needed.
+
+```csharp
+// Query definition (not executed yet)
+var query = numbers.Where(n => n > 5);
+
+// Add more numbers to the source collection
+numbers.Add(10);
+numbers.Add(20);
+
+// Query execution (includes the newly added numbers)
+foreach (var n in query)
+{
+    Console.WriteLine(n);
+}
+```
+
+### Forcing Immediate Execution
+
+```csharp
+// ToList - execute query and return results as List<T>
+var results = query.ToList();
+
+// ToArray - execute query and return results as array
+var resultsArray = query.ToArray();
+
+// ToDictionary - execute query and return results as Dictionary<TKey, TValue>
+var customerDict = customers.ToDictionary(c => c.CustomerId);
+
+// ToLookup - execute query and return results as ILookup<TKey, TElement>
+var customersByCity = customers.ToLookup(c => c.City);
+
+// Count, Sum, Average, etc. - execute query and return a scalar result
+int count = query.Count();
+```
+
+## LINQ and IQueryable
+
+When working with LINQ to Entities (Entity Framework), queries are translated to SQL:
+
+```csharp
+// LINQ to Entities query
+var londonCustomers = dbContext.Customers
+    .Where(c => c.City == "London")
+    .OrderBy(c => c.Name)
+    .Select(c => new { c.Name, c.Email });
+    
+// The query above is translated to SQL like:
+// SELECT [c].[Name], [c].[Email]
+// FROM [Customers] AS [c]
+// WHERE [c].[City] = N'London'
+// ORDER BY [c].[Name]
+```
+
+### IQueryable vs. IEnumerable
+
+- **`IQueryable<T>`**: Represents a query that will be executed at the data source
+- **`IEnumerable<T>`**: Represents a query that will be executed in memory
+
+```csharp
+// IQueryable - filtering happens at the database
+IQueryable<Customer> queryable = dbContext.Customers.Where(c => c.City == "London");
+
+// IEnumerable - all data is loaded, then filtered in memory
+IEnumerable<Customer> enumerable = dbContext.Customers.AsEnumerable().Where(c => c.City == "London");
+```
+
+## LINQ Query Execution Pipeline
+
+1. **Data source**: The collection or data source to query
+2. **Query creation**: Define the query using LINQ operators
+3. **Query execution**: Iterate over the results or force execution
+4. **Result processing**: Process the query results
+
+```csharp
+// 1. Data source
+List<Customer> customers = GetCustomers();
+
+// 2. Query creation
+var query = from c in customers
+            where c.Orders.Count > 10
+            orderby c.Name
+            select new { c.Name, OrderCount = c.Orders.Count };
+
+// 3. Query execution
+// 4. Result processing
+foreach (var item in query) // Execution happens here
+{
+    Console.WriteLine($"{item.Name}: {item.OrderCount} orders");
+}
+```
+
+## Advanced LINQ Techniques
+
+### Parallel LINQ (PLINQ)
+
+```csharp
+// Parallel query execution
+var parallelQuery = numbers.AsParallel()
+    .Where(n => IsPrime(n))
+    .OrderBy(n => n);
+    
+// Force parallel execution with specific options
+var customParallelQuery = numbers.AsParallel()
+    .WithDegreeOfParallelism(4)
+    .WithExecutionMode(ParallelExecutionMode.ForceParallelism)
+    .Where(n => IsPrime(n));
+```
+
+### Custom LINQ Operators
+
+```csharp
+// Extension method to create custom LINQ operator
+public static class LinqExtensions
+{
+    public static IEnumerable<T> WhereNot<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+    {
+        return source.Where(item => !predicate(item));
+    }
+}
+
+// Usage
+var nonAdults = people.WhereNot(p => p.Age >= 18);
+```
+
+### Expression Trees
+
+```csharp
+// Creating an expression tree manually
+Expression<Func<Customer, bool>> expr = c => c.City == "London";
+
+// Examining the expression tree
+var parameter = expr.Parameters[0]; // c
+var body = expr.Body; // c.City == "London"
+
+// Building expression trees dynamically
+ParameterExpression param = Expression.Parameter(typeof(Customer), "c");
+MemberExpression property = Expression.Property(param, "City");
+ConstantExpression constant = Expression.Constant("London");
+BinaryExpression equality = Expression.Equal(property, constant);
+
+var lambdaExpr = Expression.Lambda<Func<Customer, bool>>(equality, param);
+var compiledFunc = lambdaExpr.Compile();
+
+// Using the compiled expression
+var result = customers.Where(compiledFunc);
+```
+
+## Interview Tips
+
+1. **Define LINQ clearly**: LINQ is a set of features in .NET that provides a consistent way to query and manipulate data from different sources.
+
+2. **Syntax options**: Explain the difference between query syntax and method syntax, and when each might be preferred.
+
+3. **Deferred execution**: Emphasize that LINQ queries use deferred execution, meaning they're not executed until the results are needed.
+
+4. **Common operations**: Be familiar with filtering, sorting, projection, joining, and grouping operations.
+
+5. **LINQ providers**: Understand the different LINQ providers (LINQ to Objects, LINQ to Entities, LINQ to XML) and how they translate queries.
+
+6. **Performance considerations**: Discuss how to optimize LINQ queries, especially when working with databases.
+
+7. **IQueryable vs. IEnumerable**: Explain the difference and when to use each interface.

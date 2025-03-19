@@ -1,0 +1,146 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the purpose of the using statement in C#?
+---
+
+# What is the purpose of the using statement in C#?
+
+The `using` statement in C# serves two distinct purposes:
+
+1. **Resource Management**: Ensures proper disposal of IDisposable objects
+2. **Namespace Importing**: Brings namespaces into scope to avoid fully qualified names
+
+## 1. Resource Management with using
+
+The primary purpose of the `using` statement is to automatically dispose of resources that implement `IDisposable`, even when exceptions occur.
+
+```csharp
+// Automatically disposes the connection when the block exits
+using (SqlConnection connection = new SqlConnection(connectionString))
+{
+    connection.Open();
+    // Use the connection
+    SqlCommand command = new SqlCommand("SELECT * FROM Users", connection);
+    // When the block exits, connection.Dispose() is called automatically
+}
+```
+
+### How it Works
+
+The `using` statement is syntactic sugar for a try-finally block:
+
+```csharp
+// What happens behind the scenes
+{
+    SqlConnection connection = new SqlConnection(connectionString);
+    try
+    {
+        connection.Open();
+        // Use the connection
+    }
+    finally
+    {
+        if (connection != null)
+            ((IDisposable)connection).Dispose();
+    }
+}
+```
+
+## 2. Namespace Importing
+
+The `using` directive imports namespaces to avoid typing fully qualified names.
+
+```csharp
+// Without using directive
+System.Console.WriteLine("Hello");
+System.Collections.Generic.List<string> names = new System.Collections.Generic.List<string>();
+
+// With using directives
+using System;
+using System.Collections.Generic;
+
+Console.WriteLine("Hello");
+List<string> names = new List<string>();
+```
+
+## Using Declaration (C# 8.0+)
+
+C# 8.0 introduced a simplified syntax called "using declaration":
+
+```csharp
+// Traditional using statement
+using (var reader = new StreamReader("file.txt"))
+{
+    string content = reader.ReadToEnd();
+}
+
+// Using declaration (C# 8.0+)
+using var reader = new StreamReader("file.txt");
+string content = reader.ReadToEnd();
+// reader is disposed at the end of the enclosing scope
+```
+
+## Using with Multiple Resources
+
+Multiple resources can be managed in a single statement:
+
+```csharp
+using (SqlConnection connection = new SqlConnection(connectionString))
+using (SqlCommand command = new SqlCommand("SELECT * FROM Users", connection))
+{
+    connection.Open();
+    using (SqlDataReader reader = command.ExecuteReader())
+    {
+        while (reader.Read())
+        {
+            // Process data
+        }
+    }
+}
+
+// Or with C# 8.0+ syntax
+using var connection = new SqlConnection(connectionString);
+using var command = new SqlCommand("SELECT * FROM Users", connection);
+connection.Open();
+using var reader = command.ExecuteReader();
+```
+
+## Using with Async/Await
+
+When working with async code, use `using` with async methods:
+
+```csharp
+// Async method with using
+public async Task<string> GetDataAsync(string url)
+{
+    using (HttpClient client = new HttpClient())
+    {
+        return await client.GetStringAsync(url);
+    }
+}
+
+// C# 8.0+ using declaration with async
+public async Task<string> GetDataAsync(string url)
+{
+    using HttpClient client = new HttpClient();
+    return await client.GetStringAsync(url);
+}
+```
+
+## Common IDisposable Types
+
+These types should typically be used with `using`:
+
+- File handles: `FileStream`, `StreamReader`, `StreamWriter`
+- Database connections: `SqlConnection`, `DbConnection`
+- Network resources: `HttpClient`, `TcpClient`
+- Graphics resources: `Graphics`, `Bitmap`, `Font`
+- Locks and synchronization: `Mutex`, `ReaderWriterLock`
+
+## Best Practices
+
+1. **Always use `using` with IDisposable objects** to prevent resource leaks
+2. **Keep `using` blocks small** to release resources as soon as possible
+3. **Avoid returning disposable objects** from methods inside `using` blocks
+4. **Implement IDisposable in your own classes** that manage unmanaged resources
+5. **Consider using declaration syntax** (C# 8.0+) for cleaner code

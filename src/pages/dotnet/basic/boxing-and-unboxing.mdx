@@ -1,0 +1,295 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is boxing and unboxing in .NET?
+---
+
+# What is boxing and unboxing in .NET?
+
+## Understanding Boxing and Unboxing
+
+Boxing and unboxing are type conversion operations in .NET that enable value types to be treated as reference types and vice versa. These operations are essential for understanding how value types and reference types interact in the .NET type system.
+
+```csharp
+// Simple example of boxing and unboxing
+int number = 42;           // Value type
+object boxed = number;     // Boxing: value type → reference type
+int unboxed = (int)boxed;  // Unboxing: reference type → value type
+```
+
+## Boxing
+
+Boxing is the process of converting a value type to a reference type by wrapping the value inside an object instance on the heap.
+
+```csharp
+// Boxing examples
+int i = 123;
+double d = 3.14;
+bool b = true;
+
+// Boxing occurs when value types are converted to object
+object boxedInt = i;      // Explicit boxing
+object boxedDouble = d;   // Explicit boxing
+object boxedBool = b;     // Explicit boxing
+
+// Boxing also occurs when value types are converted to interface types
+IComparable comparable = i;  // Boxing (int implements IComparable)
+```
+
+### What Happens During Boxing
+
+1. Memory is allocated on the heap for the new object
+2. The value is copied into the new object
+3. A reference to the object is returned
+
+```csharp
+// Visual representation of boxing
+int number = 42;  // Value type on stack
+
+// After boxing:
+object boxed = number;  
+// 1. Allocates memory on heap
+// 2. Copies value (42) to the heap
+// 3. Returns reference to the heap object
+```
+
+## Unboxing
+
+Unboxing is the process of converting a reference type back to a value type by extracting the value from the object.
+
+```csharp
+// Unboxing examples
+object boxedInt = 123;     // Boxed integer
+int unboxedInt = (int)boxedInt;  // Unboxing with explicit cast
+
+object boxedDouble = 3.14;
+double unboxedDouble = (double)boxedDouble;
+
+// Type checking before unboxing (recommended)
+if (boxedInt is int)
+{
+    int safeUnboxed = (int)boxedInt;
+    Console.WriteLine(safeUnboxed);
+}
+```
+
+### What Happens During Unboxing
+
+1. The runtime checks if the object is a boxed value of the correct type
+2. The value is copied from the heap object to the stack
+3. If the type check fails, an InvalidCastException is thrown
+
+```csharp
+// Unboxing process
+object boxed = 42;  // Boxed integer on heap
+
+// During unboxing:
+int unboxed = (int)boxed;  
+// 1. Verifies boxed contains an int
+// 2. Copies value from heap to stack
+// 3. Returns the value type
+
+// Failed unboxing
+object boxedString = "42";
+// int unboxedFail = (int)boxedString;  // Throws InvalidCastException
+```
+
+## Performance Implications
+
+Boxing and unboxing operations can impact performance due to:
+- Memory allocation on the heap
+- Garbage collection overhead
+- Type checking during unboxing
+- Value copying between stack and heap
+
+```csharp
+// Performance impact example
+public void BoxingPerformanceExample()
+{
+    const int iterations = 1000000;
+    
+    // Without boxing (fast)
+    int sum1 = 0;
+    for (int i = 0; i < iterations; i++)
+    {
+        sum1 += i;
+    }
+    
+    // With boxing (slow)
+    int sum2 = 0;
+    for (int i = 0; i < iterations; i++)
+    {
+        object boxed = i;      // Boxing
+        sum2 += (int)boxed;    // Unboxing
+    }
+}
+```
+
+## Common Boxing Scenarios
+
+### 1. Collections (pre-generics)
+
+```csharp
+// Boxing in non-generic collections
+ArrayList list = new ArrayList();
+list.Add(42);        // Boxing occurs
+list.Add(3.14);      // Boxing occurs
+list.Add(true);      // Boxing occurs
+
+// Unboxing when retrieving
+int number = (int)list[0];  // Unboxing
+
+// Generic collections avoid boxing
+List<int> genericList = new List<int>();
+genericList.Add(42);        // No boxing
+int value = genericList[0]; // No unboxing
+```
+
+### 2. Method Parameters
+
+```csharp
+// Boxing with method parameters
+public void ProcessValue(object value)
+{
+    Console.WriteLine(value.ToString());
+}
+
+int number = 42;
+ProcessValue(number);  // Boxing occurs
+
+// No boxing with generic methods
+public void ProcessGeneric<T>(T value)
+{
+    Console.WriteLine(value.ToString());
+}
+
+ProcessGeneric(number);  // No boxing
+```
+
+### 3. String Interpolation and Concatenation
+
+```csharp
+// Boxing during string operations
+int value = 42;
+string result = "The value is " + value;  // Boxing occurs
+string interpolated = $"The value is {value}";  // Boxing occurs
+
+// Modern compiler optimizations may reduce some of these boxing operations
+```
+
+### 4. Nullable Value Types
+
+```csharp
+// Nullable types avoid boxing
+int? nullableInt = 42;
+nullableInt = null;
+
+// This doesn't involve boxing - nullable types are still value types
+// They're implemented as structs with a value and a hasValue flag
+```
+
+## Avoiding Boxing and Unboxing
+
+### 1. Use Generics
+
+```csharp
+// Instead of ArrayList (causes boxing)
+ArrayList arrayList = new ArrayList();
+arrayList.Add(42);  // Boxing
+int num1 = (int)arrayList[0];  // Unboxing
+
+// Use List<T> (no boxing)
+List<int> genericList = new List<int>();
+genericList.Add(42);  // No boxing
+int num2 = genericList[0];  // No unboxing
+```
+
+### 2. Use Specific Method Overloads
+
+```csharp
+// Instead of this (causes boxing)
+public void Log(object value)
+{
+    Console.WriteLine(value);
+}
+
+// Use overloaded methods
+public void Log(int value)
+{
+    Console.WriteLine(value);
+}
+
+public void Log(double value)
+{
+    Console.WriteLine(value);
+}
+
+// Or use generics
+public void Log<T>(T value)
+{
+    Console.WriteLine(value);
+}
+```
+
+### 3. Use StringBuilder for String Operations
+
+```csharp
+// Instead of string concatenation (may cause boxing)
+string result = "";
+for (int i = 0; i < 100; i++)
+{
+    result += i;  // Potential boxing
+}
+
+// Use StringBuilder
+var builder = new StringBuilder();
+for (int i = 0; i < 100; i++)
+{
+    builder.Append(i);  // No boxing with modern implementations
+}
+string finalResult = builder.ToString();
+```
+
+### 4. Use Interfaces on Structs
+
+```csharp
+// Define interface
+public interface IProcessor
+{
+    void Process();
+}
+
+// Implement on struct
+public struct ValueProcessor : IProcessor
+{
+    public int Value { get; set; }
+    
+    public void Process()
+    {
+        Console.WriteLine($"Processing {Value}");
+    }
+}
+
+// Usage that avoids boxing
+ValueProcessor processor = new ValueProcessor { Value = 42 };
+processor.Process();  // No boxing
+
+// Usage that causes boxing
+IProcessor iProcessor = processor;  // Boxing occurs
+iProcessor.Process();
+```
+
+## Interview Tips
+
+1. **Define clearly**: Boxing is converting a value type to a reference type; unboxing is converting a reference type back to a value type.
+
+2. **Explain the process**: Describe what happens in memory during boxing (heap allocation) and unboxing (type checking and value extraction).
+
+3. **Highlight performance impact**: Mention that boxing and unboxing can impact performance due to memory allocation, garbage collection, and type checking.
+
+4. **Provide common scenarios**: Discuss where boxing commonly occurs (non-generic collections, object parameters, etc.).
+
+5. **Suggest alternatives**: Explain how to avoid boxing using generics, specific method overloads, etc.
+
+6. **Mention compiler optimizations**: Note that modern C# compilers can optimize away some boxing operations in certain scenarios.
+
+7. **Contrast with reference conversions**: Explain that boxing/unboxing is different from reference type conversions, which don't involve copying values between stack and heap.

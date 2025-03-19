@@ -1,0 +1,249 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is a namespace in .NET?
+---
+
+# What is a namespace in .NET?
+
+## Understanding Namespaces
+
+A namespace in .NET is a logical container for organizing and grouping related classes, interfaces, structs, enums, and other namespaces. Namespaces help prevent naming conflicts and make code more organized and maintainable.
+
+```csharp
+// Declaring a namespace
+namespace MyCompany.MyProduct.BusinessLogic
+{
+    // Classes, interfaces, etc. inside the namespace
+    public class Customer
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+    
+    public interface ICustomerService
+    {
+        Customer GetCustomer(int id);
+        void SaveCustomer(Customer customer);
+    }
+}
+```
+
+## Benefits of Namespaces
+
+### 1. Organizing Code
+
+Namespaces provide a hierarchical way to organize code, similar to how folders organize files.
+
+```csharp
+// Organizing code with namespaces
+namespace MyCompany.MyProduct
+{
+    namespace UI
+    {
+        public class MainForm { }
+        public class LoginDialog { }
+    }
+    
+    namespace Data
+    {
+        public class DatabaseConnection { }
+        public class Repository { }
+    }
+    
+    namespace BusinessLogic
+    {
+        public class OrderProcessor { }
+        public class InventoryManager { }
+    }
+}
+```
+
+### 2. Preventing Naming Conflicts
+
+Namespaces allow you to use the same class name in different contexts.
+
+```csharp
+// Two classes with the same name in different namespaces
+namespace MyCompany.Accounting
+{
+    public class Invoice
+    {
+        public decimal CalculateTax() { /* Accounting logic */ return 0; }
+    }
+}
+
+namespace MyCompany.Sales
+{
+    public class Invoice
+    {
+        public decimal CalculateDiscount() { /* Sales logic */ return 0; }
+    }
+}
+
+// Using both classes
+public class Program
+{
+    public static void Main()
+    {
+        // Fully qualified names
+        MyCompany.Accounting.Invoice accountingInvoice = new MyCompany.Accounting.Invoice();
+        MyCompany.Sales.Invoice salesInvoice = new MyCompany.Sales.Invoice();
+        
+        decimal tax = accountingInvoice.CalculateTax();
+        decimal discount = salesInvoice.CalculateDiscount();
+    }
+}
+```
+
+## Using Namespaces
+
+### 1. Using Directive
+
+The `using` directive allows you to use types from a namespace without specifying the fully qualified name.
+
+```csharp
+// Without using directive
+MyCompany.MyProduct.BusinessLogic.Customer customer = 
+    new MyCompany.MyProduct.BusinessLogic.Customer();
+
+// With using directive
+using MyCompany.MyProduct.BusinessLogic;
+
+Customer customer = new Customer(); // Much cleaner
+```
+
+### 2. Alias Directive
+
+You can create aliases for namespaces or types to avoid conflicts or improve readability.
+
+```csharp
+// Creating aliases for namespaces
+using AccountingInvoice = MyCompany.Accounting.Invoice;
+using SalesInvoice = MyCompany.Sales.Invoice;
+
+public class Program
+{
+    public static void Main()
+    {
+        AccountingInvoice invoice1 = new AccountingInvoice();
+        SalesInvoice invoice2 = new SalesInvoice();
+    }
+}
+```
+
+### 3. Static Using Directive
+
+The static using directive allows you to access static members of a type without specifying the type name.
+
+```csharp
+// Without static using
+double result = Math.Sqrt(25);
+Console.WriteLine(result);
+
+// With static using
+using static System.Math;
+using static System.Console;
+
+double result = Sqrt(25); // No need for Math.
+WriteLine(result);        // No need for Console.
+```
+
+## Common .NET Namespaces
+
+.NET Framework and .NET Core include many built-in namespaces:
+
+```csharp
+// Common .NET namespaces
+using System;                  // Core types
+using System.Collections;      // Non-generic collections
+using System.Collections.Generic; // Generic collections
+using System.IO;               // File and stream I/O
+using System.Linq;             // LINQ query operations
+using System.Net;              // Network operations
+using System.Text;             // Text processing
+using System.Threading.Tasks;  // Asynchronous operations
+```
+
+## Nested Namespaces
+
+Namespaces can be nested to create a hierarchy.
+
+```csharp
+// Nested namespaces
+namespace MyCompany
+{
+    namespace MyProduct
+    {
+        namespace Core
+        {
+            public class Logger { }
+        }
+    }
+}
+
+// Alternative syntax
+namespace MyCompany.MyProduct.Core
+{
+    public class Logger { }
+}
+```
+
+## Global Namespace
+
+Types defined without an explicit namespace are placed in the global namespace.
+
+```csharp
+// This class is in the global namespace
+public class GlobalClass
+{
+    public void DoSomething() { }
+}
+```
+
+## File-Scoped Namespaces (C# 10+)
+
+In C# 10 and later, you can use file-scoped namespaces that apply to the entire file.
+
+```csharp
+// Traditional namespace declaration
+namespace MyCompany.MyProduct
+{
+    public class Customer { }
+    public class Order { }
+}
+
+// File-scoped namespace (C# 10+)
+namespace MyCompany.MyProduct;
+
+public class Customer { }
+public class Order { }
+```
+
+## Best Practices for Namespaces
+
+1. **Use a hierarchical structure**: Start with company name, then product, then logical area.
+2. **Align with folder structure**: Match namespace hierarchy with project folder structure.
+3. **Avoid very deep nesting**: Keep namespace hierarchy reasonably flat (3-4 levels).
+4. **Use PascalCase**: Follow .NET naming conventions with PascalCase for namespace names.
+
+```csharp
+// Good namespace structure
+namespace CompanyName.ProductName.Feature.Subfeature
+{
+    // Classes, interfaces, etc.
+}
+```
+
+## Interview Tips
+
+1. **Define clearly**: A namespace is a logical container for organizing related code elements.
+
+2. **Highlight organization**: Emphasize how namespaces help organize code and prevent naming conflicts.
+
+3. **Mention using directives**: Explain how using directives simplify code by avoiding fully qualified names.
+
+4. **Discuss common namespaces**: Mention important .NET namespaces like System, System.Collections.Generic, etc.
+
+5. **Explain naming conventions**: Discuss the standard practice of starting with company name followed by product/feature.
+
+6. **Compare with other languages**: If asked, compare with similar concepts in other languages (packages in Java, modules in Python).

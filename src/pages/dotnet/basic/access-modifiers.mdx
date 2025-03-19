@@ -1,0 +1,337 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are the access modifiers in C#?
+---
+
+# What are the access modifiers in C#?
+
+## Understanding Access Modifiers
+
+Access modifiers in C# determine the accessibility or scope of a type (class, struct, interface, etc.) or its members (methods, properties, fields, etc.). They control which parts of your code can access other parts, helping to enforce encapsulation and information hiding.
+
+```csharp
+// Example of different access modifiers
+public class Customer
+{
+    // Field with private access modifier
+    private int id;
+    
+    // Property with public access modifier
+    public string Name { get; set; }
+    
+    // Method with protected access modifier
+    protected void UpdateCustomerData() { }
+    
+    // Method with internal access modifier
+    internal void ProcessOrder() { }
+    
+    // Method with protected internal access modifier
+    protected internal void CalculateDiscount() { }
+    
+    // Method with private protected access modifier (C# 7.2+)
+    private protected void ValidateCustomer() { }
+}
+```
+
+## Types of Access Modifiers
+
+C# provides six access modifiers:
+
+### 1. Public
+
+The `public` modifier makes a type or member accessible from anywhere, both within and outside its assembly.
+
+```csharp
+public class PublicClass
+{
+    public void PublicMethod()
+    {
+        Console.WriteLine("This method can be accessed from anywhere");
+    }
+}
+
+// Usage
+var obj = new PublicClass();
+obj.PublicMethod(); // Accessible from any code
+```
+
+### 2. Private
+
+The `private` modifier restricts access to only within the containing type.
+
+```csharp
+public class Customer
+{
+    // Private field - only accessible within the Customer class
+    private int customerId;
+    
+    public void SetId(int id)
+    {
+        // Can access private members here
+        this.customerId = id;
+    }
+}
+
+// Usage
+var customer = new Customer();
+customer.SetId(100);
+// customer.customerId = 200; // Error: Cannot access private member
+```
+
+### 3. Protected
+
+The `protected` modifier allows access within the containing type and by derived types (subclasses).
+
+```csharp
+public class Person
+{
+    // Protected property - accessible in Person and derived classes
+    protected string SSN { get; set; }
+    
+    public void SetSSN(string ssn)
+    {
+        this.SSN = ssn;
+    }
+}
+
+public class Employee : Person
+{
+    public void DisplaySSN()
+    {
+        // Can access protected member from base class
+        Console.WriteLine($"SSN: {SSN}");
+    }
+}
+
+// Usage
+var employee = new Employee();
+employee.SetSSN("123-45-6789");
+employee.DisplaySSN();
+// employee.SSN = "987-65-4321"; // Error: Cannot access protected member
+```
+
+### 4. Internal
+
+The `internal` modifier restricts access to within the same assembly (DLL or EXE).
+
+```csharp
+// Assembly1.dll
+internal class Logger
+{
+    internal void Log(string message)
+    {
+        Console.WriteLine(message);
+    }
+}
+
+// Within Assembly1.dll
+public class Program
+{
+    public void DoWork()
+    {
+        var logger = new Logger(); // Accessible
+        logger.Log("Working"); // Accessible
+    }
+}
+
+// In Assembly2.dll (different assembly)
+public class ExternalProgram
+{
+    public void DoWork()
+    {
+        // var logger = new Logger(); // Error: Cannot access internal class
+    }
+}
+```
+
+### 5. Protected Internal
+
+The `protected internal` modifier allows access within the same assembly OR from derived types in any assembly.
+
+```csharp
+// Assembly1.dll
+public class BaseClass
+{
+    // Accessible within Assembly1 OR in derived classes anywhere
+    protected internal void SharedMethod()
+    {
+        Console.WriteLine("Shared functionality");
+    }
+}
+
+// In Assembly2.dll (different assembly)
+public class DerivedClass : BaseClass
+{
+    public void DoWork()
+    {
+        // Can access protected internal member from base class
+        SharedMethod();
+    }
+}
+
+public class OtherClass
+{
+    public void DoWork()
+    {
+        var baseObj = new BaseClass();
+        // baseObj.SharedMethod(); // Error: Cannot access protected internal member
+    }
+}
+```
+
+### 6. Private Protected (C# 7.2+)
+
+The `private protected` modifier allows access within the containing type OR from derived types, but only within the same assembly.
+
+```csharp
+// Assembly1.dll
+public class BaseClass
+{
+    // Accessible within BaseClass OR in derived classes in Assembly1
+    private protected void RestrictedMethod()
+    {
+        Console.WriteLine("Restricted functionality");
+    }
+}
+
+public class DerivedClassSameAssembly : BaseClass
+{
+    public void DoWork()
+    {
+        // Can access private protected member
+        RestrictedMethod();
+    }
+}
+
+// In Assembly2.dll (different assembly)
+public class DerivedClassDifferentAssembly : BaseClass
+{
+    public void DoWork()
+    {
+        // RestrictedMethod(); // Error: Cannot access private protected member
+    }
+}
+```
+
+## Default Access Modifiers
+
+If you don't specify an access modifier:
+
+- Classes, structs, interfaces, and enums are `internal` by default
+- Class and struct members (methods, properties, etc.) are `private` by default
+- Interface members are `public` by default
+- Enum members are always `public`
+
+```csharp
+// Default access modifiers
+class DefaultClass // internal by default
+{
+    void DefaultMethod() // private by default
+    {
+        // Implementation
+    }
+}
+
+interface IMyInterface // internal by default
+{
+    void InterfaceMethod(); // public by default
+}
+```
+
+## Access Modifier Comparison
+
+| Access Modifier    | Same Class | Derived Class (Same Assembly) | Non-derived Class (Same Assembly) | Derived Class (Different Assembly) | Non-derived Class (Different Assembly) |
+|--------------------|------------|-------------------------------|-----------------------------------|------------------------------------|-----------------------------------------|
+| public             | ✓          | ✓                             | ✓                                 | ✓                                  | ✓                                       |
+| protected          | ✓          | ✓                             | ✗                                 | ✓                                  | ✗                                       |
+| internal           | ✓          | ✓                             | ✓                                 | ✗                                  | ✗                                       |
+| protected internal | ✓          | ✓                             | ✓                                 | ✓                                  | ✗                                       |
+| private protected  | ✓          | ✓                             | ✗                                 | ✗                                  | ✗                                       |
+| private            | ✓          | ✗                             | ✗                                 | ✗                                  | ✗                                       |
+
+## Access Modifiers for Types
+
+Not all access modifiers can be applied to all types:
+
+```csharp
+// Class access modifiers
+public class PublicClass { }
+internal class InternalClass { }
+// private class PrivateClass { } // Error: Top-level classes cannot be private
+
+// Nested class access modifiers
+public class Container
+{
+    public class PublicNested { }
+    internal class InternalNested { }
+    protected class ProtectedNested { }
+    private class PrivateNested { } // Valid for nested classes
+    protected internal class ProtectedInternalNested { }
+    private protected class PrivateProtectedNested { }
+}
+```
+
+## Best Practices
+
+1. **Use the most restrictive access level possible**: Start with private and only increase accessibility as needed.
+
+2. **Encapsulate implementation details**: Use private for internal implementation details.
+
+3. **Design for inheritance**: Use protected for members that derived classes need to access.
+
+4. **Control assembly boundaries**: Use internal to limit access to the current assembly.
+
+5. **Public API design**: Carefully consider what should be part of your public API.
+
+```csharp
+// Following best practices
+public class Customer
+{
+    // Private fields for implementation details
+    private int id;
+    private string name;
+    private List<Order> orders = new List<Order>();
+    
+    // Public properties for controlled access
+    public int Id => id; // Read-only
+    public string Name
+    {
+        get => name;
+        set => name = value ?? throw new ArgumentNullException(nameof(value));
+    }
+    
+    // Public methods for the API
+    public void AddOrder(Order order)
+    {
+        ValidateOrder(order);
+        orders.Add(order);
+    }
+    
+    // Private helper methods
+    private void ValidateOrder(Order order)
+    {
+        if (order == null)
+            throw new ArgumentNullException(nameof(order));
+    }
+    
+    // Protected methods for derived classes
+    protected virtual void OnOrderAdded(Order order)
+    {
+        // Base implementation
+    }
+}
+```
+
+## Interview Tips
+
+1. **Know all six modifiers**: Be able to list and explain all six access modifiers in C#.
+
+2. **Understand the differences**: Clearly articulate the difference between similar modifiers like protected internal vs. private protected.
+
+3. **Default modifiers**: Remember the default access modifiers for classes and members.
+
+4. **Real-world usage**: Provide examples of when you would use each access modifier.
+
+5. **Encapsulation**: Explain how access modifiers help implement encapsulation and information hiding.
+
+6. **Assembly boundaries**: Discuss how internal and protected internal control access across assembly boundaries.

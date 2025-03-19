@@ -1,0 +1,563 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between authentication and authorization in .NET?
+---
+
+# What is the difference between authentication and authorization in .NET?
+
+## Understanding the Difference
+
+- **Authentication (AuthN)**: Verifies who a user is (identity)
+- **Authorization (AuthZ)**: Determines what a user can do (permissions)
+
+Think of it like accessing an API:
+- Authentication is providing your API key or token to prove who you are
+- Authorization is determining which API endpoints you're allowed to access
+
+## Authentication in ASP.NET Core APIs
+
+### 1. JWT Authentication
+
+JWT (JSON Web Token) is the most common authentication mechanism for APIs, providing a stateless way to authenticate requests.
+
+```csharp
+// Program.cs
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
+
+// Apply middleware
+var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+```
+
+### 2. JWT Token Generation
+
+```csharp
+// AuthController.cs
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
+{
+    private readonly IConfiguration _configuration;
+    private readonly IUserService _userService;
+    
+    public AuthController(IConfiguration configuration, IUserService userService)
+    {
+        _configuration = configuration;
+        _userService = userService;
+    }
+    
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginRequest request)
+    {
+        // Validate credentials
+        var user = await _userService.ValidateCredentials(request.Username, request.Password);
+        if (user == null)
+            return Unauthorized();
+            
+        // Generate token
+        var token = GenerateJwtToken(user);
+        
+        return Ok(new { token });
+    }
+    
+    private string GenerateJwtToken(User user)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
+        
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddHours(1),
+            signingCredentials: credentials
+        );
+        
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
+```
+
+### 3. API Key Authentication
+
+For simpler APIs or machine-to-machine communication, API keys are a common alternative.
+
+```csharp
+// ApiKeyAuthHandler.cs
+public class ApiKeyAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+{
+    private const string ApiKeyHeaderName = "X-API-Key";
+    private readonly IApiKeyValidator _apiKeyValidator;
+    
+    public ApiKeyAuthHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder,
+        ISystemClock clock,
+        IApiKeyValidator apiKeyValidator)
+        : base(options, logger, encoder, clock)
+    {
+        _apiKeyValidator = apiKeyValidator;
+    }
+    
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        if (!Request.Headers.TryGetValue(ApiKeyHeaderName, out var apiKeyHeaderValues))
+        {
+            return AuthenticateResult.Fail("API Key was not provided");
+        }
+        
+        var providedApiKey = apiKeyHeaderValues.FirstOrDefault();
+        
+        if (apiKeyHeaderValues.Count == 0 || string.IsNullOrWhiteSpace(providedApiKey))
+        {
+            return AuthenticateResult.Fail("API Key was not provided");
+        }
+        
+        var isValid = await _apiKeyValidator.IsValidApiKey(providedApiKey);
+        
+        if (!isValid)
+        {
+            return AuthenticateResult.Fail("Invalid API Key");
+        }
+        
+        var claims = new[] { new Claim(ClaimTypes.Name, "API User") };
+        var identity = new ClaimsIdentity(claims, Scheme.Name);
+        var principal = new ClaimsPrincipal(identity);
+        var ticket = new AuthenticationTicket(principal, Scheme.Name);
+        
+        return AuthenticateResult.Success(ticket);
+    }
+}
+
+// Program.cs
+builder.Services.AddAuthentication("ApiKey")
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthHandler>("ApiKey", null);
+```
+
+### 4. OAuth 2.0 and OpenID Connect
+
+For more complex scenarios involving third-party authentication.
+
+```csharp
+// Program.cs
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => {
+        // JWT configuration
+    })
+    .AddOAuth2Introspection("introspection", options =>
+    {
+        options.Authority = "https://identity-server.example.com";
+        options.ClientId = "resource_server";
+        options.ClientSecret = "resource_server_secret";
+    });
+```
+
+## Authorization in ASP.NET Core APIs
+
+### 1. Role-Based Authorization
+
+```csharp
+// Using role-based authorization
+[Authorize(Roles = "Admin")]
+[ApiController]
+[Route("api/[controller]")]
+public class AdminController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult GetAdminData()
+    {
+        return Ok(new { message = "Admin data" });
+    }
+}
+
+// Multiple roles
+[Authorize(Roles = "Admin,Manager")]
+[HttpGet("reports")]
+public IActionResult GetReports()
+{
+    return Ok(new { message = "Reports data" });
+}
+```
+
+### 2. Policy-Based Authorization
+
+```csharp
+// Program.cs
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+        
+    options.AddPolicy("ApiScope", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("scope", "api1");
+    });
+    
+    options.AddPolicy("CanManageProducts", policy =>
+        policy.RequireClaim("permission", "products.manage"));
+});
+
+// Using policies
+[Authorize(Policy = "AdminOnly")]
+[HttpGet("admin-data")]
+public IActionResult GetAdminData()
+{
+    return Ok(new { message = "Admin data" });
+}
+
+[Authorize(Policy = "ApiScope")]
+[HttpGet("protected-data")]
+public IActionResult GetProtectedData()
+{
+    return Ok(new { message = "Protected data" });
+}
+```
+
+### 3. Custom Authorization Requirements
+
+```csharp
+// Custom requirement
+public class MinimumAgeRequirement : IAuthorizationRequirement
+{
+    public int MinimumAge { get; }
+    
+    public MinimumAgeRequirement(int minimumAge)
+    {
+        MinimumAge = minimumAge;
+    }
+}
+
+// Custom requirement handler
+public class MinimumAgeHandler : AuthorizationHandler<MinimumAgeRequirement>
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        MinimumAgeRequirement requirement)
+    {
+        if (!context.User.HasClaim(c => c.Type == "DateOfBirth"))
+            return Task.CompletedTask;
+            
+        var dateOfBirth = DateTime.Parse(
+            context.User.FindFirst(c => c.Type == "DateOfBirth").Value);
+            
+        var age = DateTime.Today.Year - dateOfBirth.Year;
+        if (dateOfBirth > DateTime.Today.AddYears(-age))
+            age--;
+        
+        if (age >= requirement.MinimumAge)
+            context.Succeed(requirement);
+            
+        return Task.CompletedTask;
+    }
+}
+
+// Register the requirement and handler
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AtLeast18", policy =>
+        policy.Requirements.Add(new MinimumAgeRequirement(18)));
+});
+
+builder.Services.AddScoped<IAuthorizationHandler, MinimumAgeHandler>();
+
+// Using the custom policy
+[Authorize(Policy = "AtLeast18")]
+[HttpGet("adult-content")]
+public IActionResult GetAdultContent()
+{
+    return Ok(new { message = "Adult content" });
+}
+```
+
+### 4. Resource-Based Authorization
+
+```csharp
+// Document authorization handler
+public class DocumentAuthorizationHandler : 
+    AuthorizationHandler<OperationAuthorizationRequirement, Document>
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        OperationAuthorizationRequirement requirement,
+        Document document)
+    {
+        if (requirement.Name == Operations.Read.Name)
+        {
+            if (document.IsPublic || 
+                document.OwnerId == context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+            {
+                context.Succeed(requirement);
+            }
+        }
+        
+        return Task.CompletedTask;
+    }
+}
+
+// Operations
+public static class Operations
+{
+    public static OperationAuthorizationRequirement Create =
+        new OperationAuthorizationRequirement { Name = nameof(Create) };
+    public static OperationAuthorizationRequirement Read =
+        new OperationAuthorizationRequirement { Name = nameof(Read) };
+    public static OperationAuthorizationRequirement Update =
+        new OperationAuthorizationRequirement { Name = nameof(Update) };
+    public static OperationAuthorizationRequirement Delete =
+        new OperationAuthorizationRequirement { Name = nameof(Delete) };
+}
+
+// Using resource-based authorization in API
+[ApiController]
+[Route("api/[controller]")]
+public class DocumentsController : ControllerBase
+{
+    private readonly IAuthorizationService _authorizationService;
+    private readonly IDocumentService _documentService;
+    
+    public DocumentsController(
+        IAuthorizationService authorizationService,
+        IDocumentService documentService)
+    {
+        _authorizationService = authorizationService;
+        _documentService = documentService;
+    }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> Get(int id)
+    {
+        var document = await _documentService.GetDocumentAsync(id);
+        
+        if (document == null)
+            return NotFound();
+            
+        var authResult = await _authorizationService.AuthorizeAsync(
+            User, document, Operations.Read);
+            
+        if (!authResult.Succeeded)
+            return Forbid();
+            
+        return Ok(document);
+    }
+}
+```
+
+## API Security Best Practices
+
+### 1. Secure Token Handling
+
+```csharp
+// Secure JWT configuration
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.FromMinutes(5), // Reduce clock skew for tighter security
+            RequireExpirationTime = true,
+            RequireSignedTokens = true
+        };
+        
+        // Validate the token on receipt
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                // Additional validation logic
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                // Log authentication failures
+                return Task.CompletedTask;
+            }
+        };
+    });
+```
+
+### 2. Rate Limiting
+
+```csharp
+// Program.cs
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+            
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", token);
+    };
+});
+
+app.UseRateLimiter();
+```
+
+### 3. Security Headers
+
+```csharp
+// Program.cs
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+    
+    await next();
+});
+```
+
+### 4. CORS Configuration
+
+```csharp
+// Program.cs
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ApiCorsPolicy", builder =>
+    {
+        builder
+            .WithOrigins("https://trusted-client.com")
+            .WithMethods("GET", "POST", "PUT", "DELETE")
+            .WithHeaders("Authorization", "Content-Type")
+            .SetIsOriginAllowedToAllowWildcardSubdomains();
+    });
+});
+
+app.UseCors("ApiCorsPolicy");
+```
+
+## Authentication vs Authorization in Practice
+
+### API Request Flow
+
+```
+Client                                API
+  |                                    |
+  |--- Request with JWT token -------->|
+  |                                    | --- Authentication: Validate JWT
+  |                                    | --- Authorization: Check permissions
+  |                                    |
+  |<-- Response (200 OK or 401/403) ---|
+```
+
+### Handling Authentication Failures
+
+```csharp
+// Configure authentication failure handling
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        // Configuration...
+        
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                // Override the default behavior
+                context.HandleResponse();
+                
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                
+                var response = new
+                {
+                    status = 401,
+                    message = "You are not authorized to access this resource",
+                    details = "Invalid or missing authentication token"
+                };
+                
+                await context.Response.WriteAsJsonAsync(response);
+            }
+        };
+    });
+```
+
+### Handling Authorization Failures
+
+```csharp
+// Program.cs
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+        
+    options.InvokeHandlersAfterFailure = false;
+});
+
+// Configure authorization failure handling
+app.Use(async (context, next) =>
+{
+    await next();
+    
+    if (context.Response.StatusCode == StatusCodes.Status403Forbidden)
+    {
+        context.Response.ContentType = "application/json";
+        
+        var response = new
+        {
+            status = 403,
+            message = "You do not have permission to access this resource",
+            details = "Required permissions are missing"
+        };
+        
+        await context.Response.WriteAsJsonAsync(response);
+    }
+});
+```
+
+## Interview Tips
+
+1. **Clear distinction**: Authentication verifies identity (who you are), while authorization determines permissions (what you can do).
+
+2. **API authentication methods**: Be familiar with different authentication methods for APIs (JWT, API Keys, OAuth 2.0).
+
+3. **Authorization types**: Understand role-based, policy-based, and resource-based authorization in the context of APIs.
+
+4. **Claims-based identity**: Explain how claims work in JWT tokens and how they're used for both authentication and authorization.
+
+5. **Security best practices**: Discuss token validation, rate limiting, CORS, and security headers for APIs.
+
+6. **Middleware pipeline**: Know the correct order of authentication and authorization middleware in the ASP.NET Core pipeline.
+
+7. **Real-world scenarios**: Provide examples of when to use different authentication and authorization approaches for various API scenarios.
