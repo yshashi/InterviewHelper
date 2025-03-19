@@ -7,7 +7,6 @@
 >
   <div class="flex items-center justify-between h-16 px-4">
     <div class="flex items-center space-x-1">
-      <!-- Mobile menu button -->
       <button
         id="mobile-menu-button"
         type="button"
@@ -119,13 +118,14 @@
             href="/login"
             class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
           >
-            Log in
+            <i class="fas fa-sign-in-alt text-lg inline sm:hidden"></i>
+            <span class="hidden sm:inline">Log in</span>
           </a>
           <a
             href="/register"
-            class="text-sm font-medium text-white px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors"
+            class="text-sm hidden sm:inline font-medium text-white px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors"
           >
-            Register
+            <span class="hidden sm:inline">Register</span>
           </a>
         </div>
 
@@ -189,7 +189,6 @@
     ? "https://api.interviewhelper.in/api"
     : import.meta.env.PUBLIC_API_URL || "http://localhost:5500/api";
 
-  // Theme toggle functionality
   function updateThemeIcons() {
     const darkIcon = document.getElementById("theme-toggle-dark-icon");
     const lightIcon = document.getElementById("theme-toggle-light-icon");
@@ -203,7 +202,6 @@
     }
   }
 
-  // Function to get current theme
   function getCurrentTheme() {
     return (
       localStorage.getItem(THEME_KEY) === "dark" ||
@@ -212,17 +210,14 @@
     );
   }
 
-  // Function to set theme
   function setTheme(isDark: boolean) {
     localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
     document.documentElement.classList.toggle("dark", isDark);
     updateThemeIcons();
   }
 
-  // Initial theme setup
   setTheme(getCurrentTheme());
 
-  // Theme toggle handler
   const themeToggleBtn = document.getElementById("theme-toggle");
   themeToggleBtn?.addEventListener("click", () => {
     const isDark = !document.documentElement.classList.contains("dark");
@@ -235,7 +230,6 @@
     initializeAuthUI();
   });
 
-  // Update theme on page load
   document.addEventListener("astro:page-load", () => {
     setTheme(getCurrentTheme());
     initializeAuthUI();
