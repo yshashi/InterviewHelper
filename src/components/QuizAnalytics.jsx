@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-import { Line, Bar, Pie } from 'react-chartjs-2';
+import { Line, Pie } from 'react-chartjs-2';
+import { API_URL } from '../config';
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -58,9 +58,6 @@ export default function QuizAnalytics({ userId = null }) {
   
   const safeSetStrengthsAndWeaknesses = useCallback(safeSetState(setStrengthsAndWeaknesses), [safeSetState]);
 
-  const API_URL = import.meta.env.PROD 
-    ? 'https://api.interviewhelper.in/api' 
-    : (import.meta.env.PUBLIC_API_URL || 'http://localhost:5500/api');
   const getAuthToken = useCallback(() => {
     const token = localStorage.getItem('interviewhelper:accessToken');
     const user = localStorage.getItem('interviewhelper:user');

@@ -14,7 +14,10 @@ const generateTopicKey = () => {
 const formatTopicName = (topic: string) => {
   // Remove .mdx extension if present
   const baseName = topic.replace(/\.mdx$/, '');
-  return baseName
+  const pathParts = baseName.split('/');
+  const lastPart = pathParts[pathParts.length - 1];
+
+  return lastPart
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
@@ -25,12 +28,6 @@ const topicKey = generateTopicKey();
 const topicName = formatTopicName(topic);
 ---
 
-<div class="quiz-container">
+<div class="mt-8">
   <QuizComponent client:only="react" topicKey={topicKey} topicName={topicName} />
 </div>
-
-<style>
-  .quiz-container {
-    margin-top: 2rem;
-  }
-</style>

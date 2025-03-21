@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
+import { API_URL } from '../config';
 
 ChartJS.register(
   ArcElement,
@@ -26,10 +27,6 @@ export default function QuizDashboard() {
     recentActivity: []
   });
   const isMounted = useRef(false);
-
-  const API_URL = import.meta.env.PROD 
-    ? 'https://api.interviewhelper.in/api' 
-    : (import.meta.env.PUBLIC_API_URL || 'http://localhost:5500/api');
 
   useEffect(() => {
     setIsClient(true);

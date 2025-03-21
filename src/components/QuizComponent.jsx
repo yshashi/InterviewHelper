@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { API_URL } from '../config';
 
 export default function QuizComponent({ topicKey, topicName }) {
   // Use useRef to track if component is mounted to prevent hydration issues
@@ -23,10 +24,6 @@ export default function QuizComponent({ topicKey, topicName }) {
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizData, setQuizData] = useState(null);
   const [mcqId, setMcqId] = useState(null);
-
-  const API_URL = import.meta.env.PROD 
-    ? 'https://api.interviewhelper.in/api' 
-    : (import.meta.env.PUBLIC_API_URL || 'http://localhost:5500/api');
   
   useEffect(() => {
     setIsClient(true);

@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { API_URL } from '../config';
 
 export default function TopicwiseQuizList() {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  const API_URL = import.meta.env.PROD 
-    ? 'https://api.interviewhelper.in/api' 
-    : (import.meta.env.PUBLIC_API_URL || 'http://localhost:5500/api');
   
   const fetchTopics = useCallback(async () => {
     setLoading(true);

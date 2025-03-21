@@ -6,8 +6,16 @@ import FeedbackForm from '../components/FeedbackForm';
 
 const { frontmatter } = Astro.props;
 const pathname = Astro.url.pathname;
-const pathSegments = pathname.split('/');
-const filename = pathSegments[2];
+const pathSegments = pathname.split('/').filter(segment => segment.length > 0);
+const getFilename = () => {
+  const cleanSegments = pathSegments.map(seg => seg.replace(/\.mdx$/, ''));
+  if (cleanSegments.length >= 1) {
+    return cleanSegments.join('/');
+  }
+  return '';
+};
+
+const filename = getFilename();
 ---
 
 <Layout title={frontmatter.title}>
