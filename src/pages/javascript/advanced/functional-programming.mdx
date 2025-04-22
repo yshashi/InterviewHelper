@@ -1,0 +1,815 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Functional Programming in JavaScript
+---
+
+# Functional Programming in JavaScript
+
+Functional programming (FP) is a programming paradigm that treats computation as the evaluation of mathematical functions and avoids changing state and mutable data. JavaScript supports many functional programming concepts, making it a versatile language for this approach.
+
+## Core Principles of Functional Programming
+
+### 1. Pure Functions
+
+Pure functions always produce the same output for the same input and have no side effects:
+
+```javascript
+// Pure function
+function add(a, b) {
+  return a + b;
+}
+
+// Impure function (has side effects)
+let total = 0;
+function addToTotal(value) {
+  total += value; // Side effect: modifies external state
+  return total;
+}
+```
+
+### 2. Immutability
+
+Data should not be changed after creation:
+
+```javascript
+// Mutable approach
+const numbers = [1, 2, 3];
+numbers.push(4); // Modifies the original array
+
+// Immutable approach
+const numbers = [1, 2, 3];
+const newNumbers = [...numbers, 4]; // Creates a new array
+```
+
+### 3. Function Composition
+
+Building complex functions by combining simpler ones:
+
+```javascript
+// Simple functions
+const double = x => x * 2;
+const increment = x => x + 1;
+
+// Function composition
+const doubleAndIncrement = x => increment(double(x));
+
+// Using a compose utility
+const compose = (...fns) => x => fns.reduceRight((acc, fn) => fn(acc), x);
+const doubleAndIncrementComposed = compose(increment, double);
+
+console.log(doubleAndIncrementComposed(3)); // 7
+```
+
+### 4. Higher-Order Functions
+
+Functions that take other functions as arguments or return functions:
+
+```javascript
+// Function that returns a function
+function multiplier(factor) {
+  return function(number) {
+    return number * factor;
+  };
+}
+
+const double = multiplier(2);
+const triple = multiplier(3);
+
+console.log(double(5)); // 10
+console.log(triple(5)); // 15
+
+// Function that takes a function as an argument
+function applyOperation(numbers, operation) {
+  return numbers.map(operation);
+}
+
+const numbers = [1, 2, 3, 4];
+const doubled = applyOperation(numbers, double);
+console.log(doubled); // [2, 4, 6, 8]
+```
+
+### 5. Recursion
+
+Self-referential functions instead of loops:
+
+```javascript
+// Recursive factorial function
+function factorial(n) {
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
+}
+
+console.log(factorial(5)); // 120
+
+// Recursive tree traversal
+function traverseTree(node, visitFn) {
+  if (node === null) return;
+  
+  visitFn(node.value);
+  
+  if (node.children) {
+    node.children.forEach(child => traverseTree(child, visitFn));
+  }
+}
+```
+
+## Functional Programming Techniques
+
+### 1. Map, Filter, Reduce
+
+The core functional operations on collections:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5];
+
+// Map: Transform each element
+const doubled = numbers.map(n => n * 2);
+console.log(doubled); // [2, 4, 6, 8, 10]
+
+// Filter: Keep elements that pass a test
+const evens = numbers.filter(n => n % 2 === 0);
+console.log(evens); // [2, 4]
+
+// Reduce: Combine elements into a single value
+const sum = numbers.reduce((acc, n) => acc + n, 0);
+console.log(sum); // 15
+
+// Chaining operations
+const result = numbers
+  .filter(n => n % 2 === 0)
+  .map(n => n * 2)
+  .reduce((acc, n) => acc + n, 0);
+console.log(result); // 12
+```
+
+### 2. Currying
+
+Transforming a function with multiple arguments into a sequence of functions:
+
+```javascript
+// Regular function
+function add(a, b, c) {
+  return a + b + c;
+}
+
+// Curried version
+function curriedAdd(a) {
+  return function(b) {
+    return function(c) {
+      return a + b + c;
+    };
+  };
+}
+
+// Usage
+console.log(curriedAdd(1)(2)(3)); // 6
+
+// Arrow function syntax
+const curriedAddArrow = a => b => c => a + b + c;
+
+// Partial application
+const addTo5 = curriedAddArrow(5);
+const add5and10 = addTo5(10);
+console.log(add5and10(15)); // 30
+
+// Curry utility function
+function curry(fn) {
+  return function curried(...args) {
+    if (args.length >= fn.length) {
+      return fn.apply(this, args);
+    }
+    return function(...moreArgs) {
+      return curried.apply(this, args.concat(moreArgs));
+    };
+  };
+}
+
+const curriedSum = curry(add);
+console.log(curriedSum(1)(2)(3)); // 6
+console.log(curriedSum(1, 2)(3)); // 6
+console.log(curriedSum(1)(2, 3)); // 6
+```
+
+### 3. Partial Application
+
+Fixing a number of arguments to a function, producing another function:
+
+```javascript
+// Partial application
+function partial(fn, ...presetArgs) {
+  return function(...laterArgs) {
+    return fn(...presetArgs, ...laterArgs);
+  };
+}
+
+function greet(greeting, name) {
+  return `${greeting}, ${name}!`;
+}
+
+const sayHello = partial(greet, 'Hello');
+console.log(sayHello('John')); // "Hello, John!"
+
+// With bind
+const sayHi = greet.bind(null, 'Hi');
+console.log(sayHi('Jane')); // "Hi, Jane!"
+```
+
+### 4. Function Composition and Pipelines
+
+Creating data transformation pipelines:
+
+```javascript
+// Compose: Right to left execution
+const compose = (...fns) => x => fns.reduceRight((acc, fn) => fn(acc), x);
+
+// Pipe: Left to right execution
+const pipe = (...fns) => x => fns.reduce((acc, fn) => fn(acc), x);
+
+// Example functions
+const double = x => x * 2;
+const increment = x => x + 1;
+const square = x => x * x;
+
+// Compose: square(increment(double(x)))
+const transformCompose = compose(square, increment, double);
+console.log(transformCompose(3)); // 49
+
+// Pipe: square(increment(double(x)))
+const transformPipe = pipe(double, increment, square);
+console.log(transformPipe(3)); // 49
+
+// Real-world example: Data processing pipeline
+const processUser = pipe(
+  user => ({ ...user, name: user.name.toUpperCase() }),
+  user => ({ ...user, createdAt: new Date() }),
+  user => ({ ...user, id: generateId() })
+);
+
+const user = processUser({ name: 'john', email: 'john@example.com' });
+```
+
+### 5. Point-Free Style
+
+Writing functions without explicitly mentioning their arguments:
+
+```javascript
+// With explicit arguments
+const isEven = number => number % 2 === 0;
+
+// Point-free style
+const isEven = compose(equals(0), modulo(2));
+
+// Practical example
+const getFullName = person => `${person.firstName} ${person.lastName}`;
+
+// Point-free alternative
+const getFirstName = person => person.firstName;
+const getLastName = person => person.lastName;
+const joinWithSpace = (first, last) => `${first} ${last}`;
+
+const getFullNamePointFree = person => joinWithSpace(
+  getFirstName(person),
+  getLastName(person)
+);
+
+// Even more point-free with currying
+const prop = key => obj => obj[key];
+const join = separator => (...strings) => strings.join(separator);
+
+const getFullNamePointFree2 = pipe(
+  person => [prop('firstName')(person), prop('lastName')(person)],
+  join(' ')
+);
+```
+
+## Functional Data Structures
+
+### 1. Immutable Arrays
+
+```javascript
+// Adding elements
+const numbers = [1, 2, 3];
+const added = [...numbers, 4]; // [1, 2, 3, 4]
+
+// Removing elements
+const removed = numbers.filter(n => n !== 2); // [1, 3]
+
+// Updating elements
+const updated = numbers.map(n => n === 2 ? 20 : n); // [1, 20, 3]
+
+// Inserting at index
+const insertAt = (array, index, item) => [
+  ...array.slice(0, index),
+  item,
+  ...array.slice(index)
+];
+const inserted = insertAt(numbers, 1, 10); // [1, 10, 2, 3]
+
+// Removing at index
+const removeAt = (array, index) => [
+  ...array.slice(0, index),
+  ...array.slice(index + 1)
+];
+const removedAt = removeAt(numbers, 1); // [1, 3]
+
+// Updating at index
+const updateAt = (array, index, item) => [
+  ...array.slice(0, index),
+  item,
+  ...array.slice(index + 1)
+];
+const updatedAt = updateAt(numbers, 1, 20); // [1, 20, 3]
+```
+
+### 2. Immutable Objects
+
+```javascript
+// Adding properties
+const user = { name: 'John', age: 30 };
+const userWithEmail = { ...user, email: 'john@example.com' };
+
+// Removing properties
+const { age, ...userWithoutAge } = user;
+
+// Updating properties
+const updatedUser = { ...user, age: 31 };
+
+// Nested updates
+const person = {
+  name: 'John',
+  address: {
+    city: 'New York',
+    zip: '10001'
+  }
+};
+
+const updatedPerson = {
+  ...person,
+  address: {
+    ...person.address,
+    city: 'Boston'
+  }
+};
+```
+
+### 3. Lenses
+
+A functional way to view and update nested data:
+
+```javascript
+// Simple lens implementation
+function lens(getter, setter) {
+  return {
+    get: obj => getter(obj),
+    set: (obj, value) => setter(obj, value)
+  };
+}
+
+// Create a lens for a property
+function prop(key) {
+  return lens(
+    obj => obj[key],
+    (obj, value) => ({ ...obj, [key]: value })
+  );
+}
+
+// Compose lenses
+function composeLens(lens1, lens2) {
+  return lens(
+    obj => lens2.get(lens1.get(obj)),
+    (obj, value) => lens1.set(obj, lens2.set(lens1.get(obj), value))
+  );
+}
+
+// Usage
+const nameLens = prop('name');
+const user = { name: 'John', age: 30 };
+
+// Get value through lens
+console.log(nameLens.get(user)); // "John"
+
+// Set value through lens
+const updatedUser = nameLens.set(user, 'Jane');
+console.log(updatedUser); // { name: "Jane", age: 30 }
+
+// Nested lens
+const addressLens = prop('address');
+const cityLens = prop('city');
+const addressCityLens = composeLens(addressLens, cityLens);
+
+const person = {
+  name: 'John',
+  address: { city: 'New York', zip: '10001' }
+};
+
+console.log(addressCityLens.get(person)); // "New York"
+const updatedPerson = addressCityLens.set(person, 'Boston');
+console.log(updatedPerson.address.city); // "Boston"
+```
+
+## Practical Applications
+
+### 1. Data Transformation
+
+```javascript
+// Processing a list of users
+const users = [
+  { id: 1, name: 'John', age: 25, active: true },
+  { id: 2, name: 'Jane', age: 32, active: false },
+  { id: 3, name: 'Bob', age: 28, active: true }
+];
+
+// Get names of active users over 25
+const getActiveUserNames = pipe(
+  users => users.filter(user => user.active),
+  users => users.filter(user => user.age > 25),
+  users => users.map(user => user.name)
+);
+
+console.log(getActiveUserNames(users)); // ["Bob"]
+
+// Group users by activity status
+const groupByActivity = users => {
+  return users.reduce((groups, user) => {
+    const key = user.active ? 'active' : 'inactive';
+    return {
+      ...groups,
+      [key]: [...(groups[key] || []), user]
+    };
+  }, {});
+};
+
+console.log(groupByActivity(users));
+// { active: [user1, user3], inactive: [user2] }
+```
+
+### 2. Event Handling
+
+```javascript
+// Functional event handling
+const Button = ({ onClick, text }) => (
+  <button onClick={onClick}>{text}</button>
+);
+
+// Composing event handlers
+const withLogging = handler => event => {
+  console.log('Event:', event.type);
+  return handler(event);
+};
+
+const withPreventDefault = handler => event => {
+  event.preventDefault();
+  return handler(event);
+};
+
+const withStopPropagation = handler => event => {
+  event.stopPropagation();
+  return handler(event);
+};
+
+// Usage
+const handleSubmit = event => {
+  // Handle form submission
+};
+
+const enhancedHandler = pipe(
+  withLogging,
+  withPreventDefault,
+  withStopPropagation
+)(handleSubmit);
+
+// In a React component
+<form onSubmit={enhancedHandler}>
+  {/* Form fields */}
+</form>
+```
+
+### 3. Asynchronous Operations
+
+```javascript
+// Functional approach to async operations
+const fetchData = url => fetch(url).then(res => res.json());
+
+// Sequential async operations
+const fetchUserAndPosts = async userId => {
+  const user = await fetchData(`/api/users/${userId}`);
+  const posts = await fetchData(`/api/users/${userId}/posts`);
+  return { user, posts };
+};
+
+// Parallel async operations
+const fetchUserAndPostsParallel = async userId => {
+  const [user, posts] = await Promise.all([
+    fetchData(`/api/users/${userId}`),
+    fetchData(`/api/users/${userId}/posts`)
+  ]);
+  return { user, posts };
+};
+
+// Composing async functions
+const composeAsync = (...fns) => async x => {
+  return fns.reduceRight(async (acc, fn) => fn(await acc), x);
+};
+
+const processUser = composeAsync(
+  user => ({ ...user, fullName: `${user.firstName} ${user.lastName}` }),
+  user => fetchData(`/api/users/${user.id}/details`),
+  userId => fetchData(`/api/users/${userId}`)
+);
+
+// Usage
+processUser(1).then(console.log);
+```
+
+### 4. State Management
+
+```javascript
+// Reducer pattern (as used in Redux)
+const initialState = { count: 0 };
+
+function counterReducer(state = initialState, action) {
+  switch (action.type) {
+    case 'INCREMENT':
+      return { ...state, count: state.count + 1 };
+    case 'DECREMENT':
+      return { ...state, count: state.count - 1 };
+    case 'ADD':
+      return { ...state, count: state.count + action.payload };
+    default:
+      return state;
+  }
+}
+
+// Action creators
+const increment = () => ({ type: 'INCREMENT' });
+const decrement = () => ({ type: 'DECREMENT' });
+const add = amount => ({ type: 'ADD', payload: amount });
+
+// Store implementation
+function createStore(reducer) {
+  let state = reducer(undefined, {});
+  const listeners = [];
+  
+  return {
+    getState: () => state,
+    dispatch: action => {
+      state = reducer(state, action);
+      listeners.forEach(listener => listener());
+    },
+    subscribe: listener => {
+      listeners.push(listener);
+      return () => {
+        const index = listeners.indexOf(listener);
+        if (index !== -1) listeners.splice(index, 1);
+      };
+    }
+  };
+}
+
+// Usage
+const store = createStore(counterReducer);
+store.subscribe(() => console.log(store.getState()));
+store.dispatch(increment()); // { count: 1 }
+store.dispatch(add(5));      // { count: 6 }
+store.dispatch(decrement()); // { count: 5 }
+```
+
+## Functional Libraries
+
+### 1. Lodash/FP
+
+```javascript
+import _ from 'lodash/fp';
+
+// Data transformation with Lodash/FP
+const users = [
+  { id: 1, name: 'John', age: 25 },
+  { id: 2, name: 'Jane', age: 32 },
+  { id: 3, name: 'Bob', age: 28 }
+];
+
+// Get average age of users
+const getAverageAge = _.flow([
+  _.map(_.get('age')),
+  _.mean
+]);
+
+console.log(getAverageAge(users)); // 28.33...
+
+// Group users by age range
+const groupByAgeRange = _.groupBy(user => {
+  if (user.age < 25) return 'young';
+  if (user.age < 35) return 'adult';
+  return 'senior';
+});
+
+console.log(groupByAgeRange(users));
+// { adult: [user1, user2, user3] }
+```
+
+### 2. Ramda
+
+```javascript
+import * as R from 'ramda';
+
+// Data transformation with Ramda
+const users = [
+  { id: 1, name: 'John', age: 25, address: { city: 'New York' } },
+  { id: 2, name: 'Jane', age: 32, address: { city: 'Boston' } },
+  { id: 3, name: 'Bob', age: 28, address: { city: 'Chicago' } }
+];
+
+// Get names of users from New York
+const getNamesFromCity = city => R.pipe(
+  R.filter(R.pathEq(['address', 'city'], city)),
+  R.map(R.prop('name'))
+);
+
+console.log(getNamesFromCity('New York')(users)); // ["John"]
+
+// Sort users by age in descending order
+const sortByAgeDesc = R.sortWith([R.descend(R.prop('age'))]);
+console.log(sortByAgeDesc(users)); // [user2, user3, user1]
+
+// Lens example
+const nameLens = R.lensProp('name');
+const addressLens = R.lensProp('address');
+const cityLens = R.lensProp('city');
+const addressCityLens = R.lensPath(['address', 'city']);
+
+const user = users[0];
+console.log(R.view(nameLens, user)); // "John"
+console.log(R.view(addressCityLens, user)); // "New York"
+
+const updatedUser = R.set(addressCityLens, 'Los Angeles', user);
+console.log(updatedUser.address.city); // "Los Angeles"
+```
+
+## Performance Considerations
+
+```javascript
+// Memoization for expensive calculations
+function memoize(fn) {
+  const cache = new Map();
+  
+  return function(...args) {
+    const key = JSON.stringify(args);
+    
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    
+    const result = fn.apply(this, args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+// Fibonacci with memoization
+const fibonacci = memoize(n => {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+});
+
+console.log(fibonacci(40)); // Fast calculation
+
+// Lazy evaluation
+function* lazyMap(array, fn) {
+  for (const item of array) {
+    yield fn(item);
+  }
+}
+
+function* lazyFilter(array, predicate) {
+  for (const item of array) {
+    if (predicate(item)) {
+      yield item;
+    }
+  }
+}
+
+// Usage
+const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const evenSquares = lazyMap(
+  lazyFilter(numbers, n => n % 2 === 0),
+  n => n * n
+);
+
+// Only compute what we need
+for (const value of evenSquares) {
+  console.log(value);
+  if (value > 50) break; // Stop after first value > 50
+}
+```
+
+## Best Practices
+
+```javascript
+// 1. Avoid mutations
+// Bad
+function addItem(cart, item) {
+  cart.items.push(item);
+  cart.total += item.price;
+  return cart;
+}
+
+// Good
+function addItem(cart, item) {
+  return {
+    ...cart,
+    items: [...cart.items, item],
+    total: cart.total + item.price
+  };
+}
+
+// 2. Keep functions small and focused
+// Bad
+function processUser(user) {
+  // Validate
+  if (!user.name) throw new Error('Name required');
+  
+  // Format
+  user.name = user.name.toUpperCase();
+  
+  // Save
+  database.save(user);
+  
+  return user;
+}
+
+// Good
+const validateUser = user => {
+  if (!user.name) throw new Error('Name required');
+  return user;
+};
+
+const formatUser = user => ({
+  ...user,
+  name: user.name.toUpperCase()
+});
+
+const saveUser = user => {
+  database.save(user);
+  return user;
+};
+
+const processUser = pipe(validateUser, formatUser, saveUser);
+
+// 3. Use function composition over imperative code
+// Imperative
+function getActiveUsers(users) {
+  const result = [];
+  for (let i = 0; i < users.length; i++) {
+    if (users[i].active) {
+      result.push(users[i]);
+    }
+  }
+  return result;
+}
+
+// Functional
+const getActiveUsers = users => users.filter(user => user.active);
+
+// 4. Handle errors functionally
+// Using Either monad pattern
+const Right = x => ({
+  map: f => Right(f(x)),
+  flatMap: f => f(x),
+  fold: (f, g) => g(x),
+  value: () => x
+});
+
+const Left = x => ({
+  map: f => Left(x),
+  flatMap: f => Left(x),
+  fold: (f, g) => f(x),
+  value: () => x
+});
+
+const tryCatch = (fn) => {
+  try {
+    return Right(fn());
+  } catch (e) {
+    return Left(e);
+  }
+};
+
+// Usage
+const parseJSON = str => tryCatch(() => JSON.parse(str))
+  .map(data => data.user)
+  .fold(
+    err => console.error('Error:', err),
+    user => console.log('User:', user)
+  );
+```
+
+## Interview Tips
+
+- Explain the core principles of functional programming and how they apply to JavaScript
+- Describe the benefits of pure functions and immutability
+- Demonstrate how to use higher-order functions like map, filter, and reduce
+- Explain function composition and how it helps create maintainable code
+- Discuss the differences between imperative and functional programming styles
+- Describe how functional programming can improve code quality and reduce bugs
+- Explain how to handle side effects in a functional way
+- Discuss performance considerations when using functional programming techniques

@@ -1,0 +1,765 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are functions in JavaScript, and how do you define them?
+---
+
+# What are functions in JavaScript, and how do you define them?
+
+Functions are one of the fundamental building blocks in JavaScript. A function is a reusable block of code designed to perform a particular task. Functions allow you to structure your code into modular, reusable components, making your programs more organized, maintainable, and easier to debug.
+
+## Core Concepts of JavaScript Functions
+
+Functions in JavaScript have several key characteristics:
+
+1. They are first-class objects (can be assigned to variables, passed as arguments, returned from other functions)
+2. They can be defined in multiple ways (declarations, expressions, arrow functions)
+3. They can be invoked (called) to execute the code they contain
+4. They can accept parameters and return values
+5. They create their own scope for variables
+
+## Ways to Define Functions in JavaScript
+
+JavaScript offers several ways to define functions, each with its own syntax and behavior.
+
+### 1. Function Declarations
+
+Also known as function statements, these are the most traditional way to define functions:
+
+```javascript
+function greet(name) {
+  return `Hello, ${name}!`;
+}
+
+console.log(greet('Rahul')); // "Hello, Rahul!"
+```
+
+Key characteristics:
+- Hoisted (can be called before declaration in code)
+- Creates a named function that can be referenced by its name
+- Has its own `this` binding based on how it's called
+
+### 2. Function Expressions
+
+Functions can be assigned to variables or constants:
+
+```javascript
+const greet = function(name) {
+  return `Hello, ${name}!`;
+};
+
+console.log(greet('Priya')); // "Hello, Priya!"
+```
+
+Key characteristics:
+- Not hoisted (can only be called after definition)
+- Can be anonymous or named
+- Has its own `this` binding based on how it's called
+
+### 3. Arrow Functions (ES6+)
+
+A more concise syntax introduced in ES6:
+
+```javascript
+const greet = (name) => {
+  return `Hello, ${name}!`;
+};
+
+// Even shorter for single expressions
+const greetConcise = name => `Hello, ${name}!`;
+
+console.log(greetConcise('Amit')); // "Hello, Amit!"
+```
+
+Key characteristics:
+- More compact syntax
+- No `this` binding of their own (inherit `this` from surrounding scope)
+- No `arguments` object
+- Cannot be used as constructors
+- Implicit return for single expressions
+
+### 4. Method Definition Shorthand (ES6+)
+
+A concise way to define methods in objects:
+
+```javascript
+const person = {
+  name: 'Rahul',
+  // Method definition shorthand
+  greet() {
+    return `Hello, I'm ${this.name}`;
+  }
+};
+
+console.log(person.greet()); // "Hello, I'm Rahul"
+```
+
+### 5. Constructor Functions
+
+Functions used with the `new` keyword to create objects:
+
+```javascript
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+  this.greet = function() {
+    return `Hello, I'm ${this.name}`;
+  };
+}
+
+const person = new Person('Rahul', 30);
+console.log(person.greet()); // "Hello, I'm Rahul"
+```
+
+### 6. Class Methods (ES6+)
+
+Methods defined within ES6 classes:
+
+```javascript
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+  
+  greet() {
+    return `Hello, I'm ${this.name}`;
+  }
+  
+  // Static method
+  static createAnonymous() {
+    return new Person('Anonymous', 0);
+  }
+}
+
+const person = new Person('Rahul', 30);
+console.log(person.greet()); // "Hello, I'm Rahul"
+```
+
+### 7. Generator Functions (ES6+)
+
+Functions that can pause and resume execution:
+
+```javascript
+function* countUp(max) {
+  for (let i = 0; i < max; i++) {
+    yield i;
+  }
+}
+
+const counter = countUp(3);
+console.log(counter.next().value); // 0
+console.log(counter.next().value); // 1
+console.log(counter.next().value); // 2
+console.log(counter.next().value); // undefined
+```
+
+### 8. Async Functions (ES2017+)
+
+Functions that work with promises and async operations:
+
+```javascript
+async function fetchUserData(userId) {
+  try {
+    const response = await fetch(`https://api.example.com/users/${userId}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    throw error;
+  }
+}
+
+// Usage with then/catch
+fetchUserData('123')
+  .then(data => console.log(data))
+  .catch(error => console.error(error));
+
+// Or with async/await
+async function displayUserData() {
+  try {
+    const data = await fetchUserData('123');
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+```
+
+## Function Parameters and Arguments
+
+### Basic Parameters
+
+```javascript
+function add(a, b) {
+  return a + b;
+}
+
+console.log(add(5, 3)); // 8
+```
+
+### Default Parameters (ES6+)
+
+```javascript
+function greet(name = 'Guest', greeting = 'Hello') {
+  return `${greeting}, ${name}!`;
+}
+
+console.log(greet());                // "Hello, Guest!"
+console.log(greet('Rahul'));         // "Hello, Rahul!"
+console.log(greet('Priya', 'Hi'));   // "Hi, Priya!"
+```
+
+### Rest Parameters (ES6+)
+
+Collect remaining arguments into an array:
+
+```javascript
+function sum(...numbers) {
+  return numbers.reduce((total, num) => total + num, 0);
+}
+
+console.log(sum(1, 2, 3, 4, 5)); // 15
+```
+
+### The arguments Object
+
+Available in regular functions (not arrow functions):
+
+```javascript
+function logArguments() {
+  console.log(arguments);
+  return Array.from(arguments).join(', ');
+}
+
+console.log(logArguments('a', 'b', 'c')); // "a, b, c"
+```
+
+### Parameter Destructuring (ES6+)
+
+```javascript
+function displayPerson({ name, age, city = 'Unknown' }) {
+  return `${name} is ${age} years old and lives in ${city}`;
+}
+
+const person = { name: 'Rahul', age: 30, country: 'India' };
+console.log(displayPerson(person)); // "Rahul is 30 years old and lives in Unknown"
+```
+
+## Return Values
+
+Functions can return values using the `return` statement:
+
+```javascript
+function multiply(a, b) {
+  return a * b; // Returns the product
+}
+
+console.log(multiply(4, 5)); // 20
+```
+
+If no return statement is provided, or if the return has no value, the function returns `undefined`:
+
+```javascript
+function greet(name) {
+  console.log(`Hello, ${name}!`);
+  // No return statement
+}
+
+const result = greet('Rahul'); // Logs "Hello, Rahul!"
+console.log(result); // undefined
+```
+
+### Returning Multiple Values
+
+Using an array:
+
+```javascript
+function getMinMax(numbers) {
+  return [Math.min(...numbers), Math.max(...numbers)];
+}
+
+const [min, max] = getMinMax([3, 1, 4, 1, 5, 9]);
+console.log(min, max); // 1 9
+```
+
+Using an object:
+
+```javascript
+function getStats(numbers) {
+  return {
+    sum: numbers.reduce((a, b) => a + b, 0),
+    average: numbers.reduce((a, b) => a + b, 0) / numbers.length,
+    min: Math.min(...numbers),
+    max: Math.max(...numbers)
+  };
+}
+
+const { sum, average } = getStats([1, 2, 3, 4, 5]);
+console.log(sum, average); // 15 3
+```
+
+## Function Scope and Closures
+
+### Lexical Scope
+
+Functions have access to variables in their own scope, in outer functions, and global variables:
+
+```javascript
+const globalVar = 'I am global';
+
+function outer() {
+  const outerVar = 'I am from outer';
+  
+  function inner() {
+    const innerVar = 'I am from inner';
+    console.log(innerVar);  // Accessible
+    console.log(outerVar);  // Accessible from outer function
+    console.log(globalVar); // Accessible from global scope
+  }
+  
+  inner();
+}
+
+outer();
+```
+
+### Closures
+
+A closure is created when a function retains access to its lexical scope even when executed outside that scope:
+
+```javascript
+function createCounter() {
+  let count = 0;
+  
+  return function() {
+    count++;
+    return count;
+  };
+}
+
+const counter = createCounter();
+console.log(counter()); // 1
+console.log(counter()); // 2
+console.log(counter()); // 3
+```
+
+## Higher-Order Functions
+
+Functions that take other functions as arguments or return functions:
+
+```javascript
+// Function that takes a function as an argument
+function executeOperation(x, y, operation) {
+  return operation(x, y);
+}
+
+const add = (a, b) => a + b;
+const multiply = (a, b) => a * b;
+
+console.log(executeOperation(5, 3, add));      // 8
+console.log(executeOperation(5, 3, multiply)); // 15
+
+// Function that returns a function
+function createMultiplier(factor) {
+  return function(number) {
+    return number * factor;
+  };
+}
+
+const double = createMultiplier(2);
+const triple = createMultiplier(3);
+
+console.log(double(5)); // 10
+console.log(triple(5)); // 15
+```
+
+## Immediately Invoked Function Expressions (IIFE)
+
+Functions that are executed immediately after being defined:
+
+```javascript
+(function() {
+  const privateVar = 'I am private';
+  console.log(privateVar);
+})();
+
+// With parameters
+(function(name) {
+  console.log(`Hello, ${name}!`);
+})('Rahul');
+
+// Arrow function IIFE
+(() => {
+  console.log('IIFE with arrow function');
+})();
+```
+
+IIFEs are useful for creating private scopes and avoiding polluting the global namespace.
+
+## Function Binding and 'this'
+
+The value of `this` inside a function depends on how the function is called:
+
+```javascript
+const person = {
+  name: 'Rahul',
+  greet: function() {
+    return `Hello, I'm ${this.name}`;
+  }
+};
+
+console.log(person.greet()); // "Hello, I'm Rahul"
+
+const greetFunction = person.greet;
+console.log(greetFunction()); // "Hello, I'm undefined" (this is not person)
+```
+
+### Binding 'this'
+
+```javascript
+// Using bind()
+const boundGreet = person.greet.bind(person);
+console.log(boundGreet()); // "Hello, I'm Rahul"
+
+// Using call()
+console.log(person.greet.call({ name: 'Priya' })); // "Hello, I'm Priya"
+
+// Using apply()
+console.log(person.greet.apply({ name: 'Amit' })); // "Hello, I'm Amit"
+```
+
+## Function Composition
+
+Creating new functions by combining existing ones:
+
+```javascript
+const add10 = x => x + 10;
+const multiply2 = x => x * 2;
+
+// Manual composition
+const add10ThenMultiply2 = x => multiply2(add10(x));
+console.log(add10ThenMultiply2(5)); // (5 + 10) * 2 = 30
+
+// Composition helper
+function compose(...functions) {
+  return functions.reduce((f, g) => (...args) => f(g(...args)));
+}
+
+const multiply2ThenAdd10 = compose(add10, multiply2);
+console.log(multiply2ThenAdd10(5)); // (5 * 2) + 10 = 20
+```
+
+## Pure Functions vs. Side Effects
+
+### Pure Functions
+
+Functions that:
+1. Given the same input, always return the same output
+2. Have no side effects
+
+```javascript
+// Pure function
+function add(a, b) {
+  return a + b;
+}
+
+// Pure function
+function calculateCircleArea(radius) {
+  return Math.PI * radius * radius;
+}
+```
+
+### Functions with Side Effects
+
+```javascript
+// Side effect: modifies external state
+let total = 0;
+function addToTotal(value) {
+  total += value;
+  return total;
+}
+
+// Side effect: interacts with browser
+function updateUI(message) {
+  document.getElementById('output').textContent = message;
+}
+
+// Side effect: network request
+async function fetchData(url) {
+  const response = await fetch(url);
+  return response.json();
+}
+```
+
+## Function Recursion
+
+A function that calls itself:
+
+```javascript
+function factorial(n) {
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
+}
+
+console.log(factorial(5)); // 120 (5 * 4 * 3 * 2 * 1)
+
+// Fibonacci sequence
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(7)); // 13
+```
+
+## Common Function Patterns
+
+### Callback Pattern
+
+```javascript
+function fetchData(url, callback) {
+  // Simulating async operation
+  setTimeout(() => {
+    const data = { id: 1, name: 'Example Data' };
+    callback(null, data);
+  }, 1000);
+}
+
+fetchData('https://api.example.com/data', (error, data) => {
+  if (error) {
+    console.error('Error:', error);
+  } else {
+    console.log('Data:', data);
+  }
+});
+```
+
+### Promise Pattern
+
+```javascript
+function fetchData(url) {
+  return new Promise((resolve, reject) => {
+    // Simulating async operation
+    setTimeout(() => {
+      const data = { id: 1, name: 'Example Data' };
+      resolve(data);
+      // In case of error: reject(new Error('Failed to fetch data'));
+    }, 1000);
+  });
+}
+
+fetchData('https://api.example.com/data')
+  .then(data => console.log('Data:', data))
+  .catch(error => console.error('Error:', error));
+```
+
+### Module Pattern
+
+```javascript
+const calculator = (function() {
+  // Private variables
+  let result = 0;
+  
+  // Private function
+  function validate(n) {
+    return typeof n === 'number' && !isNaN(n);
+  }
+  
+  // Public API
+  return {
+    add(n) {
+      if (validate(n)) result += n;
+      return result;
+    },
+    subtract(n) {
+      if (validate(n)) result -= n;
+      return result;
+    },
+    getResult() {
+      return result;
+    },
+    reset() {
+      result = 0;
+      return result;
+    }
+  };
+})();
+
+console.log(calculator.add(5));       // 5
+console.log(calculator.subtract(2));  // 3
+console.log(calculator.getResult());  // 3
+```
+
+### Memoization Pattern
+
+```javascript
+function memoize(fn) {
+  const cache = {};
+  
+  return function(...args) {
+    const key = JSON.stringify(args);
+    
+    if (cache[key] === undefined) {
+      cache[key] = fn(...args);
+    }
+    
+    return cache[key];
+  };
+}
+
+// Example: Memoized fibonacci
+const memoizedFibonacci = memoize(function(n) {
+  if (n <= 1) return n;
+  return memoizedFibonacci(n - 1) + memoizedFibonacci(n - 2);
+});
+
+console.log(memoizedFibonacci(40)); // Fast computation
+```
+
+### Currying Pattern
+
+```javascript
+function curry(fn) {
+  return function curried(...args) {
+    if (args.length >= fn.length) {
+      return fn.apply(this, args);
+    } else {
+      return function(...moreArgs) {
+        return curried.apply(this, args.concat(moreArgs));
+      };
+    }
+  };
+}
+
+function add(a, b, c) {
+  return a + b + c;
+}
+
+const curriedAdd = curry(add);
+console.log(curriedAdd(1)(2)(3));   // 6
+console.log(curriedAdd(1, 2)(3));   // 6
+console.log(curriedAdd(1)(2, 3));   // 6
+console.log(curriedAdd(1, 2, 3));   // 6
+```
+
+## Best Practices for JavaScript Functions
+
+1. **Keep functions small and focused**
+   ```javascript
+   // Instead of one large function
+   function processUserData(userData) {
+     // 100 lines of code doing many things
+   }
+   
+   // Break it down
+   function validateUserData(userData) { /* ... */ }
+   function normalizeUserData(userData) { /* ... */ }
+   function saveUserData(userData) { /* ... */ }
+   
+   function processUserData(userData) {
+     const validData = validateUserData(userData);
+     const normalizedData = normalizeUserData(validData);
+     return saveUserData(normalizedData);
+   }
+   ```
+
+2. **Use descriptive function names**
+   ```javascript
+   // Unclear
+   function process(data) { /* ... */ }
+   
+   // Clear
+   function calculateTotalOrderValue(orderItems) { /* ... */ }
+   ```
+
+3. **Use arrow functions for short callbacks**
+   ```javascript
+   // Verbose
+   [1, 2, 3].map(function(num) {
+     return num * 2;
+   });
+   
+   // Concise
+   [1, 2, 3].map(num => num * 2);
+   ```
+
+4. **Avoid excessive parameters**
+   ```javascript
+   // Too many parameters
+   function createUser(name, email, password, age, country, city, zipCode) {
+     // ...
+   }
+   
+   // Better: use an object
+   function createUser({ name, email, password, age, address }) {
+     // ...
+   }
+   ```
+
+5. **Return early to avoid deep nesting**
+   ```javascript
+   // Deeply nested
+   function processPayment(payment) {
+     if (payment) {
+       if (payment.amount > 0) {
+         if (payment.method) {
+           // Process payment
+         } else {
+           return 'Invalid payment method';
+         }
+       } else {
+         return 'Invalid amount';
+       }
+     } else {
+       return 'No payment provided';
+     }
+   }
+   
+   // Early returns
+   function processPayment(payment) {
+     if (!payment) return 'No payment provided';
+     if (payment.amount <= 0) return 'Invalid amount';
+     if (!payment.method) return 'Invalid payment method';
+     
+     // Process payment
+   }
+   ```
+
+6. **Use default parameters instead of conditionals**
+   ```javascript
+   // Instead of
+   function greet(name) {
+     name = name || 'Guest';
+     return `Hello, ${name}!`;
+   }
+   
+   // Use default parameters
+   function greet(name = 'Guest') {
+     return `Hello, ${name}!`;
+   }
+   ```
+
+7. **Prefer pure functions when possible**
+   ```javascript
+   // Impure
+   let total = 0;
+   function addToTotal(value) {
+     total += value;
+   }
+   
+   // Pure
+   function add(a, b) {
+     return a + b;
+   }
+   ```
+
+## Interview Tips
+
+- Explain the different ways to define functions in JavaScript and when to use each
+- Discuss function scope and how closures work
+- Explain the concept of higher-order functions and provide examples
+- Describe how `this` binding works in different function types
+- Discuss the benefits of pure functions vs. functions with side effects
+- Be prepared to write functions using different patterns (callbacks, promises, etc.)
+- Explain how arrow functions differ from regular functions
+- Discuss best practices for writing maintainable functions

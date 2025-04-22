@@ -1,0 +1,473 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Promises in JavaScript
+---
+
+# Promises in JavaScript
+
+## What are Promises?
+
+Promises are objects that represent the eventual completion or failure of an asynchronous operation and its resulting value. They provide a cleaner way to handle asynchronous code compared to callbacks.
+
+## Promise States
+
+A Promise can be in one of three states:
+
+1. **Pending**: Initial state, neither fulfilled nor rejected
+2. **Fulfilled**: The operation completed successfully
+3. **Rejected**: The operation failed
+
+Once a promise is fulfilled or rejected, it is **settled** and cannot change state again.
+
+## Creating Promises
+
+```javascript
+// Basic Promise creation
+const promise = new Promise((resolve, reject) => {
+  // Asynchronous operation
+  const success = true;
+  
+  if (success) {
+    resolve('Operation succeeded');
+  } else {
+    reject(new Error('Operation failed'));
+  }
+});
+```
+
+## Promise Methods
+
+### then(), catch(), finally()
+
+```javascript
+promise
+  .then(result => {
+    console.log('Success:', result);
+    return 'Next value';
+  })
+  .then(nextResult => {
+    console.log('Chained result:', nextResult);
+  })
+  .catch(error => {
+    console.error('Error:', error.message);
+  })
+  .finally(() => {
+    console.log('Promise settled (fulfilled or rejected)');
+  });
+```
+
+### Promise.resolve() and Promise.reject()
+
+```javascript
+// Create already resolved promise
+const resolvedPromise = Promise.resolve('Already resolved');
+resolvedPromise.then(value => console.log(value)); // 'Already resolved'
+
+// Create already rejected promise
+const rejectedPromise = Promise.reject(new Error('Already rejected'));
+rejectedPromise.catch(error => console.error(error.message)); // 'Already rejected'
+```
+
+## Promise Chaining
+
+```javascript
+function getUserData(userId) {
+  return fetch(`/api/users/${userId}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('User not found');
+      }
+      return response.json();
+    });
+}
+
+function getUserPosts(user) {
+  return fetch(`/api/posts?userId=${user.id}`)
+    .then(response => response.json());
+}
+
+// Chain promises
+getUserData(1)
+  .then(user => {
+    console.log('User:', user);
+    return getUserPosts(user);
+  })
+  .then(posts => {
+    console.log('Posts:', posts);
+  })
+  .catch(error => {
+    console.error('Error:', error.message);
+  });
+```
+
+## Error Handling in Promises
+
+```javascript
+// Error propagation in promise chains
+fetchData()
+  .then(data => {
+    // This error will be caught by the catch block
+    if (!data.items) {
+      throw new Error('Invalid data format');
+    }
+    return processData(data);
+  })
+  .then(result => {
+    console.log('Result:', result);
+  })
+  .catch(error => {
+    // Catches any error thrown in the chain
+    console.error('Error:', error.message);
+  });
+
+// Handling specific errors
+fetchData()
+  .then(data => processData(data))
+  .then(result => saveResult(result))
+  .catch(error => {
+    if (error.name === 'NetworkError') {
+      // Handle network errors
+      return fallbackData();
+    }
+    // Re-throw other errors
+    throw error;
+  })
+  .then(finalResult => {
+    console.log('Final result:', finalResult);
+  })
+  .catch(error => {
+    console.error('Unhandled error:', error);
+  });
+```
+
+## Combining Multiple Promises
+
+### Promise.all()
+
+Waits for all promises to resolve or for any to reject.
+
+```javascript
+const promises = [
+  fetch('/api/users').then(res => res.json()),
+  fetch('/api/posts').then(res => res.json()),
+  fetch('/api/comments').then(res => res.json())
+];
+
+Promise.all(promises)
+  .then(([users, posts, comments]) => {
+    console.log('Users:', users);
+    console.log('Posts:', posts);
+    console.log('Comments:', comments);
+  })
+  .catch(error => {
+    // If any promise rejects, this catch will execute
+    console.error('One of the requests failed:', error);
+  });
+```
+
+### Promise.allSettled()
+
+Waits for all promises to settle (resolve or reject).
+
+```javascript
+Promise.allSettled(promises)
+  .then(results => {
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        console.log(`Promise ${index} fulfilled with:`, result.value);
+      } else {
+        console.log(`Promise ${index} rejected with:`, result.reason);
+      }
+    });
+  });
+```
+
+### Promise.race()
+
+Returns the first promise to settle (resolve or reject).
+
+```javascript
+const promise1 = new Promise(resolve => setTimeout(() => resolve('First'), 500));
+const promise2 = new Promise(resolve => setTimeout(() => resolve('Second'), 100));
+
+Promise.race([promise1, promise2])
+  .then(result => console.log('Fastest promise:', result)) // 'Second'
+  .catch(error => console.error('Error:', error));
+```
+
+### Promise.any()
+
+Returns the first promise to fulfill (or rejects if all reject).
+
+```javascript
+const promise1 = Promise.reject(new Error('Error 1'));
+const promise2 = new Promise(resolve => setTimeout(() => resolve('Success'), 200));
+const promise3 = Promise.reject(new Error('Error 3'));
+
+Promise.any([promise1, promise2, promise3])
+  .then(result => console.log('First fulfilled promise:', result)) // 'Success'
+  .catch(error => console.error('All promises rejected:', error));
+```
+
+## Async/Await with Promises
+
+```javascript
+async function fetchUserData(userId) {
+  try {
+    // Await pauses execution until the promise resolves
+    const response = await fetch(`/api/users/${userId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const userData = await response.json();
+    
+    // Get user posts
+    const postsResponse = await fetch(`/api/posts?userId=${userId}`);
+    const posts = await postsResponse.json();
+    
+    return {
+      user: userData,
+      posts: posts
+    };
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    throw error; // Re-throw to allow caller to handle
+  }
+}
+
+// Usage
+fetchUserData(1)
+  .then(data => console.log('User data:', data))
+  .catch(error => console.error('Failed to fetch user data:', error));
+```
+
+## Common Promise Patterns
+
+### Promisification
+
+Converting callback-based functions to promise-based:
+
+```javascript
+// Callback-based function
+function readFileCallback(path, callback) {
+  fs.readFile(path, 'utf8', (error, data) => {
+    if (error) {
+      callback(error);
+      return;
+    }
+    callback(null, data);
+  });
+}
+
+// Promisified version
+function readFilePromise(path) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path, 'utf8', (error, data) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(data);
+    });
+  });
+}
+
+// Usage
+readFilePromise('config.json')
+  .then(data => console.log('File content:', data))
+  .catch(error => console.error('Error reading file:', error));
+```
+
+### Delay/Timeout
+
+```javascript
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Usage
+async function processWithDelay() {
+  console.log('Starting');
+  await delay(2000); // Wait for 2 seconds
+  console.log('After 2 seconds');
+}
+
+// Adding timeout to a promise
+function timeoutPromise(promise, ms) {
+  const timeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Operation timed out')), ms);
+  });
+  
+  return Promise.race([promise, timeout]);
+}
+
+// Usage
+timeoutPromise(fetch('https://api.example.com/data'), 5000)
+  .then(response => response.json())
+  .then(data => console.log('Data:', data))
+  .catch(error => console.error('Error or timeout:', error.message));
+```
+
+### Retry Logic
+
+```javascript
+async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    if (retries <= 0) {
+      throw error;
+    }
+    
+    // Wait before retrying (exponential backoff)
+    await new Promise(resolve => setTimeout(resolve, backoff));
+    
+    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+  }
+}
+
+// Usage
+fetchWithRetry('https://api.example.com/data')
+  .then(response => response.json())
+  .then(data => console.log('Data:', data))
+  .catch(error => console.error('All retries failed:', error));
+```
+
+### Sequential vs. Parallel Execution
+
+```javascript
+// Sequential execution
+async function processSequentially(items) {
+  const results = [];
+  
+  for (const item of items) {
+    // Wait for each promise to resolve before continuing
+    const result = await processItem(item);
+    results.push(result);
+  }
+  
+  return results;
+}
+
+// Parallel execution with concurrency limit
+async function processWithConcurrencyLimit(items, concurrency = 3) {
+  const results = [];
+  const running = [];
+  
+  for (const item of items) {
+    // Create a promise that removes itself from running when done
+    const promise = processItem(item)
+      .then(result => {
+        results.push(result);
+        running.splice(running.indexOf(promise), 1);
+        return result;
+      });
+    
+    running.push(promise);
+    
+    if (running.length >= concurrency) {
+      // Wait for one task to complete before adding more
+      await Promise.race(running);
+    }
+  }
+  
+  // Wait for all remaining tasks
+  await Promise.all(running);
+  
+  return results;
+}
+```
+
+## Promise Performance Considerations
+
+```javascript
+// Avoid creating unnecessary promises
+function unnecessaryPromise() {
+  // Inefficient - creates a new promise for a value we already have
+  return Promise.resolve(42);
+}
+
+function betterApproach() {
+  // More efficient - just return the value
+  return 42;
+}
+
+// Avoid nesting promises
+function nestedPromises() {
+  return getData().then(data => {
+    return getMoreData(data).then(moreData => {
+      return evenMoreData(moreData);
+    });
+  });
+}
+
+function flattenedPromises() {
+  return getData()
+    .then(data => getMoreData(data))
+    .then(moreData => evenMoreData(moreData));
+}
+```
+
+## Common Promise Mistakes
+
+### 1. Forgetting to return promises in then()
+
+```javascript
+// Incorrect - the second then doesn't wait for processData
+fetchData()
+  .then(data => {
+    processData(data); // Returns a promise but we don't return it
+  })
+  .then(result => {
+    // result is undefined, not the result of processData
+    console.log(result);
+  });
+
+// Correct
+fetchData()
+  .then(data => {
+    return processData(data); // Return the promise
+  })
+  .then(result => {
+    console.log(result); // Now result contains processData's resolved value
+  });
+```
+
+### 2. Not handling rejections
+
+```javascript
+// Missing error handling
+fetchData()
+  .then(data => processData(data))
+  .then(result => console.log(result));
+  // No .catch() - unhandled promise rejection!
+
+// Proper error handling
+fetchData()
+  .then(data => processData(data))
+  .then(result => console.log(result))
+  .catch(error => console.error('Error:', error));
+```
+
+### 3. Promise executor errors
+
+```javascript
+// Errors in the executor function are automatically caught
+const promise = new Promise((resolve, reject) => {
+  throw new Error('Error in executor'); // This becomes a rejected promise
+});
+
+promise.catch(error => console.error(error.message)); // 'Error in executor'
+```
+
+## Interview Tips
+
+- Explain the three states of a Promise and how transitions occur
+- Describe the difference between Promise.all, Promise.race, Promise.allSettled, and Promise.any
+- Explain how error handling works in promise chains
+- Discuss the advantages of Promises over callbacks
+- Demonstrate how to convert callback-based code to Promises
+- Explain common Promise patterns and anti-patterns
+- Describe how async/await relates to Promises

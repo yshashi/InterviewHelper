@@ -1,0 +1,452 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Classes in JavaScript
+---
+
+# Classes in JavaScript
+
+## Introduction to Classes
+
+JavaScript classes, introduced in ES6 (ECMAScript 2015), provide a cleaner, more object-oriented syntax for creating objects and dealing with inheritance. Under the hood, they use JavaScript's prototype-based inheritance model.
+
+## Class Declaration
+
+```javascript
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+  
+  greet() {
+    return `Hello, my name is ${this.name} and I am ${this.age} years old.`;
+  }
+}
+
+// Creating an instance
+const john = new Person('John', 30);
+console.log(john.greet()); // "Hello, my name is John and I am 30 years old."
+```
+
+## Class Expression
+
+```javascript
+// Unnamed class expression
+const Person = class {
+  constructor(name) {
+    this.name = name;
+  }
+};
+
+// Named class expression
+const Employee = class EmployeeClass {
+  constructor(name) {
+    this.name = name;
+  }
+  
+  // EmployeeClass is only visible within the class itself
+  getName() {
+    return EmployeeClass.prefix + this.name;
+  }
+  
+  static prefix = "Employee: ";
+};
+```
+
+## Class Properties
+
+### Instance Properties
+
+```javascript
+class Product {
+  // Instance properties (defined in constructor)
+  constructor(name, price) {
+    this.name = name;
+    this.price = price;
+  }
+  
+  // Public instance field (ES2022)
+  tax = 0.1;
+  
+  // Private instance field (ES2022)
+  #discount = 0.05;
+  
+  getPrice() {
+    return this.price * (1 + this.tax) * (1 - this.#discount);
+  }
+  
+  // Private method (ES2022)
+  #calculateDiscount() {
+    return this.price * this.#discount;
+  }
+  
+  getDiscount() {
+    return this.#calculateDiscount();
+  }
+}
+
+const product = new Product('Phone', 500);
+console.log(product.getPrice()); // 522.5
+console.log(product.tax); // 0.1
+// console.log(product.#discount); // SyntaxError: Private field
+```
+
+### Static Properties and Methods
+
+```javascript
+class MathUtils {
+  // Static property
+  static PI = 3.14159;
+  
+  // Static method
+  static square(x) {
+    return x * x;
+  }
+  
+  static cube(x) {
+    return x * x * x;
+  }
+}
+
+console.log(MathUtils.PI); // 3.14159
+console.log(MathUtils.square(4)); // 16
+console.log(MathUtils.cube(3)); // 27
+```
+
+## Inheritance
+
+```javascript
+// Parent class
+class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  
+  speak() {
+    return `${this.name} makes a sound`;
+  }
+}
+
+// Child class
+class Dog extends Animal {
+  constructor(name, breed) {
+    // Call parent constructor
+    super(name);
+    this.breed = breed;
+  }
+  
+  // Override parent method
+  speak() {
+    return `${this.name} barks`;
+  }
+  
+  // Add new method
+  fetch() {
+    return `${this.name} fetches the ball`;
+  }
+}
+
+const dog = new Dog('Rex', 'German Shepherd');
+console.log(dog.name); // "Rex"
+console.log(dog.breed); // "German Shepherd"
+console.log(dog.speak()); // "Rex barks"
+console.log(dog.fetch()); // "Rex fetches the ball"
+```
+
+## Getters and Setters
+
+```javascript
+class Circle {
+  #radius = 0;
+  
+  constructor(radius) {
+    this.radius = radius; // Uses the setter
+  }
+  
+  // Getter
+  get radius() {
+    return this.#radius;
+  }
+  
+  // Setter
+  set radius(value) {
+    if (value <= 0) {
+      throw new Error('Radius must be positive');
+    }
+    this.#radius = value;
+  }
+  
+  // Getter
+  get area() {
+    return Math.PI * this.#radius * this.#radius;
+  }
+  
+  // Getter
+  get circumference() {
+    return 2 * Math.PI * this.#radius;
+  }
+}
+
+const circle = new Circle(5);
+console.log(circle.radius); // 5
+console.log(circle.area); // ~78.54
+circle.radius = 10;
+console.log(circle.area); // ~314.16
+// circle.radius = -5; // Error: Radius must be positive
+```
+
+## Abstract Classes
+
+JavaScript doesn't have native abstract classes, but we can simulate them:
+
+```javascript
+class AbstractShape {
+  constructor() {
+    if (new.target === AbstractShape) {
+      throw new Error('AbstractShape cannot be instantiated directly');
+    }
+  }
+  
+  calculateArea() {
+    throw new Error('Method calculateArea() must be implemented');
+  }
+}
+
+class Rectangle extends AbstractShape {
+  constructor(width, height) {
+    super();
+    this.width = width;
+    this.height = height;
+  }
+  
+  calculateArea() {
+    return this.width * this.height;
+  }
+}
+
+// const shape = new AbstractShape(); // Error: AbstractShape cannot be instantiated directly
+const rectangle = new Rectangle(5, 10);
+console.log(rectangle.calculateArea()); // 50
+```
+
+## Mixins
+
+Mixins allow composing behaviors from multiple sources:
+
+```javascript
+// Mixin function
+const swimmable = {
+  swim() {
+    return `${this.name} is swimming`;
+  }
+};
+
+const flyable = {
+  fly() {
+    return `${this.name} is flying`;
+  }
+};
+
+class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+}
+
+// Apply mixins
+class Duck extends Animal {
+  constructor(name) {
+    super(name);
+  }
+}
+
+// Assign mixin methods to prototype
+Object.assign(Duck.prototype, swimmable, flyable);
+
+const duck = new Duck('Donald');
+console.log(duck.swim()); // "Donald is swimming"
+console.log(duck.fly()); // "Donald is flying"
+```
+
+## Class Checking
+
+```javascript
+class Animal {}
+class Dog extends Animal {}
+
+const dog = new Dog();
+
+// instanceof checks the prototype chain
+console.log(dog instanceof Dog); // true
+console.log(dog instanceof Animal); // true
+console.log(dog instanceof Object); // true
+
+// constructor property
+console.log(dog.constructor === Dog); // true
+
+// isPrototypeOf
+console.log(Animal.prototype.isPrototypeOf(dog)); // true
+```
+
+## Classes vs Constructor Functions
+
+```javascript
+// ES6 Class
+class PersonClass {
+  constructor(name) {
+    this.name = name;
+  }
+  
+  greet() {
+    return `Hello, ${this.name}`;
+  }
+  
+  static create(name) {
+    return new PersonClass(name);
+  }
+}
+
+// Equivalent constructor function
+function PersonFunction(name) {
+  this.name = name;
+}
+
+PersonFunction.prototype.greet = function() {
+  return `Hello, ${this.name}`;
+};
+
+PersonFunction.create = function(name) {
+  return new PersonFunction(name);
+};
+```
+
+## Class Composition
+
+```javascript
+// Functional approach to composition
+function createPerson(name) {
+  return {
+    name,
+    greet() {
+      return `Hello, ${this.name}`;
+    }
+  };
+}
+
+function createEmployee(person, title) {
+  return {
+    ...person,
+    title,
+    work() {
+      return `${this.name} is working as ${this.title}`;
+    }
+  };
+}
+
+function createManager(employee, department) {
+  return {
+    ...employee,
+    department,
+    manage() {
+      return `${this.name} is managing ${this.department}`;
+    }
+  };
+}
+
+// Create a composed object
+const personData = createPerson('John');
+const employeeData = createEmployee(personData, 'Developer');
+const managerData = createManager(employeeData, 'Engineering');
+
+console.log(managerData.greet()); // "Hello, John"
+console.log(managerData.work()); // "John is working as Developer"
+console.log(managerData.manage()); // "John is managing Engineering"
+```
+
+## Best Practices
+
+1. **Use class declarations** for better readability
+2. **Keep classes focused** on a single responsibility
+3. **Use private fields** to encapsulate internal state
+4. **Prefer composition over inheritance** for complex behaviors
+5. **Use getters and setters** for computed properties and validation
+6. **Document class APIs** clearly with JSDoc comments
+7. **Consider immutability** for class instances where appropriate
+
+## Common Patterns
+
+### Factory Pattern
+
+```javascript
+class UserFactory {
+  static createAdmin(name) {
+    return new User(name, 'admin', ['read', 'write', 'delete']);
+  }
+  
+  static createEditor(name) {
+    return new User(name, 'editor', ['read', 'write']);
+  }
+  
+  static createViewer(name) {
+    return new User(name, 'viewer', ['read']);
+  }
+}
+
+class User {
+  constructor(name, role, permissions) {
+    this.name = name;
+    this.role = role;
+    this.permissions = permissions;
+  }
+  
+  hasPermission(permission) {
+    return this.permissions.includes(permission);
+  }
+}
+
+const admin = UserFactory.createAdmin('John');
+console.log(admin.hasPermission('delete')); // true
+```
+
+### Singleton Pattern
+
+```javascript
+class Database {
+  static #instance;
+  
+  constructor(url) {
+    if (Database.#instance) {
+      return Database.#instance;
+    }
+    
+    this.url = url;
+    this.connected = false;
+    Database.#instance = this;
+  }
+  
+  connect() {
+    this.connected = true;
+    console.log(`Connected to ${this.url}`);
+  }
+  
+  static getInstance() {
+    return Database.#instance;
+  }
+}
+
+const db1 = new Database('mongodb://localhost:27017');
+const db2 = new Database('mongodb://example.com'); // Ignored, returns db1
+
+db1.connect();
+console.log(db1 === db2); // true
+```
+
+## Interview Tips
+
+- Explain the benefits of using classes over constructor functions
+- Describe how inheritance works in JavaScript classes
+- Explain the purpose of the `super` keyword in class constructors
+- Discuss the differences between static and instance methods
+- Explain how to implement private properties and methods
+- Describe when to use composition versus inheritance
+- Demonstrate knowledge of class patterns like factories and singletons

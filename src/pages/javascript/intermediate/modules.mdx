@@ -1,0 +1,156 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Modules in JavaScript
+---
+
+# Modules in JavaScript
+
+## What are JavaScript Modules?
+
+JavaScript modules are a way to organize code into separate files, making it more maintainable and reusable. They allow developers to encapsulate functionality, avoid naming conflicts, and manage dependencies effectively.
+
+## Module Systems in JavaScript
+
+### 1. CommonJS (Node.js)
+
+Used primarily in Node.js environments:
+
+```javascript
+// math.js
+function add(a, b) {
+  return a + b;
+}
+
+module.exports = { add };
+
+// main.js
+const math = require('./math');
+console.log(math.add(5, 3)); // 8
+```
+
+### 2. ES Modules (ESM)
+
+The official standard module system in modern JavaScript:
+
+```javascript
+// math.js
+export function add(a, b) {
+  return a + b;
+}
+
+export default function multiply(a, b) {
+  return a * b;
+}
+
+// main.js
+import multiply, { add } from './math.js';
+console.log(add(5, 3)); // 8
+console.log(multiply(4, 2)); // 8
+```
+
+## Key Features of ES Modules
+
+### Export Syntax
+
+```javascript
+// Named exports
+export const PI = 3.14159;
+export function square(x) { return x * x; }
+
+// Export list
+const e = 2.71828;
+function cube(x) { return x * x * x; }
+export { e, cube };
+
+// Renamed exports
+function sum(a, b) { return a + b; }
+export { sum as add };
+
+// Default export
+export default class Calculator { /* ... */ }
+```
+
+### Import Syntax
+
+```javascript
+// Import named exports
+import { PI, square } from './math.js';
+
+// Rename imports
+import { square as squareFunction } from './math.js';
+
+// Import default export
+import Calculator from './math.js';
+
+// Import default and named exports
+import Calculator, { PI, square } from './math.js';
+
+// Import all exports as a namespace
+import * as math from './math.js';
+```
+
+### Dynamic Imports
+
+```javascript
+// Static import (evaluated at parse time)
+import { add } from './math.js';
+
+// Dynamic import (returns a Promise, evaluated at runtime)
+button.addEventListener('click', async () => {
+  const math = await import('./math.js');
+  console.log(math.add(5, 3));
+});
+```
+
+## Using Modules in Different Environments
+
+### Browser
+
+```html
+<!-- Use type="module" attribute -->
+<script type="module">
+  import { add } from './math.js';
+  console.log(add(5, 3));
+</script>
+
+<!-- Or import from a separate file -->
+<script type="module" src="main.js"></script>
+```
+
+### Node.js
+
+```javascript
+// Use .mjs extension
+// math.mjs
+export function add(a, b) {
+  return a + b;
+}
+
+// Or set "type": "module" in package.json
+// package.json
+{
+  "type": "module"
+}
+
+// Then use .js extension with ES Module syntax
+// math.js
+export function add(a, b) {
+  return a + b;
+}
+```
+
+## Module Design Best Practices
+
+1. **Single Responsibility**: Each module should have a focused purpose
+2. **Explicit Exports**: Only export what's necessary for the public API
+3. **Avoid Side Effects**: Modules should not execute code on import
+4. **Use Named Exports** for libraries with multiple functions
+5. **Use Default Exports** for main components or classes
+
+## Interview Tips
+
+- Explain the difference between CommonJS and ES Modules
+- Describe how module scope prevents global namespace pollution
+- Discuss the benefits of code splitting with dynamic imports
+- Explain how bundlers like Webpack or Rollup handle modules
+- Demonstrate knowledge of module design patterns and best practices

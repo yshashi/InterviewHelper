@@ -1,0 +1,278 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: New Set Methods in JavaScript
+---
+
+# New Set Methods in JavaScript
+
+JavaScript's `Set` object is being enhanced with new methods for set operations like union, intersection, and difference. These methods are part of the "Set Methods" proposal, currently at Stage 3 in the TC39 process.
+
+## Current Set Functionality
+
+Before exploring the new methods, let's review the current Set API:
+
+```javascript
+// Creating a Set
+const set1 = new Set([1, 2, 3, 4]);
+const set2 = new Set([3, 4, 5, 6]);
+
+// Basic operations
+set1.add(5);         // Add a value
+set1.delete(1);      // Remove a value
+set1.has(2);         // Check if a value exists
+set1.size;           // Get the size
+set1.clear();        // Remove all values
+
+// Iteration
+for (const value of set1) {
+  console.log(value);
+}
+```
+
+## New Set Methods
+
+### Set.prototype.union()
+
+Returns a new Set with elements from both this Set and the provided iterable.
+
+```javascript
+const set1 = new Set([1, 2, 3]);
+const set2 = new Set([3, 4, 5]);
+
+const unionSet = set1.union(set2);
+console.log([...unionSet]); // [1, 2, 3, 4, 5]
+```
+
+### Set.prototype.intersection()
+
+Returns a new Set with elements that exist in both this Set and the provided iterable.
+
+```javascript
+const set1 = new Set([1, 2, 3, 4]);
+const set2 = new Set([3, 4, 5, 6]);
+
+const intersectionSet = set1.intersection(set2);
+console.log([...intersectionSet]); // [3, 4]
+```
+
+### Set.prototype.difference()
+
+Returns a new Set with elements that exist in this Set but not in the provided iterable.
+
+```javascript
+const set1 = new Set([1, 2, 3, 4]);
+const set2 = new Set([3, 4, 5, 6]);
+
+const differenceSet = set1.difference(set2);
+console.log([...differenceSet]); // [1, 2]
+```
+
+### Set.prototype.symmetricDifference()
+
+Returns a new Set with elements that exist in either this Set or the provided iterable, but not in both.
+
+```javascript
+const set1 = new Set([1, 2, 3, 4]);
+const set2 = new Set([3, 4, 5, 6]);
+
+const symmetricDifferenceSet = set1.symmetricDifference(set2);
+console.log([...symmetricDifferenceSet]); // [1, 2, 5, 6]
+```
+
+### Set.prototype.isSubsetOf()
+
+Returns a boolean indicating whether this Set is a subset of the provided iterable.
+
+```javascript
+const set1 = new Set([1, 2]);
+const set2 = new Set([1, 2, 3, 4]);
+
+console.log(set1.isSubsetOf(set2)); // true
+console.log(set2.isSubsetOf(set1)); // false
+```
+
+### Set.prototype.isSupersetOf()
+
+Returns a boolean indicating whether this Set is a superset of the provided iterable.
+
+```javascript
+const set1 = new Set([1, 2, 3, 4]);
+const set2 = new Set([2, 3]);
+
+console.log(set1.isSupersetOf(set2)); // true
+console.log(set2.isSupersetOf(set1)); // false
+```
+
+### Set.prototype.isDisjointFrom()
+
+Returns a boolean indicating whether this Set and the provided iterable have no elements in common.
+
+```javascript
+const set1 = new Set([1, 2]);
+const set2 = new Set([3, 4]);
+const set3 = new Set([2, 3]);
+
+console.log(set1.isDisjointFrom(set2)); // true
+console.log(set1.isDisjointFrom(set3)); // false
+```
+
+## Current Workarounds
+
+Until these methods are standardized, you can implement them manually:
+
+```javascript
+// Union
+function union(setA, setB) {
+  const result = new Set(setA);
+  for (const elem of setB) {
+    result.add(elem);
+  }
+  return result;
+}
+
+// Intersection
+function intersection(setA, setB) {
+  const result = new Set();
+  for (const elem of setA) {
+    if (setB.has(elem)) {
+      result.add(elem);
+    }
+  }
+  return result;
+}
+
+// Difference
+function difference(setA, setB) {
+  const result = new Set(setA);
+  for (const elem of setB) {
+    result.delete(elem);
+  }
+  return result;
+}
+
+// Symmetric Difference
+function symmetricDifference(setA, setB) {
+  const result = new Set(setA);
+  for (const elem of setB) {
+    if (result.has(elem)) {
+      result.delete(elem);
+    } else {
+      result.add(elem);
+    }
+  }
+  return result;
+}
+
+// Is Subset
+function isSubset(setA, setB) {
+  for (const elem of setA) {
+    if (!setB.has(elem)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Is Superset
+function isSuperset(setA, setB) {
+  return isSubset(setB, setA);
+}
+
+// Is Disjoint
+function isDisjoint(setA, setB) {
+  for (const elem of setA) {
+    if (setB.has(elem)) {
+      return false;
+    }
+  }
+  return true;
+}
+```
+
+## Practical Applications
+
+### Data Deduplication and Comparison
+
+```javascript
+// Find common tags between two articles
+function findCommonTags(article1, article2) {
+  const tags1 = new Set(article1.tags);
+  const tags2 = new Set(article2.tags);
+  
+  return tags1.intersection(tags2);
+}
+
+// Find unique tags across multiple articles
+function findAllUniqueTags(articles) {
+  return articles.reduce((allTags, article) => {
+    return allTags.union(new Set(article.tags));
+  }, new Set());
+}
+```
+
+### Set Operations on Arrays
+
+```javascript
+// Remove duplicates from an array
+function uniqueValues(array) {
+  return [...new Set(array)];
+}
+
+// Find elements in array1 that are not in array2
+function differenceArrays(array1, array2) {
+  const set1 = new Set(array1);
+  const set2 = new Set(array2);
+  return [...set1.difference(set2)];
+}
+```
+
+### Permission Systems
+
+```javascript
+// Check if user has all required permissions
+function hasAllPermissions(userPermissions, requiredPermissions) {
+  const userPermSet = new Set(userPermissions);
+  const requiredPermSet = new Set(requiredPermissions);
+  
+  return requiredPermSet.isSubsetOf(userPermSet);
+}
+
+// Find missing permissions
+function getMissingPermissions(userPermissions, requiredPermissions) {
+  const userPermSet = new Set(userPermissions);
+  const requiredPermSet = new Set(requiredPermissions);
+  
+  return requiredPermSet.difference(userPermSet);
+}
+```
+
+## Performance Considerations
+
+The new Set methods are designed to be more efficient than manual implementations:
+
+1. **Time Complexity**: Operations typically run in O(n) time where n is the size of the smaller set
+2. **Memory Efficiency**: Creates only one new Set instance per operation
+3. **Optimization**: Native implementations can apply internal optimizations
+
+## Browser and Environment Support
+
+Since these methods are still in the proposal stage:
+
+1. **Polyfills**: Use polyfills or helper functions in production code
+2. **Transpilers**: No direct transpilation available (needs runtime support)
+3. **Feature Detection**: Check for method existence before using
+
+```javascript
+if (!Set.prototype.union) {
+  // Use polyfill or alternative implementation
+}
+```
+
+## Interview Tips
+
+- Explain the purpose and functionality of each new Set method
+- Describe how to implement these operations manually until they're standardized
+- Discuss practical use cases for set operations in real applications
+- Explain the performance benefits of native implementations over manual ones
+- Demonstrate knowledge of the TC39 process and proposal stages
+- Mention that these methods accept any iterable, not just other Sets

@@ -1,0 +1,239 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Error Handling in JavaScript
+---
+
+# Error Handling in JavaScript
+
+## Built-in Error Types
+
+JavaScript provides several built-in error types:
+
+- **Error**: Base error type
+- **SyntaxError**: Invalid syntax
+- **ReferenceError**: Reference to an undefined variable
+- **TypeError**: Operation on an inappropriate type
+- **RangeError**: Numeric value outside of valid range
+- **URIError**: Incorrect use of URI functions
+- **EvalError**: Error in the eval() function
+
+## Try-Catch-Finally
+
+The primary mechanism for handling errors in JavaScript:
+
+```javascript
+try {
+  // Code that might throw an error
+  const result = riskyOperation();
+} catch (error) {
+  // Handle the error
+  console.error('An error occurred:', error.message);
+} finally {
+  // Code that always runs, regardless of error
+  cleanupResources();
+}
+```
+
+## Creating Custom Errors
+
+Extend the Error class to create custom error types:
+
+```javascript
+class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ValidationError';
+    this.statusCode = 400;
+  }
+}
+
+try {
+  if (!isValid(data)) {
+    throw new ValidationError('Invalid data provided');
+  }
+} catch (error) {
+  if (error instanceof ValidationError) {
+    // Handle validation errors
+  } else {
+    // Handle other errors
+  }
+}
+```
+
+## Error Properties
+
+Common properties available on error objects:
+
+```javascript
+try {
+  throw new Error('Something went wrong');
+} catch (error) {
+  console.log(error.name);     // "Error"
+  console.log(error.message);  // "Something went wrong"
+  console.log(error.stack);    // Stack trace
+}
+```
+
+## Async Error Handling
+
+### With Promises
+
+```javascript
+fetchData()
+  .then(data => {
+    // Process data
+  })
+  .catch(error => {
+    // Handle errors from fetchData or any previous .then
+    console.error('Error:', error.message);
+  })
+  .finally(() => {
+    // Cleanup code
+  });
+```
+
+### With Async/Await
+
+```javascript
+async function getData() {
+  try {
+    const data = await fetchData();
+    return processData(data);
+  } catch (error) {
+    console.error('Error:', error.message);
+    // Handle error or rethrow
+    throw error;
+  } finally {
+    // Cleanup code
+  }
+}
+```
+
+## Global Error Handling
+
+### In Browser
+
+```javascript
+// Catch unhandled errors
+window.addEventListener('error', (event) => {
+  console.error('Unhandled error:', event.error);
+  // Prevent default browser error handling
+  event.preventDefault();
+});
+
+// Catch unhandled promise rejections
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  // Prevent default handling
+  event.preventDefault();
+});
+```
+
+### In Node.js
+
+```javascript
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+  // Perform cleanup
+  process.exit(1); // Exit with failure code
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled promise rejection:', reason);
+  // Handle the error or exit
+});
+```
+
+## Error Handling Patterns
+
+### Error Boundaries (React)
+
+```jsx
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    logErrorToService(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+    return this.props.children;
+  }
+}
+
+// Usage
+<ErrorBoundary>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+### Retry Pattern
+
+```javascript
+async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    if (retries <= 0) {
+      throw error;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, backoff));
+    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+  }
+}
+```
+
+### Error Middleware (Express.js)
+
+```javascript
+app.get('/api/data', (req, res, next) => {
+  try {
+    // Operation that might fail
+    if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    res.json({ data: 'success' });
+  } catch (error) {
+    next(error); // Pass to error middleware
+  }
+});
+
+// Error middleware
+app.use((error, req, res, next) => {
+  console.error(error);
+  res.status(500).json({
+    error: {
+      message: error.message || 'Internal Server Error'
+    }
+  });
+});
+```
+
+## Best Practices
+
+1. **Be specific**: Catch only the errors you can handle
+2. **Don't swallow errors**: Always log or handle errors appropriately
+3. **Use finally for cleanup**: Ensure resources are released
+4. **Centralize error handling**: Use global handlers or middleware
+5. **Include context**: Add relevant information to error messages
+6. **Fail fast**: Detect and report errors as early as possible
+7. **Validate inputs**: Prevent errors by validating data before processing
+
+## Interview Tips
+
+- Explain the difference between throwing and handling errors
+- Describe how error propagation works in asynchronous code
+- Discuss strategies for debugging errors in production
+- Demonstrate knowledge of error handling patterns in frameworks
+- Explain how to create and use custom error types effectively

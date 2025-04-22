@@ -1,0 +1,218 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Explain the difference between var, let, and const.
+---
+
+# Explain the difference between var, let, and const.
+
+JavaScript provides three different keywords for declaring variables: `var`, `let`, and `const`. Each has distinct behaviors regarding scope, hoisting, and reassignment capabilities, which impact how we write and structure our code.
+
+## Overview of Differences
+
+| Feature | `var` | `let` | `const` |
+|---------|-------|-------|---------|
+| Scope | Function-scoped | Block-scoped | Block-scoped |
+| Hoisting | Hoisted with `undefined` | Hoisted but in TDZ* | Hoisted but in TDZ* |
+| Reassignment | Allowed | Allowed | Not allowed |
+| Redeclaration | Allowed | Not allowed in same scope | Not allowed in same scope |
+| Global property | Creates property on `window` | Does not create property on `window` | Does not create property on `window` |
+
+*TDZ = Temporal Dead Zone
+
+## Detailed Comparison
+
+### 1. Scope
+
+**`var`** is function-scoped, meaning it's only limited to the function it's declared in:
+
+```javascript
+function scopeTest() {
+  var functionScoped = "I'm function scoped";
+  
+  if (true) {
+    var alsoFunctionScoped = "I'm also function scoped";
+  }
+  
+  console.log(functionScoped);      // "I'm function scoped"
+  console.log(alsoFunctionScoped);  // "I'm also function scoped"
+}
+
+scopeTest();
+console.log(functionScoped);        // ReferenceError: functionScoped is not defined
+```
+
+**`let`** and **`const`** are block-scoped, meaning they're limited to the block, statement, or expression they're declared in:
+
+```javascript
+function scopeTest() {
+  let blockScoped = "I'm block scoped";
+  const alsoBlockScoped = "I'm also block scoped";
+  
+  if (true) {
+    let insideBlock = "I only exist in this block";
+    const alsoInsideBlock = "I also only exist in this block";
+    
+    console.log(blockScoped);       // "I'm block scoped"
+    console.log(insideBlock);       // "I only exist in this block"
+  }
+  
+  console.log(blockScoped);         // "I'm block scoped"
+  console.log(insideBlock);         // ReferenceError: insideBlock is not defined
+}
+```
+
+### 2. Hoisting
+
+All declarations (`var`, `let`, and `const`) are hoisted in JavaScript, but they behave differently:
+
+**`var`** declarations are initialized with `undefined`:
+
+```javascript
+console.log(hoistedVar);  // undefined
+var hoistedVar = "I'm hoisted but initialized later";
+```
+
+**`let`** and **`const`** declarations are hoisted but not initialized, creating a "Temporal Dead Zone" where accessing them before declaration throws an error:
+
+```javascript
+console.log(hoistedLet);  // ReferenceError: Cannot access 'hoistedLet' before initialization
+let hoistedLet = "I'm hoisted but not accessible";
+
+console.log(hoistedConst);  // ReferenceError: Cannot access 'hoistedConst' before initialization
+const hoistedConst = "I'm also hoisted but not accessible";
+```
+
+### 3. Reassignment
+
+**`var`** and **`let`** allow reassignment:
+
+```javascript
+var count = 1;
+count = 2;  // Valid
+
+let score = 10;
+score = 20;  // Valid
+```
+
+**`const`** does not allow reassignment:
+
+```javascript
+const PI = 3.14159;
+PI = 3;  // TypeError: Assignment to constant variable
+
+// However, for objects and arrays, the contents can be modified:
+const user = { name: "Rahul" };
+user.name = "Priya";  // Valid - the object's properties can be changed
+user = { name: "Amit" };  // TypeError: Assignment to constant variable
+
+const numbers = [1, 2, 3];
+numbers.push(4);  // Valid - the array can be modified
+numbers = [5, 6];  // TypeError: Assignment to constant variable
+```
+
+### 4. Redeclaration
+
+**`var`** allows redeclaration in the same scope:
+
+```javascript
+var message = "Hello";
+var message = "World";  // Valid, message is now "World"
+```
+
+**`let`** and **`const`** do not allow redeclaration in the same scope:
+
+```javascript
+let user = "Rahul";
+let user = "Priya";  // SyntaxError: Identifier 'user' has already been declared
+
+const API_KEY = "abc123";
+const API_KEY = "xyz789";  // SyntaxError: Identifier 'API_KEY' has already been declared
+```
+
+### 5. Global Object Property
+
+**`var`** declarations in the global scope become properties of the global object (`window` in browsers):
+
+```javascript
+var globalVar = "I'm a global variable";
+console.log(window.globalVar);  // "I'm a global variable"
+```
+
+**`let`** and **`const`** declarations do not create properties on the global object:
+
+```javascript
+let globalLet = "I'm not on the global object";
+const globalConst = "Neither am I";
+
+console.log(window.globalLet);    // undefined
+console.log(window.globalConst);  // undefined
+```
+
+## Best Practices
+
+### When to use `var`
+
+Generally, `var` should be avoided in modern JavaScript code except when:
+- Supporting legacy browsers without transpilation
+- Needing function-scoped variables with specific hoisting behaviors
+
+### When to use `let`
+
+Use `let` when:
+- The variable's value needs to change over time
+- Working with loop counters
+- Implementing state that changes
+
+```javascript
+let counter = 0;
+for (let i = 0; i < 5; i++) {
+  counter += i;
+}
+```
+
+### When to use `const`
+
+Use `const` by default for:
+- Values that shouldn't be reassigned
+- Object and array references (even if their contents will change)
+- Function declarations
+- Import statements
+- Configuration values
+
+```javascript
+const API_URL = 'https://api.example.com/v1';
+const fetchData = async () => {
+  const response = await fetch(`${API_URL}/data`);
+  return response.json();
+};
+```
+
+This example demonstrates:
+1. Using `const` for values that should never change (tax rate, thresholds)
+2. Using `let` for variables that need reassignment (subtotal, discount, shipping)
+3. Using `const` in loops to prevent accidental reassignment of the current item
+4. Legacy code using `var` (which could be refactored)
+
+## Temporal Dead Zone Explained
+
+The Temporal Dead Zone (TDZ) is a behavior specific to `let` and `const` declarations. It's the period between entering a scope where a variable is declared and the actual declaration:
+
+```javascript
+{
+  // TDZ starts for x
+  const y = 20;
+  console.log(x); // ReferenceError: Cannot access 'x' before initialization
+  let x = 10;     // TDZ ends for x
+}
+```
+
+This behavior helps catch errors where variables are used before they're properly initialized.
+
+## Interview Tips
+
+- Emphasize that you default to `const` unless you need reassignment, then use `let`
+- Explain that `var` is mostly avoided in modern code due to its function scope and hoisting behavior
+- Be prepared to discuss the Temporal Dead Zone and how it differs from hoisting with `var`
+- Mention that while `const` prevents reassignment, it doesn't make objects immutable
+- Discuss how block scoping with `let` and `const` helps prevent common bugs and makes code more predictable
+- Share specific examples of when you'd use each declaration type in real-world code

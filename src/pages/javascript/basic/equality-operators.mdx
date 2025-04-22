@@ -1,0 +1,298 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between == and ===?
+---
+
+# What is the difference between == and === in JavaScript?
+
+JavaScript provides two different equality operators: the double equals (`==`) and the triple equals (`===`). These operators are used to compare values, but they behave differently in terms of type checking, which can lead to unexpected results if not understood properly.
+
+## Overview of Differences
+
+| Aspect | `==` (Double Equals) | `===` (Triple Equals) |
+|--------|---------------------|----------------------|
+| Name | Loose equality / Abstract equality | Strict equality / Identity operator |
+| Type Coercion | Yes (converts types before comparison) | No (requires same type) |
+| Performance | Slightly slower (due to type conversion) | Faster |
+| Predictability | Less predictable (due to coercion rules) | More predictable |
+| Recommended Use | Specific cases where type coercion is desired | Most situations (best practice) |
+
+## Double Equals (`==`) - Loose Equality
+
+The double equals operator compares values for equality **after** attempting to convert them to a common type.
+
+```javascript
+console.log(5 == "5");       // true (string "5" is converted to number 5)
+console.log(0 == false);     // true (false is converted to 0)
+console.log("" == false);    // true (both convert to 0)
+console.log(null == undefined); // true (special case in the spec)
+console.log([] == 0);        // true ([] becomes "" then 0)
+console.log([1, 2] == "1,2"); // true (array is converted to string)
+```
+
+### Type Coercion Rules for `==`
+
+The loose equality operator follows these coercion rules:
+
+1. If the operands are of the same type, they are compared with `===`
+2. If one operand is `null` and the other is `undefined`, they are equal
+3. If one operand is a number and the other is a string, the string is converted to a number
+4. If either operand is a boolean, it's converted to a number (false → 0, true → 1)
+5. If one operand is an object and the other is a primitive, the object is converted to a primitive
+
+### Coercion Table for Common Comparisons
+
+| Comparison | Result | Reason |
+|------------|--------|--------|
+| `1 == "1"` | `true` | String "1" is converted to number 1 |
+| `1 == true` | `true` | Boolean true is converted to number 1 |
+| `0 == false` | `true` | Boolean false is converted to number 0 |
+| `0 == ""` | `true` | Empty string is converted to number 0 |
+| `"" == false` | `true` | Both convert to number 0 |
+| `null == undefined` | `true` | Special case in the specification |
+| `null == 0` | `false` | null doesn't convert to 0 |
+| `undefined == 0` | `false` | undefined doesn't convert to 0 |
+| `NaN == NaN` | `false` | NaN is not equal to anything, including itself |
+
+## Triple Equals (`===`) - Strict Equality
+
+The triple equals operator compares values for equality **without** type conversion. It returns `true` only if both operands are of the same type and have the same value.
+
+```javascript
+console.log(5 === "5");      // false (different types)
+console.log(0 === false);    // false (different types)
+console.log("" === false);   // false (different types)
+console.log(null === undefined); // false (different types)
+console.log([] === 0);       // false (different types)
+console.log([1, 2] === "1,2"); // false (different types)
+```
+
+### Strict Equality Rules
+
+The strict equality operator follows these rules:
+
+1. If the operands are of different types, they are not equal
+2. If both operands are `null` or both are `undefined`, they are equal
+3. If both operands are `NaN`, they are not equal (NaN is not equal to anything, including itself)
+4. If both operands are objects, they are equal only if they reference the same object
+
+### Object Equality
+
+Both operators compare object references, not their contents:
+
+```javascript
+const obj1 = { a: 1 };
+const obj2 = { a: 1 };
+const obj3 = obj1;
+
+console.log(obj1 == obj2);   // false (different objects)
+console.log(obj1 === obj2);  // false (different objects)
+console.log(obj1 == obj3);   // true (same object reference)
+console.log(obj1 === obj3);  // true (same object reference)
+```
+
+## Edge Cases and Gotchas
+
+### NaN Comparisons
+
+```javascript
+console.log(NaN == NaN);     // false
+console.log(NaN === NaN);    // false
+console.log(isNaN(NaN));     // true (use isNaN to check for NaN)
+console.log(Number.isNaN(NaN)); // true (more reliable in ES6+)
+```
+
+### Positive and Negative Zero
+
+```javascript
+console.log(0 == -0);        // true
+console.log(0 === -0);       // true
+console.log(Object.is(0, -0)); // false (Object.is doesn't consider +0 and -0 equal)
+```
+
+### Array Comparisons
+
+```javascript
+console.log([] == []);       // false (different object references)
+console.log([] === []);      // false (different object references)
+console.log([] == "");       // true ([] converts to "")
+console.log([] === "");      // false (different types)
+```
+
+### Null and Undefined
+
+```javascript
+console.log(null == undefined);  // true
+console.log(null === undefined); // false
+console.log(null == 0);          // false
+console.log(undefined == 0);     // false
+```
+
+## When to Use Each Operator
+
+### When to Use `===` (Strict Equality)
+
+Use strict equality (`===`) as the default choice for equality comparisons because:
+
+1. It's more predictable and avoids unexpected type coercion
+2. It's slightly faster (no type conversion)
+3. It makes your code's intent clearer
+4. It helps catch type-related bugs
+
+```javascript
+// Good practice
+function authenticate(user) {
+  if (user.role === 'admin') {
+    // Only string 'admin' will pass this check
+    grantAdminAccess();
+  }
+}
+```
+
+### When to Use `==` (Loose Equality)
+
+Use loose equality (`==`) only in specific cases where type coercion is intentional and helpful:
+
+1. When checking for `null` or `undefined` with a single check
+2. When you explicitly want type coercion for a specific reason
+
+```javascript
+// Checking for null or undefined
+function processValue(value) {
+  if (value == null) {
+    // This condition is true for both null and undefined
+    return defaultValue;
+  }
+  
+  // Process the value
+}
+```
+
+## Alternative Comparison Methods
+
+### Object.is()
+
+ES6 introduced `Object.is()` which is similar to `===` but handles some edge cases differently:
+
+```javascript
+console.log(Object.is(0, -0));    // false (=== returns true)
+console.log(Object.is(NaN, NaN)); // true (=== returns false)
+```
+
+### Deep Equality for Objects
+
+For comparing object contents (deep equality), you need to:
+
+1. Use a library like Lodash's `_.isEqual()`
+2. Use `JSON.stringify()` for simple objects (with limitations)
+3. Implement a recursive comparison function
+
+```javascript
+// Simple approach with limitations
+function areObjectsEqual(obj1, obj2) {
+  return JSON.stringify(obj1) === JSON.stringify(obj2);
+}
+
+// More robust approach
+function deepEqual(obj1, obj2) {
+  if (obj1 === obj2) return true;
+  
+  if (typeof obj1 !== 'object' || obj1 === null ||
+      typeof obj2 !== 'object' || obj2 === null) {
+    return false;
+  }
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key) || !deepEqual(obj1[key], obj2[key])) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+```
+
+## Coercion Rules Summary
+
+Understanding type coercion is key to mastering the `==` operator:
+
+### To Number Conversions
+
+- `undefined` → `NaN`
+- `null` → `0`
+- `true` → `1`
+- `false` → `0`
+- `string` → Parsed as number or `NaN` if unparseable
+
+### To String Conversions
+
+- `undefined` → `"undefined"`
+- `null` → `"null"`
+- `true` → `"true"`
+- `false` → `"false"`
+- `number` → String representation
+- `object` → Result of calling `toString()` method
+
+### To Boolean Conversions
+
+Falsy values (convert to `false`):
+- `0`, `-0`, `NaN`
+- `""` (empty string)
+- `null`
+- `undefined`
+- `false`
+
+Everything else converts to `true`.
+
+## Best Practices
+
+1. **Use `===` by default**
+   ```javascript
+   // Prefer this
+   if (value === expectedValue) {
+     // ...
+   }
+   ```
+
+2. **Use explicit conversions instead of relying on implicit coercion**
+   ```javascript
+   // Instead of: if (value == 1)
+   if (Number(value) === 1) {
+     // ...
+   }
+   ```
+
+3. **Use `==` only when checking for null/undefined**
+   ```javascript
+   if (value == null) {
+     // Same as: value === null || value === undefined
+     // ...
+   }
+   ```
+
+4. **Use type-specific comparison functions for special cases**
+   ```javascript
+   // For NaN
+   if (Number.isNaN(value)) {
+     // ...
+   }
+   
+   // For object equality
+   if (deepEqual(obj1, obj2)) {
+     // ...
+   }
+   ```
+
+## Interview Tips
+
+- Explain that `===` checks both value and type, while `==` only checks value after type coercion
+- Be prepared to discuss common coercion rules and edge cases
+- Mention that `===` is generally preferred for predictability and bug prevention
+- Explain specific use cases where `==` might be appropriate
+- Discuss how object comparison works (reference equality vs. deep equality)
+- Be ready to write code examples demonstrating the differences between the operators

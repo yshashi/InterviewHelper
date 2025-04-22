@@ -1,0 +1,409 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Generators and Iterators in JavaScript
+---
+
+# Generators and Iterators in JavaScript
+
+## Iterators
+
+An iterator is an object that provides a `next()` method which returns the next item in a sequence. The `next()` method returns an object with two properties: `value` and `done`.
+
+### Creating an Iterator
+
+```javascript
+function createIterator(array) {
+  let index = 0;
+  
+  return {
+    next: function() {
+      return index < array.length
+        ? { value: array[index++], done: false }
+        : { value: undefined, done: true };
+    }
+  };
+}
+
+const iterator = createIterator([1, 2, 3]);
+
+console.log(iterator.next()); // { value: 1, done: false }
+console.log(iterator.next()); // { value: 2, done: false }
+console.log(iterator.next()); // { value: 3, done: false }
+console.log(iterator.next()); // { value: undefined, done: true }
+```
+
+### Iterable Protocol
+
+An object is iterable if it implements the `@@iterator` method, which is available via the Symbol.iterator key.
+
+```javascript
+const customIterable = {
+  data: [1, 2, 3],
+  
+  [Symbol.iterator]() {
+    let index = 0;
+    return {
+      next: () => {
+        return index < this.data.length
+          ? { value: this.data[index++], done: false }
+          : { value: undefined, done: true };
+      }
+    };
+  }
+};
+
+// Use with for...of loop
+for (const item of customIterable) {
+  console.log(item); // 1, 2, 3
+}
+
+// Use with spread operator
+const array = [...customIterable]; // [1, 2, 3]
+
+// Use with destructuring
+const [a, b, c] = customIterable; // a=1, b=2, c=3
+```
+
+## Generators
+
+Generators are special functions that can be paused and resumed, yielding multiple values. They provide an easier way to create iterators.
+
+### Basic Generator
+
+```javascript
+function* simpleGenerator() {
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+const generator = simpleGenerator();
+
+console.log(generator.next()); // { value: 1, done: false }
+console.log(generator.next()); // { value: 2, done: false }
+console.log(generator.next()); // { value: 3, done: false }
+console.log(generator.next()); // { value: undefined, done: true }
+```
+
+### Generator with Parameters
+
+```javascript
+function* countUp(start, end) {
+  for (let i = start; i <= end; i++) {
+    yield i;
+  }
+}
+
+const counter = countUp(5, 8);
+
+console.log(counter.next().value); // 5
+console.log(counter.next().value); // 6
+console.log(counter.next().value); // 7
+console.log(counter.next().value); // 8
+console.log(counter.next().done);  // true
+```
+
+### Passing Values to Generators
+
+```javascript
+function* twoWayGenerator() {
+  const a = yield 'First yield';
+  console.log('Received:', a);
+  
+  const b = yield 'Second yield';
+  console.log('Received:', b);
+  
+  return 'Generator done';
+}
+
+const gen = twoWayGenerator();
+
+console.log(gen.next().value);          // 'First yield'
+console.log(gen.next('Response 1').value); // Logs 'Received: Response 1', returns 'Second yield'
+console.log(gen.next('Response 2').value); // Logs 'Received: Response 2', returns 'Generator done'
+```
+
+### Iterating Over Generators
+
+```javascript
+function* colors() {
+  yield 'red';
+  yield 'green';
+  yield 'blue';
+}
+
+// Using for...of loop
+for (const color of colors()) {
+  console.log(color); // 'red', 'green', 'blue'
+}
+
+// Using spread operator
+const colorArray = [...colors()]; // ['red', 'green', 'blue']
+
+// Using destructuring
+const [firstColor, secondColor, thirdColor] = colors();
+```
+
+## Generator Delegation
+
+Generators can delegate to other generators using the `yield*` expression.
+
+```javascript
+function* generateNumbers() {
+  yield 1;
+  yield 2;
+}
+
+function* generateLetters() {
+  yield 'a';
+  yield 'b';
+}
+
+function* generateAll() {
+  yield* generateNumbers();
+  yield* generateLetters();
+  yield 'Done!';
+}
+
+const gen = generateAll();
+
+console.log(gen.next().value); // 1
+console.log(gen.next().value); // 2
+console.log(gen.next().value); // 'a'
+console.log(gen.next().value); // 'b'
+console.log(gen.next().value); // 'Done!'
+```
+
+## Infinite Generators
+
+Generators can represent infinite sequences.
+
+```javascript
+function* infiniteSequence() {
+  let i = 0;
+  while (true) {
+    yield i++;
+  }
+}
+
+const numbers = infiniteSequence();
+
+console.log(numbers.next().value); // 0
+console.log(numbers.next().value); // 1
+console.log(numbers.next().value); // 2
+// This could go on forever
+```
+
+## Error Handling in Generators
+
+```javascript
+function* errorGenerator() {
+  try {
+    yield 1;
+    yield 2;
+    yield 3;
+  } catch (error) {
+    console.log('Error caught:', error.message);
+    yield 'Error handled';
+  }
+}
+
+const gen = errorGenerator();
+
+console.log(gen.next().value); // 1
+console.log(gen.throw(new Error('Something went wrong')).value); // Logs 'Error caught: Something went wrong', returns 'Error handled'
+```
+
+## Practical Use Cases
+
+### 1. Implementing Iterables
+
+```javascript
+class Range {
+  constructor(start, end) {
+    this.start = start;
+    this.end = end;
+  }
+  
+  *[Symbol.iterator]() {
+    for (let i = this.start; i <= this.end; i++) {
+      yield i;
+    }
+  }
+}
+
+const range = new Range(1, 5);
+
+for (const num of range) {
+  console.log(num); // 1, 2, 3, 4, 5
+}
+```
+
+### 2. Lazy Evaluation
+
+```javascript
+function* lazyFilter(iterable, predicate) {
+  for (const item of iterable) {
+    if (predicate(item)) {
+      yield item;
+    }
+  }
+}
+
+function* lazyMap(iterable, mapper) {
+  for (const item of iterable) {
+    yield mapper(item);
+  }
+}
+
+// Create a range from 1 to 10
+function* range(start, end) {
+  for (let i = start; i <= end; i++) {
+    yield i;
+  }
+}
+
+// Compose operations without computing intermediate results
+const result = lazyMap(
+  lazyFilter(range(1, 10), n => n % 2 === 0),
+  n => n * n
+);
+
+for (const value of result) {
+  console.log(value); // 4, 16, 36, 64, 100
+}
+```
+
+### 3. Asynchronous Iteration
+
+```javascript
+async function* fetchPages(urls) {
+  for (const url of urls) {
+    const response = await fetch(url);
+    const data = await response.json();
+    yield data;
+  }
+}
+
+// Usage with for-await-of
+async function processPages() {
+  const urls = [
+    'https://api.example.com/page/1',
+    'https://api.example.com/page/2',
+    'https://api.example.com/page/3'
+  ];
+  
+  for await (const page of fetchPages(urls)) {
+    console.log(page);
+  }
+}
+```
+
+### 4. State Machines
+
+```javascript
+function* trafficLight() {
+  while (true) {
+    yield 'red';
+    yield 'green';
+    yield 'yellow';
+  }
+}
+
+const light = trafficLight();
+console.log(light.next().value); // 'red'
+console.log(light.next().value); // 'green'
+console.log(light.next().value); // 'yellow'
+console.log(light.next().value); // 'red' (cycles back)
+```
+
+### 5. Pagination
+
+```javascript
+function* paginate(array, pageSize) {
+  for (let i = 0; i < array.length; i += pageSize) {
+    yield array.slice(i, i + pageSize);
+  }
+}
+
+const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const pages = paginate(items, 3);
+
+console.log(pages.next().value); // [1, 2, 3]
+console.log(pages.next().value); // [4, 5, 6]
+console.log(pages.next().value); // [7, 8, 9]
+console.log(pages.next().value); // [10]
+```
+
+## Iterator and Generator Methods
+
+### Generator Methods
+
+```javascript
+function* generator() {
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+const gen = generator();
+
+// next() - Get the next value
+console.log(gen.next()); // { value: 1, done: false }
+
+// return() - Return a value and finish the generator
+console.log(gen.return(10)); // { value: 10, done: true }
+
+// throw() - Throw an error into the generator
+const gen2 = generator();
+gen2.next(); // Get the first value
+try {
+  gen2.throw(new Error('Generator error'));
+} catch (e) {
+  console.log('Caught:', e.message); // 'Caught: Generator error'
+}
+```
+
+### Built-in Iterables
+
+```javascript
+// String is iterable
+for (const char of 'hello') {
+  console.log(char); // 'h', 'e', 'l', 'l', 'o'
+}
+
+// Array is iterable
+for (const item of [1, 2, 3]) {
+  console.log(item); // 1, 2, 3
+}
+
+// Map is iterable
+const map = new Map([['a', 1], ['b', 2]]);
+for (const [key, value] of map) {
+  console.log(key, value); // 'a' 1, 'b' 2
+}
+
+// Set is iterable
+const set = new Set([1, 2, 3]);
+for (const item of set) {
+  console.log(item); // 1, 2, 3
+}
+```
+
+## Best Practices
+
+1. **Use generators for complex iteration logic** to make code more readable
+2. **Implement the iterable protocol** for custom data structures
+3. **Consider lazy evaluation** for performance optimization
+4. **Use generator delegation** to compose generators
+5. **Handle errors properly** within generators
+6. **Be careful with infinite generators** to avoid memory issues
+
+## Interview Tips
+
+- Explain the difference between iterators and generators
+- Describe how the iterable protocol works in JavaScript
+- Explain the purpose of the `yield` keyword in generators
+- Demonstrate how to pass values back into generators
+- Discuss practical use cases for generators and iterators
+- Explain how generators can be used for asynchronous programming

@@ -1,0 +1,229 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Web Workers in JavaScript
+---
+
+# Web Workers in JavaScript
+
+Web Workers provide a way to run JavaScript in background threads, separate from the main execution thread. This enables concurrent processing without blocking the user interface.
+
+## Basic Concept
+
+JavaScript traditionally runs in a single thread. Web Workers allow CPU-intensive tasks to run in the background:
+
+```javascript
+// main.js - Main thread
+const worker = new Worker("worker.js");
+
+// Send data to the worker
+worker.postMessage({ data: [1, 2, 3, 4, 5] });
+
+// Receive messages from the worker
+worker.onmessage = function(event) {
+  console.log("Result from worker:", event.data);
+};
+
+// Handle errors
+worker.onerror = function(error) {
+  console.error("Worker error:", error.message);
+};
+
+// Terminate when done
+function stopWorker() {
+  worker.terminate();
+}
+```
+
+```javascript
+// worker.js - Worker thread
+self.onmessage = function(event) {
+  const { data } = event.data;
+  
+  // Perform computation without blocking the UI
+  const result = data.map(x => x * x).reduce((a, b) => a + b, 0);
+  
+  // Send the result back to the main thread
+  self.postMessage({ result });
+};
+```
+
+## Types of Web Workers
+
+```javascript
+// 1. Dedicated Workers - Used by a single script
+const dedicatedWorker = new Worker("worker.js");
+
+// 2. Shared Workers - Accessible by multiple scripts
+const sharedWorker = new SharedWorker("shared-worker.js");
+sharedWorker.port.start();
+sharedWorker.port.postMessage({ action: "getData" });
+
+// 3. Service Workers - Special type for offline capabilities
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js');
+}
+```
+
+## Data Transfer
+
+```javascript
+// Basic data transfer
+worker.postMessage({ command: 'process', data: [1, 2, 3] });
+
+// Transferable Objects - Transfer ownership for large data
+const buffer = new ArrayBuffer(100 * 1024 * 1024); // 100MB buffer
+worker.postMessage({ buffer }, [buffer]); // Second argument is transfer list
+
+// Structured Cloning - Automatic for most data types
+worker.postMessage({
+  primitives: { number: 42, string: "Hello" },
+  arrays: [1, 2, [3, 4]],
+  date: new Date(),
+  map: new Map([["key", "value"]])
+});
+```
+
+## Key Use Cases
+
+### 1. CPU-Intensive Calculations
+
+```javascript
+// Prime number calculation
+function findPrimes(max) {
+  const worker = new Worker("prime-worker.js");
+  worker.postMessage({ max });
+  
+  worker.onmessage = function(e) {
+    console.log(`Found ${e.data.primes.length} prime numbers`);
+    displayResults(e.data.primes);
+    worker.terminate();
+  };
+}
+```
+
+### 2. Image Processing
+
+```javascript
+// Image filters, compression, analysis
+function processImage(imageData) {
+  const worker = new Worker("image-worker.js");
+  worker.postMessage({
+    width: imageData.width,
+    height: imageData.height,
+    data: imageData.data.slice(0)
+  });
+  
+  worker.onmessage = function(e) {
+    updateCanvas(e.data);
+    worker.terminate();
+  };
+}
+```
+
+### 3. Data Processing and Analysis
+
+```javascript
+// Processing large datasets
+function analyzeData(dataset) {
+  const worker = new Worker("data-worker.js");
+  worker.postMessage({ dataset });
+  
+  worker.onmessage = function(e) {
+    const { mean, median, stdDev } = e.data;
+    updateUI(mean, median, stdDev);
+    worker.terminate();
+  };
+}
+```
+
+### 4. Parallel Processing
+
+```javascript
+// Distribute work across multiple workers
+function processInParallel(data, workerCount = 4) {
+  const chunkSize = Math.ceil(data.length / workerCount);
+  const results = [];
+  let completedWorkers = 0;
+  
+  return new Promise((resolve) => {
+    for (let i = 0; i < workerCount; i++) {
+      const chunk = data.slice(i * chunkSize, (i + 1) * chunkSize);
+      const worker = new Worker("worker.js");
+      
+      worker.postMessage({ chunk, workerId: i });
+      worker.onmessage = function(e) {
+        results[e.data.workerId] = e.data.result;
+        completedWorkers++;
+        worker.terminate();
+        
+        if (completedWorkers === workerCount) {
+          resolve(results.flat());
+        }
+      };
+    }
+  });
+}
+```
+
+## Limitations
+
+```javascript
+// 1. No DOM access
+// worker.js
+// document.querySelector('div'); // Error: document is not defined
+
+// 2. Limited window object access
+// console.log is available, but most window properties are not
+
+// 3. Same-origin policy
+// Can only load scripts from the same origin
+
+// 4. Overhead
+// Each worker has memory cost, not suitable for small tasks
+```
+
+## Best Practices
+
+```javascript
+// 1. Use for CPU-intensive tasks only
+// Not worth the overhead for simple operations
+
+// 2. Terminate workers when done
+worker.terminate();
+// Or self-terminate
+self.close();
+
+// 3. Handle errors
+worker.onerror = function(error) {
+  console.error("Worker error:", error.message);
+};
+
+// 4. Use transferable objects for large data
+worker.postMessage({ buffer }, [buffer]);
+
+// 5. Consider a worker pool for frequent tasks
+class WorkerPool {
+  constructor(size) {
+    this.workers = [];
+    this.queue = [];
+    
+    for (let i = 0; i < size; i++) {
+      this.workers.push(new Worker("worker.js"));
+    }
+  }
+  
+  // Process task queue
+  processTask(data) {
+    // Implementation details...
+  }
+}
+```
+
+## Interview Tips
+
+- Explain that Web Workers enable true parallel execution in JavaScript
+- Describe the difference between Dedicated Workers, Shared Workers, and Service Workers
+- Explain how data is transferred between threads (structured cloning vs. transferable objects)
+- Discuss appropriate use cases: CPU-intensive tasks, not simple operations
+- Mention limitations: no DOM access, separate memory context, communication overhead
+- Describe how to implement a worker pool for efficient resource management

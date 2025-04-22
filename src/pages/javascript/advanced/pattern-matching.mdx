@@ -1,0 +1,172 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Pattern Matching in JavaScript
+---
+
+# Pattern Matching in JavaScript
+
+Pattern matching is a technique for checking a value against a pattern and extracting components from it. While JavaScript doesn't have native pattern matching like Rust or Haskell, there are proposals and patterns that simulate this functionality.
+
+## The Pattern Matching Proposal
+
+The pattern matching proposal (currently at Stage 1) aims to add pattern matching to JavaScript using a `match` expression:
+
+```javascript
+// Proposed syntax (not yet available in JavaScript)
+const result = match (value) {
+  when { type: 'user', name } => `User: ${name}`,
+  when { type: 'product', id } => `Product: ${id}`,
+  when _ => 'Unknown'
+};
+```
+
+## Current Pattern Matching Approaches
+
+### 1. Using Object Destructuring
+
+```javascript
+function processValue(value) {
+  if (value && value.type === 'user' && value.name) {
+    const { name } = value;
+    return `User: ${name}`;
+  } else if (value && value.type === 'product' && value.id) {
+    const { id } = value;
+    return `Product: ${id}`;
+  } else {
+    return 'Unknown';
+  }
+}
+
+// Usage
+console.log(processValue({ type: 'user', name: 'John' })); // "User: John"
+console.log(processValue({ type: 'product', id: 123 })); // "Product: 123"
+```
+
+### 2. Using Switch Statements
+
+```javascript
+function processShape(shape) {
+  switch (shape.type) {
+    case 'circle':
+      const { radius } = shape;
+      return Math.PI * radius * radius;
+    
+    case 'rectangle':
+      const { width, height } = shape;
+      return width * height;
+    
+    case 'triangle':
+      const { base, height: h } = shape;
+      return (base * h) / 2;
+    
+    default:
+      return 0;
+  }
+}
+
+// Usage
+console.log(processShape({ type: 'circle', radius: 5 })); // ~78.54
+console.log(processShape({ type: 'rectangle', width: 4, height: 6 })); // 24
+```
+
+### 3. Using Map of Functions
+
+```javascript
+const handlers = {
+  user: ({ name }) => `User: ${name}`,
+  product: ({ id }) => `Product: ${id}`,
+  default: () => 'Unknown'
+};
+
+function processEntity(entity) {
+  const handler = entity && entity.type && handlers[entity.type] || handlers.default;
+  return handler(entity);
+}
+
+// Usage
+console.log(processEntity({ type: 'user', name: 'Alice' })); // "User: Alice"
+console.log(processEntity({ type: 'product', id: 456 })); // "Product: 456"
+console.log(processEntity({ type: 'unknown' })); // "Unknown"
+```
+
+### 4. Using Libraries
+
+Libraries like `ts-pattern` (for TypeScript) provide pattern matching capabilities:
+
+```javascript
+// Using ts-pattern (TypeScript)
+import { match, P } from 'ts-pattern';
+
+const result = match(value)
+  .with({ type: 'user', name: P.string }, ({ name }) => `User: ${name}`)
+  .with({ type: 'product', id: P.number }, ({ id }) => `Product: ${id}`)
+  .otherwise(() => 'Unknown');
+```
+
+## Advanced Pattern Matching Examples
+
+### Array Patterns
+
+```javascript
+function processArray(arr) {
+  if (Array.isArray(arr)) {
+    if (arr.length === 0) {
+      return 'Empty array';
+    } else if (arr.length === 1) {
+      const [first] = arr;
+      return `Single item: ${first}`;
+    } else if (arr.length === 2) {
+      const [first, second] = arr;
+      return `Pair: ${first} and ${second}`;
+    } else {
+      const [first, second, ...rest] = arr;
+      return `Many items: ${first}, ${second}, and ${rest.length} more`;
+    }
+  }
+  return 'Not an array';
+}
+
+// Usage
+console.log(processArray([])); // "Empty array"
+console.log(processArray([1])); // "Single item: 1"
+console.log(processArray([1, 2])); // "Pair: 1 and 2"
+console.log(processArray([1, 2, 3, 4])); // "Many items: 1, 2, and 2 more"
+```
+
+### Nested Patterns
+
+```javascript
+function processNestedData(data) {
+  if (data && data.user && data.user.address && data.user.address.city) {
+    const { user: { name, address: { city, country = 'Unknown' } } } = data;
+    return `${name} lives in ${city}, ${country}`;
+  }
+  return 'Invalid data structure';
+}
+
+// Usage
+console.log(processNestedData({
+  user: {
+    name: 'John',
+    address: {
+      city: 'New York',
+      country: 'USA'
+    }
+  }
+})); // "John lives in New York, USA"
+```
+
+## Benefits of Pattern Matching
+
+1. **Declarative code**: Express complex conditions clearly
+2. **Exhaustiveness checking**: Ensure all cases are handled (with TypeScript)
+3. **Destructuring**: Extract values while matching patterns
+4. **Readability**: Make code intentions clearer
+
+## Interview Tips
+
+- Explain how pattern matching differs from simple conditionals
+- Describe how destructuring can be used to simulate pattern matching
+- Discuss the benefits of pattern matching for complex data structures
+- Mention the current proposal status for native pattern matching in JavaScript
+- Explain how TypeScript enhances pattern matching with type checking

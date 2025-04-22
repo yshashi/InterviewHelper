@@ -1,0 +1,474 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Temporal API in JavaScript
+---
+
+# Temporal API in JavaScript
+
+The Temporal API is a modern JavaScript API for working with dates, times, and timestamps. It aims to address many of the longstanding issues with the built-in `Date` object by providing a more comprehensive, intuitive, and reliable way to handle date and time operations.
+
+## Problems with the Current Date API
+
+The existing `Date` object in JavaScript has several well-known limitations:
+
+```javascript
+// Confusing month indexing (0-based)
+const date = new Date(2023, 0, 15); // January 15, 2023, not February
+
+// Implicit UTC conversion issues
+const localDate = new Date();
+const utcTime = localDate.getUTCHours();
+// Difficult to reason about timezone differences
+
+// Immutability issues
+const now = new Date();
+now.setMonth(now.getMonth() + 1); // Modifies the original date
+
+// Limited parsing capabilities
+new Date('2023-02-30'); // Invalid date, but silently rolls over to March
+
+// Lack of duration calculations
+const start = new Date(2023, 0, 1);
+const end = new Date(2023, 0, 31);
+// No built-in way to calculate "30 days" difference
+```
+
+## Introduction to Temporal API
+
+The Temporal API provides a set of objects for working with dates and times:
+
+```javascript
+// Key objects in the Temporal API
+Temporal.Now          // Current date/time in various formats
+Temporal.PlainDate    // Calendar date without time or timezone
+Temporal.PlainTime    // Wall-clock time without date or timezone
+Temporal.PlainDateTime // Calendar date and wall-clock time
+Temporal.ZonedDateTime // Date/time with timezone
+Temporal.Duration     // Length of time
+Temporal.Instant      // Exact point in time
+Temporal.TimeZone     // Timezone representation
+Temporal.Calendar     // Calendar system
+```
+
+## Getting Current Date and Time
+
+```javascript
+// Current date in local calendar and timezone
+const today = Temporal.Now.plainDateISO();
+console.log(today.toString()); // '2023-05-17'
+
+// Current time in local timezone
+const now = Temporal.Now.plainTimeISO();
+console.log(now.toString()); // '14:23:30.123456789'
+
+// Current date and time in local timezone
+const dateTime = Temporal.Now.plainDateTimeISO();
+console.log(dateTime.toString()); // '2023-05-17T14:23:30.123456789'
+
+// Current exact instant in time (timezone agnostic)
+const instant = Temporal.Now.instant();
+console.log(instant.toString()); // '2023-05-17T14:23:30.123456789Z'
+
+// Current date and time with timezone information
+const zonedDateTime = Temporal.Now.zonedDateTimeISO();
+console.log(zonedDateTime.toString()); // '2023-05-17T14:23:30.123456789-04:00[America/New_York]'
+```
+
+## Creating Temporal Objects
+
+### Plain Date
+
+```javascript
+// Creating a PlainDate
+const date = new Temporal.PlainDate(2023, 5, 17); // May 17, 2023 (month is 1-based!)
+console.log(date.toString()); // '2023-05-17'
+
+// From ISO string
+const dateFromISO = Temporal.PlainDate.from('2023-05-17');
+console.log(dateFromISO.year); // 2023
+console.log(dateFromISO.month); // 5
+console.log(dateFromISO.day); // 17
+
+// From object
+const dateFromObj = Temporal.PlainDate.from({ year: 2023, month: 5, day: 17 });
+```
+
+### Plain Time
+
+```javascript
+// Creating a PlainTime
+const time = new Temporal.PlainTime(14, 30, 15); // 14:30:15
+console.log(time.toString()); // '14:30:15'
+
+// From ISO string
+const timeFromISO = Temporal.PlainTime.from('14:30:15.123');
+console.log(timeFromISO.hour); // 14
+console.log(timeFromISO.minute); // 30
+console.log(timeFromISO.second); // 15
+console.log(timeFromISO.millisecond); // 123
+
+// From object
+const timeFromObj = Temporal.PlainTime.from({ hour: 14, minute: 30, second: 15 });
+```
+
+### Plain DateTime
+
+```javascript
+// Creating a PlainDateTime
+const dateTime = new Temporal.PlainDateTime(2023, 5, 17, 14, 30, 15);
+console.log(dateTime.toString()); // '2023-05-17T14:30:15'
+
+// From ISO string
+const dateTimeFromISO = Temporal.PlainDateTime.from('2023-05-17T14:30:15');
+
+// From separate date and time
+const date = Temporal.PlainDate.from('2023-05-17');
+const time = Temporal.PlainTime.from('14:30:15');
+const dateTimeFromComponents = date.toPlainDateTime(time);
+```
+
+### Zoned DateTime
+
+```javascript
+// Creating a ZonedDateTime
+const zonedDateTime = new Temporal.ZonedDateTime(
+  Temporal.Instant.from('2023-05-17T18:30:15Z'),
+  Temporal.TimeZone.from('America/New_York')
+);
+
+// From string
+const zdt = Temporal.ZonedDateTime.from('2023-05-17T14:30:15-04:00[America/New_York]');
+
+// From PlainDateTime + TimeZone
+const plainDateTime = Temporal.PlainDateTime.from('2023-05-17T14:30:15');
+const timeZone = Temporal.TimeZone.from('America/New_York');
+const zdtFromPlain = plainDateTime.toZonedDateTime(timeZone);
+```
+
+### Duration
+
+```javascript
+// Creating a Duration
+const duration = new Temporal.Duration(0, 0, 1, 12, 30, 45); // 1 day, 12 hours, 30 minutes, 45 seconds
+console.log(duration.toString()); // 'P1DT12H30M45S'
+
+// From ISO string
+const durationFromISO = Temporal.Duration.from('P1DT12H30M45S');
+
+// From object
+const durationFromObj = Temporal.Duration.from({
+  days: 1,
+  hours: 12,
+  minutes: 30,
+  seconds: 45
+});
+```
+
+## Date and Time Arithmetic
+
+### Adding and Subtracting
+
+```javascript
+// Adding to a PlainDate
+const date = Temporal.PlainDate.from('2023-05-17');
+const nextWeek = date.add({ days: 7 });
+console.log(nextWeek.toString()); // '2023-05-24'
+
+// Subtracting from a PlainDateTime
+const dateTime = Temporal.PlainDateTime.from('2023-05-17T14:30:00');
+const twoHoursAgo = dateTime.subtract({ hours: 2 });
+console.log(twoHoursAgo.toString()); // '2023-05-17T12:30:00'
+
+// Adding to a ZonedDateTime (handles DST correctly)
+const zdt = Temporal.ZonedDateTime.from('2023-03-11T01:30:00-05:00[America/New_York]');
+const nextDay = zdt.add({ days: 1 });
+console.log(nextDay.toString()); // '2023-03-12T01:30:00-04:00[America/New_York]' (note DST change)
+```
+
+### Calculating Differences
+
+```javascript
+// Difference between dates
+const start = Temporal.PlainDate.from('2023-01-01');
+const end = Temporal.PlainDate.from('2023-12-31');
+const diff = start.until(end);
+console.log(diff.toString()); // 'P364D'
+console.log(diff.months); // 0
+console.log(diff.days); // 364
+
+// With specific units
+const diffInMonths = start.until(end, { largestUnit: 'month' });
+console.log(diffInMonths.toString()); // 'P11M29D'
+console.log(diffInMonths.months); // 11
+console.log(diffInMonths.days); // 29
+
+// Difference between times
+const startTime = Temporal.PlainTime.from('09:00');
+const endTime = Temporal.PlainTime.from('17:30');
+const workday = startTime.until(endTime);
+console.log(workday.toString()); // 'PT8H30M'
+console.log(workday.hours); // 8
+console.log(workday.minutes); // 30
+```
+
+## Comparing Temporal Objects
+
+```javascript
+// Comparing dates
+const date1 = Temporal.PlainDate.from('2023-05-17');
+const date2 = Temporal.PlainDate.from('2023-06-01');
+
+console.log(date1.equals(date1)); // true
+console.log(date1.equals(date2)); // false
+console.log(date1.compare(date2)); // -1 (less than)
+console.log(date2.compare(date1)); // 1 (greater than)
+
+// Comparing with until
+const isAfter = date1.until(date2).sign === 1; // true if date2 is after date1
+const isBefore = date1.until(date2).sign === -1; // true if date2 is before date1
+```
+
+## Formatting and Parsing
+
+```javascript
+// Basic string representation
+const date = Temporal.PlainDate.from('2023-05-17');
+console.log(date.toString()); // '2023-05-17'
+
+// Custom format using Intl.DateTimeFormat
+const formatter = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+
+const zonedDateTime = Temporal.Now.zonedDateTimeISO();
+console.log(formatter.format(zonedDateTime)); // 'Wednesday, May 17, 2023'
+
+// Parsing from custom formats
+function parseCustomDate(str) {
+  const [month, day, year] = str.split('/');
+  return Temporal.PlainDate.from({
+    year: parseInt(year, 10),
+    month: parseInt(month, 10),
+    day: parseInt(day, 10)
+  });
+}
+
+const customDate = parseCustomDate('05/17/2023');
+console.log(customDate.toString()); // '2023-05-17'
+```
+
+## Working with Time Zones
+
+```javascript
+// Getting the current system time zone
+const localTimeZone = Temporal.Now.timeZone();
+console.log(localTimeZone.toString()); // 'America/New_York'
+
+// Creating a time zone
+const nyc = Temporal.TimeZone.from('America/New_York');
+const tokyo = Temporal.TimeZone.from('Asia/Tokyo');
+
+// Converting between time zones
+const now = Temporal.Now.instant();
+const nyTime = now.toZonedDateTimeISO(nyc);
+const tokyoTime = now.toZonedDateTimeISO(tokyo);
+
+console.log(nyTime.toString()); // '2023-05-17T10:30:00-04:00[America/New_York]'
+console.log(tokyoTime.toString()); // '2023-05-17T23:30:00+09:00[Asia/Tokyo]'
+
+// Handling DST transitions correctly
+const beforeDST = Temporal.ZonedDateTime.from('2023-03-11T01:30:00-05:00[America/New_York]');
+const afterDST = beforeDST.add({ hours: 1 });
+console.log(afterDST.toString()); // '2023-03-11T02:30:00-05:00[America/New_York]'
+
+const skipDST = beforeDST.add({ hours: 2 });
+console.log(skipDST.toString()); // '2023-03-11T03:30:00-04:00[America/New_York]' (note DST change)
+```
+
+## Working with Calendars
+
+```javascript
+// Default ISO calendar
+const isoDate = Temporal.PlainDate.from('2023-05-17');
+console.log(isoDate.calendar.toString()); // 'iso8601'
+
+// Using different calendars
+const hebrewCalendar = Temporal.Calendar.from('hebrew');
+const hebrewDate = new Temporal.PlainDate(5783, 8, 26, hebrewCalendar);
+console.log(hebrewDate.toString()); // '5783-08-26[u-ca=hebrew]'
+
+// Converting between calendars
+const gregorianDate = hebrewDate.withCalendar('iso8601');
+console.log(gregorianDate.toString()); // '2023-05-17'
+
+// Calendar-specific operations
+const islamicCalendar = Temporal.Calendar.from('islamic');
+const ramadanStart = new Temporal.PlainDate(1444, 9, 1, islamicCalendar);
+console.log(ramadanStart.toString()); // '1444-09-01[u-ca=islamic]'
+```
+
+## Practical Applications
+
+### Date Range Calculation
+
+```javascript
+// Calculate a range of dates
+function getDateRange(startDate, endDate) {
+  const start = Temporal.PlainDate.from(startDate);
+  const end = Temporal.PlainDate.from(endDate);
+  
+  const range = [];
+  let current = start;
+  
+  while (current.compare(end) <= 0) {
+    range.push(current);
+    current = current.add({ days: 1 });
+  }
+  
+  return range;
+}
+
+const dateRange = getDateRange('2023-05-01', '2023-05-05');
+console.log(dateRange.map(d => d.toString()));
+// ['2023-05-01', '2023-05-02', '2023-05-03', '2023-05-04', '2023-05-05']
+```
+
+### Business Day Calculation
+
+```javascript
+// Calculate business days between dates
+function getBusinessDays(startDate, endDate) {
+  const start = Temporal.PlainDate.from(startDate);
+  const end = Temporal.PlainDate.from(endDate);
+  
+  let businessDays = 0;
+  let current = start;
+  
+  while (current.compare(end) <= 0) {
+    // 1 = Monday, 5 = Friday
+    const dayOfWeek = current.dayOfWeek;
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      businessDays++;
+    }
+    current = current.add({ days: 1 });
+  }
+  
+  return businessDays;
+}
+
+const workdays = getBusinessDays('2023-05-01', '2023-05-31');
+console.log(workdays); // 23 (assuming no holidays)
+```
+
+### Age Calculation
+
+```javascript
+// Calculate age based on birthdate
+function calculateAge(birthdate) {
+  const birth = Temporal.PlainDate.from(birthdate);
+  const today = Temporal.Now.plainDateISO();
+  
+  let age = today.year - birth.year;
+  
+  // Adjust if birthday hasn't occurred yet this year
+  const hasBirthdayOccurred = 
+    today.month > birth.month || 
+    (today.month === birth.month && today.day >= birth.day);
+  
+  if (!hasBirthdayOccurred) {
+    age--;
+  }
+  
+  return age;
+}
+
+const age = calculateAge('1990-05-17');
+console.log(age); // Age based on current date
+```
+
+### Time Zone Aware Meeting Scheduler
+
+```javascript
+// Schedule a meeting across time zones
+function scheduleMeeting(dateTime, duration, timeZones) {
+  const meetingStart = Temporal.ZonedDateTime.from(dateTime);
+  const meetingEnd = meetingStart.add(Temporal.Duration.from(duration));
+  
+  return timeZones.map(tz => {
+    const zone = Temporal.TimeZone.from(tz);
+    const localStart = meetingStart.withTimeZone(zone);
+    const localEnd = meetingEnd.withTimeZone(zone);
+    
+    return {
+      timeZone: tz,
+      start: localStart.toString(),
+      end: localEnd.toString(),
+      // Check if meeting is during business hours (9 AM to 5 PM)
+      isDuringBusinessHours: 
+        localStart.hour >= 9 && localEnd.hour <= 17
+    };
+  });
+}
+
+const meeting = scheduleMeeting(
+  '2023-05-17T14:00:00-04:00[America/New_York]',
+  'PT1H', // 1 hour
+  ['America/New_York', 'Europe/London', 'Asia/Tokyo']
+);
+
+console.log(meeting);
+// [
+//   { timeZone: 'America/New_York', start: '2023-05-17T14:00:00-04:00[America/New_York]', end: '2023-05-17T15:00:00-04:00[America/New_York]', isDuringBusinessHours: true },
+//   { timeZone: 'Europe/London', start: '2023-05-17T19:00:00+01:00[Europe/London]', end: '2023-05-17T20:00:00+01:00[Europe/London]', isDuringBusinessHours: false },
+//   { timeZone: 'Asia/Tokyo', start: '2023-05-18T03:00:00+09:00[Asia/Tokyo]', end: '2023-05-18T04:00:00+09:00[Asia/Tokyo]', isDuringBusinessHours: false }
+// ]
+```
+
+## Browser and Environment Support
+
+The Temporal API is still in the proposal stage (Stage 3 in the TC39 process as of the latest update). Support varies across environments:
+
+1. **Browsers**: Not yet natively supported in major browsers
+2. **Node.js**: Not yet natively supported
+3. **Polyfills**: Available through the `@js-temporal/polyfill` package
+
+```javascript
+// Using the polyfill
+import { Temporal } from '@js-temporal/polyfill';
+
+const now = Temporal.Now.plainDateTimeISO();
+console.log(now.toString());
+```
+
+## Best Practices
+
+1. **Use Plain Types for User Input**: `PlainDate`, `PlainTime`, and `PlainDateTime` are best for user-facing dates and times without timezone concerns
+2. **Use ZonedDateTime for Scheduling**: When dealing with specific moments across timezones
+3. **Use Instant for Timestamps**: When you need an exact point in time
+4. **Prefer Immutable Operations**: All Temporal objects are immutable, so use the returned values from operations
+5. **Handle DST Correctly**: Use ZonedDateTime for calculations that might cross DST boundaries
+
+```javascript
+// Good practice: Using appropriate types
+// For a birthday (no time or timezone needed)
+const birthday = Temporal.PlainDate.from('1990-05-17');
+
+// For a meeting (specific time in a timezone)
+const meeting = Temporal.ZonedDateTime.from('2023-05-17T14:00:00-04:00[America/New_York]');
+
+// For a timestamp (exact moment in time)
+const timestamp = Temporal.Instant.from('2023-05-17T18:00:00Z');
+```
+
+## Interview Tips
+
+- Explain the key problems with the legacy `Date` object in JavaScript
+- Describe the main components of the Temporal API and their purposes
+- Demonstrate how to perform common date/time operations with Temporal
+- Explain how Temporal handles timezone conversions and DST transitions
+- Discuss the current status of the Temporal API in the JavaScript ecosystem
+- Compare Temporal with other date libraries like Moment.js or date-fns
+- Highlight the benefits of Temporal's immutable design

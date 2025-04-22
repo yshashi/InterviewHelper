@@ -1,0 +1,583 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Explain the concept of scope in JavaScript.
+---
+
+# Explain the concept of scope in JavaScript.
+
+Scope in JavaScript defines the accessibility and visibility of variables, functions, and objects in particular parts of your code during runtime. Understanding scope is crucial for writing maintainable code, avoiding variable naming conflicts, and debugging effectively.
+
+## Types of Scope in JavaScript
+
+JavaScript has several types of scope that determine where variables and functions can be accessed:
+
+### 1. Global Scope
+
+Variables or functions declared in the global scope are accessible from anywhere in the code:
+
+```javascript
+// Global variable
+const globalVariable = "I'm accessible everywhere";
+
+function globalFunction() {
+  console.log("I can be called from anywhere");
+}
+
+// Accessing from anywhere
+console.log(globalVariable); // "I'm accessible everywhere"
+globalFunction(); // "I can be called from anywhere"
+```
+
+Variables without a declaration keyword (`var`, `let`, or `const`) automatically become global variables when assigned a value:
+
+```javascript
+function createGlobalVariable() {
+  undeclaredVariable = "I'm a global variable"; // No var, let, or const
+}
+
+createGlobalVariable();
+console.log(undeclaredVariable); // "I'm a global variable"
+```
+
+However, this behavior is prevented in strict mode:
+
+```javascript
+'use strict';
+
+function createGlobalVariable() {
+  undeclaredVariable = "I'm a global variable"; // ReferenceError
+}
+```
+
+### 2. Function Scope
+
+Variables declared with `var` inside a function are only accessible within that function:
+
+```javascript
+function functionScope() {
+  var functionVariable = "I'm only accessible inside this function";
+  console.log(functionVariable); // "I'm only accessible inside this function"
+}
+
+functionScope();
+// console.log(functionVariable); // ReferenceError: functionVariable is not defined
+```
+
+Nested functions have access to variables declared in their outer functions:
+
+```javascript
+function outerFunction() {
+  var outerVariable = "I'm from the outer function";
+  
+  function innerFunction() {
+    console.log(outerVariable); // "I'm from the outer function"
+  }
+  
+  innerFunction();
+}
+
+outerFunction();
+```
+
+### 3. Block Scope
+
+Variables declared with `let` and `const` are block-scoped, meaning they are only accessible within the block (denoted by curly braces `{}`) where they are defined:
+
+```javascript
+if (true) {
+  let blockVariable = "I'm block-scoped";
+  const anotherBlockVariable = "I'm also block-scoped";
+  var notBlockScoped = "I'm function-scoped, not block-scoped";
+  
+  console.log(blockVariable); // "I'm block-scoped"
+}
+
+// console.log(blockVariable); // ReferenceError: blockVariable is not defined
+// console.log(anotherBlockVariable); // ReferenceError: anotherBlockVariable is not defined
+console.log(notBlockScoped); // "I'm function-scoped, not block-scoped"
+```
+
+Block scope applies to:
+- `if` / `else` blocks
+- `for` and `while` loops
+- `switch` cases
+- Any code enclosed in curly braces `{}`
+
+### 4. Module Scope
+
+With ES6 modules, variables and functions declared in a module are scoped to that module unless explicitly exported:
+
+```javascript
+// math.js
+export const PI = 3.14159;
+const EULER = 2.71828; // Not exported, only accessible within this module
+
+export function square(x) {
+  return x * x;
+}
+
+// app.js
+import { PI, square } from './math.js';
+
+console.log(PI); // 3.14159
+console.log(square(4)); // 16
+// console.log(EULER); // ReferenceError: EULER is not defined
+```
+
+### 5. Lexical Scope (Closure)
+
+Lexical scope means that inner functions have access to variables and parameters of their outer function(s), even after the outer function has returned:
+
+```javascript
+function createCounter() {
+  let count = 0; // This variable is "captured" by the inner function
+  
+  return function increment() {
+    count++;
+    return count;
+  };
+}
+
+const counter = createCounter();
+console.log(counter()); // 1
+console.log(counter()); // 2
+console.log(counter()); // 3
+```
+
+This is the basis for closures in JavaScript, which are functions that remember their lexical environment.
+
+## Scope Chain
+
+When a variable is used in JavaScript, the engine will try to find the variable's value in the current scope. If it cannot find it there, it will look in the outer scope, and so on, until it reaches the global scope:
+
+```javascript
+const global = "I'm global";
+
+function outer() {
+  const outer = "I'm from outer";
+  
+  function inner() {
+    const inner = "I'm from inner";
+    
+    // This forms a scope chain: inner -> outer -> global
+    console.log(inner); // "I'm from inner" (found in inner scope)
+    console.log(outer); // "I'm from outer" (found in outer scope)
+    console.log(global); // "I'm global" (found in global scope)
+  }
+  
+  inner();
+}
+
+outer();
+```
+
+If a variable is not found in any scope, a `ReferenceError` is thrown.
+
+## Variable Shadowing
+
+When a variable in an inner scope has the same name as a variable in an outer scope, the inner variable "shadows" the outer one:
+
+```javascript
+const value = "global";
+
+function printValue() {
+  const value = "local";
+  console.log(value); // "local" (shadows the global value)
+}
+
+printValue();
+console.log(value); // "global" (not affected by the function)
+```
+
+## Hoisting and Scope
+
+Hoisting affects how variables interact with scope:
+
+### Hoisting with `var`
+
+Variables declared with `var` are hoisted to the top of their function scope (or global scope if declared outside a function) and initialized with `undefined`:
+
+```javascript
+function hoistingExample() {
+  console.log(hoistedVar); // undefined (not ReferenceError)
+  var hoistedVar = "I'm hoisted";
+  console.log(hoistedVar); // "I'm hoisted"
+}
+
+hoistingExample();
+```
+
+### Hoisting with `let` and `const`
+
+Variables declared with `let` and `const` are also hoisted but not initialized, creating a "Temporal Dead Zone" where accessing them before declaration results in a `ReferenceError`:
+
+```javascript
+function hoistingExample() {
+  // console.log(hoistedLet); // ReferenceError: Cannot access 'hoistedLet' before initialization
+  let hoistedLet = "I'm hoisted but not accessible";
+  console.log(hoistedLet); // "I'm hoisted but not accessible"
+}
+
+hoistingExample();
+```
+
+## Function Scope vs. Block Scope
+
+Understanding the difference between function scope and block scope is crucial:
+
+```javascript
+function scopeExample() {
+  // Function scope (var)
+  if (true) {
+    var functionScoped = "I'm function-scoped";
+    let blockScoped = "I'm block-scoped";
+  }
+  
+  console.log(functionScoped); // "I'm function-scoped"
+  // console.log(blockScoped); // ReferenceError: blockScoped is not defined
+}
+
+scopeExample();
+```
+
+## Loop Scope and Closures
+
+A common issue with scope occurs in loops when creating closures:
+
+```javascript
+// Problem: All closures share the same variable
+function createFunctions() {
+  var functions = [];
+  
+  for (var i = 0; i < 3; i++) {
+    functions.push(function() {
+      console.log(i);
+    });
+  }
+  
+  return functions;
+}
+
+var funcs = createFunctions();
+funcs[0](); // 3 (not 0)
+funcs[1](); // 3 (not 1)
+funcs[2](); // 3 (not 2)
+```
+
+Solutions:
+
+1. Using an IIFE (Immediately Invoked Function Expression):
+
+```javascript
+function createFunctions() {
+  var functions = [];
+  
+  for (var i = 0; i < 3; i++) {
+    functions.push((function(value) {
+      return function() {
+        console.log(value);
+      };
+    })(i));
+  }
+  
+  return functions;
+}
+```
+
+2. Using `let` to create a new binding for each iteration:
+
+```javascript
+function createFunctions() {
+  var functions = [];
+  
+  for (let i = 0; i < 3; i++) {
+    functions.push(function() {
+      console.log(i);
+    });
+  }
+  
+  return functions;
+}
+
+var funcs = createFunctions();
+funcs[0](); // 0
+funcs[1](); // 1
+funcs[2](); // 2
+```
+
+## Scope in Event Handlers
+
+Scope issues often arise in event handlers:
+
+```javascript
+for (var i = 0; i < 3; i++) {
+  const button = document.createElement('button');
+  button.textContent = 'Button ' + i;
+  
+  // Problem: All buttons will show "Button clicked: 3"
+  button.addEventListener('click', function() {
+    console.log('Button clicked: ' + i);
+  });
+  
+  document.body.appendChild(button);
+}
+```
+
+Solutions:
+
+1. Using `let` instead of `var`:
+
+```javascript
+for (let i = 0; i < 3; i++) {
+  const button = document.createElement('button');
+  button.textContent = 'Button ' + i;
+  
+  button.addEventListener('click', function() {
+    console.log('Button clicked: ' + i); // Correct value for each button
+  });
+  
+  document.body.appendChild(button);
+}
+```
+
+2. Using a closure:
+
+```javascript
+for (var i = 0; i < 3; i++) {
+  const button = document.createElement('button');
+  button.textContent = 'Button ' + i;
+  
+  (function(index) {
+    button.addEventListener('click', function() {
+      console.log('Button clicked: ' + index);
+    });
+  })(i);
+  
+  document.body.appendChild(button);
+}
+```
+
+## Scope and `this` Keyword
+
+The `this` keyword is not related to lexical scope. Its value is determined by how a function is called, not where it's defined:
+
+```javascript
+const user = {
+  name: 'Rahul',
+  greet: function() {
+    console.log(`Hello, I'm ${this.name}`);
+  }
+};
+
+user.greet(); // "Hello, I'm Rahul"
+
+const greetFunction = user.greet;
+greetFunction(); // "Hello, I'm undefined" (this is not user)
+```
+
+Arrow functions, however, don't have their own `this` binding and instead inherit `this` from their lexical scope:
+
+```javascript
+const user = {
+  name: 'Rahul',
+  greet: function() {
+    // Regular function loses 'this' context
+    setTimeout(function() {
+      console.log(`Regular: Hello, I'm ${this.name}`); // this.name is undefined
+    }, 100);
+    
+    // Arrow function preserves 'this' context
+    setTimeout(() => {
+      console.log(`Arrow: Hello, I'm ${this.name}`); // "Arrow: Hello, I'm Rahul"
+    }, 100);
+  }
+};
+
+user.greet();
+```
+
+## Strict Mode and Scope
+
+Strict mode (`'use strict'`) affects variable scope by preventing the automatic creation of global variables:
+
+```javascript
+function strictExample() {
+  'use strict';
+  
+  // undeclaredVar = "I would be global in non-strict mode"; // ReferenceError
+  
+  // Variables must be declared
+  let declaredVar = "I'm properly declared";
+}
+
+strictExample();
+```
+
+## Module Pattern and Private Scope
+
+The module pattern uses closures to create private scope:
+
+```javascript
+const counter = (function() {
+  // Private variables
+  let count = 0;
+  
+  // Private function
+  function validate(n) {
+    return typeof n === 'number' && !isNaN(n);
+  }
+  
+  // Public API
+  return {
+    increment() {
+      count++;
+      return count;
+    },
+    decrement() {
+      count--;
+      return count;
+    },
+    getValue() {
+      return count;
+    },
+    add(n) {
+      if (validate(n)) {
+        count += n;
+      }
+      return count;
+    }
+  };
+})();
+
+console.log(counter.getValue()); // 0
+console.log(counter.increment()); // 1
+console.log(counter.add(5)); // 6
+// console.log(counter.count); // undefined (private variable)
+// counter.validate(5); // TypeError: counter.validate is not a function (private function)
+```
+
+## Scope in ES6 Classes
+
+Classes in ES6 provide a cleaner syntax for creating objects with private and public members:
+
+```javascript
+class Counter {
+  #count = 0; // Private field (ES2022+)
+  
+  constructor(initialCount = 0) {
+    this.#count = initialCount;
+  }
+  
+  increment() {
+    this.#count++;
+    return this.#count;
+  }
+  
+  decrement() {
+    this.#count--;
+    return this.#count;
+  }
+  
+  getValue() {
+    return this.#count;
+  }
+}
+
+const counter = new Counter(10);
+console.log(counter.getValue()); // 10
+console.log(counter.increment()); // 11
+// console.log(counter.#count); // SyntaxError: Private field '#count' must be declared in an enclosing class
+```
+
+## Best Practices for Managing Scope
+
+1. **Minimize global variables**
+   ```javascript
+   // Avoid polluting the global scope
+   const app = (function() {
+     // All variables are contained within this function
+     const config = {
+       apiUrl: 'https://api.example.com'
+     };
+     
+     function initialize() {
+       // ...
+     }
+     
+     return {
+       initialize
+     };
+   })();
+   
+   app.initialize();
+   ```
+
+2. **Use block scope with `let` and `const`**
+   ```javascript
+   // Prefer let and const over var
+   for (let i = 0; i < 10; i++) {
+     // i is only accessible within this block
+   }
+   ```
+
+3. **Declare variables at the top of their scope**
+   ```javascript
+   function processData(data) {
+     // Declare all variables at the top
+     let result;
+     let isValid;
+     
+     // Use the variables later
+     isValid = validateData(data);
+     if (isValid) {
+       result = transformData(data);
+     }
+     
+     return result;
+   }
+   ```
+
+4. **Use immediately invoked function expressions (IIFEs) to create private scope**
+   ```javascript
+   const calculator = (function() {
+     // Private scope
+     function add(a, b) {
+       return a + b;
+     }
+     
+     // Public API
+     return {
+       add
+     };
+   })();
+   ```
+
+5. **Be careful with closures to avoid memory leaks**
+   ```javascript
+   function createHugeArray() {
+     const hugeArray = new Array(1000000).fill('X');
+     
+     return function() {
+       // This closure keeps a reference to hugeArray
+       console.log(hugeArray.length);
+     };
+   }
+   
+   const printArraySize = createHugeArray(); // hugeArray stays in memory
+   printArraySize();
+   
+   // When done, remove the reference to allow garbage collection
+   printArraySize = null;
+   ```
+
+## Interview Tips
+
+- Explain the different types of scope in JavaScript (global, function, block, module, lexical)
+- Describe how the scope chain works for variable lookup
+- Discuss the differences between `var`, `let`, and `const` regarding scope
+- Explain how hoisting interacts with scope
+- Be prepared to identify and fix common scope-related issues (loop closures, event handlers)
+- Discuss how closures leverage lexical scope to create private variables
+- Explain the module pattern and how it uses scope to encapsulate functionality
+- Mention how strict mode affects variable declarations and scope
+- Be ready to write code examples demonstrating scope concepts

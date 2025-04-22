@@ -1,0 +1,292 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Enhanced JSON Modules in JavaScript
+---
+
+# Enhanced JSON Modules in JavaScript
+
+JSON modules are a feature that allows importing JSON files directly as ES modules. This provides a more integrated and type-safe way to work with JSON data in JavaScript applications.
+
+## Basic JSON Module Imports
+
+```javascript
+// Importing a JSON file as a module
+import data from './data.json' assert { type: 'json' };
+
+console.log(data.title); // Access properties directly
+console.log(data.version);
+```
+
+## The JSON Module Proposal
+
+The JSON modules proposal enhances how JavaScript handles JSON data:
+
+1. **Native Module Support**: Import JSON directly in the module system
+2. **Static Analysis**: Enable bundlers and tools to analyze dependencies
+3. **Type Safety**: Better integration with TypeScript and other type systems
+4. **Performance**: Optimize JSON parsing at build time
+
+## Import Assertions
+
+Import assertions are used to specify the module type:
+
+```javascript
+// Using import assertions
+import config from './config.json' assert { type: 'json' };
+
+// Dynamic import with assertions
+const data = await import('./data.json', { assert: { type: 'json' } });
+```
+
+## Advantages Over Traditional Methods
+
+### Traditional JSON Loading
+
+```javascript
+// Old way: Using fetch
+async function loadConfig() {
+  const response = await fetch('./config.json');
+  const config = await response.json();
+  return config;
+}
+
+// Old way: Using require (in Node.js)
+const data = require('./data.json');
+```
+
+### Advantages of JSON Modules
+
+1. **Static imports**: Available at module evaluation time
+2. **Build optimization**: Can be processed at build time
+3. **Tree-shaking**: Unused properties can be removed by bundlers
+4. **Type checking**: Better TypeScript integration
+
+## Practical Applications
+
+### Application Configuration
+
+```javascript
+// config.json
+{
+  "apiUrl": "https://api.example.com",
+  "timeout": 5000,
+  "features": {
+    "darkMode": true,
+    "notifications": true
+  }
+}
+
+// Using in application
+import config from './config.json' assert { type: 'json' };
+
+const api = new API({
+  baseUrl: config.apiUrl,
+  timeout: config.timeout
+});
+
+if (config.features.darkMode) {
+  enableDarkMode();
+}
+```
+
+### Data-Driven Components
+
+```javascript
+// products.json
+[
+  {
+    "id": 1,
+    "name": "Smartphone",
+    "price": 699.99,
+    "inStock": true
+  },
+  {
+    "id": 2,
+    "name": "Laptop",
+    "price": 1299.99,
+    "inStock": true
+  }
+]
+
+// Component using JSON data
+import products from './products.json' assert { type: 'json' };
+
+function ProductList() {
+  return (
+    <div>
+      <h2>Products</h2>
+      <ul>
+        {products.map(product => (
+          <li key={product.id}>
+            {product.name} - ${product.price}
+            {!product.inStock && <span> (Out of stock)</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### Internationalization
+
+```javascript
+// en.json
+{
+  "greeting": "Hello",
+  "farewell": "Goodbye",
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}
+
+// fr.json
+{
+  "greeting": "Bonjour",
+  "farewell": "Au revoir",
+  "buttons": {
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  }
+}
+
+// Language module
+import enTranslations from './locales/en.json' assert { type: 'json' };
+import frTranslations from './locales/fr.json' assert { type: 'json' };
+
+const translations = {
+  en: enTranslations,
+  fr: frTranslations
+};
+
+export function translate(key, language = 'en') {
+  // Get nested properties using path
+  const path = key.split('.');
+  let result = translations[language];
+  
+  for (const segment of path) {
+    if (!result[segment]) return key; // Fallback to key if translation missing
+    result = result[segment];
+  }
+  
+  return result;
+}
+
+// Usage
+console.log(translate('greeting', 'fr')); // "Bonjour"
+console.log(translate('buttons.save', 'fr')); // "Enregistrer"
+```
+
+## Advanced Features
+
+### Partial Imports with Bundlers
+
+Some bundlers support tree-shaking JSON imports:
+
+```javascript
+// Only import what you need (with appropriate bundler support)
+import { apiUrl, timeout } from './config.json' assert { type: 'json' };
+
+console.log(apiUrl); // "https://api.example.com"
+```
+
+### TypeScript Integration
+
+```typescript
+// Define types for your JSON data
+interface Config {
+  apiUrl: string;
+  timeout: number;
+  features: {
+    darkMode: boolean;
+    notifications: boolean;
+  };
+}
+
+// Import with type assertion
+import config from './config.json' assert { type: 'json' } as Config;
+
+// TypeScript now provides type checking
+const url: string = config.apiUrl; // OK
+const darkMode: boolean = config.features.darkMode; // OK
+// const invalid: string = config.nonExistent; // Error: Property 'nonExistent' does not exist
+```
+
+### Dynamic JSON Module Selection
+
+```javascript
+// Dynamically select a JSON module based on conditions
+async function loadLanguageFile(language) {
+  try {
+    // Dynamic import with variable path
+    const module = await import(`./locales/${language}.json`, {
+      assert: { type: 'json' }
+    });
+    return module.default;
+  } catch (error) {
+    console.error(`Language file for ${language} not found`);
+    // Fall back to default language
+    const defaultModule = await import('./locales/en.json', {
+      assert: { type: 'json' }
+    });
+    return defaultModule.default;
+  }
+}
+
+// Usage
+const userLanguage = getUserPreference() || 'en';
+const translations = await loadLanguageFile(userLanguage);
+```
+
+## Browser and Environment Support
+
+JSON modules are relatively new and support varies:
+
+1. **Modern Browsers**: Chrome, Edge, and Firefox support import assertions
+2. **Node.js**: Supported in recent versions with the `--experimental-json-modules` flag
+3. **Bundlers**: Webpack, Rollup, and esbuild have varying levels of support
+4. **Transpilers**: Babel can transform JSON imports for older environments
+
+```javascript
+// Feature detection (not reliable for import syntax)
+function supportsJsonModules() {
+  try {
+    new Function('return import("data:application/json,{}").then(() => {})');
+    return true;
+  } catch {
+    return false;
+  }
+}
+```
+
+## Best Practices
+
+1. **Use for Static Data**: JSON modules are best for configuration and static data
+2. **Keep Files Small**: Large JSON files can impact initial load performance
+3. **Consider Alternatives for Dynamic Data**: Use fetch for data that changes frequently
+4. **Validate JSON**: Ensure your JSON is valid to avoid runtime errors
+5. **Provide Types**: Use TypeScript or JSDoc to document the structure
+
+```javascript
+// Good: Small configuration file as a module
+import config from './config.json' assert { type: 'json' };
+
+// Better for large or dynamic data: Lazy loading
+async function loadLargeDataset() {
+  const response = await fetch('./large-dataset.json');
+  return response.json();
+}
+
+// Use when needed
+const data = await loadLargeDataset();
+```
+
+## Interview Tips
+
+- Explain the benefits of JSON modules over traditional methods like fetch or require
+- Describe how import assertions work and why they're necessary
+- Discuss the performance implications of using JSON modules
+- Explain how JSON modules integrate with build tools and bundlers
+- Demonstrate knowledge of browser and environment support
+- Discuss best practices for working with JSON data in JavaScript applications

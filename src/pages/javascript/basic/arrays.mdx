@@ -1,0 +1,893 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you work with arrays in JavaScript?
+---
+
+# How do you work with arrays in JavaScript?
+
+Arrays are one of the most versatile and commonly used data structures in JavaScript. They allow you to store multiple values in a single variable and provide numerous built-in methods for manipulating and transforming data. Understanding how to work with arrays effectively is essential for JavaScript development.
+
+## Array Basics
+
+An array in JavaScript is an ordered collection of values, which can be of any type (numbers, strings, objects, other arrays, or even functions).
+
+### Creating Arrays
+
+There are several ways to create arrays in JavaScript:
+
+#### Array Literal Notation
+
+```javascript
+// Empty array
+const emptyArray = [];
+
+// Array with values
+const numbers = [1, 2, 3, 4, 5];
+const mixed = [1, "two", { three: 3 }, [4, 5], function() { return 6; }];
+```
+
+#### Array Constructor
+
+```javascript
+// Empty array
+const emptyArray = new Array();
+
+// Array with predefined length (all elements are undefined)
+const arrayWithLength = new Array(5);
+console.log(arrayWithLength.length); // 5
+
+// Array with values
+const numbers = new Array(1, 2, 3, 4, 5);
+```
+
+#### Array.of() Method (ES6)
+
+```javascript
+// Creates arrays from the arguments
+const numbers = Array.of(1, 2, 3, 4, 5);
+
+// Difference from Array constructor
+const singleNumber = Array.of(5); // [5]
+const notSingleNumber = new Array(5); // [empty × 5]
+```
+
+#### Array.from() Method (ES6)
+
+```javascript
+// Creates arrays from array-like or iterable objects
+const arrayFromString = Array.from("hello"); // ["h", "e", "l", "l", "o"]
+
+// With a mapping function
+const doubled = Array.from([1, 2, 3], x => x * 2); // [2, 4, 6]
+
+// From array-like objects (e.g., arguments, DOM collections)
+function getArgs() {
+  return Array.from(arguments);
+}
+console.log(getArgs(1, 2, 3)); // [1, 2, 3]
+```
+
+### Accessing Array Elements
+
+Arrays in JavaScript are zero-indexed, meaning the first element is at index 0:
+
+```javascript
+const fruits = ["apple", "banana", "cherry", "date"];
+
+// Accessing by index
+console.log(fruits[0]); // "apple"
+console.log(fruits[2]); // "cherry"
+
+// Accessing the last element
+console.log(fruits[fruits.length - 1]); // "date"
+
+// Using at() method (ES2022)
+console.log(fruits.at(0)); // "apple"
+console.log(fruits.at(-1)); // "date" (negative indices count from the end)
+```
+
+### Modifying Arrays
+
+Arrays in JavaScript are mutable, meaning you can change their contents:
+
+```javascript
+const fruits = ["apple", "banana", "cherry"];
+
+// Changing an element
+fruits[1] = "blueberry";
+console.log(fruits); // ["apple", "blueberry", "cherry"]
+
+// Adding an element at a specific index
+fruits[3] = "date";
+console.log(fruits); // ["apple", "blueberry", "cherry", "date"]
+
+// Creating sparse arrays (with "holes")
+fruits[5] = "fig";
+console.log(fruits); // ["apple", "blueberry", "cherry", "date", empty, "fig"]
+console.log(fruits.length); // 6
+```
+
+### Array Properties
+
+#### length
+
+The `length` property returns the number of elements in an array:
+
+```javascript
+const fruits = ["apple", "banana", "cherry"];
+console.log(fruits.length); // 3
+
+// Modifying length truncates or extends the array
+fruits.length = 2;
+console.log(fruits); // ["apple", "banana"]
+
+fruits.length = 4;
+console.log(fruits); // ["apple", "banana", empty × 2]
+```
+
+## Array Methods
+
+JavaScript arrays come with numerous built-in methods for common operations.
+
+### Adding and Removing Elements
+
+#### push() and pop()
+
+Add or remove elements from the end of an array:
+
+```javascript
+const stack = ["first"];
+
+// push() adds elements to the end and returns the new length
+console.log(stack.push("second", "third")); // 3
+console.log(stack); // ["first", "second", "third"]
+
+// pop() removes the last element and returns it
+console.log(stack.pop()); // "third"
+console.log(stack); // ["first", "second"]
+```
+
+#### unshift() and shift()
+
+Add or remove elements from the beginning of an array:
+
+```javascript
+const queue = ["first"];
+
+// unshift() adds elements to the beginning and returns the new length
+console.log(queue.unshift("zero")); // 2
+console.log(queue); // ["zero", "first"]
+
+// shift() removes the first element and returns it
+console.log(queue.shift()); // "zero"
+console.log(queue); // ["first"]
+```
+
+#### splice()
+
+Change the contents of an array by removing, replacing, or adding elements:
+
+```javascript
+const months = ["Jan", "March", "April", "June"];
+
+// Insert at index 1
+months.splice(1, 0, "Feb");
+console.log(months); // ["Jan", "Feb", "March", "April", "June"]
+
+// Replace 1 element at index 4
+months.splice(4, 1, "May");
+console.log(months); // ["Jan", "Feb", "March", "April", "May"]
+
+// Remove 2 elements starting from index 2
+const removed = months.splice(2, 2);
+console.log(months); // ["Jan", "Feb", "May"]
+console.log(removed); // ["March", "April"]
+```
+
+### Searching and Finding Elements
+
+#### indexOf() and lastIndexOf()
+
+Find the index of an element in an array:
+
+```javascript
+const numbers = [1, 2, 3, 2, 1];
+
+// indexOf() finds the first occurrence
+console.log(numbers.indexOf(2)); // 1
+
+// lastIndexOf() finds the last occurrence
+console.log(numbers.lastIndexOf(2)); // 3
+
+// Returns -1 if not found
+console.log(numbers.indexOf(4)); // -1
+
+// With a fromIndex parameter
+console.log(numbers.indexOf(1, 1)); // 4 (starts searching from index 1)
+```
+
+#### includes()
+
+Check if an array contains a specific element:
+
+```javascript
+const fruits = ["apple", "banana", "cherry"];
+
+console.log(fruits.includes("banana")); // true
+console.log(fruits.includes("grape")); // false
+
+// With a fromIndex parameter
+console.log(fruits.includes("apple", 1)); // false (starts from index 1)
+```
+
+#### find() and findIndex()
+
+Find the first element or its index that satisfies a testing function:
+
+```javascript
+const users = [
+  { id: 1, name: "Rahul", age: 28 },
+  { id: 2, name: "Priya", age: 24 },
+  { id: 3, name: "Amit", age: 32 }
+];
+
+// find() returns the first matching element or undefined
+const user = users.find(user => user.age > 30);
+console.log(user); // { id: 3, name: "Amit", age: 32 }
+
+// findIndex() returns the index of the first matching element or -1
+const index = users.findIndex(user => user.name === "Priya");
+console.log(index); // 1
+```
+
+#### findLast() and findLastIndex() (ES2023)
+
+Find the last element or its index that satisfies a testing function:
+
+```javascript
+const numbers = [1, 3, 5, 6, 8, 9, 10];
+
+// findLast() searches from the end
+const lastOdd = numbers.findLast(n => n % 2 === 1);
+console.log(lastOdd); // 9
+
+// findLastIndex() returns the index from the end
+const lastOddIndex = numbers.findLastIndex(n => n % 2 === 1);
+console.log(lastOddIndex); // 5
+```
+
+### Transforming Arrays
+
+#### map()
+
+Create a new array by applying a function to each element:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5];
+
+// Double each number
+const doubled = numbers.map(num => num * 2);
+console.log(doubled); // [2, 4, 6, 8, 10]
+
+// Convert to objects
+const objects = numbers.map(num => ({ value: num }));
+console.log(objects); // [{ value: 1 }, { value: 2 }, ...]
+```
+
+#### filter()
+
+Create a new array with elements that pass a test:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Get only even numbers
+const evens = numbers.filter(num => num % 2 === 0);
+console.log(evens); // [2, 4, 6, 8, 10]
+
+// Filter objects
+const users = [
+  { name: "Rahul", active: true },
+  { name: "Priya", active: false },
+  { name: "Amit", active: true }
+];
+
+const activeUsers = users.filter(user => user.active);
+console.log(activeUsers); // [{ name: "Rahul", active: true }, { name: "Amit", active: true }]
+```
+
+#### reduce()
+
+Reduce an array to a single value by applying a function to each element:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5];
+
+// Sum all numbers
+const sum = numbers.reduce((total, current) => total + current, 0);
+console.log(sum); // 15
+
+// With an initial value
+const doubled = numbers.reduce((result, num) => {
+  result.push(num * 2);
+  return result;
+}, []);
+console.log(doubled); // [2, 4, 6, 8, 10]
+
+// Create an object from an array
+const fruits = ["apple", "banana", "apple", "cherry", "banana", "apple"];
+const count = fruits.reduce((acc, fruit) => {
+  acc[fruit] = (acc[fruit] || 0) + 1;
+  return acc;
+}, {});
+console.log(count); // { apple: 3, banana: 2, cherry: 1 }
+```
+
+#### reduceRight()
+
+Like `reduce()`, but processes the array from right to left:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5];
+
+// Concatenate numbers from right to left
+const result = numbers.reduceRight((acc, num) => acc + num, "");
+console.log(result); // "54321"
+```
+
+#### flatMap()
+
+Map each element and flatten the result into a new array:
+
+```javascript
+const sentences = ["Hello world", "How are you"];
+
+// Split each sentence into words and flatten
+const words = sentences.flatMap(sentence => sentence.split(" "));
+console.log(words); // ["Hello", "world", "How", "are", "you"]
+
+// Equivalent to:
+// sentences.map(s => s.split(" ")).flat()
+```
+
+### Sorting and Reversing
+
+#### sort()
+
+Sort the elements of an array in place:
+
+```javascript
+const fruits = ["cherry", "apple", "banana"];
+
+// Default sort (alphabetical)
+fruits.sort();
+console.log(fruits); // ["apple", "banana", "cherry"]
+
+// Numeric sort (requires a compare function)
+const numbers = [10, 5, 8, 1, 7];
+numbers.sort((a, b) => a - b); // Ascending
+console.log(numbers); // [1, 5, 7, 8, 10]
+
+numbers.sort((a, b) => b - a); // Descending
+console.log(numbers); // [10, 8, 7, 5, 1]
+
+// Sorting objects
+const users = [
+  { name: "Rahul", age: 28 },
+  { name: "Priya", age: 24 },
+  { name: "Amit", age: 32 }
+];
+
+users.sort((a, b) => a.age - b.age); // Sort by age
+console.log(users); // [{ name: "Priya", age: 24 }, ...]
+```
+
+#### reverse()
+
+Reverse the order of elements in an array in place:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5];
+
+numbers.reverse();
+console.log(numbers); // [5, 4, 3, 2, 1]
+```
+
+### Flattening Arrays
+
+#### flat()
+
+Create a new array with all sub-array elements concatenated recursively up to the specified depth:
+
+```javascript
+const nestedArray = [1, [2, 3], [4, [5, 6]]];
+
+// Default depth is 1
+console.log(nestedArray.flat()); // [1, 2, 3, 4, [5, 6]]
+
+// Specify depth
+console.log(nestedArray.flat(2)); // [1, 2, 3, 4, 5, 6]
+
+// Flatten all levels
+console.log(nestedArray.flat(Infinity)); // [1, 2, 3, 4, 5, 6]
+```
+
+### Other Useful Methods
+
+#### join()
+
+Join all elements of an array into a string:
+
+```javascript
+const elements = ["Fire", "Air", "Water"];
+
+console.log(elements.join()); // "Fire,Air,Water"
+console.log(elements.join("")); // "FireAirWater"
+console.log(elements.join(" - ")); // "Fire - Air - Water"
+```
+
+#### slice()
+
+Return a shallow copy of a portion of an array:
+
+```javascript
+const fruits = ["apple", "banana", "cherry", "date", "elderberry"];
+
+// slice(start, end) - end is exclusive
+console.log(fruits.slice(1, 3)); // ["banana", "cherry"]
+
+// Negative indices count from the end
+console.log(fruits.slice(-2)); // ["date", "elderberry"]
+
+// Clone an array
+const fruitsCopy = fruits.slice();
+```
+
+#### concat()
+
+Merge two or more arrays:
+
+```javascript
+const array1 = [1, 2, 3];
+const array2 = [4, 5, 6];
+const array3 = [7, 8, 9];
+
+// Concatenate arrays
+const combined = array1.concat(array2, array3);
+console.log(combined); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+// Concatenate values
+const withValues = array1.concat("a", ["b", "c"], 42);
+console.log(withValues); // [1, 2, 3, "a", "b", "c", 42]
+```
+
+#### every() and some()
+
+Test whether all or some elements pass a test:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5];
+
+// every() checks if all elements pass the test
+const allPositive = numbers.every(num => num > 0);
+console.log(allPositive); // true
+
+const allEven = numbers.every(num => num % 2 === 0);
+console.log(allEven); // false
+
+// some() checks if at least one element passes the test
+const hasEven = numbers.some(num => num % 2 === 0);
+console.log(hasEven); // true
+
+const hasNegative = numbers.some(num => num < 0);
+console.log(hasNegative); // false
+```
+
+#### forEach()
+
+Execute a function for each element:
+
+```javascript
+const numbers = [1, 2, 3];
+
+numbers.forEach((num, index, array) => {
+  console.log(`${num} at index ${index} in [${array}]`);
+});
+// "1 at index 0 in [1,2,3]"
+// "2 at index 1 in [1,2,3]"
+// "3 at index 2 in [1,2,3]"
+```
+
+#### fill()
+
+Fill all elements with a static value:
+
+```javascript
+const array = [1, 2, 3, 4, 5];
+
+// fill(value, start, end)
+console.log(array.fill(0, 2, 4)); // [1, 2, 0, 0, 5]
+console.log(array.fill(6)); // [6, 6, 6, 6, 6]
+```
+
+#### Array.isArray()
+
+Check if a value is an array:
+
+```javascript
+console.log(Array.isArray([1, 2, 3])); // true
+console.log(Array.isArray("array")); // false
+console.log(Array.isArray({ length: 5 })); // false
+```
+
+## Array Patterns and Techniques
+
+### Removing Duplicates
+
+```javascript
+// Using Set
+const numbers = [1, 2, 2, 3, 4, 4, 5];
+const unique = [...new Set(numbers)];
+console.log(unique); // [1, 2, 3, 4, 5]
+
+// Using filter
+const uniqueFilter = numbers.filter((value, index, array) => 
+  array.indexOf(value) === index
+);
+console.log(uniqueFilter); // [1, 2, 3, 4, 5]
+```
+
+### Finding the Maximum or Minimum
+
+```javascript
+const numbers = [5, 2, 8, 1, 9];
+
+// Using Math.max/min with spread operator
+const max = Math.max(...numbers);
+console.log(max); // 9
+
+const min = Math.min(...numbers);
+console.log(min); // 1
+
+// Using reduce
+const maxReduce = numbers.reduce((max, num) => Math.max(max, num), -Infinity);
+console.log(maxReduce); // 9
+```
+
+### Grouping Array Elements
+
+```javascript
+const people = [
+  { name: "Rahul", age: 28, city: "Mumbai" },
+  { name: "Priya", age: 24, city: "Delhi" },
+  { name: "Amit", age: 32, city: "Mumbai" },
+  { name: "Neha", age: 27, city: "Delhi" }
+];
+
+// Group by city
+const groupByCity = people.reduce((acc, person) => {
+  acc[person.city] = acc[person.city] || [];
+  acc[person.city].push(person);
+  return acc;
+}, {});
+
+console.log(groupByCity);
+// {
+//   "Mumbai": [
+//     { name: "Rahul", age: 28, city: "Mumbai" },
+//     { name: "Amit", age: 32, city: "Mumbai" }
+//   ],
+//   "Delhi": [
+//     { name: "Priya", age: 24, city: "Delhi" },
+//     { name: "Neha", age: 27, city: "Delhi" }
+//   ]
+// }
+```
+
+### Chunking an Array
+
+```javascript
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
+
+const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+console.log(chunkArray(numbers, 3));
+// [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
+```
+
+### Creating a Range of Numbers
+
+```javascript
+// Using Array.from
+const range = Array.from({ length: 5 }, (_, i) => i + 1);
+console.log(range); // [1, 2, 3, 4, 5]
+
+// Using spread with Array constructor
+const rangeSpread = [...Array(5).keys()].map(i => i + 1);
+console.log(rangeSpread); // [1, 2, 3, 4, 5]
+```
+
+### Shuffling an Array
+
+```javascript
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elements
+  }
+  return shuffled;
+}
+
+const numbers = [1, 2, 3, 4, 5];
+console.log(shuffleArray(numbers)); // Random order
+```
+
+### Intersection and Union of Arrays
+
+```javascript
+const array1 = [1, 2, 3, 4, 5];
+const array2 = [3, 4, 5, 6, 7];
+
+// Intersection (elements in both arrays)
+const intersection = array1.filter(value => array2.includes(value));
+console.log(intersection); // [3, 4, 5]
+
+// Union (unique elements from both arrays)
+const union = [...new Set([...array1, ...array2])];
+console.log(union); // [1, 2, 3, 4, 5, 6, 7]
+```
+
+### Difference between Arrays
+
+```javascript
+const array1 = [1, 2, 3, 4, 5];
+const array2 = [3, 4, 5, 6, 7];
+
+// Elements in array1 that are not in array2
+const difference = array1.filter(value => !array2.includes(value));
+console.log(difference); // [1, 2]
+
+// Elements in array2 that are not in array1
+const difference2 = array2.filter(value => !array1.includes(value));
+console.log(difference2); // [6, 7]
+```
+
+## Multidimensional Arrays
+
+JavaScript doesn't have true multidimensional arrays, but you can create arrays of arrays:
+
+```javascript
+// Creating a 2D array (matrix)
+const matrix = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9]
+];
+
+// Accessing elements
+console.log(matrix[1][2]); // 6 (row 1, column 2)
+
+// Iterating over a 2D array
+for (let i = 0; i < matrix.length; i++) {
+  for (let j = 0; j < matrix[i].length; j++) {
+    console.log(`Element at [${i}][${j}]: ${matrix[i][j]}`);
+  }
+}
+
+// Using forEach
+matrix.forEach((row, i) => {
+  row.forEach((element, j) => {
+    console.log(`Element at [${i}][${j}]: ${element}`);
+  });
+});
+```
+
+## Typed Arrays
+
+JavaScript also provides typed arrays for working with binary data:
+
+```javascript
+// Int8Array: 8-bit signed integers
+const int8 = new Int8Array([1, 2, 3]);
+
+// Uint8Array: 8-bit unsigned integers
+const uint8 = new Uint8Array(4); // Length 4, all zeros
+
+// Float32Array: 32-bit floating point numbers
+const float32 = new Float32Array([1.1, 2.2, 3.3]);
+
+// Other typed arrays: Int16Array, Uint16Array, Int32Array, Uint32Array, Float64Array, etc.
+
+// Working with typed arrays
+uint8[0] = 42;
+console.log(uint8); // Uint8Array [42, 0, 0, 0]
+
+// Converting between typed arrays and regular arrays
+const regularArray = Array.from(uint8);
+console.log(regularArray); // [42, 0, 0, 0]
+```
+
+## Array Performance Considerations
+
+### Array Size and Memory
+
+Arrays in JavaScript can dynamically resize, but frequent resizing can impact performance:
+
+```javascript
+// Inefficient: array grows multiple times
+const numbers = [];
+for (let i = 0; i < 10000; i++) {
+  numbers.push(i);
+}
+
+// More efficient: preallocate if size is known
+const efficientNumbers = new Array(10000);
+for (let i = 0; i < 10000; i++) {
+  efficientNumbers[i] = i;
+}
+```
+
+### Choosing the Right Method
+
+Different array methods have different performance characteristics:
+
+```javascript
+const largeArray = Array.from({ length: 1000000 }, (_, i) => i);
+
+// forEach is generally faster than map when you don't need a new array
+largeArray.forEach(num => {
+  // Process without creating a new array
+});
+
+// filter + map can be replaced with reduce for better performance
+const result = largeArray.reduce((acc, num) => {
+  if (num % 2 === 0) {
+    acc.push(num * 2);
+  }
+  return acc;
+}, []);
+
+// Instead of: largeArray.filter(num => num % 2 === 0).map(num => num * 2);
+```
+
+### Sparse Arrays
+
+Sparse arrays (with "holes") can lead to unexpected behavior:
+
+```javascript
+const sparse = [1, , 3, 4];
+console.log(sparse.length); // 4
+
+// forEach skips holes
+sparse.forEach(item => console.log(item)); // 1, 3, 4
+
+// map preserves holes
+const mapped = sparse.map(x => x * 2);
+console.log(mapped); // [2, empty, 6, 8]
+
+// filter removes holes
+const filtered = sparse.filter(x => true);
+console.log(filtered); // [1, 3, 4]
+```
+
+## Array-Like Objects
+
+Some JavaScript objects are array-like but not actual arrays:
+
+```javascript
+// DOM NodeList
+const divs = document.querySelectorAll('div'); // NodeList, not an Array
+
+// Arguments object
+function example() {
+  console.log(arguments); // Arguments object, not an Array
+  console.log(Array.isArray(arguments)); // false
+  
+  // Converting to a real array
+  const args = Array.from(arguments);
+  // Or: const args = [...arguments];
+  
+  console.log(Array.isArray(args)); // true
+}
+
+example(1, 2, 3);
+```
+
+## Best Practices for Working with Arrays
+
+1. **Use array methods instead of loops when possible**
+   ```javascript
+   // Instead of:
+   const doubled = [];
+   for (let i = 0; i < numbers.length; i++) {
+     doubled.push(numbers[i] * 2);
+   }
+   
+   // Use:
+   const doubled = numbers.map(num => num * 2);
+   ```
+
+2. **Chain array methods for complex operations**
+   ```javascript
+   const result = users
+     .filter(user => user.active)
+     .map(user => user.name)
+     .sort();
+   ```
+
+3. **Use destructuring for working with array elements**
+   ```javascript
+   const [first, second, ...rest] = numbers;
+   
+   // Swapping values
+   let a = 1, b = 2;
+   [a, b] = [b, a];
+   ```
+
+4. **Avoid modifying arrays during iteration**
+   ```javascript
+   // Bad: modifying while iterating
+   for (let i = 0; i < array.length; i++) {
+     if (someCondition(array[i])) {
+       array.splice(i, 1); // Changes the indices
+       i--; // Need to adjust the counter
+     }
+   }
+   
+   // Better: create a new filtered array
+   const filteredArray = array.filter(item => !someCondition(item));
+   ```
+
+5. **Use spread syntax for array manipulation**
+   ```javascript
+   // Copying arrays
+   const copy = [...original];
+   
+   // Concatenating arrays
+   const combined = [...array1, ...array2];
+   
+   // Adding elements
+   const withNewItem = [...array, newItem];
+   
+   // Removing an element at index
+   const withoutItem = [...array.slice(0, index), ...array.slice(index + 1)];
+   ```
+
+6. **Be careful with large arrays**
+   ```javascript
+   // Process large arrays in chunks
+   function processLargeArray(array, chunkSize = 1000) {
+     let index = 0;
+     
+     function processChunk() {
+       const chunk = array.slice(index, index + chunkSize);
+       // Process chunk...
+       
+       index += chunkSize;
+       if (index < array.length) {
+         setTimeout(processChunk, 0);
+       }
+     }
+     
+     processChunk();
+   }
+   ```
+
+## Interview Tips
+
+- Explain that arrays in JavaScript are ordered collections that can store values of any type
+- Describe the different ways to create arrays (literals, constructors, Array.from(), Array.of())
+- Discuss the key methods for adding/removing elements (push/pop, shift/unshift, splice)
+- Explain the difference between mutating methods (sort, reverse) and non-mutating methods (map, filter)
+- Demonstrate knowledge of array iteration methods (forEach, map, filter, reduce)
+- Discuss common array patterns like removing duplicates, finding max/min, and grouping elements
+- Be prepared to solve problems using array methods instead of traditional loops
+- Explain performance considerations when working with large arrays
+- Discuss the difference between arrays and array-like objects
+- Share best practices for working with arrays in modern JavaScript

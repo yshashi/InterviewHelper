@@ -1,0 +1,341 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Async Context Propagation in JavaScript
+---
+
+# Async Context Propagation in JavaScript
+
+Async context propagation refers to the ability to maintain contextual information across asynchronous operations. This is crucial for tracking request contexts, managing resources, and implementing observability in modern JavaScript applications.
+
+## The Problem of Lost Context
+
+In asynchronous JavaScript, context is often lost when execution crosses async boundaries:
+
+```javascript
+// Context is lost in asynchronous operations
+async function processRequest(requestId) {
+  console.log(`Starting request ${requestId}`);
+  
+  // Context is available here
+  await fetchData();
+  
+  // But may be lost here if multiple requests are processed concurrently
+  console.log(`Finishing request ${requestId}`); // Which request is this?
+}
+
+// Concurrent execution
+processRequest('req-1');
+processRequest('req-2');
+```
+
+## AsyncLocalStorage (Node.js)
+
+Node.js introduced `AsyncLocalStorage` to solve this problem:
+
+```javascript
+const { AsyncLocalStorage } = require('async_hooks');
+
+// Create storage instance
+const asyncLocalStorage = new AsyncLocalStorage();
+
+// Request handler middleware
+function handleRequest(req, res) {
+  const requestContext = {
+    id: req.id,
+    startTime: Date.now(),
+    user: req.user
+  };
+  
+  // Run the request handler within the context
+  asyncLocalStorage.run(requestContext, () => {
+    processRequest(req, res);
+  });
+}
+
+// Access context anywhere in the call chain
+async function processRequest(req, res) {
+  const context = asyncLocalStorage.getStore();
+  console.log(`Processing request ${context.id}`);
+  
+  await fetchData();
+  
+  // Context is preserved across async boundaries
+  logRequestInfo();
+  
+  res.send('Done');
+}
+
+function logRequestInfo() {
+  const context = asyncLocalStorage.getStore();
+  const duration = Date.now() - context.startTime;
+  console.log(`Request ${context.id} by ${context.user} took ${duration}ms`);
+}
+```
+
+## AsyncContext API (Proposal)
+
+The AsyncContext API is a proposal to standardize context propagation across JavaScript environments:
+
+```javascript
+// Using the proposed AsyncContext API
+import { AsyncContext } from 'async_context';
+
+// Create a context
+const RequestContext = new AsyncContext();
+
+// Set values in the context
+async function handleRequest(req, res) {
+  return RequestContext.run({ id: req.id, user: req.user }, async () => {
+    // Process the request
+    await processRequest(req, res);
+  });
+}
+
+// Get values from the context
+async function processRequest(req, res) {
+  const context = RequestContext.get();
+  console.log(`Processing request ${context.id}`);
+  
+  // Context is preserved
+  await fetchData();
+  await logOperation('data_fetch');
+  
+  res.send('Done');
+}
+
+async function logOperation(operation) {
+  const { id, user } = RequestContext.get();
+  console.log(`Operation ${operation} for request ${id} by ${user}`);
+}
+```
+
+## Use Cases for Async Context
+
+### 1. Request Tracing and Logging
+
+```javascript
+const TraceContext = new AsyncLocalStorage();
+
+function traceMiddleware(req, res, next) {
+  const traceId = req.headers['x-trace-id'] || generateTraceId();
+  const span = { traceId, spanId: generateSpanId(), startTime: Date.now() };
+  
+  TraceContext.run(span, () => {
+    // Add trace headers to response
+    res.setHeader('x-trace-id', traceId);
+    
+    // Continue processing
+    next();
+    
+    // Log completion after response
+    const duration = Date.now() - span.startTime;
+    logger.info(`Request ${traceId} completed in ${duration}ms`);
+  });
+}
+
+// Log with trace context anywhere in the application
+function log(message, level = 'info') {
+  const span = TraceContext.getStore() || { traceId: 'unknown' };
+  logger.log({
+    level,
+    message,
+    traceId: span.traceId,
+    timestamp: new Date().toISOString()
+  });
+}
+```
+
+### 2. User Authentication Context
+
+```javascript
+const UserContext = new AsyncLocalStorage();
+
+function authMiddleware(req, res, next) {
+  const user = authenticateUser(req);
+  
+  if (!user) {
+    return res.status(401).send('Unauthorized');
+  }
+  
+  // Store user in context
+  UserContext.run(user, next);
+}
+
+// Access user information anywhere
+function requirePermission(permission) {
+  return (req, res, next) => {
+    const user = UserContext.getStore();
+    
+    if (!user || !user.permissions.includes(permission)) {
+      return res.status(403).send('Forbidden');
+    }
+    
+    next();
+  };
+}
+
+// Use in business logic
+async function updateUserData(data) {
+  const currentUser = UserContext.getStore();
+  
+  // Log who made the change
+  auditLog(`User data updated by ${currentUser.id}`);
+  
+  // Proceed with update
+  await db.users.update({ id: data.id }, data);
+}
+```
+
+### 3. Database Transactions
+
+```javascript
+const TransactionContext = new AsyncLocalStorage();
+
+async function withTransaction(callback) {
+  const transaction = await db.beginTransaction();
+  
+  try {
+    // Run callback with transaction context
+    const result = await TransactionContext.run(transaction, callback);
+    
+    await transaction.commit();
+    return result;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}
+
+// Database operations use current transaction
+async function saveData(data) {
+  const transaction = TransactionContext.getStore();
+  
+  if (transaction) {
+    // Use transaction if available
+    return db.query('INSERT INTO items (data) VALUES (?)', [data], { transaction });
+  } else {
+    // Otherwise use default connection
+    return db.query('INSERT INTO items (data) VALUES (?)', [data]);
+  }
+}
+
+// Usage
+await withTransaction(async () => {
+  await saveData('first item');
+  await saveData('second item');
+  // Both operations use the same transaction
+});
+```
+
+## Implementation Approaches
+
+### 1. Continuation-Local Storage (Legacy)
+
+Before AsyncLocalStorage, Node.js used the `cls-hooked` library:
+
+```javascript
+const createNamespace = require('cls-hooked').createNamespace;
+const session = createNamespace('my-session');
+
+function middleware(req, res, next) {
+  session.run(() => {
+    session.set('user', req.user);
+    next();
+  });
+}
+
+function someFunction() {
+  const user = session.get('user');
+  console.log(`Current user: ${user.name}`);
+}
+```
+
+### 2. Context Propagation with Promises
+
+Manual context binding with promises:
+
+```javascript
+function createContextPromise(context) {
+  return function contextify(promise) {
+    return promise.then(
+      result => {
+        // Restore context before resolving
+        currentContext = context;
+        return result;
+      },
+      error => {
+        // Restore context before rejecting
+        currentContext = context;
+        throw error;
+      }
+    );
+  };
+}
+
+// Usage
+const contextify = createContextPromise({ user: 'john' });
+contextify(fetchData()).then(data => {
+  // Context is available here
+});
+```
+
+### 3. Zone.js (Angular)
+
+Angular uses Zone.js for context propagation:
+
+```javascript
+// Zone.js example
+const userZone = Zone.current.fork({
+  name: 'userZone',
+  properties: {
+    user: { id: 123, name: 'Alice' }
+  }
+});
+
+userZone.run(() => {
+  setTimeout(() => {
+    // Context is preserved in the timeout callback
+    console.log('Current user:', Zone.current.get('user'));
+  }, 1000);
+});
+```
+
+## Performance Considerations
+
+Async context propagation has performance implications:
+
+1. **Overhead**: Maintaining context adds some overhead to async operations
+2. **Memory Usage**: Contexts can retain references to objects, potentially causing memory issues
+3. **Optimization**: Modern implementations minimize impact through efficient storage mechanisms
+
+```javascript
+// Performance best practices
+function optimizedMiddleware(req, res, next) {
+  // Only store necessary data
+  const minimalContext = {
+    id: req.id,
+    // Avoid storing entire request objects
+    // Avoid circular references
+  };
+  
+  AsyncContext.run(minimalContext, next);
+}
+```
+
+## Browser Support
+
+While AsyncLocalStorage is primarily for Node.js, similar concepts exist for browsers:
+
+1. **Zone.js**: Used by Angular for change detection and context
+2. **Custom Implementations**: Libraries like `async-hooks-browser`
+3. **Web Standard**: The AsyncContext proposal aims to standardize across environments
+
+## Interview Tips
+
+- Explain the problem of lost context in asynchronous JavaScript
+- Describe how AsyncLocalStorage solves this problem in Node.js
+- Discuss practical use cases like request tracing and user authentication
+- Explain the difference between AsyncLocalStorage and global variables
+- Demonstrate knowledge of performance implications
+- Mention the AsyncContext proposal and its goals for standardization
+- Discuss how frameworks like Angular handle context propagation

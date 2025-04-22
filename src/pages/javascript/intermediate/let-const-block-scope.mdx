@@ -1,0 +1,368 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: let and const Block Scope in JavaScript
+---
+
+# let and const Block Scope in JavaScript
+
+## Block Scope Basics
+
+Block scope defines the accessibility of variables within a block of code (enclosed by curly braces `{}`). Before ES6, JavaScript only had function scope and global scope, but `let` and `const` introduced true block scoping.
+
+## var vs let vs const
+
+### var
+
+- Function-scoped or globally-scoped
+- Hoisted (declaration moved to the top)
+- Can be redeclared
+- Can be updated
+
+```javascript
+function varExample() {
+  var x = 1;
+  
+  if (true) {
+    var x = 2; // Same variable, redeclared
+    console.log(x); // 2
+  }
+  
+  console.log(x); // 2 (value changed)
+}
+```
+
+### let
+
+- Block-scoped
+- Hoisted but not initialized (Temporal Dead Zone)
+- Cannot be redeclared in same scope
+- Can be updated
+
+```javascript
+function letExample() {
+  let x = 1;
+  
+  if (true) {
+    let x = 2; // Different variable, scoped to the block
+    console.log(x); // 2
+  }
+  
+  console.log(x); // 1 (unchanged)
+}
+```
+
+### const
+
+- Block-scoped
+- Hoisted but not initialized (Temporal Dead Zone)
+- Cannot be redeclared in same scope
+- Cannot be reassigned
+- Object properties can still be modified
+
+```javascript
+function constExample() {
+  const x = 1;
+  
+  if (true) {
+    const x = 2; // Different variable, scoped to the block
+    console.log(x); // 2
+  }
+  
+  console.log(x); // 1 (unchanged)
+  
+  // x = 3; // TypeError: Assignment to constant variable
+}
+```
+
+## Block Scope Examples
+
+### let in Blocks
+
+```javascript
+// Block scope with let
+{
+  let blockScoped = 'I am block-scoped';
+  console.log(blockScoped); // 'I am block-scoped'
+}
+// console.log(blockScoped); // ReferenceError: blockScoped is not defined
+
+// let in if statements
+if (true) {
+  let ifScoped = 'Only available in this if block';
+  console.log(ifScoped); // 'Only available in this if block'
+}
+// console.log(ifScoped); // ReferenceError: ifScoped is not defined
+
+// let in for loops
+for (let i = 0; i < 3; i++) {
+  console.log(i); // 0, 1, 2
+}
+// console.log(i); // ReferenceError: i is not defined
+```
+
+### const in Blocks
+
+```javascript
+// Block scope with const
+{
+  const PI = 3.14159;
+  console.log(PI); // 3.14159
+}
+// console.log(PI); // ReferenceError: PI is not defined
+
+// const with objects
+{
+  const user = { name: 'John', age: 30 };
+  console.log(user.name); // 'John'
+  
+  // Can modify properties
+  user.name = 'Jane';
+  console.log(user.name); // 'Jane'
+  
+  // Cannot reassign the variable
+  // user = { name: 'Bob' }; // TypeError: Assignment to constant variable
+}
+```
+
+## Temporal Dead Zone (TDZ)
+
+The TDZ is the period between entering a scope where a variable is declared and the actual declaration.
+
+```javascript
+// Temporal Dead Zone demonstration
+function tdz() {
+  // TDZ for x starts here
+  console.log(y); // undefined (var is hoisted with initialization)
+  // console.log(x); // ReferenceError: Cannot access 'x' before initialization
+  
+  var y = 1; // y is hoisted
+  let x = 2; // TDZ ends for x
+  
+  console.log(x); // 2
+  console.log(y); // 1
+}
+```
+
+## Function Scope vs Block Scope
+
+```javascript
+// Function scope with var
+function functionScope() {
+  var functionScoped = 'I am function-scoped';
+  
+  if (true) {
+    var alsoFunctionScoped = 'I am also function-scoped';
+  }
+  
+  console.log(functionScoped);      // 'I am function-scoped'
+  console.log(alsoFunctionScoped);  // 'I am also function-scoped'
+}
+
+// Block scope with let/const
+function blockScope() {
+  let blockScoped = 'I am block-scoped';
+  
+  if (true) {
+    let onlyInIf = 'I am only available in this if block';
+    const alsoOnlyInIf = 'I am also only in this if block';
+    
+    console.log(blockScoped);       // 'I am block-scoped' (accessible from parent scope)
+    console.log(onlyInIf);          // 'I am only available in this if block'
+    console.log(alsoOnlyInIf);      // 'I am also only in this if block'
+  }
+  
+  console.log(blockScoped);         // 'I am block-scoped'
+  // console.log(onlyInIf);         // ReferenceError: onlyInIf is not defined
+  // console.log(alsoOnlyInIf);     // ReferenceError: alsoOnlyInIf is not defined
+}
+```
+
+## Loop Scope with let
+
+```javascript
+// var in loops (problematic)
+function varLoop() {
+  const actions = [];
+  
+  for (var i = 0; i < 3; i++) {
+    actions.push(function() {
+      console.log(i);
+    });
+  }
+  
+  actions.forEach(action => action());
+  // Logs: 3, 3, 3 (all functions reference the same variable)
+}
+
+// let in loops (correct)
+function letLoop() {
+  const actions = [];
+  
+  for (let i = 0; i < 3; i++) {
+    actions.push(function() {
+      console.log(i);
+    });
+  }
+  
+  actions.forEach(action => action());
+  // Logs: 0, 1, 2 (each iteration gets its own i)
+}
+```
+
+## Global Variables with let and const
+
+```javascript
+// var creates properties on the global object
+var globalVar = 'I am a global var';
+console.log(window.globalVar); // 'I am a global var' (in browsers)
+
+// let and const do not create properties on the global object
+let globalLet = 'I am a global let';
+const globalConst = 'I am a global const';
+console.log(window.globalLet); // undefined
+console.log(window.globalConst); // undefined
+```
+
+## Redeclaration Rules
+
+```javascript
+// var can be redeclared
+var x = 1;
+var x = 2; // Valid
+console.log(x); // 2
+
+// let cannot be redeclared in the same scope
+let y = 1;
+// let y = 2; // SyntaxError: Identifier 'y' has already been declared
+
+// const cannot be redeclared in the same scope
+const z = 1;
+// const z = 2; // SyntaxError: Identifier 'z' has already been declared
+
+// Different scopes allow redeclaration
+function scopeTest() {
+  let scopedVar = 'outer';
+  console.log(scopedVar); // 'outer'
+  
+  if (true) {
+    let scopedVar = 'inner'; // Valid - different scope
+    console.log(scopedVar); // 'inner'
+  }
+  
+  console.log(scopedVar); // 'outer'
+}
+```
+
+## Best Practices
+
+### When to Use let
+
+- For variables that will be reassigned
+- Loop counters and iterators
+- Variables that change over time
+
+```javascript
+let count = 0;
+count++; // Valid
+
+let currentUser;
+if (isLoggedIn) {
+  currentUser = getUser();
+}
+```
+
+### When to Use const
+
+- For values that should not be reassigned
+- Most variable declarations (prefer const by default)
+- Object and array declarations (even if their contents will change)
+
+```javascript
+const API_URL = 'https://api.example.com';
+const MAX_ITEMS = 100;
+
+const user = { name: 'John' };
+user.name = 'Jane'; // Valid - modifying properties
+
+const numbers = [1, 2, 3];
+numbers.push(4); // Valid - modifying array
+// numbers = [5, 6]; // Invalid - reassigning variable
+```
+
+### Avoiding var
+
+In modern JavaScript, it's generally recommended to avoid `var` and use `let` and `const` instead:
+
+- `var` doesn't respect block scope
+- `var` can lead to unexpected behavior due to hoisting
+- `var` allows redeclaration, which can lead to bugs
+
+## Common Patterns
+
+### Immediate Block Scope
+
+```javascript
+// Create a temporary scope
+{
+  const temporary = performHeavyComputation();
+  processSomething(temporary);
+  // temporary is not accessible outside this block
+}
+// No memory leak or pollution of outer scope
+```
+
+### Switch Case Blocks
+
+```javascript
+switch (value) {
+  case 1: {
+    // Block scope for case 1
+    const result = 'one';
+    console.log(result);
+    break;
+  }
+  case 2: {
+    // Different block scope for case 2
+    const result = 'two'; // No conflict with case 1's result
+    console.log(result);
+    break;
+  }
+}
+```
+
+### Module Pattern with Block Scope
+
+```javascript
+const counter = (function() {
+  // Private variables in module scope
+  let count = 0;
+  
+  return {
+    increment() {
+      return ++count;
+    },
+    decrement() {
+      return --count;
+    },
+    getCount() {
+      return count;
+    }
+  };
+})();
+
+console.log(counter.getCount()); // 0
+console.log(counter.increment()); // 1
+console.log(counter.increment()); // 2
+console.log(counter.decrement()); // 1
+// console.log(count); // ReferenceError: count is not defined
+```
+
+## Interview Tips
+
+- Explain the difference between function scope and block scope
+- Describe the Temporal Dead Zone and how it affects `let` and `const`
+- Explain why `let` is preferred over `var` in modern JavaScript
+- Discuss when to use `const` vs `let`
+- Explain how `let` in loops creates a new binding for each iteration
+- Describe how `const` prevents reassignment but not mutation of objects
+- Explain the behavior of `let`, `const`, and `var` in the global scope

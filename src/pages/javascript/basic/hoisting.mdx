@@ -1,0 +1,309 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is hoisting in JavaScript?
+---
+
+# What is hoisting in JavaScript?
+
+Hoisting is a JavaScript behavior where variable and function declarations are moved to the top of their containing scope during the compilation phase, before the code is executed. This means that regardless of where declarations appear in your code, they are conceptually "moved" to the top of their scope, which affects how the code behaves when it runs.
+
+## How Hoisting Works
+
+JavaScript processes code in two phases:
+1. **Compilation Phase**: Declarations are processed and allocated in memory
+2. **Execution Phase**: Code is executed line by line
+
+During the compilation phase, the JavaScript engine:
+- Recognizes all variable and function declarations
+- Allocates memory for them
+- Initializes variables depending on their declaration type
+
+## Variable Hoisting
+
+### `var` Declarations
+
+Variables declared with `var` are hoisted and initialized with `undefined`:
+
+```javascript
+console.log(name); // undefined (not a ReferenceError)
+var name = "Rahul";
+
+// The above code behaves as if written:
+var name; // Declaration is hoisted
+console.log(name); // undefined
+name = "Rahul"; // Assignment stays in place
+```
+
+### `let` and `const` Declarations
+
+Variables declared with `let` and `const` are also hoisted, but they are not initialized. They remain in a "Temporal Dead Zone" (TDZ) until their declaration is reached:
+
+```javascript
+console.log(age); // ReferenceError: Cannot access 'age' before initialization
+let age = 30;
+
+console.log(API_KEY); // ReferenceError: Cannot access 'API_KEY' before initialization
+const API_KEY = "abc123";
+```
+
+## Function Hoisting
+
+### Function Declarations
+
+Function declarations are completely hoisted with their body:
+
+```javascript
+// This works because the function declaration is hoisted
+sayHello(); // "Hello, world!"
+
+function sayHello() {
+  console.log("Hello, world!");
+}
+```
+
+### Function Expressions
+
+Function expressions are not hoisted in the same way as function declarations:
+
+```javascript
+// This throws an error because only the variable declaration is hoisted, not the function assignment
+sayGoodbye(); // TypeError: sayGoodbye is not a function
+
+var sayGoodbye = function() {
+  console.log("Goodbye, world!");
+};
+
+// The above code behaves as if written:
+var sayGoodbye; // Declaration is hoisted and initialized as undefined
+sayGoodbye(); // TypeError: undefined is not a function
+sayGoodbye = function() { // Assignment stays in place
+  console.log("Goodbye, world!");
+};
+```
+
+### Arrow Functions
+
+Arrow functions behave like function expressions regarding hoisting:
+
+```javascript
+greet(); // TypeError: greet is not a function
+
+var greet = () => {
+  console.log("Greetings!");
+};
+```
+
+## Class Hoisting
+
+Classes behave similarly to `let` and `const` declarations:
+
+```javascript
+// ReferenceError: Cannot access 'User' before initialization
+const user = new User("Rahul", "Sharma");
+
+class User {
+  constructor(firstName, lastName) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+  }
+}
+```
+
+## Practical Examples
+
+### Example 1: Variable and Function Hoisting Interaction
+
+```javascript
+function example() {
+  console.log(x); // undefined (not ReferenceError)
+  
+  var x = 10;
+  
+  console.log(x); // 10
+  
+  function innerFunc() {
+    console.log(x); // 10 (accesses x from outer scope)
+    
+    var y = 20;
+    
+    console.log(y); // 20
+  }
+  
+  innerFunc();
+  
+  console.log(y); // ReferenceError: y is not defined (y is scoped to innerFunc)
+}
+
+example();
+```
+
+### Example 2: Function Declaration vs. Expression
+
+```javascript
+// Function declaration - fully hoisted
+declaration(); // "I am a function declaration"
+
+function declaration() {
+  console.log("I am a function declaration");
+}
+
+// Function expression - only variable is hoisted
+expression(); // TypeError: expression is not a function
+
+var expression = function() {
+  console.log("I am a function expression");
+};
+```
+
+### Example 3: Block Scope and Hoisting
+
+```javascript
+var x = 1;
+
+{
+  console.log(x); // ReferenceError: Cannot access 'x' before initialization
+  let x = 2;
+}
+```
+
+In this example, the `let x` declaration in the block creates a new block-scoped variable that shadows the outer `x`. The inner `x` is hoisted within the block but is in the TDZ until its declaration.
+
+## Common Hoisting Pitfalls
+
+### Pitfall 1: Assuming Declarations Aren't Hoisted
+
+```javascript
+function getName() {
+  console.log(name); // undefined, not ReferenceError
+  
+  if (false) {
+    var name = "Rahul"; // Hoisted to function scope
+  }
+  
+  return name;
+}
+
+console.log(getName()); // undefined
+```
+
+### Pitfall 2: Forgetting That Function Expressions Aren't Fully Hoisted
+
+```javascript
+function setup() {
+  init(); // TypeError: init is not a function
+  
+  var init = function() {
+    console.log("Initializing...");
+  };
+}
+
+setup();
+```
+
+### Pitfall 3: Redeclarations with `var`
+
+```javascript
+var counter = 1;
+
+function increment() {
+  console.log(counter); // undefined, not 1
+  
+  var counter = counter + 1; // counter is undefined here
+  
+  console.log(counter); // NaN (undefined + 1)
+}
+
+increment();
+```
+
+## Best Practices to Avoid Hoisting Issues
+
+1. **Declare variables at the top of their scope**
+   ```javascript
+   function example() {
+     var a = 1;
+     var b = 2;
+     var c = 3;
+     
+     // Rest of the function...
+   }
+   ```
+
+2. **Use `let` and `const` instead of `var`**
+   ```javascript
+   // Block-scoped variables help avoid many hoisting issues
+   function example() {
+     const PI = 3.14159;
+     let count = 0;
+     
+     // Rest of the function...
+   }
+   ```
+
+3. **Always declare variables before using them**
+   ```javascript
+   // Bad
+   x = 5;
+   var x;
+   
+   // Good
+   let x;
+   x = 5;
+   ```
+
+4. **Use function declarations when you need to call them before their definition**
+   ```javascript
+   // This is fine because of hoisting
+   doSomething();
+   
+   function doSomething() {
+     console.log("Task completed");
+   }
+   ```
+
+5. **Be consistent with your function style**
+   ```javascript
+   // Either use all declarations
+   function add(a, b) { return a + b; }
+   function subtract(a, b) { return a - b; }
+   
+   // Or all expressions (with let/const)
+   const add = (a, b) => a + b;
+   const subtract = (a, b) => a - b;
+   ```
+
+## Temporal Dead Zone (TDZ) Explained
+
+The Temporal Dead Zone is the period between entering a scope where a variable is declared with `let` or `const` and the actual declaration line:
+
+```javascript
+{
+  // TDZ starts for x
+  console.log(x); // ReferenceError
+  
+  let x = 10; // TDZ ends for x
+  
+  console.log(x); // 10
+}
+```
+
+The TDZ exists to catch programming errors and enforce better coding practices by ensuring variables are declared before they're used.
+
+## Hoisting in Modern JavaScript
+
+With the introduction of ES6 and later versions, JavaScript development practices have evolved:
+
+- Modern JavaScript favors `let` and `const` over `var`
+- Block scoping helps prevent many hoisting-related issues
+- Linters and static analysis tools can catch potential hoisting problems
+- Strict mode (`"use strict"`) helps identify undeclared variables
+
+## Interview Tips
+
+- Explain that hoisting is about the order of processing declarations, not physically moving code
+- Distinguish between declaration hoisting and initialization
+- Highlight the differences in hoisting behavior between `var`, `let`, and `const`
+- Explain the Temporal Dead Zone concept for `let` and `const`
+- Describe the difference between function declarations and expressions regarding hoisting
+- Mention best practices to avoid hoisting-related bugs
+- Be prepared to write code examples that demonstrate hoisting behavior

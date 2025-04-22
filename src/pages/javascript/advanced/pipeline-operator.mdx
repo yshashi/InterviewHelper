@@ -1,0 +1,196 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: The Pipeline Operator in JavaScript
+---
+
+# The Pipeline Operator in JavaScript
+
+The pipeline operator (`|>`) is a proposed feature for JavaScript that enables function composition in a more readable, left-to-right manner. It takes the value on its left and passes it as an argument to the function on its right.
+
+## Basic Concept
+
+```javascript
+// Traditional function calls (nested, right-to-left)
+const result = h(g(f(value)));
+
+// With pipeline operator (left-to-right)
+const result = value |> f |> g |> h;
+```
+
+## Current Status
+
+The pipeline operator is currently a Stage 2 proposal in the TC39 process, which means it's not yet available in standard JavaScript. You can experiment with it using Babel or other transpilers.
+
+## Syntax Variations
+
+Several syntax variations have been proposed:
+
+### Bare Variant (Current Proposal)
+
+```javascript
+// The value is passed as the first argument to each function
+const result = value |> doubleFn |> incrementFn;
+
+// Equivalent to:
+const result = incrementFn(doubleFn(value));
+```
+
+### Topic Style (F# Style)
+
+```javascript
+// The value is referenced using a special placeholder (%)
+const result = value |> doubleFn(%) |> incrementFn(%);
+
+// Or with multiple uses of the value
+const result = value |> add(%, 5) |> multiply(2, %);
+```
+
+### Smart/Hack Style
+
+```javascript
+// The value is implicitly available inside an arrow function
+const result = value |> (x => x * 2) |> (x => x + 1);
+```
+
+## Benefits of the Pipeline Operator
+
+1. **Readability**: Code flows from left to right, matching how we read
+2. **Reduced nesting**: Eliminates deeply nested function calls
+3. **Modularity**: Encourages breaking down operations into smaller functions
+4. **Maintainability**: Easier to insert, remove, or reorder operations
+
+## Current Workarounds
+
+Until the pipeline operator is standardized, there are several alternatives:
+
+### Method Chaining
+
+```javascript
+// Using method chaining with array methods
+const result = [1, 2, 3, 4]
+  .map(x => x * 2)
+  .filter(x => x > 5)
+  .reduce((sum, x) => sum + x, 0);
+```
+
+### Compose/Pipe Functions
+
+```javascript
+// Utility function to compose functions (right to left)
+const compose = (...fns) => x => fns.reduceRight((acc, fn) => fn(acc), x);
+
+// Utility function to pipe functions (left to right)
+const pipe = (...fns) => x => fns.reduce((acc, fn) => fn(acc), x);
+
+// Usage
+const double = x => x * 2;
+const increment = x => x + 1;
+const square = x => x * x;
+
+const transformCompose = compose(square, increment, double);
+const transformPipe = pipe(double, increment, square);
+
+console.log(transformCompose(3)); // (3*2+1)^2 = 49
+console.log(transformPipe(3));    // ((3*2)+1)^2 = 49
+```
+
+### Using Libraries
+
+```javascript
+// Using Lodash's flow function
+import { flow } from 'lodash/fp';
+
+const transform = flow(
+  double,
+  increment,
+  square
+);
+
+console.log(transform(3)); // 49
+```
+
+## Practical Examples
+
+### Data Processing
+
+```javascript
+// Without pipeline operator
+const processData = data => {
+  const filtered = filterInvalidEntries(data);
+  const normalized = normalizeEntries(filtered);
+  const sorted = sortByPriority(normalized);
+  const formatted = formatForDisplay(sorted);
+  return formatted;
+};
+
+// With pipeline operator (proposed)
+const processData = data => (
+  data |> filterInvalidEntries
+       |> normalizeEntries
+       |> sortByPriority
+       |> formatForDisplay
+);
+```
+
+### DOM Manipulation
+
+```javascript
+// Without pipeline operator
+const createButton = (text) => {
+  const button = document.createElement('button');
+  button.textContent = text;
+  button.classList.add('primary-button');
+  button.addEventListener('click', handleClick);
+  document.body.appendChild(button);
+  return button;
+};
+
+// With pipeline operator (proposed)
+const createButton = (text) => (
+  document.createElement('button')
+  |> (el => Object.assign(el, { textContent: text }))
+  |> (el => (el.classList.add('primary-button'), el))
+  |> (el => (el.addEventListener('click', handleClick), el))
+  |> (el => (document.body.appendChild(el), el))
+);
+```
+
+### Functional Programming
+
+```javascript
+// Complex data transformation
+const processUsers = users => (
+  users
+  |> filter(user => user.active)
+  |> map(user => ({ ...user, name: user.name.toUpperCase() }))
+  |> sortBy('lastLogin')
+  |> take(10)
+  |> (topUsers => ({ topUsers, count: topUsers.length }))
+);
+```
+
+## Performance Considerations
+
+The pipeline operator is primarily a syntactic feature and doesn't inherently affect performance. However, it can influence code structure in ways that impact performance:
+
+1. **Function calls**: Each step in the pipeline is a function call, which has minimal overhead
+2. **Intermediate objects**: Creating new objects at each step may increase memory usage
+3. **Optimization**: Modern JavaScript engines can optimize chains of operations
+
+## Compatibility and Adoption
+
+Until the pipeline operator is standardized:
+
+1. **Use Babel**: Configure with the pipeline operator plugin
+2. **TypeScript**: Enable with appropriate configuration
+3. **Consider alternatives**: Use compose/pipe functions or method chaining
+4. **Polyfills**: No runtime polyfill is possible (syntax feature)
+
+## Interview Tips
+
+- Explain how the pipeline operator improves code readability
+- Describe the difference between the pipeline operator and method chaining
+- Discuss current alternatives like compose/pipe functions
+- Mention that it's still a proposal and not yet standardized
+- Explain how it relates to functional programming concepts
+- Demonstrate knowledge of the TC39 process for JavaScript features

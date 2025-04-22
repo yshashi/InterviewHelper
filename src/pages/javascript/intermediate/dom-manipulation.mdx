@@ -1,0 +1,356 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: DOM Manipulation in JavaScript
+---
+
+# DOM Manipulation in JavaScript
+
+## What is the DOM?
+
+The Document Object Model (DOM) is a programming interface for web documents. It represents the page as nodes and objects that can be manipulated with JavaScript.
+
+## Selecting DOM Elements
+
+### By ID
+```javascript
+const element = document.getElementById('myId');
+```
+
+### By Class Name
+```javascript
+const elements = document.getElementsByClassName('myClass');
+// Returns HTMLCollection (array-like object)
+```
+
+### By Tag Name
+```javascript
+const elements = document.getElementsByTagName('div');
+// Returns HTMLCollection
+```
+
+### CSS Selectors
+```javascript
+// Select first matching element
+const element = document.querySelector('.myClass');
+
+// Select all matching elements
+const elements = document.querySelectorAll('div.myClass');
+// Returns NodeList
+```
+
+## Creating and Modifying Elements
+
+### Creating Elements
+```javascript
+// Create a new element
+const div = document.createElement('div');
+
+// Create text node
+const text = document.createTextNode('Hello World');
+
+// Append text to div
+div.appendChild(text);
+```
+
+### Modifying Element Content
+```javascript
+// Set text content
+element.textContent = 'New text content';
+
+// Set HTML content (careful with XSS)
+element.innerHTML = '<span>New HTML content</span>';
+
+// Set HTML content safely
+element.innerHTML = '';
+const span = document.createElement('span');
+span.textContent = 'New HTML content';
+element.appendChild(span);
+```
+
+### Modifying Attributes
+```javascript
+// Get attribute
+const value = element.getAttribute('data-id');
+
+// Set attribute
+element.setAttribute('data-id', '123');
+
+// Remove attribute
+element.removeAttribute('data-id');
+
+// Check if attribute exists
+const hasAttribute = element.hasAttribute('data-id');
+
+// Using properties for common attributes
+element.id = 'newId';
+element.className = 'newClass';
+element.href = 'https://example.com';
+```
+
+## Manipulating DOM Structure
+
+### Adding Elements
+```javascript
+// Append child (at the end)
+parent.appendChild(child);
+
+// Insert before another element
+parent.insertBefore(newChild, referenceChild);
+
+// Modern methods
+parent.append(child1, child2, 'text'); // Multiple nodes and text
+parent.prepend(child); // Insert at beginning
+referenceElement.before(newElement); // Insert before
+referenceElement.after(newElement); // Insert after
+```
+
+### Removing Elements
+```javascript
+// Remove child from parent
+parent.removeChild(child);
+
+// Modern method (self-removal)
+element.remove();
+```
+
+### Replacing Elements
+```javascript
+// Replace child
+parent.replaceChild(newChild, oldChild);
+
+// Modern method
+oldElement.replaceWith(newElement);
+```
+
+### Cloning Elements
+```javascript
+// Clone without descendants
+const clone = element.cloneNode(false);
+
+// Clone with all descendants
+const deepClone = element.cloneNode(true);
+```
+
+## Manipulating CSS
+
+### Working with Classes
+```javascript
+// Add class
+element.classList.add('active');
+
+// Remove class
+element.classList.remove('active');
+
+// Toggle class (add if absent, remove if present)
+element.classList.toggle('active');
+
+// Check if class exists
+const hasClass = element.classList.contains('active');
+
+// Replace class
+element.classList.replace('old', 'new');
+```
+
+### Inline Styles
+```javascript
+// Get computed style
+const style = window.getComputedStyle(element);
+const color = style.color;
+
+// Set inline style
+element.style.color = 'red';
+element.style.backgroundColor = 'blue';
+element.style.cssText = 'color: red; background-color: blue;';
+
+// Remove inline style
+element.style.color = '';
+```
+
+## Event Handling
+
+### Adding Event Listeners
+```javascript
+element.addEventListener('click', function(event) {
+  console.log('Element clicked!');
+});
+
+// With event object
+element.addEventListener('click', function(event) {
+  console.log('Clicked at:', event.clientX, event.clientY);
+  event.preventDefault(); // Prevent default behavior
+  event.stopPropagation(); // Stop event bubbling
+});
+
+// With options
+element.addEventListener('click', handler, {
+  once: true, // Run only once
+  capture: true, // Use capture phase
+  passive: true // Never call preventDefault()
+});
+```
+
+### Removing Event Listeners
+```javascript
+function handler(event) {
+  console.log('Handled!');
+}
+
+// Add listener
+element.addEventListener('click', handler);
+
+// Remove listener (must use same function reference)
+element.removeEventListener('click', handler);
+```
+
+### Event Delegation
+```javascript
+// Instead of adding listeners to each button
+document.getElementById('buttonContainer').addEventListener('click', function(event) {
+  // Check if clicked element is a button
+  if (event.target.tagName === 'BUTTON') {
+    console.log('Button clicked:', event.target.textContent);
+  }
+});
+```
+
+## DOM Traversal
+
+### Parent Relationships
+```javascript
+// Parent node
+const parent = element.parentNode;
+
+// Parent element (skips non-element nodes)
+const parentElement = element.parentElement;
+```
+
+### Child Relationships
+```javascript
+// All child nodes (including text nodes, comments)
+const childNodes = element.childNodes;
+
+// Child elements only
+const children = element.children;
+
+// First and last child
+const firstChild = element.firstChild; // May be text node
+const firstElement = element.firstElementChild;
+const lastChild = element.lastChild;
+const lastElement = element.lastElementChild;
+```
+
+### Sibling Relationships
+```javascript
+// Next sibling
+const nextSibling = element.nextSibling; // May be text node
+const nextElement = element.nextElementSibling;
+
+// Previous sibling
+const prevSibling = element.previousSibling;
+const prevElement = element.previousElementSibling;
+```
+
+## Performance Considerations
+
+### DOM Manipulation Best Practices
+1. **Minimize DOM access**: Cache DOM references
+   ```javascript
+   // Bad: Repeated DOM access
+   for (let i = 0; i < 1000; i++) {
+     document.getElementById('result').innerHTML += i + ', ';
+   }
+   
+   // Good: Cache the reference
+   const result = document.getElementById('result');
+   let content = '';
+   for (let i = 0; i < 1000; i++) {
+     content += i + ', ';
+   }
+   result.innerHTML = content;
+   ```
+
+2. **Use document fragments** for batch insertions
+   ```javascript
+   const fragment = document.createDocumentFragment();
+   for (let i = 0; i < 1000; i++) {
+     const li = document.createElement('li');
+     li.textContent = `Item ${i}`;
+     fragment.appendChild(li);
+   }
+   document.getElementById('myList').appendChild(fragment);
+   ```
+
+3. **Reduce reflows and repaints**
+   ```javascript
+   // Bad: Multiple reflows
+   const div = document.getElementById('myDiv');
+   div.style.width = '100px';
+   div.style.height = '100px';
+   div.style.marginTop = '20px';
+   
+   // Good: Batch style changes
+   const div = document.getElementById('myDiv');
+   div.style.cssText = 'width: 100px; height: 100px; margin-top: 20px;';
+   
+   // Or use classes
+   div.classList.add('my-styled-div');
+   ```
+
+## Modern DOM APIs
+
+### Intersection Observer
+```javascript
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      console.log('Element is visible in viewport');
+      entry.target.classList.add('visible');
+    }
+  });
+}, {
+  threshold: 0.1 // Trigger when 10% visible
+});
+
+observer.observe(document.querySelector('.target'));
+```
+
+### Mutation Observer
+```javascript
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach(mutation => {
+    if (mutation.type === 'childList') {
+      console.log('Child nodes changed');
+    } else if (mutation.type === 'attributes') {
+      console.log(`${mutation.attributeName} attribute changed`);
+    }
+  });
+});
+
+observer.observe(element, {
+  childList: true, // Watch for changes to child elements
+  attributes: true, // Watch for attribute changes
+  subtree: true // Watch all descendants
+});
+```
+
+### ResizeObserver
+```javascript
+const observer = new ResizeObserver(entries => {
+  for (const entry of entries) {
+    const { width, height } = entry.contentRect;
+    console.log(`Element size: ${width}px × ${height}px`);
+  }
+});
+
+observer.observe(document.querySelector('.resizable'));
+```
+
+## Interview Tips
+
+- Explain the difference between `innerHTML` and `textContent`
+- Describe event bubbling and capturing phases
+- Discuss performance implications of DOM manipulations
+- Explain how to optimize DOM operations for better performance
+- Demonstrate knowledge of modern DOM APIs and their use cases
+- Describe how to implement event delegation and why it's useful
+- Explain the difference between HTMLCollection and NodeList

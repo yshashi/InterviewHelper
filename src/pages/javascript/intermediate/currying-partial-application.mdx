@@ -1,0 +1,276 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Currying and Partial Application in JavaScript
+---
+
+# Currying and Partial Application in JavaScript
+
+## What is Currying?
+
+Currying is a functional programming technique that transforms a function with multiple arguments into a sequence of functions, each taking a single argument. The curried function returns a new function for each argument until all arguments have been provided, at which point the original function is executed.
+
+## Basic Currying Example
+
+```javascript
+// Regular function with multiple arguments
+function add(a, b, c) {
+  return a + b + c;
+}
+
+// Curried version
+function curriedAdd(a) {
+  return function(b) {
+    return function(c) {
+      return a + b + c;
+    };
+  };
+}
+
+// Usage
+console.log(add(1, 2, 3)); // 6
+console.log(curriedAdd(1)(2)(3)); // 6
+
+// With arrow functions (more concise)
+const curriedAddArrow = a => b => c => a + b + c;
+console.log(curriedAddArrow(1)(2)(3)); // 6
+```
+
+## Creating a Curry Function
+
+```javascript
+// Generic curry function
+function curry(fn) {
+  return function curried(...args) {
+    if (args.length >= fn.length) {
+      return fn.apply(this, args);
+    } else {
+      return function(...moreArgs) {
+        return curried.apply(this, args.concat(moreArgs));
+      };
+    }
+  };
+}
+
+// Usage
+function sum(a, b, c, d) {
+  return a + b + c + d;
+}
+
+const curriedSum = curry(sum);
+
+console.log(curriedSum(1)(2)(3)(4)); // 10
+console.log(curriedSum(1, 2)(3, 4)); // 10
+console.log(curriedSum(1, 2, 3, 4)); // 10
+```
+
+## What is Partial Application?
+
+Partial application is a technique that fixes a number of arguments to a function, producing another function of smaller arity (fewer parameters). Unlike currying, partial application takes multiple arguments at once and returns a function that takes the remaining arguments.
+
+## Partial Application Examples
+
+```javascript
+// Manual partial application
+function multiply(a, b, c) {
+  return a * b * c;
+}
+
+function partialMultiply(a, b) {
+  return function(c) {
+    return multiply(a, b, c);
+  };
+}
+
+const multiplyBy10And2 = partialMultiply(10, 2);
+console.log(multiplyBy10And2(5)); // 10 * 2 * 5 = 100
+
+// Using bind for partial application
+const multiply10 = multiply.bind(null, 10);
+console.log(multiply10(2, 5)); // 10 * 2 * 5 = 100
+
+const multiply10And2 = multiply.bind(null, 10, 2);
+console.log(multiply10And2(5)); // 10 * 2 * 5 = 100
+```
+
+## Creating a Partial Application Function
+
+```javascript
+function partial(fn, ...presetArgs) {
+  return function(...laterArgs) {
+    return fn(...presetArgs, ...laterArgs);
+  };
+}
+
+// Usage
+function greet(greeting, name, punctuation) {
+  return `${greeting}, ${name}${punctuation}`;
+}
+
+const greetWithHello = partial(greet, "Hello");
+console.log(greetWithHello("John", "!")); // "Hello, John!"
+
+const sayHelloToJohn = partial(greet, "Hello", "John");
+console.log(sayHelloToJohn("!")); // "Hello, John!"
+```
+
+## Differences Between Currying and Partial Application
+
+| Currying | Partial Application |
+|----------|---------------------|
+| Transforms a function with n arguments into n functions with a single argument | Fixes a number of arguments and returns a function that takes the remaining arguments |
+| Returns a new function for each argument | Returns a single function for all remaining arguments |
+| All arguments must be specified one by one | Multiple arguments can be specified at once |
+| `add(1)(2)(3)` | `partialAdd(1, 2)(3)` |
+
+## Practical Applications
+
+### 1. Function Composition
+
+```javascript
+const double = x => x * 2;
+const increment = x => x + 1;
+
+// Compose functions
+const compose = (f, g) => x => f(g(x));
+const doubleAndIncrement = compose(increment, double);
+
+console.log(doubleAndIncrement(5)); // (5 * 2) + 1 = 11
+```
+
+### 2. Event Handling
+
+```javascript
+// Without currying
+function handleClick(id, event) {
+  console.log(`Element ${id} clicked at position:`, event.clientX, event.clientY);
+}
+
+// With currying
+const handleClickCurried = id => event => {
+  console.log(`Element ${id} clicked at position:`, event.clientX, event.clientY);
+};
+
+document.getElementById('button1').addEventListener('click', event => handleClick('button1', event));
+document.getElementById('button2').addEventListener('click', handleClickCurried('button2'));
+```
+
+### 3. Configurable Functions
+
+```javascript
+// Curried API request function
+const apiRequest = baseUrl => endpoint => params => {
+  const url = `${baseUrl}${endpoint}?${new URLSearchParams(params)}`;
+  return fetch(url).then(res => res.json());
+};
+
+// Create specialized functions
+const githubApi = apiRequest('https://api.github.com');
+const githubUsers = githubApi('/users');
+const githubRepos = githubApi('/repositories');
+
+// Use the specialized functions
+githubUsers({ since: 10 }).then(users => console.log(users));
+githubRepos({ since: 'daily' }).then(repos => console.log(repos));
+```
+
+### 4. Memoization
+
+```javascript
+function memoize(fn) {
+  const cache = {};
+  return function(...args) {
+    const key = JSON.stringify(args);
+    if (!(key in cache)) {
+      cache[key] = fn.apply(this, args);
+    }
+    return cache[key];
+  };
+}
+
+// Usage with currying
+const memoizedAdd = memoize(curriedAdd);
+console.log(memoizedAdd(1)(2)(3)); // Calculated
+console.log(memoizedAdd(1)(2)(3)); // Retrieved from cache
+```
+
+## Advanced Currying Patterns
+
+### 1. Placeholder Currying
+
+```javascript
+// Placeholder implementation
+const _ = Symbol('placeholder');
+
+function advancedCurry(fn) {
+  const arity = fn.length;
+  
+  return function curried(...args) {
+    const filledArgs = args.map(arg => arg === _ ? undefined : arg);
+    const hasPlaceholders = filledArgs.some(arg => arg === undefined);
+    const effectiveArity = arity - filledArgs.filter(arg => arg !== undefined).length;
+    
+    if (!hasPlaceholders && effectiveArity <= 0) {
+      return fn.apply(this, filledArgs);
+    }
+    
+    return function(...nextArgs) {
+      const newArgs = [...filledArgs];
+      let nextArgIndex = 0;
+      
+      for (let i = 0; i < newArgs.length && nextArgIndex < nextArgs.length; i++) {
+        if (newArgs[i] === undefined) {
+          newArgs[i] = nextArgs[nextArgIndex++];
+        }
+      }
+      
+      while (nextArgIndex < nextArgs.length) {
+        newArgs.push(nextArgs[nextArgIndex++]);
+      }
+      
+      return curried.apply(this, newArgs);
+    };
+  };
+}
+
+// Usage
+const curriedFn = advancedCurry((a, b, c, d) => a + b + c + d);
+console.log(curriedFn(1, _, 3, _)(2, 4)); // 1 + 2 + 3 + 4 = 10
+```
+
+### 2. Auto-Currying
+
+```javascript
+// Convert any function to a curried version automatically
+function autoCurry(fn, arity = fn.length) {
+  return function curried(...args) {
+    if (args.length >= arity) {
+      return fn.apply(this, args);
+    }
+    return autoCurry(
+      (...moreArgs) => fn.apply(this, [...args, ...moreArgs]),
+      arity - args.length
+    );
+  };
+}
+
+// Usage
+const autoSum = autoCurry((a, b, c, d) => a + b + c + d);
+console.log(autoSum(1)(2)(3)(4)); // 10
+console.log(autoSum(1, 2)(3, 4)); // 10
+```
+
+## Best Practices
+
+1. **Use currying for function specialization** and creating reusable function templates
+2. **Use partial application when order matters** and you want to pre-fill specific arguments
+3. **Consider performance implications** as excessive currying can create many function objects
+4. **Use libraries like Lodash or Ramda** for production-ready currying and partial application
+5. **Document curried functions clearly** as the calling pattern may not be obvious
+
+## Interview Tips
+
+- Explain the difference between currying and partial application with examples
+- Describe scenarios where currying or partial application would be beneficial
+- Demonstrate how to implement a curry function from scratch
+- Discuss how currying relates to function composition and point-free programming
+- Explain the performance and readability trade-offs of curried functions

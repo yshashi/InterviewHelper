@@ -1,0 +1,341 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Method Chaining Operator in JavaScript
+---
+
+# Method Chaining Operator in JavaScript
+
+The method chaining operator (`?.`) is a proposal for JavaScript that aims to simplify method chaining with nullable values. It's also known as the "optional chaining for method calls" operator.
+
+## The Problem It Solves
+
+When chaining methods in JavaScript, a single `null` or `undefined` value can cause runtime errors:
+
+```javascript
+// Without method chaining operator
+const result = obj.getA().getB().getC();
+// Throws error if any method returns null/undefined
+```
+
+## Basic Concept
+
+The method chaining operator allows methods to be called conditionally only when the previous result is not `null` or `undefined`:
+
+```javascript
+// Proposed syntax (not yet standardized)
+const result = obj.getA()?
+               .getB()?
+               .getC();
+// Returns undefined if any method returns null/undefined
+```
+
+## Current Status
+
+This specific operator is still in the early proposal stage and is not yet part of the ECMAScript standard. It builds upon the optional chaining operator (`?.`) that was introduced in ES2020.
+
+## Current Solutions
+
+### 1. Optional Chaining Operator
+
+The existing optional chaining operator (`?.`) can be used for method calls:
+
+```javascript
+// Using the existing optional chaining operator
+const result = obj?.getA()?.getB()?.getC();
+
+// This works if:
+// - obj is null/undefined → returns undefined
+// - getA() returns null/undefined → returns undefined
+// - getB() returns null/undefined → returns undefined
+```
+
+### 2. Nullish Coalescing with Optional Chaining
+
+Combine with the nullish coalescing operator (`??`) for default values:
+
+```javascript
+const result = obj?.getA()?.getB()?.getC() ?? defaultValue;
+```
+
+### 3. Manual Checks
+
+Traditional approach with explicit checks:
+
+```javascript
+let result;
+if (obj && typeof obj.getA === 'function') {
+  const a = obj.getA();
+  if (a && typeof a.getB === 'function') {
+    const b = a.getB();
+    if (b && typeof b.getC === 'function') {
+      result = b.getC();
+    }
+  }
+}
+```
+
+## Practical Examples
+
+### API Response Handling
+
+```javascript
+// Safely access nested API response properties
+function getUserCity(response) {
+  return response?.data?.user?.address?.city ?? 'Unknown';
+}
+
+// Usage
+const city = getUserCity({
+  data: {
+    user: {
+      address: {
+        city: 'New York'
+      }
+    }
+  }
+}); // "New York"
+
+const unknownCity = getUserCity({
+  data: {
+    user: null
+  }
+}); // "Unknown"
+```
+
+### DOM Manipulation
+
+```javascript
+// Safely chain DOM methods
+function getElementText(id) {
+  return document.getElementById(id)
+    ?.querySelector('.content')
+    ?.textContent
+    ?.trim() ?? '';
+}
+
+// Event handler with chaining
+function handleButtonClick(event) {
+  const form = event.target?.closest('form');
+  const submitButton = form?.querySelector('button[type="submit"]');
+  
+  submitButton?.setAttribute('disabled', 'true');
+  form?.submit();
+}
+```
+
+### Method Chaining in Classes
+
+```javascript
+class QueryBuilder {
+  constructor() {
+    this.query = null;
+  }
+  
+  select(fields) {
+    if (!fields) return this;
+    this.query = { ...this.query, fields };
+    return this;
+  }
+  
+  where(conditions) {
+    if (!conditions) return this;
+    this.query = { ...this.query, conditions };
+    return this;
+  }
+  
+  limit(count) {
+    if (!count) return this;
+    this.query = { ...this.query, limit: count };
+    return this;
+  }
+  
+  build() {
+    return this.query;
+  }
+}
+
+// Safe chaining with optional chaining
+const result = new QueryBuilder()
+  .select(['name', 'email'])
+  ?.where({ active: true })
+  ?.limit(10)
+  ?.build();
+```
+
+## Advanced Patterns
+
+### Combining with Array Methods
+
+```javascript
+// Safely chain array methods
+function processItems(data) {
+  return data?.items
+    ?.filter(item => item.active)
+    ?.map(item => item.name)
+    ?.join(', ') ?? 'No items';
+}
+
+// Usage
+const result = processItems({
+  items: [
+    { name: 'Item 1', active: true },
+    { name: 'Item 2', active: false },
+    { name: 'Item 3', active: true }
+  ]
+}); // "Item 1, Item 3"
+
+const noResult = processItems(null); // "No items"
+```
+
+### Promise Chains
+
+```javascript
+// Safely chain promises
+async function fetchUserData(userId) {
+  try {
+    const user = await api.getUser(userId);
+    const posts = user?.id ? await api.getUserPosts(user.id) : [];
+    const comments = posts?.length > 0 
+      ? await Promise.all(posts.map(post => api.getPostComments(post.id)))
+      : [];
+    
+    return {
+      user,
+      posts,
+      comments: comments.flat()
+    };
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    return { user: null, posts: [], comments: [] };
+  }
+}
+```
+
+### Custom Method Chaining Implementation
+
+```javascript
+// Create a wrapper for safe method chaining
+function chain(obj) {
+  if (obj === null || obj === undefined) {
+    return {
+      // Proxy that returns itself for any method call
+      __chain_value: undefined,
+      __chain_terminated: true,
+      value() { return undefined; }
+    };
+  }
+  
+  return new Proxy(obj, {
+    get(target, prop) {
+      if (prop === 'value') {
+        return () => target;
+      }
+      
+      if (typeof target[prop] === 'function') {
+        return function(...args) {
+          try {
+            const result = target[prop].apply(target, args);
+            return chain(result);
+          } catch (e) {
+            return chain(null);
+          }
+        };
+      }
+      
+      return chain(target[prop]);
+    }
+  });
+}
+
+// Usage
+const result = chain(obj)
+  .getA()
+  .getB()
+  .getC()
+  .value(); // Returns undefined if any method fails
+```
+
+## Performance Considerations
+
+The optional chaining operator has performance implications:
+
+1. **Short-circuit evaluation**: Stops execution at the first null/undefined
+2. **Type checking overhead**: Each `?.` performs a null/undefined check
+3. **JIT optimization**: Modern JavaScript engines optimize these patterns
+
+```javascript
+// Performance comparison
+function benchmark() {
+  const iterations = 1000000;
+  
+  // Test object
+  const obj = {
+    a: { b: { c: { value: 42 } } }
+  };
+  
+  console.time('Manual checks');
+  for (let i = 0; i < iterations; i++) {
+    const result = obj && obj.a && obj.a.b && obj.a.b.c && obj.a.b.c.value;
+  }
+  console.timeEnd('Manual checks');
+  
+  console.time('Optional chaining');
+  for (let i = 0; i < iterations; i++) {
+    const result = obj?.a?.b?.c?.value;
+  }
+  console.timeEnd('Optional chaining');
+}
+```
+
+## Browser and Environment Support
+
+The optional chaining operator (`?.`) is well-supported in modern environments:
+
+1. **Browsers**: All modern browsers support optional chaining
+2. **Node.js**: Supported in Node.js 14 and later
+3. **Transpilers**: Babel and TypeScript can transform for older environments
+
+```javascript
+// Feature detection
+function supportsOptionalChaining() {
+  try {
+    // Test if optional chaining syntax is supported
+    new Function('obj', 'return obj?.prop');
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+```
+
+## Best Practices
+
+1. **Use for Potentially Null/Undefined Values**: Only use optional chaining when values might be null/undefined
+2. **Combine with Nullish Coalescing**: Provide default values with `??`
+3. **Don't Overuse**: Excessive use can hide bugs that should be fixed
+4. **Consider Type Checking**: TypeScript can help prevent unnecessary optional chaining
+
+```javascript
+// Good: Used where null/undefined is possible
+const username = response?.user?.name;
+
+// Better: With default value
+const username = response?.user?.name ?? 'Guest';
+
+// Avoid: Excessive chaining when objects should exist
+// This might hide bugs in your application
+function processUser(user) {
+  // If user is required, don't use optional chaining
+  const fullName = `${user.firstName} ${user.lastName}`;
+  // ...
+}
+```
+
+## Interview Tips
+
+- Explain the difference between the method chaining operator proposal and the existing optional chaining operator
+- Describe how optional chaining improves code safety and readability
+- Demonstrate knowledge of short-circuit evaluation in optional chaining
+- Discuss performance implications of using optional chaining
+- Explain how to combine optional chaining with nullish coalescing
+- Mention browser compatibility and transpilation options

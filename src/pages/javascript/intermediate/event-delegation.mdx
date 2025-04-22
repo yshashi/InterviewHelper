@@ -1,0 +1,315 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Event Delegation in JavaScript
+---
+
+# Event Delegation in JavaScript
+
+## What is Event Delegation?
+
+Event delegation is a technique where you attach a single event listener to a parent element to manage events for all its child elements, rather than attaching individual event listeners to each child.
+
+## How Event Delegation Works
+
+Event delegation relies on event bubbling, where events triggered on an element bubble up through its ancestors in the DOM tree.
+
+```javascript
+// Without event delegation (inefficient)
+document.querySelectorAll('.button').forEach(button => {
+  button.addEventListener('click', function(event) {
+    console.log('Button clicked:', this.textContent);
+  });
+});
+
+// With event delegation (efficient)
+document.getElementById('buttonContainer').addEventListener('click', function(event) {
+  if (event.target.matches('.button')) {
+    console.log('Button clicked:', event.target.textContent);
+  }
+});
+```
+
+## Benefits of Event Delegation
+
+1. **Memory efficiency**: Fewer event listeners means less memory usage
+2. **Dynamic elements**: Works with elements added to the DOM after initial page load
+3. **Less code**: Simplified event handling logic
+4. **Performance**: Reduced initialization time for pages with many interactive elements
+
+## Implementing Event Delegation
+
+### Basic Implementation
+
+```javascript
+document.getElementById('todo-list').addEventListener('click', function(event) {
+  // Check if the clicked element is a delete button
+  if (event.target.classList.contains('delete-btn')) {
+    // Find the parent li element
+    const listItem = event.target.closest('li');
+    // Remove the list item
+    listItem.remove();
+  }
+  
+  // Check if the clicked element is a checkbox
+  if (event.target.type === 'checkbox') {
+    // Toggle completed class on parent li
+    const listItem = event.target.closest('li');
+    listItem.classList.toggle('completed');
+  }
+});
+```
+
+### Using the matches() Method
+
+```javascript
+document.getElementById('nav-menu').addEventListener('click', function(event) {
+  // Using matches() to check if element matches a CSS selector
+  if (event.target.matches('a.nav-link')) {
+    event.preventDefault();
+    const href = event.target.getAttribute('href');
+    console.log('Navigate to:', href);
+    // Navigation logic here
+  }
+});
+```
+
+### Handling Multiple Event Types
+
+```javascript
+const tableEl = document.getElementById('data-table');
+
+// Handle multiple event types with delegation
+['click', 'mouseover', 'mouseout'].forEach(eventType => {
+  tableEl.addEventListener(eventType, function(event) {
+    // Handle row clicks
+    if (eventType === 'click' && event.target.closest('tr')) {
+      const row = event.target.closest('tr');
+      console.log('Row clicked:', row.dataset.id);
+    }
+    
+    // Handle cell hover
+    if (eventType === 'mouseover' && event.target.tagName === 'TD') {
+      event.target.classList.add('highlight');
+    }
+    
+    // Handle cell hover out
+    if (eventType === 'mouseout' && event.target.tagName === 'TD') {
+      event.target.classList.remove('highlight');
+    }
+  });
+});
+```
+
+## Event Delegation with Data Attributes
+
+Data attributes provide a clean way to store metadata on elements for event delegation:
+
+```html
+<ul id="user-list">
+  <li data-user-id="1" data-role="admin">John Doe</li>
+  <li data-user-id="2" data-role="editor">Jane Smith</li>
+  <li data-user-id="3" data-role="viewer">Bob Johnson</li>
+</ul>
+```
+
+```javascript
+document.getElementById('user-list').addEventListener('click', function(event) {
+  if (event.target.tagName === 'LI') {
+    const userId = event.target.dataset.userId;
+    const role = event.target.dataset.role;
+    
+    console.log(`Selected user: ID=${userId}, Role=${role}`);
+    // Perform action based on user data
+  }
+});
+```
+
+## Handling Form Events with Delegation
+
+```html
+<form id="registration-form">
+  <input type="text" name="username" required>
+  <input type="email" name="email" required>
+  <select name="country">
+    <option value="us">United States</option>
+    <option value="ca">Canada</option>
+  </select>
+  <button type="submit">Register</button>
+</form>
+```
+
+```javascript
+const form = document.getElementById('registration-form');
+
+// Handle all form events with delegation
+form.addEventListener('input', function(event) {
+  // Validate input as user types
+  if (event.target.tagName === 'INPUT') {
+    validateField(event.target);
+  }
+});
+
+form.addEventListener('change', function(event) {
+  // Handle select changes
+  if (event.target.tagName === 'SELECT') {
+    console.log(`${event.target.name} changed to ${event.target.value}`);
+  }
+});
+
+form.addEventListener('submit', function(event) {
+  event.preventDefault();
+  
+  // Form-level validation
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData.entries());
+  console.log('Form data:', data);
+  
+  // Submit data
+  submitRegistration(data);
+});
+```
+
+## Delegating Custom Events
+
+```javascript
+// Create and dispatch custom event
+function createTodo(text) {
+  const li = document.createElement('li');
+  li.textContent = text;
+  
+  document.getElementById('todo-list').appendChild(li);
+  
+  // Dispatch custom event
+  const todoCreatedEvent = new CustomEvent('todo:created', {
+    bubbles: true, // Important for delegation
+    detail: { text, id: Date.now() }
+  });
+  
+  li.dispatchEvent(todoCreatedEvent);
+}
+
+// Listen for custom events with delegation
+document.getElementById('todo-container').addEventListener('todo:created', function(event) {
+  console.log('New todo created:', event.detail);
+  updateTodoCount();
+});
+```
+
+## Event Delegation Limitations
+
+1. **Not all events bubble**: Some events like `focus`, `blur`, and `mouseenter` don't bubble by default
+2. **Performance with deep DOM**: Can be slower with very deep DOM trees
+3. **Event target identification**: May require complex logic to identify the correct target element
+
+### Handling Non-Bubbling Events
+
+```javascript
+// For events that don't bubble naturally
+document.getElementById('form-container').addEventListener('focusin', function(event) {
+  // focusin bubbles (unlike focus)
+  if (event.target.tagName === 'INPUT') {
+    event.target.classList.add('active-input');
+  }
+});
+
+document.getElementById('form-container').addEventListener('focusout', function(event) {
+  // focusout bubbles (unlike blur)
+  if (event.target.tagName === 'INPUT') {
+    event.target.classList.remove('active-input');
+  }
+});
+```
+
+## Best Practices
+
+1. **Choose the right parent element**: Not too high in the DOM tree to avoid performance issues
+2. **Use specific checks**: Verify element types, classes, or attributes before handling events
+3. **Leverage event.target vs event.currentTarget**: Understand the difference
+4. **Consider using closest()**: For finding the nearest ancestor matching a selector
+5. **Use stopPropagation() carefully**: Only when necessary to prevent further bubbling
+6. **Combine with data attributes**: For clean, declarative event handling
+
+## Real-World Example: Interactive Table
+
+```html
+<table id="data-table">
+  <thead>
+    <tr>
+      <th data-sort="name">Name</th>
+      <th data-sort="email">Email</th>
+      <th data-sort="role">Role</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr data-id="1">
+      <td>John Doe</td>
+      <td>john@example.com</td>
+      <td>Admin</td>
+      <td>
+        <button class="action-btn" data-action="edit">Edit</button>
+        <button class="action-btn" data-action="delete">Delete</button>
+      </td>
+    </tr>
+    <!-- More rows... -->
+  </tbody>
+</table>
+```
+
+```javascript
+document.getElementById('data-table').addEventListener('click', function(event) {
+  // Handle column sorting
+  if (event.target.tagName === 'TH' && event.target.dataset.sort) {
+    const sortBy = event.target.dataset.sort;
+    sortTable(sortBy);
+  }
+  
+  // Handle action buttons
+  if (event.target.classList.contains('action-btn')) {
+    const action = event.target.dataset.action;
+    const row = event.target.closest('tr');
+    const id = row.dataset.id;
+    
+    if (action === 'edit') {
+      editUser(id);
+    } else if (action === 'delete') {
+      deleteUser(id, row);
+    }
+  }
+});
+
+function sortTable(column) {
+  console.log(`Sorting by ${column}`);
+  // Sorting implementation
+}
+
+function editUser(id) {
+  console.log(`Editing user ${id}`);
+  // Edit implementation
+}
+
+function deleteUser(id, row) {
+  console.log(`Deleting user ${id}`);
+  // Show confirmation dialog
+  if (confirm('Are you sure you want to delete this user?')) {
+    // Delete from database
+    fetch(`/api/users/${id}`, { method: 'DELETE' })
+      .then(response => {
+        if (response.ok) {
+          // Remove row from DOM
+          row.remove();
+        }
+      });
+  }
+}
+```
+
+## Interview Tips
+
+- Explain how event delegation leverages event bubbling
+- Describe scenarios where event delegation is particularly useful
+- Discuss performance benefits compared to attaching individual event listeners
+- Explain how to handle events for dynamically added elements
+- Demonstrate knowledge of event.target vs event.currentTarget
+- Describe how to use data attributes with event delegation
+- Explain limitations and how to work around them

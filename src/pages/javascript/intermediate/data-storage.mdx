@@ -1,0 +1,212 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Browser Data Storage Options
+---
+
+# Browser Data Storage Options
+
+## localStorage
+
+Persistent storage that remains until explicitly cleared.
+
+```javascript
+// Store data
+localStorage.setItem('username', 'john_doe');
+localStorage.setItem('preferences', JSON.stringify({ theme: 'dark', fontSize: 14 }));
+
+// Retrieve data
+const username = localStorage.getItem('username'); // 'john_doe'
+const preferences = JSON.parse(localStorage.getItem('preferences'));
+
+// Remove item
+localStorage.removeItem('username');
+
+// Clear all data
+localStorage.clear();
+```
+
+**Characteristics:**
+- Persists across browser sessions and restarts
+- Storage limit ~5MB
+- Synchronous API (can block the main thread)
+- Same-origin policy (accessible only from same domain)
+- No expiration mechanism
+
+## sessionStorage
+
+Similar to localStorage but limited to the current session.
+
+```javascript
+// Store data
+sessionStorage.setItem('cart', JSON.stringify([{ id: 1, name: 'Product', qty: 2 }]));
+
+// Retrieve data
+const cart = JSON.parse(sessionStorage.getItem('cart'));
+
+// Remove item
+sessionStorage.removeItem('cart');
+
+// Clear all session data
+sessionStorage.clear();
+```
+
+**Characteristics:**
+- Data cleared when the page session ends (tab close)
+- Storage limit ~5MB
+- Synchronous API
+- Same-origin policy
+- Separate storage per tab (even for same origin)
+
+## Cookies
+
+Small text files stored on the client's computer.
+
+```javascript
+// Set cookie with expiration and path
+document.cookie = "username=john_doe; expires=Fri, 31 Dec 2023 23:59:59 GMT; path=/; SameSite=Strict";
+
+// Read all cookies
+const cookies = document.cookie; // Returns all cookies as a single string
+
+// Parse cookies
+function getCookie(name) {
+  const cookieArr = document.cookie.split(';');
+  for (let i = 0; i < cookieArr.length; i++) {
+    const cookiePair = cookieArr[i].split('=');
+    if (name === cookiePair[0].trim()) {
+      return decodeURIComponent(cookiePair[1]);
+    }
+  }
+  return null;
+}
+
+// Delete cookie (set expiration in the past)
+document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+```
+
+**Characteristics:**
+- Sent with every HTTP request to the server
+- Storage limit ~4KB
+- Can set expiration date/time
+- Can restrict to specific paths and domains
+- Can be made secure (HTTPS only)
+- Can be set as HttpOnly (inaccessible to JavaScript)
+
+## IndexedDB
+
+Client-side database for larger amounts of structured data.
+
+```javascript
+// Open database
+const request = indexedDB.open('MyDatabase', 1);
+
+request.onupgradeneeded = function(event) {
+  const db = event.target.result;
+  const store = db.createObjectStore('users', { keyPath: 'id' });
+  store.createIndex('name', 'name', { unique: false });
+};
+
+request.onsuccess = function(event) {
+  const db = event.target.result;
+  
+  // Add data
+  const transaction = db.transaction(['users'], 'readwrite');
+  const store = transaction.objectStore('users');
+  store.add({ id: 1, name: 'John', email: 'john@example.com' });
+  
+  // Read data
+  const getRequest = store.get(1);
+  getRequest.onsuccess = function() {
+    console.log(getRequest.result);
+  };
+};
+```
+
+**Characteristics:**
+- Asynchronous API (doesn't block the main thread)
+- Supports transactions and indexes
+- Storage limit much larger (generally 50-100MB or more)
+- Complex API compared to localStorage
+- Same-origin policy
+
+## Cache API
+
+Part of the Service Worker API, used for storing HTTP responses.
+
+```javascript
+// Open a cache
+caches.open('v1').then(cache => {
+  // Add resources to cache
+  cache.addAll([
+    '/index.html',
+    '/styles.css',
+    '/script.js',
+    '/images/logo.png'
+  ]);
+  
+  // Add individual response
+  fetch('/api/data')
+    .then(response => cache.put('/api/data', response));
+});
+
+// Retrieve from cache
+caches.match('/index.html')
+  .then(response => {
+    if (response) {
+      return response;
+    }
+    return fetch('/index.html');
+  });
+```
+
+**Characteristics:**
+- Designed for offline web applications
+- Works with Service Workers
+- Stores Response objects
+- Asynchronous API (Promise-based)
+- Same-origin policy
+
+## Web Storage API Events
+
+Listen for storage changes across tabs/windows:
+
+```javascript
+// Listen for changes to localStorage
+window.addEventListener('storage', event => {
+  console.log('Storage changed:', {
+    key: event.key,
+    oldValue: event.oldValue,
+    newValue: event.newValue,
+    url: event.url
+  });
+});
+```
+
+## Comparison Table
+
+| Feature | localStorage | sessionStorage | Cookies | IndexedDB | Cache API |
+|---------|-------------|----------------|---------|-----------|-----------|
+| Persistence | Until cleared | Tab session | Configurable | Until cleared | Until cleared |
+| Size Limit | ~5MB | ~5MB | ~4KB | 50MB+ | Based on disk space |
+| API | Synchronous | Synchronous | Synchronous | Asynchronous | Asynchronous |
+| Complexity | Simple | Simple | Moderate | Complex | Moderate |
+| Auto-sends to server | No | No | Yes | No | No |
+| Best for | Simple persistent data | Temporary session data | Authentication | Structured data | Offline assets |
+
+## Best Practices
+
+1. **Choose the right storage mechanism** for your use case
+2. **Validate and sanitize** data before storing
+3. **Handle storage errors** (quota exceeded, etc.)
+4. **Don't store sensitive information** in client-side storage
+5. **Implement data expiration** for long-term storage
+6. **Use feature detection** before using storage APIs
+7. **Consider privacy regulations** like GDPR when storing user data
+
+## Interview Tips
+
+- Explain the differences between localStorage and sessionStorage
+- Describe when cookies are more appropriate than Web Storage
+- Discuss the performance implications of synchronous vs asynchronous storage
+- Explain how to handle storage limitations and errors
+- Describe security considerations for client-side storage

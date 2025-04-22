@@ -1,0 +1,383 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are the data types in JavaScript?
+---
+
+# What are the data types in JavaScript?
+
+JavaScript has eight data types that can be divided into two main categories: primitive types and reference types (objects). Understanding these data types is fundamental to working effectively with JavaScript.
+
+## Primitive Data Types
+
+JavaScript has seven primitive data types:
+
+### 1. String
+
+Represents textual data enclosed in single quotes, double quotes, or backticks (template literals).
+
+```javascript
+const name = "Rahul";
+const greeting = 'Hello';
+const message = `${greeting}, ${name}!`; // Template literal (ES6)
+
+// String methods
+console.log(name.length);          // 5
+console.log(name.toUpperCase());   // "RAHUL"
+console.log(name.charAt(0));       // "R"
+console.log(name.indexOf("h"));    // 2
+```
+
+### 2. Number
+
+Represents both integer and floating-point numbers.
+
+```javascript
+const integer = 42;
+const float = 3.14;
+const negative = -10;
+const exponent = 2.5e6;      // 2,500,000
+const binary = 0b1010;       // 10 in decimal
+const octal = 0o744;         // 484 in decimal
+const hex = 0xFF;            // 255 in decimal
+
+// Special numeric values
+const infinity = Infinity;
+const negInfinity = -Infinity;
+const notANumber = NaN;      // Result of invalid calculations
+
+// Number methods
+console.log(Number.isInteger(42));      // true
+console.log(Number.isNaN(NaN));         // true
+console.log((3.14159).toFixed(2));      // "3.14"
+```
+
+### 3. BigInt
+
+Represents integers with arbitrary precision (introduced in ES2020).
+
+```javascript
+const bigNumber = 9007199254740991n;    // n suffix creates a BigInt
+const anotherBig = BigInt("9007199254740991");
+
+// BigInt operations
+console.log(bigNumber + 1n);            // 9007199254740992n
+console.log(bigNumber * 2n);            // 18014398509481982n
+
+// Cannot mix with Number type without explicit conversion
+// console.log(bigNumber + 1);          // TypeError
+console.log(Number(bigNumber) + 1);     // 9007199254740992
+```
+
+### 4. Boolean
+
+Represents a logical entity with two values: `true` and `false`.
+
+```javascript
+const isActive = true;
+const isComplete = false;
+
+// Truthy and falsy values
+console.log(Boolean(0));          // false
+console.log(Boolean(""));         // false
+console.log(Boolean(null));       // false
+console.log(Boolean(undefined));  // false
+console.log(Boolean(NaN));        // false
+console.log(Boolean(1));          // true
+console.log(Boolean("hello"));    // true
+console.log(Boolean({}));         // true
+console.log(Boolean([]));         // true
+```
+
+### 5. Undefined
+
+Represents a variable that has been declared but not assigned a value.
+
+```javascript
+let variable;
+console.log(variable);            // undefined
+console.log(typeof variable);     // "undefined"
+
+// Function parameters that aren't provided are undefined
+function test(param) {
+  console.log(param);             // undefined if not provided
+}
+test();
+```
+
+### 6. Null
+
+Represents the intentional absence of any object value.
+
+```javascript
+const empty = null;
+console.log(empty);               // null
+console.log(typeof null);         // "object" (this is a historical bug in JavaScript)
+
+// Checking for null
+console.log(empty === null);      // true
+```
+
+### 7. Symbol
+
+Represents a unique and immutable value, often used as object property keys (introduced in ES6).
+
+```javascript
+const id = Symbol("id");
+const anotherId = Symbol("id");
+
+console.log(id === anotherId);    // false, each Symbol is unique
+
+// Using Symbols as object keys
+const user = {
+  name: "Priya",
+  [id]: 12345                     // Symbol as a property key
+};
+
+console.log(user[id]);            // 12345
+console.log(Object.keys(user));   // ["name"], Symbols are not enumerable
+```
+
+## Reference Data Type: Object
+
+All non-primitive types in JavaScript are objects:
+
+### 8. Object
+
+Represents a collection of key-value pairs and more complex entities.
+
+```javascript
+// Object literal
+const person = {
+  firstName: "Rahul",
+  lastName: "Sharma",
+  age: 28,
+  greet() {
+    return `Hello, I'm ${this.firstName}`;
+  }
+};
+
+console.log(person.firstName);    // "Rahul"
+console.log(person["lastName"]);  // "Sharma"
+console.log(person.greet());      // "Hello, I'm Rahul"
+```
+
+### Common Object Sub-types
+
+#### Arrays
+
+Arrays are objects used for storing ordered collections.
+
+```javascript
+const fruits = ["Apple", "Banana", "Cherry"];
+
+console.log(fruits[0]);           // "Apple"
+console.log(fruits.length);       // 3
+
+// Array methods
+fruits.push("Date");              // Add to end
+fruits.pop();                     // Remove from end
+fruits.unshift("Apricot");        // Add to beginning
+fruits.shift();                   // Remove from beginning
+fruits.splice(1, 1, "Blueberry"); // Replace elements
+```
+
+#### Functions
+
+Functions in JavaScript are first-class objects.
+
+```javascript
+// Function declaration
+function add(a, b) {
+  return a + b;
+}
+
+// Function expression
+const subtract = function(a, b) {
+  return a - b;
+};
+
+// Arrow function (ES6)
+const multiply = (a, b) => a * b;
+
+console.log(add(5, 3));           // 8
+console.log(typeof add);          // "function"
+```
+
+#### Date
+
+Object for working with dates and times.
+
+```javascript
+const now = new Date();
+const specific = new Date("2023-01-15T12:30:00");
+
+console.log(now.toISOString());
+console.log(specific.getFullYear());     // 2023
+console.log(specific.getMonth());        // 0 (January is 0)
+```
+
+#### RegExp
+
+Object for pattern matching with regular expressions.
+
+```javascript
+const pattern = /^\d{3}-\d{2}-\d{4}$/;
+const ssn = "123-45-6789";
+
+console.log(pattern.test(ssn));          // true
+```
+
+#### Map
+
+Object for storing key-value pairs with any type of keys (ES6).
+
+```javascript
+const userRoles = new Map();
+userRoles.set("Rahul", "Admin");
+userRoles.set("Priya", "Editor");
+
+console.log(userRoles.get("Rahul"));     // "Admin"
+console.log(userRoles.has("Priya"));     // true
+console.log(userRoles.size);             // 2
+```
+
+#### Set
+
+Object for storing unique values of any type (ES6).
+
+```javascript
+const uniqueNumbers = new Set([1, 2, 3, 3, 4, 4, 5]);
+
+console.log(uniqueNumbers.size);         // 5 (duplicates removed)
+console.log(uniqueNumbers.has(3));       // true
+```
+
+## Type Checking in JavaScript
+
+### Using typeof Operator
+
+```javascript
+console.log(typeof "Hello");             // "string"
+console.log(typeof 42);                  // "number"
+console.log(typeof true);                // "boolean"
+console.log(typeof undefined);           // "undefined"
+console.log(typeof null);                // "object" (historical bug)
+console.log(typeof {});                  // "object"
+console.log(typeof []);                  // "object" (arrays are objects)
+console.log(typeof function(){});        // "function"
+console.log(typeof Symbol());            // "symbol"
+console.log(typeof 42n);                 // "bigint"
+```
+
+### More Precise Type Checking
+
+```javascript
+// For arrays
+console.log(Array.isArray([]));          // true
+console.log(Array.isArray({}));          // false
+
+// For null
+console.log(value === null);             // true if value is null
+
+// For NaN
+console.log(Number.isNaN(NaN));          // true
+console.log(Number.isNaN("string"));     // false (unlike global isNaN())
+
+// For finite numbers
+console.log(Number.isFinite(42));        // true
+console.log(Number.isFinite(Infinity));  // false
+```
+
+## Type Coercion
+
+JavaScript performs automatic type conversion when operations involve different types.
+
+### Implicit Coercion
+
+```javascript
+console.log("5" + 3);                    // "53" (number coerced to string)
+console.log("5" - 3);                    // 2 (string coerced to number)
+console.log("5" * "3");                  // 15 (strings coerced to numbers)
+console.log(true + 1);                   // 2 (true coerced to 1)
+console.log(false + 1);                  // 1 (false coerced to 0)
+console.log(5 + undefined);              // NaN (undefined coerced to NaN)
+```
+
+### Explicit Coercion
+
+```javascript
+// To String
+console.log(String(42));                 // "42"
+console.log(String(true));               // "true"
+console.log(String(null));               // "null"
+console.log(String(undefined));          // "undefined"
+console.log((123.45).toString());        // "123.45"
+
+// To Number
+console.log(Number("42"));               // 42
+console.log(Number("42px"));             // NaN
+console.log(Number(true));               // 1
+console.log(Number(false));              // 0
+console.log(Number(null));               // 0
+console.log(Number(undefined));          // NaN
+console.log(parseInt("42px", 10));       // 42
+console.log(parseFloat("3.14"));         // 3.14
+
+// To Boolean
+console.log(Boolean(0));                 // false
+console.log(Boolean(""));                // false
+console.log(Boolean("hello"));           // true
+console.log(Boolean(42));                // true
+console.log(!!42);                       // true (shorthand for Boolean())
+```
+
+## Primitive vs. Reference Types
+
+### Value Comparison
+
+Primitives are compared by value:
+
+```javascript
+let a = 5;
+let b = 5;
+console.log(a === b);                    // true
+```
+
+Objects are compared by reference:
+
+```javascript
+let obj1 = { value: 5 };
+let obj2 = { value: 5 };
+console.log(obj1 === obj2);              // false (different references)
+
+let obj3 = obj1;
+console.log(obj1 === obj3);              // true (same reference)
+```
+
+### Mutability
+
+Primitives are immutable:
+
+```javascript
+let name = "Rahul";
+name[0] = "K";                           // No effect
+console.log(name);                       // "Rahul" (unchanged)
+```
+
+Objects are mutable:
+
+```javascript
+let user = { name: "Rahul" };
+user.name = "Karan";
+console.log(user.name);                  // "Karan" (changed)
+```
+
+## Interview Tips
+
+- Understand the difference between primitive and reference types
+- Be able to explain type coercion and its implications
+- Know how to properly check types in JavaScript
+- Understand that `typeof null` returns "object" (a historical bug)
+- Be familiar with ES6 data types like Symbol, Map, and Set
+- Understand how primitive values are immutable while objects are mutable
+- Be prepared to discuss the differences between `==` and `===` operators in relation to types

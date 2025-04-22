@@ -1,0 +1,539 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are arrow functions, and how do they differ from regular functions?
+---
+
+# What are arrow functions, and how do they differ from regular functions?
+
+Arrow functions were introduced in ES6 (ECMAScript 2015) as a new syntax for writing JavaScript functions. They provide a more concise way to write functions and solve some common issues related to the `this` keyword. While arrow functions look like a simple syntactic sugar for function expressions, they have several important differences that affect how they behave.
+
+## Basic Syntax
+
+### Regular Function Expression
+
+```javascript
+const add = function(a, b) {
+  return a + b;
+};
+```
+
+### Arrow Function
+
+```javascript
+const add = (a, b) => {
+  return a + b;
+};
+```
+
+### Concise Arrow Function (Implicit Return)
+
+When the function body consists of a single expression, you can omit the curly braces and the `return` keyword:
+
+```javascript
+const add = (a, b) => a + b;
+```
+
+### Single Parameter
+
+If the function takes only one parameter, you can omit the parentheses:
+
+```javascript
+const square = x => x * x;
+```
+
+### No Parameters
+
+For functions with no parameters, you must include empty parentheses:
+
+```javascript
+const getRandomNumber = () => Math.random();
+```
+
+## Key Differences Between Arrow Functions and Regular Functions
+
+### 1. 'this' Binding
+
+The most significant difference is how arrow functions handle the `this` keyword:
+
+#### Regular Functions
+
+Regular functions have their own `this` value, which is determined by how the function is called:
+
+```javascript
+const user = {
+  name: 'Rahul',
+  greet: function() {
+    console.log(`Hello, my name is ${this.name}`);
+  }
+};
+
+user.greet(); // "Hello, my name is Rahul"
+
+const greetFunction = user.greet;
+greetFunction(); // "Hello, my name is undefined" (this is the global object)
+```
+
+#### Arrow Functions
+
+Arrow functions don't have their own `this`. Instead, they inherit `this` from the enclosing lexical context (the surrounding code):
+
+```javascript
+const user = {
+  name: 'Rahul',
+  greet: function() {
+    // Regular function as method - 'this' is the user object
+    console.log(`Regular: Hello, my name is ${this.name}`);
+    
+    // Arrow function inside method - inherits 'this' from the enclosing method
+    const arrowGreet = () => {
+      console.log(`Arrow: Hello, my name is ${this.name}`);
+    };
+    
+    arrowGreet();
+  }
+};
+
+user.greet();
+// "Regular: Hello, my name is Rahul"
+// "Arrow: Hello, my name is Rahul"
+```
+
+This behavior is particularly useful for callbacks and event handlers:
+
+```javascript
+// Regular function loses 'this' context
+const button = {
+  text: 'Click me',
+  clickHandler: function() {
+    setTimeout(function() {
+      console.log(`Button text: ${this.text}`); // 'this' is window, not button
+    }, 1000);
+  }
+};
+
+// Arrow function preserves 'this' context
+const betterButton = {
+  text: 'Click me',
+  clickHandler: function() {
+    setTimeout(() => {
+      console.log(`Button text: ${this.text}`); // 'this' is still betterButton
+    }, 1000);
+  }
+};
+```
+
+### 2. Arguments Object
+
+#### Regular Functions
+
+Regular functions have access to the `arguments` object, which contains all arguments passed to the function:
+
+```javascript
+function sum() {
+  console.log(arguments); // Arguments object with all passed values
+  return Array.from(arguments).reduce((total, num) => total + num, 0);
+}
+
+console.log(sum(1, 2, 3, 4)); // 10
+```
+
+#### Arrow Functions
+
+Arrow functions don't have their own `arguments` object:
+
+```javascript
+const sum = () => {
+  console.log(arguments); // ReferenceError: arguments is not defined
+  // Or it might refer to arguments from the outer scope
+};
+```
+
+Instead, you should use rest parameters:
+
+```javascript
+const sum = (...args) => {
+  return args.reduce((total, num) => total + num, 0);
+};
+
+console.log(sum(1, 2, 3, 4)); // 10
+```
+
+### 3. Constructor Function
+
+#### Regular Functions
+
+Regular functions can be used as constructors with the `new` keyword:
+
+```javascript
+function Person(name) {
+  this.name = name;
+}
+
+const person = new Person('Rahul');
+console.log(person.name); // "Rahul"
+```
+
+#### Arrow Functions
+
+Arrow functions cannot be used as constructors:
+
+```javascript
+const Person = (name) => {
+  this.name = name;
+};
+
+const person = new Person('Rahul'); // TypeError: Person is not a constructor
+```
+
+### 4. Method Definitions
+
+#### Regular Functions
+
+Regular functions work well as object methods when you need to access the object via `this`:
+
+```javascript
+const calculator = {
+  value: 0,
+  add(n) {
+    this.value += n;
+    return this.value;
+  },
+  subtract(n) {
+    this.value -= n;
+    return this.value;
+  }
+};
+
+console.log(calculator.add(5));      // 5
+console.log(calculator.subtract(2)); // 3
+```
+
+#### Arrow Functions
+
+Arrow functions as methods can lead to unexpected behavior because they don't bind `this` to the object:
+
+```javascript
+const calculator = {
+  value: 0,
+  add: (n) => {
+    this.value += n; // 'this' is not calculator, but the surrounding scope
+    return this.value;
+  }
+};
+
+console.log(calculator.add(5)); // NaN (this.value is undefined in the global scope)
+```
+
+### 5. Prototype Methods
+
+#### Regular Functions
+
+Regular functions can have prototype properties and methods:
+
+```javascript
+function Counter() {
+  this.count = 0;
+}
+
+Counter.prototype.increment = function() {
+  this.count++;
+  return this.count;
+};
+
+const counter = new Counter();
+console.log(counter.increment()); // 1
+```
+
+#### Arrow Functions
+
+Arrow functions don't have a `prototype` property:
+
+```javascript
+const Counter = () => {
+  this.count = 0;
+};
+
+console.log(Counter.prototype); // undefined
+```
+
+### 6. 'new.target'
+
+#### Regular Functions
+
+Regular functions can access `new.target` to detect if they were called with `new`:
+
+```javascript
+function Person(name) {
+  if (!new.target) {
+    return new Person(name);
+  }
+  this.name = name;
+}
+
+const person1 = new Person('Rahul');
+const person2 = Person('Priya'); // Still works, redirects to constructor
+```
+
+#### Arrow Functions
+
+Arrow functions don't have access to `new.target`:
+
+```javascript
+const Person = (name) => {
+  console.log(new.target); // SyntaxError or undefined
+  this.name = name;
+};
+```
+
+### 7. Implicit Returns
+
+#### Regular Functions
+
+Regular functions always require an explicit `return` statement to return a value:
+
+```javascript
+function add(a, b) {
+  return a + b; // Explicit return required
+}
+```
+
+#### Arrow Functions
+
+Arrow functions allow implicit returns when the function body is a single expression:
+
+```javascript
+const add = (a, b) => a + b; // Implicit return
+const getObject = () => ({ name: 'Rahul' }); // Parentheses required for object literals
+```
+
+### 8. Generator Functions
+
+#### Regular Functions
+
+Regular functions can be generator functions using the `function*` syntax:
+
+```javascript
+function* generateSequence() {
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+const generator = generateSequence();
+console.log(generator.next().value); // 1
+console.log(generator.next().value); // 2
+```
+
+#### Arrow Functions
+
+Arrow functions cannot be generator functions:
+
+```javascript
+const generateSequence = *() => { // SyntaxError
+  yield 1;
+  yield 2;
+};
+```
+
+## When to Use Arrow Functions
+
+### Good Use Cases
+
+1. **Short, one-line functions**
+   ```javascript
+   const numbers = [1, 2, 3, 4];
+   const squared = numbers.map(x => x * x);
+   ```
+
+2. **Callbacks where 'this' context matters**
+   ```javascript
+   class TaskManager {
+     constructor() {
+       this.tasks = [];
+     }
+     
+     addTask(task) {
+       this.tasks.push(task);
+     }
+     
+     processTasks() {
+       // Arrow function preserves 'this'
+       this.tasks.forEach(task => {
+         this.processTask(task);
+       });
+     }
+     
+     processTask(task) {
+       console.log(`Processing: ${task}`);
+     }
+   }
+   ```
+
+3. **Immediately Invoked Function Expressions (IIFEs)**
+   ```javascript
+   const result = ((x, y) => {
+     const sum = x + y;
+     return sum * sum;
+   })(2, 3);
+   ```
+
+4. **Function composition and higher-order functions**
+   ```javascript
+   const compose = (f, g) => x => f(g(x));
+   const addOne = x => x + 1;
+   const double = x => x * 2;
+   const addOneThenDouble = compose(double, addOne);
+   
+   console.log(addOneThenDouble(3)); // 8
+   ```
+
+### When to Avoid Arrow Functions
+
+1. **Object methods that need to access 'this'**
+   ```javascript
+   // Bad
+   const person = {
+     name: 'Rahul',
+     greet: () => {
+       console.log(`Hello, my name is ${this.name}`); // 'this' is not person
+     }
+   };
+   
+   // Good
+   const person = {
+     name: 'Rahul',
+     greet() {
+       console.log(`Hello, my name is ${this.name}`);
+     }
+   };
+   ```
+
+2. **Constructor functions**
+   ```javascript
+   // Bad
+   const Person = (name) => {
+     this.name = name;
+   };
+   
+   // Good
+   function Person(name) {
+     this.name = name;
+   }
+   ```
+
+3. **Event handlers that need to access 'this' as the DOM element**
+   ```javascript
+   // Bad - 'this' will not be the button
+   button.addEventListener('click', () => {
+     this.classList.toggle('active');
+   });
+   
+   // Good - 'this' will be the button
+   button.addEventListener('click', function() {
+     this.classList.toggle('active');
+   });
+   ```
+
+4. **When you need the arguments object**
+   ```javascript
+   // Bad
+   const logArgs = () => {
+     console.log(arguments); // Doesn't work
+   };
+   
+   // Good
+   function logArgs() {
+     console.log(arguments);
+   }
+   // Or with rest parameters
+   const logArgs = (...args) => {
+     console.log(args);
+   };
+   ```
+
+## Arrow Functions in Modern JavaScript Development
+
+### In React Components
+
+```javascript
+// Class component with arrow function class properties
+class Counter extends React.Component {
+  state = { count: 0 };
+  
+  // Arrow function as class property - automatically bound to instance
+  increment = () => {
+    this.setState(prevState => ({ count: prevState.count + 1 }));
+  };
+  
+  render() {
+    return (
+      <button onClick={this.increment}>
+        Count: {this.state.count}
+      </button>
+    );
+  }
+}
+
+// Functional component with arrow functions
+const Counter = () => {
+  const [count, setCount] = useState(0);
+  
+  const increment = () => {
+    setCount(prevCount => prevCount + 1);
+  };
+  
+  return (
+    <button onClick={increment}>
+      Count: {count}
+    </button>
+  );
+};
+```
+
+### In Array Methods
+
+```javascript
+const users = [
+  { id: 1, name: 'Rahul', age: 28 },
+  { id: 2, name: 'Priya', age: 24 },
+  { id: 3, name: 'Amit', age: 32 }
+];
+
+// Filtering
+const adults = users.filter(user => user.age >= 18);
+
+// Mapping
+const userNames = users.map(user => user.name);
+
+// Reducing
+const totalAge = users.reduce((sum, user) => sum + user.age, 0);
+
+// Sorting
+const sortedByAge = [...users].sort((a, b) => a.age - b.age);
+```
+
+### In Promise Chains
+
+```javascript
+fetchUserData()
+  .then(response => response.json())
+  .then(data => {
+    const users = data.map(user => ({
+      ...user,
+      fullName: `${user.firstName} ${user.lastName}`
+    }));
+    return users;
+  })
+  .then(users => users.filter(user => user.isActive))
+  .catch(error => console.error('Error fetching users:', error));
+```
+
+## Interview Tips
+
+- Explain that arrow functions provide a more concise syntax but also have fundamental behavioral differences
+- Emphasize the lexical binding of `this` as the most important difference
+- Discuss the lack of `arguments` object and how to use rest parameters instead
+- Mention that arrow functions cannot be used as constructors or generator functions
+- Explain when to use arrow functions (callbacks, one-liners) and when to avoid them (object methods, constructors)
+- Be prepared to demonstrate how arrow functions solve common issues with `this` in callbacks
+- Discuss how arrow functions are commonly used in modern frameworks like React

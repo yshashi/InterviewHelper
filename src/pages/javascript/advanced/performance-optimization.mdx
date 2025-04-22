@@ -1,0 +1,603 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Optimizing JavaScript Code for Performance
+---
+
+# Optimizing JavaScript Code for Performance
+
+Performance optimization in JavaScript involves identifying and addressing bottlenecks to create faster, more efficient applications. This topic covers key strategies and techniques for optimizing JavaScript code.
+
+## Measuring Performance
+
+Before optimizing, measure to identify actual bottlenecks:
+
+### Performance API
+
+```javascript
+// Mark the beginning of a performance measurement
+performance.mark('start');
+
+// Code to measure
+for (let i = 0; i < 1000000; i++) {
+  // Operation to measure
+}
+
+// Mark the end and measure
+performance.mark('end');
+performance.measure('My operation', 'start', 'end');
+
+// Get and log the results
+const measurements = performance.getEntriesByType('measure');
+console.log(measurements[0].duration); // Time in milliseconds
+```
+
+### Console Timing
+
+```javascript
+// Simple timing with console
+console.time('operation');
+// Code to measure
+console.timeEnd('operation'); // Logs: "operation: 123.45ms"
+```
+
+### Profiling Tools
+
+- Chrome DevTools Performance panel
+- Node.js built-in profiler
+- Lighthouse for web performance audits
+
+## Data Structures and Algorithms
+
+### Choosing the Right Data Structure
+
+```javascript
+// Array vs Object for lookups
+// Object (O(1) lookup) - faster for key-based access
+const usersByIdObject = {
+  'user1': { name: 'John', age: 30 },
+  'user2': { name: 'Jane', age: 25 }
+};
+const user = usersByIdObject['user1']; // O(1) constant time
+
+// Array (O(n) lookup) - slower for finding items
+const usersArray = [
+  { id: 'user1', name: 'John', age: 30 },
+  { id: 'user2', name: 'Jane', age: 25 }
+];
+const user2 = usersArray.find(u => u.id === 'user1'); // O(n) linear time
+
+// Set for unique values and fast lookups
+const uniqueIds = new Set(['user1', 'user2', 'user3']);
+const hasUser = uniqueIds.has('user2'); // O(1) constant time
+
+// Map for complex keys or maintaining insertion order
+const userMap = new Map([
+  ['user1', { name: 'John', age: 30 }],
+  ['user2', { name: 'Jane', age: 25 }]
+]);
+```
+
+### Optimizing Loops
+
+```javascript
+const arr = new Array(1000000).fill(1);
+
+// Caching array length - faster for large arrays
+let sum = 0;
+const len = arr.length; // Cache length
+for (let i = 0; i < len; i++) {
+  sum += arr[i];
+}
+
+// Reverse loop - can be slightly faster in some engines
+for (let i = arr.length - 1; i >= 0; i--) {
+  // Operation
+}
+
+// Break early when possible
+function findItem(array, predicate) {
+  for (let i = 0; i < array.length; i++) {
+    if (predicate(array[i])) {
+      return array[i]; // Exit early once found
+    }
+  }
+  return null;
+}
+```
+
+### Array Methods vs. Loops
+
+```javascript
+const numbers = Array(1000000).fill(1);
+
+// For simple operations, basic loops can be faster
+let sum1 = 0;
+for (let i = 0; i < numbers.length; i++) {
+  sum1 += numbers[i];
+}
+
+// Array methods are more readable but may be slower for simple operations
+const sum2 = numbers.reduce((acc, val) => acc + val, 0);
+
+// Chained array methods create intermediate arrays
+const result1 = numbers
+  .filter(n => n % 2 === 0)
+  .map(n => n * 2)
+  .reduce((acc, val) => acc + val, 0);
+
+// Single loop can be more efficient
+let result2 = 0;
+for (let i = 0; i < numbers.length; i++) {
+  if (numbers[i] % 2 === 0) {
+    result2 += numbers[i] * 2;
+  }
+}
+```
+
+## Memory Management
+
+### Avoiding Memory Leaks
+
+```javascript
+// Memory leak with closures
+function createButtons() {
+  const buttons = [];
+  
+  for (let i = 0; i < 10; i++) {
+    // This reference to 'buttons' creates a circular reference
+    const button = document.createElement('button');
+    button.innerText = `Button ${i}`;
+    
+    // Memory leak: event listener keeps reference to button and closure
+    button.addEventListener('click', function() {
+      console.log(buttons.length); // Reference to outer 'buttons' array
+    });
+    
+    buttons.push(button);
+    document.body.appendChild(button);
+  }
+}
+
+// Fixed version
+function createButtonsFixed() {
+  for (let i = 0; i < 10; i++) {
+    const button = document.createElement('button');
+    button.innerText = `Button ${i}`;
+    
+    // No reference to outer variables
+    button.addEventListener('click', function() {
+      console.log(this.innerText);
+    });
+    
+    document.body.appendChild(button);
+  }
+}
+```
+
+### Object Pooling
+
+```javascript
+// Object pool for frequently created/destroyed objects
+class ParticlePool {
+  constructor(size) {
+    this.pool = Array(size).fill().map(() => this.createParticle());
+    this.index = 0;
+  }
+  
+  createParticle() {
+    return { x: 0, y: 0, active: false };
+  }
+  
+  get() {
+    // Reuse an existing particle instead of creating a new one
+    const particle = this.pool[this.index];
+    this.index = (this.index + 1) % this.pool.length;
+    particle.active = true;
+    return particle;
+  }
+  
+  release(particle) {
+    particle.active = false;
+  }
+}
+
+// Usage
+const particlePool = new ParticlePool(1000);
+function createExplosion(x, y) {
+  for (let i = 0; i < 100; i++) {
+    const particle = particlePool.get();
+    particle.x = x;
+    particle.y = y;
+    // Use particle...
+  }
+}
+```
+
+### Garbage Collection Hints
+
+```javascript
+// Help garbage collector by nullifying references
+function processLargeData(data) {
+  // Process data...
+  const result = heavyComputation(data);
+  
+  // Clear reference to large data when no longer needed
+  data = null;
+  
+  return result;
+}
+
+// Use WeakMap/WeakSet for objects that should be garbage collected
+const cache = new WeakMap();
+function getProcessedData(obj) {
+  if (cache.has(obj)) {
+    return cache.get(obj);
+  }
+  
+  const result = expensiveOperation(obj);
+  cache.set(obj, result);
+  return result;
+}
+```
+
+## DOM Optimization
+
+### Minimizing DOM Access
+
+```javascript
+// Inefficient: Multiple DOM accesses
+function updateItems(items) {
+  const list = document.getElementById('itemList');
+  
+  for (const item of items) {
+    // DOM access in each iteration
+    list.innerHTML += `<li>${item}</li>`;
+  }
+}
+
+// Optimized: Batch DOM operations
+function updateItemsOptimized(items) {
+  const list = document.getElementById('itemList');
+  
+  // Build HTML string first
+  const html = items.map(item => `<li>${item}</li>`).join('');
+  
+  // Single DOM update
+  list.innerHTML = html;
+}
+
+// Even better: Use DocumentFragment
+function updateItemsFragment(items) {
+  const list = document.getElementById('itemList');
+  const fragment = document.createDocumentFragment();
+  
+  items.forEach(item => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    fragment.appendChild(li);
+  });
+  
+  // Single DOM update
+  list.appendChild(fragment);
+}
+```
+
+### Reducing Reflows and Repaints
+
+```javascript
+// Inefficient: Causes multiple reflows
+function resizeElements(elements) {
+  elements.forEach(el => {
+    el.style.width = '100px';
+    el.style.height = '100px';
+    el.style.margin = '10px';
+    // Each style change can cause a reflow
+  });
+}
+
+// Optimized: Batch style changes
+function resizeElementsOptimized(elements) {
+  elements.forEach(el => {
+    // Use cssText to batch changes
+    el.style.cssText = 'width: 100px; height: 100px; margin: 10px;';
+    // Or use a class
+    // el.className = 'resized-element';
+  });
+}
+
+// Minimize layout thrashing
+function measureAndUpdate(elements) {
+  // Batch all reads
+  const measurements = elements.map(el => el.getBoundingClientRect());
+  
+  // Then batch all writes
+  elements.forEach((el, i) => {
+    const { height } = measurements[i];
+    el.style.height = `${height * 2}px`;
+  });
+}
+```
+
+### Virtual DOM and DOM Diffing
+
+```javascript
+// Simplified virtual DOM implementation
+function createElement(type, props, ...children) {
+  return { type, props, children };
+}
+
+function render(vNode, container) {
+  // Create actual DOM from virtual DOM
+  const element = document.createElement(vNode.type);
+  
+  // Set properties
+  Object.entries(vNode.props || {}).forEach(([name, value]) => {
+    element[name] = value;
+  });
+  
+  // Append children
+  vNode.children.forEach(child => {
+    if (typeof child === 'string') {
+      element.appendChild(document.createTextNode(child));
+    } else {
+      render(child, element);
+    }
+  });
+  
+  container.appendChild(element);
+}
+
+// Usage
+const vApp = createElement('div', { className: 'app' },
+  createElement('h1', {}, 'Title'),
+  createElement('p', {}, 'Content')
+);
+
+render(vApp, document.getElementById('root'));
+```
+
+## JavaScript Engine Optimizations
+
+### Function Inlining
+
+```javascript
+// Functions that get inlined by the JIT compiler
+function add(a, b) {
+  return a + b;
+}
+
+// This loop will likely have 'add' inlined
+for (let i = 0; i < 1000000; i++) {
+  sum += add(i, 1); // JIT may replace with: sum += i + 1;
+}
+
+// Avoid preventing inlining
+function complexFunction(a, b) {
+  // Complex functions may not be inlined
+  try {
+    return a / b;
+  } catch (e) {
+    console.error(e);
+    return 0;
+  }
+}
+```
+
+### Hidden Classes and Property Access
+
+```javascript
+// Inconsistent object shapes slow down V8
+function SlowPoint(x, y) {
+  this.x = x;
+  this.y = y;
+}
+
+const p1 = new SlowPoint(1, 2);
+p1.z = 3; // Creates a new hidden class
+
+const p2 = new SlowPoint(4, 5);
+// p1 and p2 have different hidden classes
+
+// Consistent object shapes are faster
+function FastPoint(x, y, z) {
+  this.x = x;
+  this.y = y;
+  this.z = z || 0; // Initialize all properties in constructor
+}
+
+const p3 = new FastPoint(1, 2, 3);
+const p4 = new FastPoint(4, 5); // Same hidden class as p3
+```
+
+### Avoiding Deoptimization
+
+```javascript
+// Avoid mixing types in arrays
+const numbers = [1, 2, 3, 4, 5];
+numbers.push('6'); // Mixing types causes deoptimization
+
+// Avoid changing object structure
+const user = { name: 'John' };
+user.age = 30; // Adding properties dynamically is slower
+
+// Avoid using 'arguments' object
+function slowSum() {
+  let sum = 0;
+  for (let i = 0; i < arguments.length; i++) {
+    sum += arguments[i]; // 'arguments' prevents optimization
+  }
+  return sum;
+}
+
+// Use rest parameters instead
+function fastSum(...args) {
+  let sum = 0;
+  for (let i = 0; i < args.length; i++) {
+    sum += args[i];
+  }
+  return sum;
+}
+```
+
+## Asynchronous Optimization
+
+### Efficient Promise Usage
+
+```javascript
+// Avoid unnecessary Promise creation
+function unnecessaryPromise() {
+  return new Promise(resolve => {
+    resolve(42); // Immediately resolved
+  });
+}
+
+// Better approach
+function optimizedPromise() {
+  return Promise.resolve(42);
+}
+
+// Avoid Promise chains for independent operations
+async function sequentialFetches() {
+  const data1 = await fetch('/api/data1');
+  const data2 = await fetch('/api/data2'); // Waits for data1
+  const data3 = await fetch('/api/data3'); // Waits for data2
+  return [data1, data2, data3];
+}
+
+// Parallel fetches are faster
+async function parallelFetches() {
+  const [data1, data2, data3] = await Promise.all([
+    fetch('/api/data1'),
+    fetch('/api/data2'),
+    fetch('/api/data3')
+  ]);
+  return [data1, data2, data3];
+}
+```
+
+### Debouncing and Throttling
+
+```javascript
+// Debounce: Execute function only after a delay since last call
+function debounce(func, delay) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
+// Throttle: Execute function at most once per specified period
+function throttle(func, limit) {
+  let inThrottle = false;
+  return function(...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => {
+        inThrottle = false;
+      }, limit);
+    }
+  };
+}
+
+// Usage
+const debouncedSearch = debounce(searchFunction, 300);
+const throttledScroll = throttle(handleScroll, 100);
+
+window.addEventListener('input', debouncedSearch);
+window.addEventListener('scroll', throttledScroll);
+```
+
+### Web Workers for CPU-Intensive Tasks
+
+```javascript
+// main.js
+function startWorker() {
+  const worker = new Worker('worker.js');
+  
+  worker.onmessage = function(e) {
+    console.log('Result from worker:', e.data);
+  };
+  
+  worker.postMessage({
+    numbers: Array(1000000).fill().map((_, i) => i),
+    operation: 'sum'
+  });
+}
+
+// worker.js
+self.onmessage = function(e) {
+  const { numbers, operation } = e.data;
+  
+  let result;
+  if (operation === 'sum') {
+    result = numbers.reduce((acc, val) => acc + val, 0);
+  }
+  
+  self.postMessage(result);
+};
+```
+
+## Code Splitting and Lazy Loading
+
+```javascript
+// Dynamic import for lazy loading
+async function loadEditor() {
+  try {
+    // Load module only when needed
+    const { Editor } = await import('./editor.js');
+    
+    // Initialize editor
+    const editor = new Editor('#editor');
+    editor.init();
+  } catch (error) {
+    console.error('Error loading editor:', error);
+  }
+}
+
+// Usage
+document.getElementById('edit-button').addEventListener('click', loadEditor);
+```
+
+## Caching and Memoization
+
+```javascript
+// Simple memoization function
+function memoize(fn) {
+  const cache = new Map();
+  
+  return function(...args) {
+    const key = JSON.stringify(args);
+    
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    
+    const result = fn.apply(this, args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+// Usage
+const expensiveFunction = (a, b) => {
+  console.log('Computing...');
+  return a * b;
+};
+
+const memoizedFunction = memoize(expensiveFunction);
+
+console.log(memoizedFunction(4, 2)); // Computing... 8
+console.log(memoizedFunction(4, 2)); // 8 (from cache)
+```
+
+## Interview Tips
+
+- Explain the importance of measuring performance before optimizing
+- Describe how to identify and address common JavaScript performance bottlenecks
+- Discuss the trade-offs between readability and performance
+- Explain how JavaScript engines optimize code and how to avoid deoptimization
+- Demonstrate knowledge of DOM performance optimization techniques
+- Discuss asynchronous optimization strategies like debouncing and Web Workers
+- Explain the benefits of code splitting and lazy loading for web applications

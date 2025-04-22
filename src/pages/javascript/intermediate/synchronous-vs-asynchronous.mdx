@@ -1,0 +1,224 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Synchronous vs Asynchronous JavaScript
+---
+
+# Synchronous vs Asynchronous JavaScript
+
+## Synchronous Code
+
+In synchronous programming, operations are executed sequentially, one after another. Each operation must complete before the next one begins.
+
+### Characteristics:
+- **Blocking**: Each operation blocks the execution thread until it completes
+- **Sequential**: Operations are executed in the exact order they appear
+- **Predictable**: Flow of execution is straightforward
+
+### Example:
+```javascript
+console.log("Task 1");
+console.log("Task 2");
+console.log("Task 3");
+
+// Output:
+// Task 1
+// Task 2
+// Task 3
+```
+
+### Common Synchronous Operations:
+- Array methods (map, filter, reduce)
+- String operations
+- Math calculations
+- Simple DOM manipulations
+
+## Asynchronous Code
+
+Asynchronous programming allows operations to execute without blocking the main thread. When an asynchronous operation is initiated, the program continues to execute the next operations without waiting.
+
+### Characteristics:
+- **Non-blocking**: Operations don't block the execution thread
+- **Concurrent**: Multiple operations can be in progress simultaneously
+- **Event-driven**: Results are handled when they become available
+
+### Example:
+```javascript
+console.log("Task 1");
+setTimeout(() => {
+  console.log("Task 2");
+}, 2000);
+console.log("Task 3");
+
+// Output:
+// Task 1
+// Task 3
+// Task 2 (after 2 seconds)
+```
+
+## Asynchronous Patterns in JavaScript
+
+### 1. Callbacks
+```javascript
+function fetchData(callback) {
+  setTimeout(() => {
+    const data = { id: 1, name: "John" };
+    callback(data);
+  }, 2000);
+}
+
+fetchData(data => {
+  console.log(data); // { id: 1, name: "John" }
+});
+```
+
+### 2. Promises
+```javascript
+function fetchData() {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const success = true;
+      if (success) {
+        resolve({ id: 1, name: "John" });
+      } else {
+        reject(new Error("Failed to fetch data"));
+      }
+    }, 2000);
+  });
+}
+
+fetchData()
+  .then(data => console.log(data))
+  .catch(error => console.error(error));
+```
+
+### 3. Async/Await
+```javascript
+async function getData() {
+  try {
+    const data = await fetchData();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+getData();
+```
+
+## The JavaScript Event Loop
+
+The event loop is the mechanism that allows JavaScript to perform non-blocking operations despite being single-threaded.
+
+### Components:
+1. **Call Stack**: Where function calls are tracked
+2. **Web APIs**: Where asynchronous operations are processed
+3. **Callback Queue**: Where completed asynchronous operations wait
+4. **Microtask Queue**: Where Promises and other microtasks wait (higher priority)
+5. **Event Loop**: Monitors the call stack and queues, moving callbacks when appropriate
+
+### Example:
+```javascript
+console.log("Start"); // 1
+
+setTimeout(() => {
+  console.log("Timeout"); // 4
+}, 0);
+
+Promise.resolve().then(() => {
+  console.log("Promise"); // 3
+});
+
+console.log("End"); // 2
+
+// Output:
+// Start
+// End
+// Promise
+// Timeout
+```
+
+## When to Use Each Approach
+
+### Use Synchronous Code When:
+- Operations are fast and simple
+- Each step depends on the result of the previous step
+- Code flow needs to be straightforward
+
+### Use Asynchronous Code When:
+- Performing I/O operations (network requests, file operations)
+- Handling user interactions
+- Executing long-running operations
+- Running multiple independent operations concurrently
+
+## Common Asynchronous Challenges
+
+### 1. Callback Hell
+```javascript
+// Problem
+getUser(userId, function(user) {
+  getPosts(user.id, function(posts) {
+    getComments(posts[0].id, function(comments) {
+      // Deeply nested callbacks
+    });
+  });
+});
+
+// Solution with Promises
+getUser(userId)
+  .then(user => getPosts(user.id))
+  .then(posts => getComments(posts[0].id))
+  .then(comments => console.log(comments));
+
+// Solution with async/await
+async function getComments() {
+  const user = await getUser(userId);
+  const posts = await getPosts(user.id);
+  const comments = await getComments(posts[0].id);
+  console.log(comments);
+}
+```
+
+### 2. Error Handling
+```javascript
+// With Promises
+fetchData()
+  .then(data => processData(data))
+  .catch(error => console.error(error));
+
+// With async/await
+async function getData() {
+  try {
+    const data = await fetchData();
+    processData(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+```
+
+### 3. Parallel Operations
+```javascript
+// Sequential (slower)
+async function fetchAllData() {
+  const users = await fetchUsers();
+  const posts = await fetchPosts();
+  return { users, posts };
+}
+
+// Parallel (faster)
+async function fetchAllData() {
+  const [users, posts] = await Promise.all([
+    fetchUsers(),
+    fetchPosts()
+  ]);
+  return { users, posts };
+}
+```
+
+## Interview Tips
+
+- Explain how JavaScript's single-threaded nature works with asynchronous code
+- Describe the evolution from callbacks to Promises to async/await
+- Demonstrate knowledge of the event loop and execution order
+- Discuss common pitfalls and their solutions
+- Explain when to use different asynchronous patterns based on requirements

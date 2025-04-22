@@ -1,0 +1,502 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Destructuring Assignment in JavaScript
+---
+
+# Destructuring Assignment in JavaScript
+
+Destructuring assignment is a JavaScript syntax that allows you to extract values from arrays or properties from objects into distinct variables with concise syntax.
+
+## Array Destructuring
+
+### Basic Array Destructuring
+
+```javascript
+// Without destructuring
+const numbers = [1, 2, 3];
+const a = numbers[0];
+const b = numbers[1];
+const c = numbers[2];
+
+// With destructuring
+const [x, y, z] = numbers;
+console.log(x); // 1
+console.log(y); // 2
+console.log(z); // 3
+```
+
+### Skipping Elements
+
+```javascript
+const colors = ['red', 'green', 'blue', 'yellow'];
+
+// Skip elements using commas
+const [first, , third] = colors;
+console.log(first); // 'red'
+console.log(third); // 'blue'
+```
+
+### Rest Pattern
+
+```javascript
+const numbers = [1, 2, 3, 4, 5];
+
+// Collect remaining elements with rest operator
+const [first, second, ...rest] = numbers;
+console.log(first); // 1
+console.log(second); // 2
+console.log(rest); // [3, 4, 5]
+```
+
+### Default Values
+
+```javascript
+const incomplete = [1, 2];
+
+// Provide default values for missing elements
+const [a, b, c = 3, d = 4] = incomplete;
+console.log(a); // 1
+console.log(b); // 2
+console.log(c); // 3 (default value)
+console.log(d); // 4 (default value)
+```
+
+### Swapping Variables
+
+```javascript
+let a = 1;
+let b = 2;
+
+// Swap variables without a temporary variable
+[a, b] = [b, a];
+console.log(a); // 2
+console.log(b); // 1
+```
+
+### Nested Array Destructuring
+
+```javascript
+const nested = [1, [2, 3], 4];
+
+// Destructure nested arrays
+const [a, [b, c], d] = nested;
+console.log(a); // 1
+console.log(b); // 2
+console.log(c); // 3
+console.log(d); // 4
+```
+
+## Object Destructuring
+
+### Basic Object Destructuring
+
+```javascript
+const person = {
+  name: 'John',
+  age: 30,
+  city: 'New York'
+};
+
+// Without destructuring
+const personName = person.name;
+const personAge = person.age;
+const personCity = person.city;
+
+// With destructuring
+const { name, age, city } = person;
+console.log(name); // 'John'
+console.log(age); // 30
+console.log(city); // 'New York'
+```
+
+### Assigning to Different Variable Names
+
+```javascript
+const product = {
+  id: 'abc123',
+  title: 'Laptop',
+  price: 999.99
+};
+
+// Assign to different variable names
+const { id: productId, title: productName, price: productPrice } = product;
+console.log(productId); // 'abc123'
+console.log(productName); // 'Laptop'
+console.log(productPrice); // 999.99
+```
+
+### Default Values
+
+```javascript
+const user = {
+  id: 42,
+  displayName: 'jdoe'
+  // email is missing
+};
+
+// Provide default values for missing properties
+const { id, displayName, email = 'no-email@example.com', role = 'user' } = user;
+console.log(email); // 'no-email@example.com' (default value)
+console.log(role); // 'user' (default value)
+```
+
+### Rest Pattern
+
+```javascript
+const person = {
+  name: 'Jane',
+  age: 28,
+  city: 'London',
+  occupation: 'Developer',
+  hobbies: ['reading', 'hiking']
+};
+
+// Collect remaining properties with rest operator
+const { name, age, ...otherInfo } = person;
+console.log(name); // 'Jane'
+console.log(age); // 28
+console.log(otherInfo); // { city: 'London', occupation: 'Developer', hobbies: ['reading', 'hiking'] }
+```
+
+### Nested Object Destructuring
+
+```javascript
+const user = {
+  id: 1,
+  name: 'John',
+  address: {
+    street: '123 Main St',
+    city: 'Boston',
+    state: 'MA',
+    zip: '02101'
+  }
+};
+
+// Destructure nested objects
+const { name, address: { city, zip } } = user;
+console.log(name); // 'John'
+console.log(city); // 'Boston'
+console.log(zip); // '02101'
+// console.log(address); // ReferenceError: address is not defined
+```
+
+### Combining with Default Values and Renaming
+
+```javascript
+const settings = {
+  theme: 'dark',
+  sidebar: {
+    position: 'left'
+    // width is missing
+  }
+  // notifications is missing
+};
+
+// Combine renaming, defaults, and nested destructuring
+const {
+  theme: colorTheme,
+  sidebar: { position, width = 300 },
+  notifications = { enabled: false }
+} = settings;
+
+console.log(colorTheme); // 'dark'
+console.log(position); // 'left'
+console.log(width); // 300 (default value)
+console.log(notifications); // { enabled: false } (default value)
+```
+
+## Practical Applications
+
+### Function Parameter Destructuring
+
+```javascript
+// Without destructuring
+function createUser(options) {
+  const username = options.username;
+  const email = options.email;
+  const isAdmin = options.isAdmin || false;
+  // ...
+}
+
+// With object destructuring
+function createUser({ username, email, isAdmin = false, role = 'user' }) {
+  console.log(`Creating ${role} account for ${username} (${email})`);
+  console.log(`Admin privileges: ${isAdmin}`);
+}
+
+createUser({
+  username: 'john_doe',
+  email: 'john@example.com'
+});
+// "Creating user account for john_doe (john@example.com)"
+// "Admin privileges: false"
+```
+
+### Array Parameter Destructuring
+
+```javascript
+// Without destructuring
+function getCoordinates(point) {
+  const x = point[0];
+  const y = point[1];
+  return `x: ${x}, y: ${y}`;
+}
+
+// With array destructuring
+function getCoordinates([x, y]) {
+  return `x: ${x}, y: ${y}`;
+}
+
+console.log(getCoordinates([10, 20])); // "x: 10, y: 20"
+```
+
+### Destructuring Return Values
+
+```javascript
+// Return multiple values as an object
+function getUserInfo(userId) {
+  // Fetch user data...
+  return {
+    name: 'John Doe',
+    email: 'john@example.com',
+    role: 'admin'
+  };
+}
+
+// Destructure the return value
+const { name, email, role } = getUserInfo(42);
+console.log(name, email, role); // "John Doe" "john@example.com" "admin"
+
+// Return multiple values as an array
+function getMinMax(numbers) {
+  return [Math.min(...numbers), Math.max(...numbers)];
+}
+
+// Destructure the array return value
+const [min, max] = getMinMax([3, 1, 5, 2, 4]);
+console.log(min, max); // 1 5
+```
+
+### Destructuring in Loops
+
+```javascript
+const users = [
+  { id: 1, name: 'John', age: 28 },
+  { id: 2, name: 'Jane', age: 32 },
+  { id: 3, name: 'Bob', age: 24 }
+];
+
+// Destructuring in for...of loop
+for (const { id, name } of users) {
+  console.log(`User ${id}: ${name}`);
+}
+// "User 1: John"
+// "User 2: Jane"
+// "User 3: Bob"
+
+// Destructuring with Object.entries()
+const settings = {
+  theme: 'dark',
+  fontSize: 16,
+  showSidebar: true
+};
+
+for (const [key, value] of Object.entries(settings)) {
+  console.log(`${key}: ${value}`);
+}
+// "theme: dark"
+// "fontSize: 16"
+// "showSidebar: true"
+```
+
+### Destructuring with the Map Data Structure
+
+```javascript
+const userRoles = new Map([
+  ['john', 'admin'],
+  ['jane', 'editor'],
+  ['bob', 'viewer']
+]);
+
+// Destructuring Map entries
+for (const [username, role] of userRoles) {
+  console.log(`${username} has role: ${role}`);
+}
+// "john has role: admin"
+// "jane has role: editor"
+// "bob has role: viewer"
+```
+
+## Advanced Patterns
+
+### Nested Destructuring with Arrays and Objects
+
+```javascript
+const data = {
+  user: {
+    id: 123,
+    name: 'John Doe',
+    contacts: [
+      { type: 'email', value: 'john@example.com' },
+      { type: 'phone', value: '555-1234' }
+    ]
+  }
+};
+
+// Complex nested destructuring
+const {
+  user: {
+    name,
+    contacts: [
+      { value: email },
+      { value: phone }
+    ]
+  }
+} = data;
+
+console.log(name); // 'John Doe'
+console.log(email); // 'john@example.com'
+console.log(phone); // '555-1234'
+```
+
+### Destructuring with Computed Property Names
+
+```javascript
+const key = 'name';
+const user = { id: 1, name: 'John', age: 30 };
+
+// Destructure with dynamic property name
+const { [key]: value } = user;
+console.log(value); // 'John'
+```
+
+### Destructuring in Try/Catch
+
+```javascript
+function parseJSON(jsonString) {
+  try {
+    const { data, error = null } = JSON.parse(jsonString);
+    return { data, error };
+  } catch (error) {
+    return { data: null, error: error.message };
+  }
+}
+
+const result = parseJSON('{"data": {"id": 123}}');
+console.log(result); // { data: { id: 123 }, error: null }
+```
+
+## Best Practices
+
+### 1. Use Parameter Destructuring for Cleaner Function Signatures
+
+```javascript
+// Better than accepting many parameters
+function createUser({
+  username,
+  email,
+  password,
+  firstName = '',
+  lastName = '',
+  isAdmin = false
+}) {
+  // Function body
+}
+
+// Usage
+createUser({
+  username: 'jdoe',
+  email: 'john@example.com',
+  password: 'securepass123'
+});
+```
+
+### 2. Provide Default Values for Optional Properties
+
+```javascript
+function fetchData({ url, method = 'GET', headers = {}, body = null }) {
+  // Implementation
+}
+```
+
+### 3. Use Rest Parameters to Collect Remaining Items
+
+```javascript
+function processFirstTwoAndRest([first, second, ...others]) {
+  console.log('First:', first);
+  console.log('Second:', second);
+  console.log('Others:', others);
+}
+```
+
+### 4. Destructure in the Function Body for Complex Logic
+
+```javascript
+function processUserData(user) {
+  // Destructure only what you need, when you need it
+  if (user.role === 'admin') {
+    const { permissions } = user;
+    // Process admin permissions
+  } else {
+    const { id, name } = user;
+    // Process regular user
+  }
+}
+```
+
+## Common Gotchas
+
+### 1. Object Destructuring Syntax in Assignment
+
+```javascript
+let a, b;
+
+// This won't work - interpreted as a block
+// { a, b } = { a: 1, b: 2 };
+
+// Wrap in parentheses to make it work
+({ a, b } = { a: 1, b: 2 });
+console.log(a, b); // 1 2
+```
+
+### 2. Destructuring undefined or null
+
+```javascript
+// This will throw an error
+// const { name } = null;
+// const { name } = undefined;
+
+// Use optional chaining (ES2020)
+const { name } = user?.profile ?? {};
+
+// Or check before destructuring
+const userProfile = user && user.profile ? user.profile : {};
+const { name } = userProfile;
+```
+
+### 3. Destructuring with Similar Names
+
+```javascript
+const user = {
+  id: 1,
+  name: 'John',
+  profile: {
+    name: 'John Doe' // Same property name as parent
+  }
+};
+
+// Be careful with naming conflicts
+const { name, profile: { name: fullName } } = user;
+console.log(name); // 'John'
+console.log(fullName); // 'John Doe'
+```
+
+## Interview Tips
+
+- Explain how destructuring makes code more concise and readable
+- Describe the difference between array and object destructuring
+- Explain how to use default values with destructuring
+- Demonstrate how to rename variables during destructuring
+- Explain how destructuring can be used with function parameters
+- Describe how to handle nested objects and arrays with destructuring
+- Explain common pitfalls and how to avoid them

@@ -1,0 +1,224 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: The Realms API in JavaScript
+---
+
+# The Realms API in JavaScript
+
+The Realms API (formerly known as ShadowRealm) is a JavaScript proposal that provides a way to create isolated JavaScript execution contexts. It enables running code in a separate environment with its own global object and set of built-ins.
+
+## What is a Realm?
+
+A Realm is an isolated execution environment that includes:
+- Its own global object
+- Its own set of JavaScript intrinsics (Object, Array, etc.)
+- Its own global scope
+
+Each Realm is separate from others, providing strong isolation and security boundaries.
+
+## Basic Usage
+
+```javascript
+// Create a new Realm
+const realm = new Realm();
+
+// Evaluate code in the Realm
+const result = realm.evaluate('1 + 1');
+console.log(result); // 2
+
+// Define a function in the Realm
+realm.evaluate(`
+  function greet(name) {
+    return 'Hello, ' + name + '!';
+  }
+`);
+
+// Get a reference to the function
+const greet = realm.evaluate('greet');
+
+// Call the function
+console.log(greet('World')); // "Hello, World!"
+```
+
+## Security Benefits
+
+### 1. Code Isolation
+
+```javascript
+// Main realm
+const mainObj = { secret: 'sensitive data' };
+
+// Create a new Realm
+const realm = new Realm();
+
+// The new Realm cannot access objects from the main Realm
+realm.evaluate(`
+  // This will throw a ReferenceError
+  try {
+    console.log(mainObj.secret);
+  } catch (e) {
+    console.log('Cannot access mainObj');
+  }
+`);
+```
+
+### 2. Defense Against Prototype Pollution
+
+```javascript
+// Create a new Realm for untrusted code
+const realm = new Realm();
+
+// Run potentially malicious code in the Realm
+realm.evaluate(`
+  // Attempt to modify Object prototype
+  Object.prototype.malicious = 'hacked';
+`);
+
+// Main Realm's Object prototype remains unaffected
+console.log(Object.prototype.malicious); // undefined
+```
+
+### 3. Secure Evaluation of Third-Party Code
+
+```javascript
+function safelyEvaluatePlugin(pluginCode) {
+  const realm = new Realm();
+  
+  // Define a controlled API surface
+  realm.evaluate(`
+    // Limited set of allowed functions
+    function log(message) {
+      // Safe logging implementation
+    }
+    
+    // Expose to plugin
+    globalThis.API = { log };
+  `);
+  
+  // Run the plugin code in the isolated Realm
+  try {
+    realm.evaluate(pluginCode);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Usage
+const result = safelyEvaluatePlugin(`
+  // Plugin can only use the provided API
+  API.log('Hello from plugin');
+`);
+```
+
+## Advanced Use Cases
+
+### 1. Module Loading
+
+```javascript
+// Create a Realm with module support
+const realm = new Realm();
+
+// Import a module in the Realm
+const moduleExports = await realm.importValue('./module.js', 'default');
+
+// Use the exported functionality
+const result = moduleExports.calculate(10);
+```
+
+### 2. Compartmentalized Applications
+
+```javascript
+// Create separate Realms for different parts of an application
+const userRealm = new Realm();
+const adminRealm = new Realm();
+
+// Set up user functionality
+userRealm.evaluate(`
+  function processUserData(data) {
+    // Limited user processing
+    return { processed: data, level: 'user' };
+  }
+`);
+
+// Set up admin functionality with elevated privileges
+adminRealm.evaluate(`
+  function processUserData(data) {
+    // Enhanced admin processing
+    return { processed: data, level: 'admin', extraInfo: true };
+  }
+`);
+
+// Get function references
+const userProcess = userRealm.evaluate('processUserData');
+const adminProcess = adminRealm.evaluate('processUserData');
+
+// Use appropriate function based on user role
+function processData(data, isAdmin) {
+  return isAdmin ? adminProcess(data) : userProcess(data);
+}
+```
+
+### 3. Testing and Mocking
+
+```javascript
+function runTestInIsolation(testCode) {
+  const testRealm = new Realm();
+  
+  // Set up test environment
+  testRealm.evaluate(`
+    // Mock APIs
+    globalThis.fetch = async (url) => {
+      return {
+        ok: true,
+        json: async () => ({ id: 1, name: 'Test' })
+      };
+    };
+    
+    // Test utilities
+    globalThis.assert = (condition, message) => {
+      if (!condition) throw new Error(message || 'Assertion failed');
+    };
+  `);
+  
+  // Run the test
+  return testRealm.evaluate(testCode);
+}
+
+// Run a test in isolation
+runTestInIsolation(`
+  async function test() {
+    const response = await fetch('/api/user');
+    const data = await response.json();
+    assert(data.id === 1, 'Should return user with ID 1');
+    return 'Test passed';
+  }
+  
+  test();
+`);
+```
+
+## Limitations and Considerations
+
+1. **Communication Overhead**: Data passed between Realms is cloned, which can be expensive for large objects
+2. **Limited Types**: Only certain types can be transferred between Realms (primitives, plain objects, arrays, functions)
+3. **Memory Usage**: Each Realm allocates its own memory for built-ins and global objects
+4. **No DOM Access**: Realms in browsers don't have access to the DOM by default
+
+## Comparison with Other Isolation Techniques
+
+| Feature | Realms | iframes | Web Workers | eval |
+|---------|--------|---------|-------------|------|
+| Isolation | Strong | Strong | Strong | None |
+| Performance | Medium | Low | Medium | High |
+| DOM Access | No | Yes | No | Yes |
+| Same-origin restriction | No | Yes | No | No |
+| Communication | Direct | postMessage | postMessage | Direct |
+
+## Interview Tips
+
+- Explain how Realms provide stronger isolation than traditional JavaScript sandboxing techniques
+- Describe security benefits of using Realms for evaluating untrusted code
+- Discuss the performance implications of using Realms for code isolation
+- Explain how Realms differ from Web Workers and iframes
+- Mention that Realms is still a proposal and not yet standardized

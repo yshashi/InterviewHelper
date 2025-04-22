@@ -1,0 +1,923 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: State Management in JavaScript Applications
+---
+
+# State Management in JavaScript Applications
+
+State management refers to the process of handling an application's data and UI state across components. As applications grow in complexity, managing state becomes increasingly challenging and requires structured approaches.
+
+## Core Concepts of State Management
+
+```javascript
+// State represents the data that changes over time
+const state = {
+  user: { id: 1, name: 'John' },
+  posts: [],
+  isLoading: false,
+  error: null
+};
+
+// Actions describe state changes
+const actions = {
+  FETCH_POSTS_START: 'FETCH_POSTS_START',
+  FETCH_POSTS_SUCCESS: 'FETCH_POSTS_SUCCESS',
+  FETCH_POSTS_FAILURE: 'FETCH_POSTS_FAILURE'
+};
+
+// Reducers specify how state changes in response to actions
+function reducer(state, action) {
+  switch (action.type) {
+    case actions.FETCH_POSTS_START:
+      return { ...state, isLoading: true, error: null };
+    case actions.FETCH_POSTS_SUCCESS:
+      return { ...state, isLoading: false, posts: action.payload };
+    case actions.FETCH_POSTS_FAILURE:
+      return { ...state, isLoading: false, error: action.payload };
+    default:
+      return state;
+  }
+}
+```
+
+## State Management Patterns
+
+### 1. Prop Drilling
+
+The simplest approach, passing state through component props:
+
+```javascript
+// Parent component
+function App() {
+  const [user, setUser] = useState({ name: 'John' });
+  
+  return (
+    <div>
+      <Header user={user} />
+      <Main user={user} setUser={setUser} />
+      <Footer user={user} />
+    </div>
+  );
+}
+
+// Child component
+function Header({ user }) {
+  return <header>Welcome, {user.name}</header>;
+}
+
+// Nested component
+function UserProfile({ user, setUser }) {
+  function updateName(newName) {
+    setUser({ ...user, name: newName });
+  }
+  
+  return (
+    <div>
+      <h2>{user.name}'s Profile</h2>
+      <button onClick={() => updateName('Jane')}>Change Name</button>
+    </div>
+  );
+}
+```
+
+### 2. Context API
+
+React's built-in solution for sharing state without prop drilling:
+
+```javascript
+// Create a context
+const UserContext = React.createContext();
+
+// Provider component
+function UserProvider({ children }) {
+  const [user, setUser] = useState({ name: 'John' });
+  
+  return (
+    <UserContext.Provider value={{ user, setUser }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+// App structure
+function App() {
+  return (
+    <UserProvider>
+      <div>
+        <Header />
+        <Main />
+        <Footer />
+      </div>
+    </UserProvider>
+  );
+}
+
+// Consumer component
+function Header() {
+  const { user } = useContext(UserContext);
+  return <header>Welcome, {user.name}</header>;
+}
+
+// Another consumer
+function UserProfile() {
+  const { user, setUser } = useContext(UserContext);
+  
+  function updateName(newName) {
+    setUser({ ...user, name: newName });
+  }
+  
+  return (
+    <div>
+      <h2>{user.name}'s Profile</h2>
+      <button onClick={() => updateName('Jane')}>Change Name</button>
+    </div>
+  );
+}
+```
+
+### 3. Flux Architecture
+
+A unidirectional data flow pattern popularized by Facebook:
+
+```javascript
+// Dispatcher - Central hub for all actions
+const Dispatcher = {
+  callbacks: [],
+  register(callback) {
+    this.callbacks.push(callback);
+    return this.callbacks.length - 1;
+  },
+  dispatch(action) {
+    this.callbacks.forEach(callback => callback(action));
+  }
+};
+
+// Store - Holds state and logic
+class PostStore {
+  constructor() {
+    this.posts = [];
+    this.isLoading = false;
+    this.error = null;
+    
+    this.dispatchToken = Dispatcher.register(action => {
+      switch (action.type) {
+        case 'FETCH_POSTS_START':
+          this.isLoading = true;
+          this.error = null;
+          this.emitChange();
+          break;
+        case 'FETCH_POSTS_SUCCESS':
+          this.isLoading = false;
+          this.posts = action.payload;
+          this.emitChange();
+          break;
+        case 'FETCH_POSTS_FAILURE':
+          this.isLoading = false;
+          this.error = action.payload;
+          this.emitChange();
+          break;
+      }
+    });
+  }
+  
+  emitChange() {
+    // Notify subscribers
+  }
+  
+  getState() {
+    return {
+      posts: this.posts,
+      isLoading: this.isLoading,
+      error: this.error
+    };
+  }
+}
+
+// Actions - Helper methods to dispatch actions
+const PostActions = {
+  fetchPosts() {
+    Dispatcher.dispatch({ type: 'FETCH_POSTS_START' });
+    
+    fetch('/api/posts')
+      .then(response => response.json())
+      .then(posts => {
+        Dispatcher.dispatch({
+          type: 'FETCH_POSTS_SUCCESS',
+          payload: posts
+        });
+      })
+      .catch(error => {
+        Dispatcher.dispatch({
+          type: 'FETCH_POSTS_FAILURE',
+          payload: error.message
+        });
+      });
+  }
+};
+```
+
+### 4. Redux
+
+A popular state management library based on the Flux pattern:
+
+```javascript
+// Action Types
+const ADD_TODO = 'ADD_TODO';
+const TOGGLE_TODO = 'TOGGLE_TODO';
+
+// Action Creators
+function addTodo(text) {
+  return {
+    type: ADD_TODO,
+    payload: { text, completed: false, id: Date.now() }
+  };
+}
+
+function toggleTodo(id) {
+  return {
+    type: TOGGLE_TODO,
+    payload: { id }
+  };
+}
+
+// Reducer
+const initialState = {
+  todos: []
+};
+
+function todoReducer(state = initialState, action) {
+  switch (action.type) {
+    case ADD_TODO:
+      return {
+        ...state,
+        todos: [...state.todos, action.payload]
+      };
+    case TOGGLE_TODO:
+      return {
+        ...state,
+        todos: state.todos.map(todo =>
+          todo.id === action.payload.id
+            ? { ...todo, completed: !todo.completed }
+            : todo
+        )
+      };
+    default:
+      return state;
+  }
+}
+
+// Store
+import { createStore } from 'redux';
+const store = createStore(todoReducer);
+
+// Dispatching actions
+store.dispatch(addTodo('Learn Redux'));
+
+// Subscribing to changes
+store.subscribe(() => {
+  console.log('State updated:', store.getState());
+});
+
+// In a React component
+function TodoList() {
+  const todos = useSelector(state => state.todos);
+  const dispatch = useDispatch();
+  
+  return (
+    <ul>
+      {todos.map(todo => (
+        <li
+          key={todo.id}
+          onClick={() => dispatch(toggleTodo(todo.id))}
+          style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+        >
+          {todo.text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### 5. MobX
+
+A library that uses observable patterns for reactive state management:
+
+```javascript
+import { makeObservable, observable, action, computed } from 'mobx';
+import { observer } from 'mobx-react-lite';
+
+// Store with MobX
+class TodoStore {
+  todos = [];
+  
+  constructor() {
+    makeObservable(this, {
+      todos: observable,
+      addTodo: action,
+      toggleTodo: action,
+      completedCount: computed
+    });
+  }
+  
+  addTodo(text) {
+    this.todos.push({
+      id: Date.now(),
+      text,
+      completed: false
+    });
+  }
+  
+  toggleTodo(id) {
+    const todo = this.todos.find(todo => todo.id === id);
+    if (todo) {
+      todo.completed = !todo.completed;
+    }
+  }
+  
+  get completedCount() {
+    return this.todos.filter(todo => todo.completed).length;
+  }
+}
+
+const todoStore = new TodoStore();
+
+// React component with MobX
+const TodoList = observer(() => {
+  return (
+    <div>
+      <h2>
+        Completed: {todoStore.completedCount} / {todoStore.todos.length}
+      </h2>
+      <ul>
+        {todoStore.todos.map(todo => (
+          <li
+            key={todo.id}
+            onClick={() => todoStore.toggleTodo(todo.id)}
+            style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          >
+            {todo.text}
+          </li>
+        ))}
+      </ul>
+      <button onClick={() => todoStore.addTodo('New Task')}>Add Task</button>
+    </div>
+  );
+});
+```
+
+### 6. Zustand
+
+A minimalist state management library with hooks:
+
+```javascript
+import create from 'zustand';
+
+// Create a store
+const useTodoStore = create(set => ({
+  todos: [],
+  addTodo: text => set(state => ({
+    todos: [...state.todos, { id: Date.now(), text, completed: false }]
+  })),
+  toggleTodo: id => set(state => ({
+    todos: state.todos.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    )
+  })),
+  clearCompleted: () => set(state => ({
+    todos: state.todos.filter(todo => !todo.completed)
+  }))
+}));
+
+// React component using Zustand
+function TodoList() {
+  const { todos, addTodo, toggleTodo, clearCompleted } = useTodoStore();
+  
+  return (
+    <div>
+      <ul>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            onClick={() => toggleTodo(todo.id)}
+            style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          >
+            {todo.text}
+          </li>
+        ))}
+      </ul>
+      <button onClick={() => addTodo('New Task')}>Add Task</button>
+      <button onClick={clearCompleted}>Clear Completed</button>
+    </div>
+  );
+}
+```
+
+## Handling Asynchronous State
+
+### With Redux and Redux Thunk
+
+```javascript
+// Action Types
+const FETCH_USERS_REQUEST = 'FETCH_USERS_REQUEST';
+const FETCH_USERS_SUCCESS = 'FETCH_USERS_SUCCESS';
+const FETCH_USERS_FAILURE = 'FETCH_USERS_FAILURE';
+
+// Action Creators
+function fetchUsersRequest() {
+  return { type: FETCH_USERS_REQUEST };
+}
+
+function fetchUsersSuccess(users) {
+  return { type: FETCH_USERS_SUCCESS, payload: users };
+}
+
+function fetchUsersFailure(error) {
+  return { type: FETCH_USERS_FAILURE, payload: error };
+}
+
+// Thunk Action Creator
+function fetchUsers() {
+  return async dispatch => {
+    dispatch(fetchUsersRequest());
+    
+    try {
+      const response = await fetch('/api/users');
+      const data = await response.json();
+      dispatch(fetchUsersSuccess(data));
+    } catch (error) {
+      dispatch(fetchUsersFailure(error.message));
+    }
+  };
+}
+
+// Reducer
+const initialState = {
+  users: [],
+  loading: false,
+  error: null
+};
+
+function userReducer(state = initialState, action) {
+  switch (action.type) {
+    case FETCH_USERS_REQUEST:
+      return { ...state, loading: true, error: null };
+    case FETCH_USERS_SUCCESS:
+      return { ...state, loading: false, users: action.payload };
+    case FETCH_USERS_FAILURE:
+      return { ...state, loading: false, error: action.payload };
+    default:
+      return state;
+  }
+}
+```
+
+### With React Query
+
+```javascript
+import { useQuery, useMutation, QueryClient, QueryClientProvider } from 'react-query';
+
+// Setup
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UserList />
+    </QueryClientProvider>
+  );
+}
+
+// Data fetching component
+function UserList() {
+  const { isLoading, error, data } = useQuery('users', () =>
+    fetch('/api/users').then(res => res.json())
+  );
+  
+  const mutation = useMutation(newUser => {
+    return fetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(newUser)
+    }).then(res => res.json());
+  }, {
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries('users');
+    }
+  });
+  
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  
+  return (
+    <div>
+      <ul>
+        {data.map(user => (
+          <li key={user.id}>{user.name}</li>
+        ))}
+      </ul>
+      <button
+        onClick={() => {
+          mutation.mutate({ name: 'New User' });
+        }}
+      >
+        Add User
+      </button>
+    </div>
+  );
+}
+```
+
+## State Persistence
+
+### Local Storage
+
+```javascript
+// Save state to localStorage
+function saveState(state) {
+  try {
+    const serializedState = JSON.stringify(state);
+    localStorage.setItem('appState', serializedState);
+  } catch (error) {
+    console.error('Could not save state', error);
+  }
+}
+
+// Load state from localStorage
+function loadState() {
+  try {
+    const serializedState = localStorage.getItem('appState');
+    if (serializedState === null) {
+      return undefined; // No saved state
+    }
+    return JSON.parse(serializedState);
+  } catch (error) {
+    console.error('Could not load state', error);
+    return undefined;
+  }
+}
+
+// With Redux
+import { createStore } from 'redux';
+import rootReducer from './reducers';
+
+const persistedState = loadState();
+const store = createStore(rootReducer, persistedState);
+
+store.subscribe(() => {
+  saveState(store.getState());
+});
+```
+
+### IndexedDB
+
+```javascript
+// Open database
+const request = indexedDB.open('AppDatabase', 1);
+
+// Create object store on first load
+request.onupgradeneeded = event => {
+  const db = event.target.result;
+  db.createObjectStore('state', { keyPath: 'id' });
+};
+
+// Save state
+function saveStateToIndexedDB(state) {
+  const request = indexedDB.open('AppDatabase', 1);
+  
+  request.onsuccess = event => {
+    const db = event.target.result;
+    const transaction = db.transaction(['state'], 'readwrite');
+    const store = transaction.objectStore('state');
+    
+    store.put({ id: 'app-state', data: state });
+  };
+}
+
+// Load state
+function loadStateFromIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('AppDatabase', 1);
+    
+    request.onsuccess = event => {
+      const db = event.target.result;
+      const transaction = db.transaction(['state'], 'readonly');
+      const store = transaction.objectStore('state');
+      const getRequest = store.get('app-state');
+      
+      getRequest.onsuccess = () => {
+        if (getRequest.result) {
+          resolve(getRequest.result.data);
+        } else {
+          resolve(undefined);
+        }
+      };
+      
+      getRequest.onerror = () => reject(getRequest.error);
+    };
+    
+    request.onerror = () => reject(request.error);
+  });
+}
+```
+
+## State Management Architecture Patterns
+
+### Container/Presentational Pattern
+
+```javascript
+// Container component (connected to state)
+function UserListContainer() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    setLoading(true);
+    fetch('/api/users')
+      .then(res => res.json())
+      .then(data => {
+        setUsers(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+  
+  return (
+    <UserList
+      users={users}
+      loading={loading}
+      error={error}
+      onUserClick={id => console.log(`User clicked: ${id}`)}
+    />
+  );
+}
+
+// Presentational component (pure UI)
+function UserList({ users, loading, error, onUserClick }) {
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id} onClick={() => onUserClick(user.id)}>
+          {user.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### Command Query Responsibility Segregation (CQRS)
+
+```javascript
+// Commands - Write operations
+const commands = {
+  createUser: async (userData) => {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.json();
+  },
+  
+  updateUser: async (id, updates) => {
+    const response = await fetch(`/api/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.json();
+  },
+  
+  deleteUser: async (id) => {
+    await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    return { success: true };
+  }
+};
+
+// Queries - Read operations
+const queries = {
+  getUsers: async () => {
+    const response = await fetch('/api/users');
+    return response.json();
+  },
+  
+  getUserById: async (id) => {
+    const response = await fetch(`/api/users/${id}`);
+    return response.json();
+  }
+};
+
+// Usage
+async function handleUserCreation(userData) {
+  try {
+    await commands.createUser(userData);
+    // Update UI or trigger refetch
+    const users = await queries.getUsers();
+    updateUserList(users);
+  } catch (error) {
+    handleError(error);
+  }
+}
+```
+
+### Event Sourcing
+
+```javascript
+// Event store
+class EventStore {
+  constructor() {
+    this.events = [];
+    this.subscribers = [];
+  }
+  
+  addEvent(event) {
+    this.events.push({
+      ...event,
+      timestamp: new Date().toISOString()
+    });
+    
+    this.notifySubscribers(event);
+  }
+  
+  getEvents() {
+    return [...this.events];
+  }
+  
+  subscribe(callback) {
+    this.subscribers.push(callback);
+    return () => {
+      this.subscribers = this.subscribers.filter(sub => sub !== callback);
+    };
+  }
+  
+  notifySubscribers(event) {
+    this.subscribers.forEach(callback => callback(event));
+  }
+}
+
+// Application state derived from events
+class UserState {
+  constructor(eventStore) {
+    this.users = [];
+    this.eventStore = eventStore;
+    
+    // Subscribe to events
+    this.unsubscribe = eventStore.subscribe(event => {
+      this.applyEvent(event);
+    });
+    
+    // Apply all existing events
+    eventStore.getEvents().forEach(event => {
+      this.applyEvent(event);
+    });
+  }
+  
+  applyEvent(event) {
+    switch (event.type) {
+      case 'USER_CREATED':
+        this.users.push(event.payload);
+        break;
+      case 'USER_UPDATED':
+        this.users = this.users.map(user =>
+          user.id === event.payload.id
+            ? { ...user, ...event.payload.updates }
+            : user
+        );
+        break;
+      case 'USER_DELETED':
+        this.users = this.users.filter(user => user.id !== event.payload.id);
+        break;
+    }
+  }
+  
+  getUsers() {
+    return [...this.users];
+  }
+  
+  dispose() {
+    this.unsubscribe();
+  }
+}
+
+// Usage
+const eventStore = new EventStore();
+const userState = new UserState(eventStore);
+
+// Create a user
+eventStore.addEvent({
+  type: 'USER_CREATED',
+  payload: { id: 1, name: 'John', email: 'john@example.com' }
+});
+
+// Update a user
+eventStore.addEvent({
+  type: 'USER_UPDATED',
+  payload: {
+    id: 1,
+    updates: { name: 'John Doe' }
+  }
+});
+
+// Get current state
+console.log(userState.getUsers());
+```
+
+## Best Practices
+
+```javascript
+// 1. Keep state as minimal as possible
+const goodState = {
+  users: {
+    byId: {
+      'user1': { id: 'user1', name: 'John' },
+      'user2': { id: 'user2', name: 'Jane' }
+    },
+    allIds: ['user1', 'user2']
+  }
+};
+
+// 2. Normalize complex state
+const normalizedState = {
+  entities: {
+    users: {
+      'user1': { id: 'user1', name: 'John' },
+      'user2': { id: 'user2', name: 'Jane' }
+    },
+    posts: {
+      'post1': { id: 'post1', title: 'Hello', authorId: 'user1' },
+      'post2': { id: 'post2', title: 'World', authorId: 'user2' }
+    }
+  },
+  ui: {
+    currentUser: 'user1',
+    isLoading: false
+  }
+};
+
+// 3. Separate UI state from domain state
+const domainState = {
+  users: [...],
+  posts: [...]
+};
+
+const uiState = {
+  isModalOpen: false,
+  activeTab: 'profile',
+  theme: 'dark'
+};
+
+// 4. Use selectors for derived data
+function selectCompletedTodos(state) {
+  return state.todos.filter(todo => todo.completed);
+}
+
+// With memoization
+import { createSelector } from 'reselect';
+
+const selectTodos = state => state.todos;
+
+const selectCompletedTodos = createSelector(
+  [selectTodos],
+  (todos) => todos.filter(todo => todo.completed)
+);
+
+// 5. Immutable updates
+// Bad - mutates state directly
+function badUpdate(state, id, name) {
+  state.users[id].name = name; // Mutation!
+  return state;
+}
+
+// Good - creates new objects
+function goodUpdate(state, id, name) {
+  return {
+    ...state,
+    users: {
+      ...state.users,
+      [id]: {
+        ...state.users[id],
+        name
+      }
+    }
+  };
+}
+```
+
+## Interview Tips
+
+- Explain the core problems that state management solves in modern web applications
+- Compare different state management approaches (Context API, Redux, MobX, etc.) and their trade-offs
+- Describe how to handle asynchronous operations in various state management libraries
+- Explain the concept of immutability and why it's important for state management
+- Discuss strategies for optimizing performance in state management
+- Describe patterns for organizing and structuring application state
+- Explain how to persist state across page refreshes
+- Discuss how to test state management code effectively

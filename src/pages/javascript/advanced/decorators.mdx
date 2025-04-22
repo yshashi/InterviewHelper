@@ -1,0 +1,754 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: JavaScript Decorators
+---
+
+# JavaScript Decorators
+
+Decorators are a design pattern that allows behavior to be added to individual objects, either statically or dynamically, without affecting the behavior of other objects from the same class. JavaScript decorators provide a way to annotate and modify classes and class members at design time.
+
+## Current Status
+
+JavaScript decorators have been in development for several years, with multiple proposal iterations. As of the latest update, decorators are at Stage 3 in the TC39 process, meaning they're close to standardization but not yet part of the official ECMAScript specification.
+
+## Basic Concept
+
+Decorators are functions that can be attached to classes, methods, accessors, properties, or class fields to modify their behavior:
+
+```javascript
+// Basic decorator syntax
+@decorator
+class MyClass {
+  @decoratorWithParams(param1, param2)
+  method() {}
+  
+  @readonly
+  field = value;
+}
+```
+
+## Types of Decorators
+
+### Class Decorators
+
+Class decorators are applied to the class itself and can modify or replace the class definition:
+
+```javascript
+// Class decorator function
+function logged(target) {
+  // Keep a reference to the original constructor
+  const original = target;
+  
+  // Define a new constructor function
+  function construct(constructor, args) {
+    console.log(`Creating new instance of ${constructor.name}`);
+    return Reflect.construct(constructor, args);
+  }
+  
+  // Create a new constructor that logs instantiation
+  const newConstructor = function (...args) {
+    return construct(original, args);
+  };
+  
+  // Copy prototype so instanceof works
+  newConstructor.prototype = original.prototype;
+  
+  return newConstructor;
+}
+
+// Apply the decorator to a class
+@logged
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+}
+
+const p = new Person("Alice"); // Logs: "Creating new instance of Person"
+```
+
+### Method Decorators
+
+Method decorators can modify, observe, or replace a method definition:
+
+```javascript
+// Method decorator function
+function measure(target, name, descriptor) {
+  // Store the original method
+  const originalMethod = descriptor.value;
+  
+  // Replace with a new function
+  descriptor.value = function (...args) {
+    console.time(name);
+    try {
+      // Call the original method
+      return originalMethod.apply(this, args);
+    } finally {
+      console.timeEnd(name);
+    }
+  };
+  
+  return descriptor;
+}
+
+class Calculator {
+  @measure
+  calculateSum(a, b) {
+    // Simulate complex calculation
+    let result = 0;
+    for (let i = 0; i < 1000000; i++) {
+      result += i;
+    }
+    return a + b + result;
+  }
+}
+
+const calc = new Calculator();
+calc.calculateSum(5, 10); // Logs timing information
+```
+
+### Property Decorators
+
+Property decorators can modify how class properties behave:
+
+```javascript
+// Property decorator function
+function uppercase(target, name) {
+  // Property value storage
+  let value;
+  
+  // Create a new property with custom getter and setter
+  const descriptor = {
+    get() {
+      return value;
+    },
+    set(newValue) {
+      value = newValue.toUpperCase();
+    },
+    enumerable: true,
+    configurable: true
+  };
+  
+  return descriptor;
+}
+
+class User {
+  @uppercase
+  name = "";
+}
+
+const user = new User();
+user.name = "john";
+console.log(user.name); // "JOHN"
+```
+
+### Parameter Decorators
+
+Parameter decorators can be applied to method parameters:
+
+```javascript
+// Parameter decorator function
+function required(target, propertyKey, parameterIndex) {
+  // Get or create parameter validation metadata
+  const existingRequiredParameters = Reflect.getOwnMetadata(
+    "required", 
+    target, 
+    propertyKey
+  ) || [];
+  
+  // Mark parameter as required
+  existingRequiredParameters.push(parameterIndex);
+  
+  Reflect.defineMetadata(
+    "required",
+    existingRequiredParameters,
+    target,
+    propertyKey
+  );
+}
+
+class UserService {
+  createUser(@required firstName, @required lastName, middleName) {
+    // Method implementation
+  }
+}
+
+// Validation logic would be implemented separately
+```
+
+### Accessor Decorators
+
+Accessor decorators can modify getters and setters:
+
+```javascript
+// Accessor decorator function
+function validateAge(target, name, descriptor) {
+  // Store the original setter
+  const originalSet = descriptor.set;
+  
+  // Replace with a new setter that includes validation
+  descriptor.set = function(value) {
+    if (value < 0 || value > 120) {
+      throw new Error("Age must be between 0 and 120");
+    }
+    
+    // Call the original setter
+    originalSet.call(this, value);
+  };
+  
+  return descriptor;
+}
+
+class Person {
+  constructor() {
+    this._age = 0;
+  }
+  
+  get age() {
+    return this._age;
+  }
+  
+  @validateAge
+  set age(value) {
+    this._age = value;
+  }
+}
+
+const person = new Person();
+person.age = 30; // Works fine
+// person.age = 150; // Throws: "Age must be between 0 and 120"
+```
+
+## Decorator Factories
+
+Decorator factories are functions that return a decorator function, allowing for customization:
+
+```javascript
+// Decorator factory
+function log(message) {
+  // Return the actual decorator function
+  return function(target, name, descriptor) {
+    // Store the original method
+    const originalMethod = descriptor.value;
+    
+    // Replace with a new function
+    descriptor.value = function(...args) {
+      console.log(`${message}: ${name}`);
+      return originalMethod.apply(this, args);
+    };
+    
+    return descriptor;
+  };
+}
+
+class Example {
+  @log("Calling method")
+  doSomething() {
+    return "Result";
+  }
+}
+
+const example = new Example();
+example.doSomething(); // Logs: "Calling method: doSomething"
+```
+
+## Practical Applications
+
+### Dependency Injection
+
+```javascript
+// Simple dependency injection system
+const dependencies = {};
+
+// Register a dependency
+function injectable(key) {
+  dependencies[key] = class {};
+}
+
+// Inject dependencies
+function inject(key) {
+  return function(target, propertyKey) {
+    const originalConstructor = target.constructor;
+    
+    // Override constructor
+    target.constructor = function(...args) {
+      const instance = new originalConstructor(...args);
+      instance[propertyKey] = new dependencies[key]();
+      return instance;
+    };
+  };
+}
+
+// Usage
+@injectable("UserService")
+class UserService {
+  getUsers() {
+    return ["User1", "User2"];
+  }
+}
+
+class UserController {
+  @inject("UserService")
+  userService;
+  
+  listUsers() {
+    return this.userService.getUsers();
+  }
+}
+
+const controller = new UserController();
+console.log(controller.listUsers()); // ["User1", "User2"]
+```
+
+### Memoization
+
+```javascript
+// Memoization decorator
+function memoize(target, name, descriptor) {
+  const originalMethod = descriptor.value;
+  const cache = new Map();
+  
+  descriptor.value = function(...args) {
+    const key = JSON.stringify(args);
+    
+    if (cache.has(key)) {
+      console.log(`Cache hit for ${name}(${key})`);
+      return cache.get(key);
+    }
+    
+    console.log(`Cache miss for ${name}(${key})`);
+    const result = originalMethod.apply(this, args);
+    cache.set(key, result);
+    return result;
+  };
+  
+  return descriptor;
+}
+
+class MathUtils {
+  @memoize
+  fibonacci(n) {
+    if (n <= 1) return n;
+    return this.fibonacci(n - 1) + this.fibonacci(n - 2);
+  }
+}
+
+const math = new MathUtils();
+console.log(math.fibonacci(10)); // Calculates and caches
+console.log(math.fibonacci(10)); // Returns from cache
+```
+
+### Validation
+
+```javascript
+// Property validation decorator
+function validate(validator) {
+  return function(target, propertyKey) {
+    // Property value storage
+    let value;
+    
+    // Create property descriptor
+    const descriptor = {
+      get() {
+        return value;
+      },
+      set(newValue) {
+        if (!validator(newValue)) {
+          throw new Error(`Invalid value for ${propertyKey}`);
+        }
+        value = newValue;
+      },
+      enumerable: true,
+      configurable: true
+    };
+    
+    return descriptor;
+  };
+}
+
+// Validation functions
+const isEmail = value => /\S+@\S+\.\S+/.test(value);
+const isNotEmpty = value => value !== null && value !== undefined && value !== '';
+
+class User {
+  @validate(isEmail)
+  email = "";
+  
+  @validate(isNotEmpty)
+  name = "";
+}
+
+const user = new User();
+user.name = "John"; // Valid
+user.email = "john@example.com"; // Valid
+// user.email = "invalid"; // Throws error
+```
+
+### Authorization
+
+```javascript
+// Role-based authorization decorator
+function authorize(roles) {
+  return function(target, name, descriptor) {
+    const originalMethod = descriptor.value;
+    
+    descriptor.value = function(...args) {
+      const currentUser = getCurrentUser(); // Assumed function
+      
+      if (!roles.includes(currentUser.role)) {
+        throw new Error("Unauthorized access");
+      }
+      
+      return originalMethod.apply(this, args);
+    };
+    
+    return descriptor;
+  };
+}
+
+class AdminPanel {
+  @authorize(["admin"])
+  deleteUser(userId) {
+    // Delete user logic
+    console.log(`Deleting user ${userId}`);
+  }
+  
+  @authorize(["admin", "moderator"])
+  banUser(userId) {
+    // Ban user logic
+    console.log(`Banning user ${userId}`);
+  }
+}
+```
+
+### Logging and Monitoring
+
+```javascript
+// Method logging decorator
+function logMethod(target, name, descriptor) {
+  const originalMethod = descriptor.value;
+  
+  descriptor.value = function(...args) {
+    console.log(`Entering ${name} with arguments: ${JSON.stringify(args)}`);
+    
+    try {
+      const result = originalMethod.apply(this, args);
+      console.log(`Exiting ${name} with result: ${JSON.stringify(result)}`);
+      return result;
+    } catch (error) {
+      console.error(`Error in ${name}: ${error.message}`);
+      throw error;
+    }
+  };
+  
+  return descriptor;
+}
+
+// Class logging decorator
+function logClass(target) {
+  // Get all property names, including non-enumerable ones
+  const props = Object.getOwnPropertyNames(target.prototype);
+  
+  // Loop through properties
+  for (const prop of props) {
+    // Skip constructor
+    if (prop === 'constructor') continue;
+    
+    // Get property descriptor
+    const descriptor = Object.getOwnPropertyDescriptor(target.prototype, prop);
+    
+    // Apply logging only to methods
+    if (typeof descriptor.value === 'function') {
+      Object.defineProperty(
+        target.prototype,
+        prop,
+        logMethod(target.prototype, prop, descriptor)
+      );
+    }
+  }
+  
+  return target;
+}
+
+// Usage
+@logClass
+class UserService {
+  getUser(id) {
+    return { id, name: "User " + id };
+  }
+  
+  updateUser(id, data) {
+    return { id, ...data, updated: true };
+  }
+}
+
+const service = new UserService();
+service.getUser(123); // Logs method entry and exit
+```
+
+## Advanced Patterns
+
+### Composing Multiple Decorators
+
+```javascript
+// Multiple decorators can be applied to the same target
+class API {
+  @log("API Call")
+  @measure
+  @memoize
+  fetchData(id) {
+    // Simulate API call
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve({ id, data: "Some data" });
+      }, 1000);
+    });
+  }
+}
+
+// Decorators are applied in reverse order: memoize, then measure, then log
+```
+
+### Class Field Decorators
+
+```javascript
+// Field decorator
+function defaultValue(value) {
+  return function(target, name) {
+    const constructor = target.constructor;
+    const originalConstructor = constructor;
+    
+    // Override constructor
+    constructor = function(...args) {
+      const instance = new originalConstructor(...args);
+      if (instance[name] === undefined) {
+        instance[name] = value;
+      }
+      return instance;
+    };
+    
+    // Copy prototype
+    constructor.prototype = originalConstructor.prototype;
+    
+    return constructor;
+  };
+}
+
+class Settings {
+  @defaultValue(true)
+  darkMode;
+  
+  @defaultValue(10)
+  fontSize;
+}
+
+const settings = new Settings();
+console.log(settings.darkMode); // true
+console.log(settings.fontSize); // 10
+```
+
+### Metadata Reflection
+
+```javascript
+// Requires reflect-metadata package
+import 'reflect-metadata';
+
+// Define metadata with a decorator
+function type(type) {
+  return function(target, propertyKey) {
+    Reflect.defineMetadata('design:type', type, target, propertyKey);
+  };
+}
+
+// Validation decorator that uses metadata
+function validate(target, propertyKey) {
+  const type = Reflect.getMetadata('design:type', target, propertyKey);
+  
+  // Create property descriptor
+  let value;
+  return {
+    get() {
+      return value;
+    },
+    set(newValue) {
+      // Type validation
+      if (typeof newValue !== type.name.toLowerCase()) {
+        throw new TypeError(`${propertyKey} must be a ${type.name}`);
+      }
+      value = newValue;
+    }
+  };
+}
+
+class User {
+  @validate
+  @type(String)
+  name;
+  
+  @validate
+  @type(Number)
+  age;
+}
+
+const user = new User();
+user.name = "John"; // Valid
+user.age = 30; // Valid
+// user.name = 123; // TypeError: name must be a String
+```
+
+## Current Implementation Status
+
+### Browser and Environment Support
+
+Decorators are not yet natively supported in browsers or Node.js. They require transpilation:
+
+1. **Babel**: Supported via the `@babel/plugin-proposal-decorators` plugin
+2. **TypeScript**: Supported with the `experimentalDecorators` compiler option
+3. **Node.js**: Not natively supported, requires transpilation
+
+```javascript
+// Babel configuration
+// babel.config.js
+module.exports = {
+  plugins: [
+    ["@babel/plugin-proposal-decorators", { version: "2023-05" }]
+  ]
+};
+
+// TypeScript configuration
+// tsconfig.json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+```
+
+### Differences Between Implementations
+
+There have been multiple decorator proposals with syntax and semantic differences:
+
+1. **Legacy Decorators (Stage 1)**: Used in TypeScript and earlier Babel implementations
+2. **2018 Decorators Proposal**: Introduced significant changes
+3. **2022/2023 Decorators Proposal (Stage 3)**: Current version moving toward standardization
+
+The examples in this document follow the latest proposal syntax, but be aware that existing code might use older versions.
+
+## Comparison with Other Languages
+
+### TypeScript Decorators
+
+TypeScript has had decorator support for years, but its implementation differs from the current JavaScript proposal:
+
+```typescript
+// TypeScript method decorator
+function log(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+  
+  descriptor.value = function(...args: any[]) {
+    console.log(`Calling ${propertyKey} with args: ${JSON.stringify(args)}`);
+    return originalMethod.apply(this, args);
+  };
+  
+  return descriptor;
+}
+
+class Example {
+  @log
+  greet(name: string) {
+    return `Hello, ${name}!`;
+  }
+}
+```
+
+### Python Decorators
+
+JavaScript decorators are similar to Python decorators:
+
+```python
+# Python decorator
+def log_function_call(func):
+    def wrapper(*args, **kwargs):
+        print(f"Calling {func.__name__} with {args} and {kwargs}")
+        return func(*args, **kwargs)
+    return wrapper
+
+# Usage
+@log_function_call
+def greet(name):
+    return f"Hello, {name}!"
+```
+
+## Best Practices
+
+1. **Keep Decorators Simple**: Each decorator should have a single responsibility
+2. **Avoid Side Effects**: Decorators should be pure functions when possible
+3. **Document Behavior**: Clearly document what each decorator does
+4. **Consider Performance**: Be mindful of performance implications, especially for frequently called methods
+5. **Test Thoroughly**: Test decorated and non-decorated behavior
+
+```javascript
+// Good: Single responsibility
+function validate(schema) {
+  return function(target, name, descriptor) {
+    const originalMethod = descriptor.value;
+    
+    descriptor.value = function(...args) {
+      const valid = schema.validate(args[0]);
+      if (!valid) {
+        throw new Error("Validation failed");
+      }
+      return originalMethod.apply(this, args);
+    };
+    
+    return descriptor;
+  };
+}
+
+// Bad: Too many responsibilities
+function doEverything(target, name, descriptor) {
+  const originalMethod = descriptor.value;
+  
+  descriptor.value = function(...args) {
+    // Logging
+    console.log(`Calling ${name}`);
+    
+    // Validation
+    if (!validateInput(args[0])) {
+      throw new Error("Invalid input");
+    }
+    
+    // Timing
+    const start = performance.now();
+    
+    // Authorization
+    if (!isAuthorized()) {
+      throw new Error("Unauthorized");
+    }
+    
+    // Original method
+    const result = originalMethod.apply(this, args);
+    
+    // More logging
+    console.log(`${name} took ${performance.now() - start}ms`);
+    
+    // Caching
+    cache.set(name + JSON.stringify(args), result);
+    
+    return result;
+  };
+  
+  return descriptor;
+}
+```
+
+## Interview Tips
+
+- Explain the purpose and benefits of decorators in JavaScript
+- Describe the different types of decorators and their use cases
+- Discuss the current status of decorators in the JavaScript ecosystem
+- Compare JavaScript decorators with similar features in other languages
+- Demonstrate knowledge of common decorator patterns like memoization, validation, and logging
+- Explain how to implement and use decorators with current tooling
+- Discuss the evolution of the decorator proposal and the differences between versions

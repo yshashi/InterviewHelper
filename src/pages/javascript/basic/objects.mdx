@@ -1,0 +1,895 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are objects in JavaScript, and how do you create them?
+---
+
+# What are objects in JavaScript, and how do you create them?
+
+Objects are one of the most fundamental and powerful data structures in JavaScript. They allow you to store collections of related data and functionality as key-value pairs. Unlike arrays, which use numeric indices, objects use named properties to access their members, making them ideal for representing real-world entities with various attributes and behaviors.
+
+## Understanding JavaScript Objects
+
+At their core, JavaScript objects are collections of properties, where each property is a key-value pair. The key (also called property name) is always a string or Symbol, while the value can be any JavaScript data type, including other objects, arrays, or functions.
+
+```javascript
+// A simple object representing a person
+const person = {
+  name: "Rahul Sharma",
+  age: 30,
+  isEmployed: true,
+  skills: ["JavaScript", "React", "Node.js"],
+  address: {
+    city: "Mumbai",
+    state: "Maharashtra",
+    country: "India"
+  },
+  greet: function() {
+    return `Hello, my name is ${this.name}`;
+  }
+};
+```
+
+In this example, `person` is an object with various properties:
+- Primitive values (`name`, `age`, `isEmployed`)
+- An array (`skills`)
+- A nested object (`address`)
+- A method (`greet`)
+
+## Ways to Create Objects in JavaScript
+
+JavaScript provides multiple ways to create objects, each with its own use cases and advantages.
+
+### 1. Object Literals
+
+The most common and straightforward way to create objects is using object literals with curly braces `{}`:
+
+```javascript
+const user = {
+  firstName: "Priya",
+  lastName: "Patel",
+  age: 28,
+  email: "priya@example.com",
+  isActive: true,
+  login() {
+    console.log(`${this.firstName} has logged in`);
+  },
+  logout() {
+    console.log(`${this.firstName} has logged out`);
+  }
+};
+```
+
+Object literals are ideal for creating one-off objects or when you need to define an object with known properties.
+
+### 2. Constructor Functions
+
+Before ES6 classes, constructor functions were the primary way to create multiple objects with the same structure:
+
+```javascript
+function Person(firstName, lastName, age) {
+  this.firstName = firstName;
+  this.lastName = lastName;
+  this.age = age;
+  this.fullName = function() {
+    return `${this.firstName} ${this.lastName}`;
+  };
+}
+
+const person1 = new Person("Rahul", "Sharma", 30);
+const person2 = new Person("Priya", "Patel", 28);
+
+console.log(person1.fullName()); // "Rahul Sharma"
+console.log(person2.fullName()); // "Priya Patel"
+```
+
+When using constructor functions:
+- Function names typically start with a capital letter (convention)
+- The `new` keyword is used to create instances
+- `this` inside the constructor refers to the newly created object
+
+### 3. ES6 Classes
+
+ES6 introduced classes, providing a more familiar syntax for developers coming from class-based languages:
+
+```javascript
+class Person {
+  constructor(firstName, lastName, age) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.age = age;
+  }
+  
+  fullName() {
+    return `${this.firstName} ${this.lastName}`;
+  }
+  
+  isAdult() {
+    return this.age >= 18;
+  }
+}
+
+const person1 = new Person("Rahul", "Sharma", 30);
+console.log(person1.fullName()); // "Rahul Sharma"
+console.log(person1.isAdult()); // true
+```
+
+Classes in JavaScript are primarily syntactic sugar over the prototype-based inheritance model, but they provide a cleaner, more intuitive syntax.
+
+### 4. Object.create()
+
+The `Object.create()` method creates a new object with the specified prototype object:
+
+```javascript
+const personProto = {
+  greet() {
+    return `Hello, my name is ${this.name}`;
+  },
+  introduce() {
+    return `I am ${this.age} years old and work as a ${this.profession}`;
+  }
+};
+
+const rahul = Object.create(personProto);
+rahul.name = "Rahul Sharma";
+rahul.age = 30;
+rahul.profession = "Software Engineer";
+
+console.log(rahul.greet()); // "Hello, my name is Rahul Sharma"
+console.log(rahul.introduce()); // "I am 30 years old and work as a Software Engineer"
+```
+
+`Object.create()` is particularly useful when you want to implement inheritance or create objects with specific prototypes.
+
+### 5. Factory Functions
+
+Factory functions are regular functions that return new objects:
+
+```javascript
+function createPerson(firstName, lastName, age) {
+  return {
+    firstName,
+    lastName,
+    age,
+    fullName() {
+      return `${firstName} ${lastName}`;
+    },
+    isAdult() {
+      return age >= 18;
+    }
+  };
+}
+
+const person1 = createPerson("Rahul", "Sharma", 30);
+const person2 = createPerson("Priya", "Patel", 28);
+
+console.log(person1.fullName()); // "Rahul Sharma"
+console.log(person2.isAdult()); // true
+```
+
+Factory functions are useful when you need to create objects with private variables or when you want to avoid the `new` keyword.
+
+## Accessing Object Properties
+
+There are two main ways to access object properties:
+
+### Dot Notation
+
+```javascript
+const user = {
+  name: "Rahul",
+  age: 30
+};
+
+console.log(user.name); // "Rahul"
+console.log(user.age); // 30
+```
+
+Dot notation is more concise and readable, but it can only be used with valid identifier names.
+
+### Bracket Notation
+
+```javascript
+const user = {
+  name: "Rahul",
+  age: 30,
+  "user-id": "U12345" // Contains a hyphen, not a valid identifier
+};
+
+console.log(user["name"]); // "Rahul"
+console.log(user["age"]); // 30
+console.log(user["user-id"]); // "U12345"
+```
+
+Bracket notation is more flexible:
+- It can use property names that aren't valid identifiers
+- It can use variables as property names
+- It allows for dynamic property access
+
+```javascript
+const propertyName = "age";
+console.log(user[propertyName]); // 30
+
+// Dynamic property access
+function getProperty(obj, prop) {
+  return obj[prop];
+}
+
+console.log(getProperty(user, "name")); // "Rahul"
+```
+
+## Adding, Modifying, and Deleting Properties
+
+Objects in JavaScript are dynamic, allowing you to add, modify, or delete properties at any time.
+
+### Adding Properties
+
+```javascript
+const user = {
+  name: "Rahul"
+};
+
+// Adding new properties
+user.age = 30;
+user["email"] = "rahul@example.com";
+user.address = {
+  city: "Mumbai",
+  country: "India"
+};
+
+console.log(user);
+// { name: "Rahul", age: 30, email: "rahul@example.com", address: { city: "Mumbai", country: "India" } }
+```
+
+### Modifying Properties
+
+```javascript
+const user = {
+  name: "Rahul",
+  age: 30
+};
+
+// Modifying existing properties
+user.name = "Rahul Sharma";
+user["age"] = 31;
+
+console.log(user); // { name: "Rahul Sharma", age: 31 }
+```
+
+### Deleting Properties
+
+```javascript
+const user = {
+  name: "Rahul",
+  age: 30,
+  email: "rahul@example.com"
+};
+
+// Deleting properties
+delete user.email;
+
+console.log(user); // { name: "Rahul", age: 30 }
+```
+
+## Object Methods
+
+When a property of an object is a function, it's called a method. Methods can access and modify the object's properties using the `this` keyword.
+
+### Method Definitions
+
+```javascript
+// Traditional method definition
+const calculator = {
+  value: 0,
+  add: function(n) {
+    this.value += n;
+    return this.value;
+  },
+  subtract: function(n) {
+    this.value -= n;
+    return this.value;
+  }
+};
+
+// ES6 shorthand method definition
+const modernCalculator = {
+  value: 0,
+  add(n) {
+    this.value += n;
+    return this.value;
+  },
+  subtract(n) {
+    this.value -= n;
+    return this.value;
+  }
+};
+
+console.log(calculator.add(5)); // 5
+console.log(modernCalculator.add(5)); // 5
+```
+
+### The 'this' Keyword in Methods
+
+The `this` keyword refers to the object the method is called on:
+
+```javascript
+const person = {
+  firstName: "Rahul",
+  lastName: "Sharma",
+  fullName() {
+    return `${this.firstName} ${this.lastName}`;
+  },
+  updateName(newFirstName) {
+    this.firstName = newFirstName;
+  }
+};
+
+console.log(person.fullName()); // "Rahul Sharma"
+person.updateName("Raj");
+console.log(person.fullName()); // "Raj Sharma"
+```
+
+Be careful with `this` in callbacks or nested functions, as it may not refer to the object you expect:
+
+```javascript
+const user = {
+  name: "Rahul",
+  greet() {
+    console.log(`Hello, I'm ${this.name}`);
+  },
+  greetLater() {
+    setTimeout(function() {
+      console.log(`Hello, I'm ${this.name}`); // 'this' is not 'user' here
+    }, 1000);
+  },
+  greetLaterFixed() {
+    const self = this;
+    setTimeout(function() {
+      console.log(`Hello, I'm ${self.name}`); // Works using 'self'
+    }, 1000);
+  },
+  greetLaterArrow() {
+    setTimeout(() => {
+      console.log(`Hello, I'm ${this.name}`); // Works with arrow function
+    }, 1000);
+  }
+};
+
+user.greet(); // "Hello, I'm Rahul"
+user.greetLater(); // "Hello, I'm undefined" (or window.name in browsers)
+user.greetLaterFixed(); // "Hello, I'm Rahul"
+user.greetLaterArrow(); // "Hello, I'm Rahul"
+```
+
+## Object Property Attributes
+
+Each property in a JavaScript object has attributes that define its behavior:
+
+- **value**: The property's value
+- **writable**: Whether the property can be changed
+- **enumerable**: Whether the property appears in for...in loops and Object.keys()
+- **configurable**: Whether the property can be deleted or its attributes changed
+
+### Object.defineProperty()
+
+You can use `Object.defineProperty()` to create properties with specific attributes:
+
+```javascript
+const user = {};
+
+Object.defineProperty(user, 'name', {
+  value: 'Rahul',
+  writable: true,
+  enumerable: true,
+  configurable: true
+});
+
+Object.defineProperty(user, 'id', {
+  value: 'U12345',
+  writable: false, // Read-only
+  enumerable: false, // Won't show up in loops
+  configurable: false // Can't be deleted
+});
+
+user.name = 'Raj'; // Works (writable: true)
+console.log(user.name); // "Raj"
+
+user.id = 'U67890'; // Silently fails (writable: false)
+console.log(user.id); // "U12345"
+
+console.log(Object.keys(user)); // ["name"] (id is not enumerable)
+
+delete user.id; // Silently fails (configurable: false)
+console.log(user.id); // "U12345"
+```
+
+### Object.getOwnPropertyDescriptor()
+
+You can inspect a property's attributes:
+
+```javascript
+const user = { name: 'Rahul' };
+
+const descriptor = Object.getOwnPropertyDescriptor(user, 'name');
+console.log(descriptor);
+// { value: "Rahul", writable: true, enumerable: true, configurable: true }
+```
+
+## Object Property Getters and Setters
+
+Getters and setters allow you to define special methods that are called when a property is accessed or modified:
+
+```javascript
+const person = {
+  firstName: 'Rahul',
+  lastName: 'Sharma',
+  
+  // Getter
+  get fullName() {
+    return `${this.firstName} ${this.lastName}`;
+  },
+  
+  // Setter
+  set fullName(name) {
+    const parts = name.split(' ');
+    this.firstName = parts[0];
+    this.lastName = parts[1];
+  }
+};
+
+console.log(person.fullName); // "Rahul Sharma" (getter is called)
+
+person.fullName = 'Priya Patel'; // Setter is called
+console.log(person.firstName); // "Priya"
+console.log(person.lastName); // "Patel"
+```
+
+Getters and setters are useful for:
+- Computed properties
+- Data validation
+- Encapsulation
+- Side effects when properties are accessed or modified
+
+## Object Property Flags and Descriptors
+
+You can make objects and their properties immutable using various methods:
+
+### Object.preventExtensions()
+
+Prevents adding new properties to an object:
+
+```javascript
+const user = { name: 'Rahul' };
+Object.preventExtensions(user);
+
+user.age = 30; // Silently fails in non-strict mode, throws TypeError in strict mode
+console.log(user.age); // undefined
+
+console.log(Object.isExtensible(user)); // false
+```
+
+### Object.seal()
+
+Prevents adding or deleting properties, but allows modifying existing ones:
+
+```javascript
+const user = { name: 'Rahul' };
+Object.seal(user);
+
+user.name = 'Raj'; // Works
+user.age = 30; // Fails
+delete user.name; // Fails
+
+console.log(user.name); // "Raj"
+console.log(Object.isSealed(user)); // true
+```
+
+### Object.freeze()
+
+Makes an object completely immutable (can't add, delete, or modify properties):
+
+```javascript
+const user = { name: 'Rahul', address: { city: 'Mumbai' } };
+Object.freeze(user);
+
+user.name = 'Raj'; // Silently fails
+user.age = 30; // Silently fails
+delete user.name; // Silently fails
+
+// Note: freeze is shallow, nested objects can still be modified
+user.address.city = 'Delhi'; // Works
+
+console.log(user.name); // "Rahul"
+console.log(user.address.city); // "Delhi"
+console.log(Object.isFrozen(user)); // true
+```
+
+## Object Destructuring
+
+Object destructuring allows you to extract properties from objects into distinct variables:
+
+```javascript
+const person = {
+  name: 'Rahul Sharma',
+  age: 30,
+  address: {
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    country: 'India'
+  },
+  skills: ['JavaScript', 'React', 'Node.js']
+};
+
+// Basic destructuring
+const { name, age } = person;
+console.log(name, age); // "Rahul Sharma" 30
+
+// Destructuring with new variable names
+const { name: fullName, age: years } = person;
+console.log(fullName, years); // "Rahul Sharma" 30
+
+// Destructuring with default values
+const { name: userName, role = 'Developer' } = person;
+console.log(userName, role); // "Rahul Sharma" "Developer"
+
+// Nested destructuring
+const { address: { city, country } } = person;
+console.log(city, country); // "Mumbai" "India"
+
+// Rest operator in destructuring
+const { name: personName, ...rest } = person;
+console.log(personName); // "Rahul Sharma"
+console.log(rest); // { age: 30, address: {...}, skills: [...] }
+```
+
+Destructuring is particularly useful in function parameters:
+
+```javascript
+function displayPerson({ name, age, address: { city } = {} }) {
+  console.log(`${name} is ${age} years old and lives in ${city}`);
+}
+
+displayPerson(person); // "Rahul Sharma is 30 years old and lives in Mumbai"
+```
+
+## Object Iteration Methods
+
+There are several ways to iterate over object properties:
+
+### for...in Loop
+
+```javascript
+const user = {
+  name: 'Rahul',
+  age: 30,
+  isActive: true
+};
+
+for (const key in user) {
+  console.log(`${key}: ${user[key]}`);
+}
+// "name: Rahul"
+// "age: 30"
+// "isActive: true"
+```
+
+Note: `for...in` also iterates over inherited properties, so it's often used with `hasOwnProperty()`:
+
+```javascript
+for (const key in user) {
+  if (user.hasOwnProperty(key)) {
+    console.log(`${key}: ${user[key]}`);
+  }
+}
+```
+
+### Object.keys()
+
+Returns an array of an object's own enumerable property names:
+
+```javascript
+const user = {
+  name: 'Rahul',
+  age: 30,
+  isActive: true
+};
+
+const keys = Object.keys(user);
+console.log(keys); // ["name", "age", "isActive"]
+
+keys.forEach(key => {
+  console.log(`${key}: ${user[key]}`);
+});
+```
+
+### Object.values()
+
+Returns an array of an object's own enumerable property values:
+
+```javascript
+const user = {
+  name: 'Rahul',
+  age: 30,
+  isActive: true
+};
+
+const values = Object.values(user);
+console.log(values); // ["Rahul", 30, true]
+
+values.forEach(value => {
+  console.log(value);
+});
+```
+
+### Object.entries()
+
+Returns an array of an object's own enumerable property [key, value] pairs:
+
+```javascript
+const user = {
+  name: 'Rahul',
+  age: 30,
+  isActive: true
+};
+
+const entries = Object.entries(user);
+console.log(entries);
+// [["name", "Rahul"], ["age", 30], ["isActive", true]]
+
+entries.forEach(([key, value]) => {
+  console.log(`${key}: ${value}`);
+});
+```
+
+## Object Manipulation Methods
+
+### Object.assign()
+
+Copies all enumerable own properties from one or more source objects to a target object:
+
+```javascript
+const target = { a: 1, b: 2 };
+const source = { b: 3, c: 4 };
+
+const result = Object.assign(target, source);
+console.log(target); // { a: 1, b: 3, c: 4 }
+console.log(result === target); // true
+
+// Creating a new object without modifying the originals
+const newObj = Object.assign({}, target, source);
+```
+
+### Spread Operator (ES6+)
+
+A more concise way to copy and merge objects:
+
+```javascript
+const user = { name: 'Rahul', age: 30 };
+const details = { job: 'Developer', location: 'Mumbai' };
+
+// Copying an object
+const userCopy = { ...user };
+
+// Merging objects
+const userWithDetails = { ...user, ...details };
+console.log(userWithDetails);
+// { name: "Rahul", age: 30, job: "Developer", location: "Mumbai" }
+
+// Overriding properties
+const updatedUser = { ...user, age: 31 };
+console.log(updatedUser); // { name: "Rahul", age: 31 }
+```
+
+## Object Comparison
+
+Objects are compared by reference, not by content:
+
+```javascript
+const obj1 = { name: 'Rahul' };
+const obj2 = { name: 'Rahul' };
+const obj3 = obj1;
+
+console.log(obj1 === obj2); // false (different objects with same content)
+console.log(obj1 === obj3); // true (same object reference)
+```
+
+To compare object contents, you can:
+
+1. Use a library like Lodash's `_.isEqual()`
+2. Use `JSON.stringify()` for simple objects (with limitations)
+3. Implement a custom comparison function
+
+```javascript
+// Using JSON.stringify (works for simple objects without methods or circular references)
+console.log(JSON.stringify(obj1) === JSON.stringify(obj2)); // true
+
+// Custom comparison function
+function isEqual(obj1, obj2) {
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) {
+    return false;
+  }
+  
+  for (const key of keys1) {
+    if (obj1[key] !== obj2[key]) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+console.log(isEqual(obj1, obj2)); // true
+```
+
+## Object Inheritance and Prototypes
+
+JavaScript uses prototype-based inheritance:
+
+```javascript
+// Parent constructor
+function Animal(name) {
+  this.name = name;
+}
+
+Animal.prototype.speak = function() {
+  return `${this.name} makes a noise.`;
+};
+
+// Child constructor
+function Dog(name, breed) {
+  Animal.call(this, name); // Call parent constructor
+  this.breed = breed;
+}
+
+// Set up inheritance
+Dog.prototype = Object.create(Animal.prototype);
+Dog.prototype.constructor = Dog;
+
+// Override parent method
+Dog.prototype.speak = function() {
+  return `${this.name} barks!`;
+};
+
+// Add new method
+Dog.prototype.fetch = function() {
+  return `${this.name} fetches the ball.`;
+};
+
+const dog = new Dog('Rex', 'German Shepherd');
+console.log(dog.name); // "Rex"
+console.log(dog.breed); // "German Shepherd"
+console.log(dog.speak()); // "Rex barks!"
+console.log(dog.fetch()); // "Rex fetches the ball."
+```
+
+With ES6 classes, inheritance is more straightforward:
+
+```javascript
+class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  
+  speak() {
+    return `${this.name} makes a noise.`;
+  }
+}
+
+class Dog extends Animal {
+  constructor(name, breed) {
+    super(name); // Call parent constructor
+    this.breed = breed;
+  }
+  
+  speak() {
+    return `${this.name} barks!`;
+  }
+  
+  fetch() {
+    return `${this.name} fetches the ball.`;
+  }
+}
+
+const dog = new Dog('Rex', 'German Shepherd');
+console.log(dog.speak()); // "Rex barks!"
+```
+
+## Modern Object Features (ES6+)
+
+### Computed Property Names
+
+```javascript
+const propName = 'age';
+
+const user = {
+  name: 'Rahul',
+  [propName]: 30, // Computed property name
+  [`user-${propName}`]: 30 // Complex computed property name
+};
+
+console.log(user.age); // 30
+console.log(user['user-age']); // 30
+```
+
+### Method Shorthand
+
+```javascript
+// Old way
+const user = {
+  name: 'Rahul',
+  greet: function() {
+    return `Hello, I'm ${this.name}`;
+  }
+};
+
+// ES6 method shorthand
+const modernUser = {
+  name: 'Rahul',
+  greet() {
+    return `Hello, I'm ${this.name}`;
+  }
+};
+```
+
+### Object Property Shorthand
+
+```javascript
+const name = 'Rahul';
+const age = 30;
+
+// Old way
+const user = {
+  name: name,
+  age: age
+};
+
+// ES6 property shorthand
+const modernUser = {
+  name,
+  age
+};
+
+console.log(modernUser); // { name: "Rahul", age: 30 }
+```
+
+### Object.fromEntries()
+
+Transforms a list of key-value pairs into an object:
+
+```javascript
+const entries = [
+  ['name', 'Rahul'],
+  ['age', 30],
+  ['isActive', true]
+];
+
+const user = Object.fromEntries(entries);
+console.log(user); // { name: "Rahul", age: 30, isActive: true }
+```
+
+This is particularly useful for converting Map objects to regular objects:
+
+```javascript
+const map = new Map([
+  ['name', 'Rahul'],
+  ['age', 30]
+]);
+
+const obj = Object.fromEntries(map);
+console.log(obj); // { name: "Rahul", age: 30 }
+```
+
+## Interview Tips
+
+- Explain that objects in JavaScript are collections of key-value pairs used to store related data and functionality
+- Describe the different ways to create objects (literals, constructors, classes, Object.create(), factory functions)
+- Discuss the difference between dot notation and bracket notation for accessing properties
+- Explain how object methods work and how `this` behaves in different contexts
+- Describe property attributes (writable, enumerable, configurable) and how to use Object.defineProperty()
+- Discuss getters and setters and their use cases
+- Be familiar with object iteration methods (for...in, Object.keys(), Object.values(), Object.entries())
+- Explain object comparison challenges and solutions
+- Discuss prototype-based inheritance and how it works
+- Be prepared to demonstrate modern object features like computed properties, method shorthand, and property shorthand

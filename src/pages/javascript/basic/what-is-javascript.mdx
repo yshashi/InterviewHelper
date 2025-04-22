@@ -1,0 +1,203 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is JavaScript, and what are its main uses?
+---
+
+# What is JavaScript, and what are its main uses?
+
+JavaScript is a high-level, interpreted programming language that conforms to the ECMAScript specification. It was originally created by Brendan Eich at Netscape in 1995 and has since become one of the core technologies of the World Wide Web, alongside HTML and CSS.
+
+## Core Characteristics of JavaScript
+
+JavaScript is:
+
+- **Multi-paradigm**: Supports procedural, object-oriented, and functional programming styles
+- **Dynamic**: Types are associated with values rather than variables
+- **Weakly typed**: Variables can change types
+- **Just-in-time compiled**: Modern JavaScript engines use JIT compilation for performance
+- **Single-threaded**: Uses an event loop for asynchronous operations
+- **Prototype-based**: Object-oriented programming is based on prototypes rather than classes (though ES6 added class syntax)
+
+## Main Uses of JavaScript
+
+### 1. Web Development (Client-side)
+
+The original and most common use of JavaScript is to create dynamic, interactive web pages:
+
+```javascript
+// Adding interactivity to a web page
+document.getElementById('myButton').addEventListener('click', function() {
+  const userName = document.getElementById('nameInput').value;
+  document.getElementById('greeting').textContent = `Hello, ${userName}!`;
+  
+  // Change styles dynamically
+  document.getElementById('greeting').style.color = '#007bff';
+});
+```
+
+JavaScript enables:
+- DOM manipulation
+- Form validation
+- Animations and visual effects
+- Event handling
+- Client-side data processing
+- Dynamic content updates without page reloads (AJAX)
+
+### 2. Web Development (Server-side)
+
+With the advent of Node.js in 2009, JavaScript moved beyond the browser:
+
+```javascript
+// A simple Node.js server
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.end('Hello World\n');
+});
+
+server.listen(3000, '127.0.0.1', () => {
+  console.log('Server running at http://127.0.0.1:3000/');
+});
+```
+
+Server-side JavaScript enables:
+- RESTful API development
+- Microservices architecture
+- Real-time applications (with WebSockets)
+- Database operations
+- Server-rendered applications
+
+### 3. Mobile App Development
+
+JavaScript frameworks like React Native allow developers to build native mobile applications:
+
+```javascript
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+const App = () => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Hello, React Native!</Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
+  },
+  text: {
+    fontSize: 20,
+    textAlign: 'center',
+    margin: 10,
+  },
+});
+
+export default App;
+```
+
+### 4. Desktop Application Development
+
+Using frameworks like Electron, JavaScript can create cross-platform desktop applications:
+
+```javascript
+const { app, BrowserWindow } = require('electron');
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  });
+
+  win.loadFile('index.html');
+}
+
+app.whenReady().then(createWindow);
+```
+
+### 5. Game Development
+
+JavaScript, combined with HTML5 Canvas or WebGL, enables browser-based game development:
+
+```javascript
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+class Player {
+  constructor(x, y, radius, color) {
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = color;
+  }
+
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  }
+
+  update() {
+    this.draw();
+  }
+}
+
+const player = new Player(canvas.width / 2, canvas.height / 2, 30, 'blue');
+
+function animate() {
+  requestAnimationFrame(animate);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  player.update();
+}
+
+animate();
+```
+
+### 6. Internet of Things (IoT)
+
+JavaScript can be used to program IoT devices through platforms like Johnny-Five:
+
+```javascript
+const { Board, Led } = require('johnny-five');
+const board = new Board();
+
+board.on('ready', () => {
+  const led = new Led(13);
+  led.blink(500); // Blink every 500ms
+});
+```
+
+This example demonstrates JavaScript's versatility in creating a full-stack application with:
+- React for the frontend UI components
+- Fetch API for client-server communication
+- Express for the backend API
+- Async/await for handling asynchronous operations
+
+## Evolution of JavaScript
+
+JavaScript has evolved significantly since its creation:
+
+- **ES5 (2009)**: Added strict mode, JSON support, and array methods
+- **ES6/ES2015**: Introduced classes, arrow functions, promises, modules, and more
+- **ES2016-2023**: Continued adding features like async/await, optional chaining, and nullish coalescing
+
+Modern JavaScript development typically uses transpilers like Babel and bundlers like Webpack to ensure compatibility across browsers while allowing developers to use the latest language features.
+
+## Interview Tips
+
+- Emphasize JavaScript's versatility across different platforms
+- Mention the evolution from simple client-side scripting to full-stack development
+- Discuss the ecosystem of frameworks and libraries (React, Angular, Vue, Express, etc.)
+- Highlight the asynchronous nature of JavaScript and how it handles concurrency
+- Be prepared to discuss both the strengths and weaknesses of JavaScript
+- Share specific examples of how you've used JavaScript to solve real-world problems

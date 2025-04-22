@@ -1,0 +1,276 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: BigDecimal in JavaScript
+---
+
+# BigDecimal in JavaScript
+
+BigDecimal is a proposed feature for JavaScript that aims to provide precise decimal arithmetic, which is crucial for financial calculations and other applications requiring exact decimal representation.
+
+## The Problem with Floating-Point
+
+JavaScript currently uses IEEE 754 double-precision floating-point for all numbers, which can lead to precision issues:
+
+```javascript
+// Floating-point precision issues
+console.log(0.1 + 0.2); // 0.30000000000000004
+console.log(0.3 - 0.1); // 0.19999999999999998
+
+// Financial calculation errors
+let balance = 10000;
+for (let i = 0; i < 10; i++) {
+  balance += 0.1; // Add 10 cents 10 times
+}
+console.log(balance); // 10000.999999999998 instead of 10001
+```
+
+## The BigDecimal Proposal
+
+BigDecimal is a proposal for a new primitive type in JavaScript that would provide exact decimal arithmetic:
+
+```javascript
+// Proposed syntax (not yet available in JavaScript)
+const price = 19.99m; // 'm' suffix denotes a BigDecimal literal
+const quantity = 3m;
+const total = price * quantity; // Exactly 59.97
+```
+
+## Current Workarounds
+
+### 1. Using Libraries
+
+Several libraries provide decimal arithmetic functionality:
+
+```javascript
+// Using decimal.js
+import Decimal from 'decimal.js';
+
+const price = new Decimal(19.99);
+const quantity = new Decimal(3);
+const total = price.times(quantity);
+
+console.log(total.toString()); // "59.97"
+
+// Addition
+const a = new Decimal(0.1);
+const b = new Decimal(0.2);
+console.log(a.plus(b).toString()); // "0.3"
+
+// Subtraction
+console.log(new Decimal(0.3).minus(0.1).toString()); // "0.2"
+```
+
+### 2. Integer Arithmetic
+
+Converting to integers by multiplying by a power of 10:
+
+```javascript
+// Represent cents instead of dollars
+function calculateTotal(priceInCents, quantity) {
+  return priceInCents * quantity;
+}
+
+// $19.99 * 3
+const total = calculateTotal(1999, 3); // 5997 cents = $59.97
+
+// Format back to dollars
+function formatDollars(cents) {
+  return '$' + (cents / 100).toFixed(2);
+}
+
+console.log(formatDollars(total)); // "$59.97"
+```
+
+### 3. String-Based Arithmetic
+
+Some libraries use string-based approaches for decimal calculations:
+
+```javascript
+// Using big.js
+import Big from 'big.js';
+
+const price = new Big('19.99');
+const quantity = new Big(3);
+const total = price.times(quantity);
+
+console.log(total.toString()); // "59.97"
+```
+
+## Use Cases for BigDecimal
+
+### 1. Financial Applications
+
+```javascript
+// Interest calculation with compound interest
+function calculateCompoundInterest(principal, rate, years, compoundingPerYear) {
+  const decimal = require('decimal.js');
+  
+  const p = new Decimal(principal);
+  const r = new Decimal(rate).div(100);
+  const n = new Decimal(compoundingPerYear);
+  const t = new Decimal(years);
+  
+  // Formula: P(1 + r/n)^(nt)
+  const base = Decimal.add(1, r.div(n));
+  const exponent = n.times(t);
+  const amount = p.times(Decimal.pow(base, exponent));
+  
+  return amount;
+}
+
+// Calculate 5% interest on $1000 for 5 years, compounded quarterly
+const result = calculateCompoundInterest(1000, 5, 5, 4);
+console.log(result.toFixed(2)); // "1280.08"
+```
+
+### 2. Currency Exchange
+
+```javascript
+// Currency conversion with exact rates
+function convertCurrency(amount, fromRate, toRate) {
+  const Decimal = require('decimal.js');
+  
+  const amountDec = new Decimal(amount);
+  const fromRateDec = new Decimal(fromRate);
+  const toRateDec = new Decimal(toRate);
+  
+  // Convert to base currency, then to target currency
+  return amountDec.div(fromRateDec).times(toRateDec);
+}
+
+// Convert 100 EUR to USD with rates EUR/USD = 1.08
+const usdAmount = convertCurrency(100, 1, 1.08);
+console.log(usdAmount.toFixed(2)); // "108.00"
+```
+
+### 3. Tax Calculations
+
+```javascript
+// Calculate tax with proper rounding
+function calculateTax(subtotal, taxRate) {
+  const Decimal = require('decimal.js');
+  
+  const subtotalDec = new Decimal(subtotal);
+  const taxRateDec = new Decimal(taxRate).div(100);
+  
+  // Calculate tax amount
+  const taxAmount = subtotalDec.times(taxRateDec);
+  
+  // Round to nearest cent
+  const roundedTax = taxAmount.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  
+  // Calculate total
+  const total = subtotalDec.plus(roundedTax);
+  
+  return {
+    subtotal: subtotalDec.toFixed(2),
+    taxAmount: roundedTax.toFixed(2),
+    total: total.toFixed(2)
+  };
+}
+
+// Calculate 8.25% tax on $24.99
+const receipt = calculateTax(24.99, 8.25);
+console.log(receipt);
+// { subtotal: "24.99", taxAmount: "2.06", total: "27.05" }
+```
+
+## BigDecimal vs. BigInt
+
+JavaScript already has `BigInt` for arbitrary-precision integers, but it doesn't solve the decimal precision problem:
+
+```javascript
+// BigInt for integers
+const bigInteger = 1234567890123456789012345678901234567890n;
+console.log(bigInteger + 1n); // 1234567890123456789012345678901234567891n
+
+// But BigInt doesn't handle decimals
+// const decimal = 0.1n; // SyntaxError: Invalid or unexpected token
+```
+
+Comparison of features:
+
+| Feature | BigDecimal (Proposed) | BigInt | Number |
+|---------|----------------------|--------|--------|
+| Decimal precision | Exact | N/A | Limited |
+| Integer precision | Exact | Unlimited | Up to 2^53-1 |
+| Arithmetic operations | Exact | Exact | May have rounding errors |
+| Performance | Slower | Slower | Faster |
+| Memory usage | Higher | Higher | Lower |
+| Native support | Proposal | Yes | Yes |
+
+## Performance Considerations
+
+Decimal arithmetic is inherently slower than native floating-point:
+
+1. **Computation Overhead**: More complex algorithms for basic operations
+2. **Memory Usage**: Requires more memory to store exact representations
+3. **Optimization**: Use only when precision is critical (financial calculations)
+
+```javascript
+// Performance comparison
+function benchmarkCalculation() {
+  const Decimal = require('decimal.js');
+  
+  console.time('Native');
+  let nativeResult = 0;
+  for (let i = 0; i < 1000000; i++) {
+    nativeResult += 0.1;
+  }
+  console.timeEnd('Native');
+  
+  console.time('Decimal');
+  let decimalResult = new Decimal(0);
+  for (let i = 0; i < 1000000; i++) {
+    decimalResult = decimalResult.plus(0.1);
+  }
+  console.timeEnd('Decimal');
+  
+  console.log('Native result:', nativeResult);
+  console.log('Decimal result:', decimalResult.toString());
+}
+```
+
+## Best Practices
+
+1. **Use Libraries for Now**: Until BigDecimal is standardized, use libraries like `decimal.js`, `big.js`, or `bignumber.js`
+2. **Choose the Right Tool**: Use BigDecimal only when precision matters
+3. **Document Precision Requirements**: Clearly specify when exact decimal arithmetic is needed
+4. **Consistent Representation**: Decide on a consistent approach (cents as integers vs. decimal library)
+5. **Rounding Strategy**: Define explicit rounding rules for financial calculations
+
+```javascript
+// Example of good practice
+function calculateDiscount(price, discountPercent) {
+  // Document precision requirements
+  // Use a decimal library for exact arithmetic
+  const Decimal = require('decimal.js');
+  
+  const priceDec = new Decimal(price);
+  const discountDec = new Decimal(discountPercent).div(100);
+  
+  // Calculate discount amount
+  const discountAmount = priceDec.times(discountDec);
+  
+  // Apply explicit rounding rule
+  const roundedDiscount = discountAmount.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  
+  // Calculate final price
+  const finalPrice = priceDec.minus(roundedDiscount);
+  
+  return {
+    original: priceDec.toFixed(2),
+    discount: roundedDiscount.toFixed(2),
+    final: finalPrice.toFixed(2)
+  };
+}
+```
+
+## Interview Tips
+
+- Explain why floating-point arithmetic can cause issues in financial applications
+- Describe the proposed BigDecimal feature and its benefits
+- Discuss current workarounds and libraries for precise decimal arithmetic
+- Explain the difference between BigDecimal and BigInt
+- Demonstrate knowledge of performance implications of decimal arithmetic
+- Discuss best practices for handling financial calculations in JavaScript

@@ -1,0 +1,270 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Expanded Import Assertions in JavaScript
+---
+
+# Expanded Import Assertions in JavaScript
+
+Expanded import assertions (formerly known as import attributes) are an enhancement to JavaScript's module system that provide more control over how modules are loaded and processed.
+
+## Basic Import Assertions
+
+Import assertions were introduced to specify the type of module being imported:
+
+```javascript
+// Basic import assertion for JSON
+import data from './data.json' assert { type: 'json' };
+
+// Dynamic import with assertion
+const config = await import('./config.json', { 
+  assert: { type: 'json' } 
+});
+```
+
+## Expanded Import Assertions
+
+The expanded import assertions proposal extends this functionality to support more attributes and use cases:
+
+```javascript
+// Proposed syntax (with expanded attributes)
+import data from './data.json' with { type: 'json', lazy: true };
+
+// Dynamic import with expanded attributes
+const module = await import('./module.js', { 
+  with: { 
+    type: 'module',
+    integrity: 'sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC'
+  } 
+});
+```
+
+## Key Differences
+
+The transition from `assert` to `with` reflects a change in semantics:
+
+1. **Assertions vs. Attributes**: `assert` implies checking a fact, while `with` indicates configuration
+2. **Expanded Capabilities**: `with` supports more attributes beyond just type checking
+3. **Flexibility**: `with` allows for future extensions to the module loading system
+
+## Use Cases for Expanded Import Assertions
+
+### 1. Module Type Specification
+
+```javascript
+// Specify module type
+import data from './data.json' with { type: 'json' };
+import styles from './styles.css' with { type: 'css' };
+import wasm from './module.wasm' with { type: 'webassembly' };
+```
+
+### 2. Resource Integrity
+
+```javascript
+// Verify resource integrity with hash
+import library from 'https://cdn.example.com/lib.js' with { 
+  integrity: 'sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC' 
+};
+```
+
+### 3. Loading Strategies
+
+```javascript
+// Lazy loading
+import heavyModule from './heavy-module.js' with { lazy: true };
+
+// Preload but don't execute
+import criticalModule from './critical.js' with { preload: true, execute: false };
+```
+
+### 4. Module Transformations
+
+```javascript
+// Apply transformations during import
+import legacyModule from './legacy.js' with { transform: 'legacy-compat' };
+
+// Import with specific version requirements
+import library from 'external-lib' with { version: '^2.0.0' };
+```
+
+## Current Status and Support
+
+Expanded import assertions are still in the proposal stage (Stage 3 in the TC39 process as of the latest update). Support varies across environments:
+
+1. **Browsers**: Limited support for basic import assertions
+2. **Node.js**: Experimental support for import assertions
+3. **Bundlers**: Varying levels of support through plugins
+4. **Transpilers**: Babel and similar tools can transform syntax
+
+## Practical Applications
+
+### Working with Different Data Formats
+
+```javascript
+// Import different data formats with appropriate handling
+import jsonData from './data.json' with { type: 'json' };
+import yamlData from './config.yaml' with { type: 'yaml' };
+import csvData from './data.csv' with { type: 'csv', delimiter: ',' };
+
+// Use the imported data
+console.log(jsonData.title);
+console.log(yamlData.settings.theme);
+console.log(csvData[0].name);
+```
+
+### Enhanced Security for Third-Party Modules
+
+```javascript
+// Import third-party module with integrity check
+import analytics from 'https://cdn.analytics.com/script.js' with {
+  integrity: 'sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC',
+  crossOrigin: 'anonymous'
+};
+
+// Import with permissions specification
+import locationService from './location-service.js' with {
+  permissions: ['geolocation']
+};
+```
+
+### Conditional Module Loading
+
+```javascript
+// Import different modules based on environment
+async function loadAppropriateModule() {
+  const isLegacyBrowser = checkIfLegacyBrowser();
+  
+  if (isLegacyBrowser) {
+    return import('./legacy-module.js', {
+      with: { compat: true, polyfills: true }
+    });
+  } else {
+    return import('./modern-module.js', {
+      with: { optimized: true }
+    });
+  }
+}
+```
+
+## Comparison with Other Module Features
+
+| Feature | Purpose | Syntax |
+|---------|---------|--------|
+| Import Assertions | Specify module type | `import x from 'y' assert { type: 'json' }` |
+| Expanded Import Assertions | Configure module loading | `import x from 'y' with { type: 'json', lazy: true }` |
+| Dynamic Import | Load modules on demand | `import('./module.js')` |
+| Module Namespace | Import all exports | `import * as module from './module.js'` |
+| Named Imports | Import specific exports | `import { func, Class } from './module.js'` |
+
+## Current Workarounds
+
+Until expanded import assertions are widely supported, there are several alternatives:
+
+### 1. Loaders and Bundler Plugins
+
+```javascript
+// Webpack configuration
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.yaml$/,
+        use: 'yaml-loader'
+      },
+      {
+        test: /\.csv$/,
+        use: 'csv-loader'
+      }
+    ]
+  }
+};
+```
+
+### 2. Dynamic Loading with Custom Handling
+
+```javascript
+// Manual handling of different file types
+async function loadDataFile(path) {
+  const response = await fetch(path);
+  const fileExtension = path.split('.').pop().toLowerCase();
+  
+  switch (fileExtension) {
+    case 'json':
+      return response.json();
+    case 'yaml':
+    case 'yml':
+      const yamlText = await response.text();
+      return parseYaml(yamlText);
+    case 'csv':
+      const csvText = await response.text();
+      return parseCSV(csvText);
+    default:
+      return response.text();
+  }
+}
+
+// Usage
+const data = await loadDataFile('./config.yaml');
+```
+
+### 3. Module Wrappers
+
+```javascript
+// Wrap non-JavaScript resources in JS modules
+// data-wrapper.js
+import rawData from './data.csv';
+import { parseCSV } from './csv-parser';
+
+export default parseCSV(rawData);
+
+// Usage
+import data from './data-wrapper.js';
+```
+
+## Best Practices
+
+1. **Feature Detection**: Check for support before using expanded import assertions
+2. **Fallbacks**: Provide alternative loading mechanisms for unsupported environments
+3. **Documentation**: Clearly document import attributes used in your codebase
+4. **Security**: Use integrity checks for third-party resources
+5. **Minimal Attributes**: Only use attributes that are necessary for your use case
+
+```javascript
+// Feature detection for import assertions
+function supportsImportAssertions() {
+  try {
+    new Function('return import("data:text/javascript,export default 0", { assert: { type: "js" } })');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Conditional loading based on support
+async function loadData() {
+  if (supportsImportAssertions()) {
+    return import('./data.json', { assert: { type: 'json' } });
+  } else {
+    const response = await fetch('./data.json');
+    return response.json();
+  }
+}
+```
+
+## Future Directions
+
+The expanded import assertions proposal opens the door for more advanced module loading features:
+
+1. **Conditional Imports**: Load different modules based on runtime conditions
+2. **Progressive Loading**: Load critical parts first, then non-critical parts
+3. **Permissions Integration**: Specify required permissions for modules
+4. **Versioning**: Import specific versions of modules
+5. **Transformation Pipelines**: Apply multiple transformations to imported modules
+
+## Interview Tips
+
+- Explain the difference between import assertions (`assert`) and expanded import assertions (`with`)
+- Describe practical use cases for different import attributes
+- Discuss how expanded import assertions enhance security for third-party modules
+- Explain current workarounds for environments that don't support import assertions
+- Demonstrate knowledge of the TC39 proposal process and the current status
+- Discuss how expanded import assertions relate to other module system features

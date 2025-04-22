@@ -1,0 +1,315 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Array Grouping in JavaScript
+---
+
+# Array Grouping in JavaScript
+
+Array grouping is a feature that allows you to organize array elements into groups based on a specified criterion. The `Object.groupBy` and `Map.groupBy` methods were introduced in ECMAScript 2023 to provide native support for this common operation.
+
+## Object.groupBy
+
+The `Object.groupBy` method creates an object whose keys are determined by a callback function.
+
+```javascript
+const inventory = [
+  { name: "apple", type: "fruit", quantity: 5 },
+  { name: "banana", type: "fruit", quantity: 10 },
+  { name: "carrot", type: "vegetable", quantity: 8 },
+  { name: "lettuce", type: "vegetable", quantity: 3 }
+];
+
+// Group by type
+const groupedByType = Object.groupBy(inventory, item => item.type);
+
+console.log(groupedByType);
+// {
+//   fruit: [
+//     { name: "apple", type: "fruit", quantity: 5 },
+//     { name: "banana", type: "fruit", quantity: 10 }
+//   ],
+//   vegetable: [
+//     { name: "carrot", type: "vegetable", quantity: 8 },
+//     { name: "lettuce", type: "vegetable", quantity: 3 }
+//   ]
+// }
+```
+
+## Map.groupBy
+
+The `Map.groupBy` method works similarly but returns a Map object, which can have keys of any type.
+
+```javascript
+// Group by quantity threshold
+const groupedByQuantity = Map.groupBy(inventory, item => 
+  item.quantity > 5 ? "high" : "low"
+);
+
+console.log(groupedByQuantity);
+// Map {
+//   "low": [
+//     { name: "apple", type: "fruit", quantity: 5 },
+//     { name: "lettuce", type: "vegetable", quantity: 3 }
+//   ],
+//   "high": [
+//     { name: "banana", type: "fruit", quantity: 10 },
+//     { name: "carrot", type: "vegetable", quantity: 8 }
+//   ]
+// }
+```
+
+## Using Non-String Keys with Map.groupBy
+
+Unlike `Object.groupBy`, `Map.groupBy` can use non-string keys:
+
+```javascript
+const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Group by remainder when divided by 3
+const groupedByRemainder = Map.groupBy(numbers, num => num % 3);
+
+console.log(groupedByRemainder);
+// Map {
+//   0: [3, 6, 9],
+//   1: [1, 4, 7, 10],
+//   2: [2, 5, 8]
+// }
+```
+
+## Traditional Approaches (Pre-ES2023)
+
+Before these methods were available, developers used manual approaches:
+
+### Using Reduce
+
+```javascript
+function groupBy(array, keyFn) {
+  return array.reduce((result, item) => {
+    const key = keyFn(item);
+    if (!result[key]) {
+      result[key] = [];
+    }
+    result[key].push(item);
+    return result;
+  }, {});
+}
+
+// Usage
+const groupedByType = groupBy(inventory, item => item.type);
+```
+
+### Using forEach
+
+```javascript
+function groupBy(array, keyFn) {
+  const result = {};
+  
+  array.forEach(item => {
+    const key = keyFn(item);
+    if (!result[key]) {
+      result[key] = [];
+    }
+    result[key].push(item);
+  });
+  
+  return result;
+}
+```
+
+### Using Map with Reduce
+
+```javascript
+function mapGroupBy(array, keyFn) {
+  return array.reduce((result, item) => {
+    const key = keyFn(item);
+    if (!result.has(key)) {
+      result.set(key, []);
+    }
+    result.get(key).push(item);
+    return result;
+  }, new Map());
+}
+```
+
+## Practical Applications
+
+### 1. Data Analysis
+
+```javascript
+const sales = [
+  { product: "Laptop", region: "North", amount: 1200 },
+  { product: "Phone", region: "North", amount: 800 },
+  { product: "Laptop", region: "South", amount: 1500 },
+  { product: "Phone", region: "South", amount: 750 },
+  { product: "Tablet", region: "North", amount: 600 },
+  { product: "Laptop", region: "East", amount: 1300 }
+];
+
+// Group sales by product
+const salesByProduct = Object.groupBy(sales, item => item.product);
+
+// Calculate total sales by product
+const totalByProduct = Object.entries(salesByProduct).map(([product, items]) => ({
+  product,
+  total: items.reduce((sum, item) => sum + item.amount, 0)
+}));
+
+console.log(totalByProduct);
+// [
+//   { product: "Laptop", total: 4000 },
+//   { product: "Phone", total: 1550 },
+//   { product: "Tablet", total: 600 }
+// ]
+```
+
+### 2. UI Organization
+
+```javascript
+const users = [
+  { id: 1, name: "Alice", role: "admin" },
+  { id: 2, name: "Bob", role: "user" },
+  { id: 3, name: "Charlie", role: "user" },
+  { id: 4, name: "Diana", role: "admin" },
+  { id: 5, name: "Eve", role: "moderator" }
+];
+
+// Group users by role for UI display
+const usersByRole = Object.groupBy(users, user => user.role);
+
+// Render users grouped by role
+function renderUserGroups(groups) {
+  let html = '';
+  
+  for (const [role, users] of Object.entries(groups)) {
+    html += `<h2>${role.toUpperCase()}</h2><ul>`;
+    
+    for (const user of users) {
+      html += `<li>${user.name}</li>`;
+    }
+    
+    html += '</ul>';
+  }
+  
+  return html;
+}
+```
+
+### 3. Data Transformation
+
+```javascript
+const events = [
+  { date: "2023-01-15", type: "login", user: "alice" },
+  { date: "2023-01-15", type: "purchase", user: "bob" },
+  { date: "2023-01-16", type: "login", user: "charlie" },
+  { date: "2023-01-16", type: "purchase", user: "alice" },
+  { date: "2023-01-17", type: "login", user: "bob" }
+];
+
+// Group events by date
+const eventsByDate = Object.groupBy(events, event => event.date);
+
+// Transform to calendar format
+const calendar = Object.entries(eventsByDate).map(([date, events]) => ({
+  date,
+  eventCount: events.length,
+  users: [...new Set(events.map(event => event.user))]
+}));
+
+console.log(calendar);
+// [
+//   { date: "2023-01-15", eventCount: 2, users: ["alice", "bob"] },
+//   { date: "2023-01-16", eventCount: 2, users: ["charlie", "alice"] },
+//   { date: "2023-01-17", eventCount: 1, users: ["bob"] }
+// ]
+```
+
+## Advanced Grouping Techniques
+
+### Multi-level Grouping
+
+```javascript
+const transactions = [
+  { date: "2023-01-15", category: "food", amount: 25 },
+  { date: "2023-01-15", category: "transport", amount: 15 },
+  { date: "2023-01-16", category: "food", amount: 30 },
+  { date: "2023-01-16", category: "entertainment", amount: 45 }
+];
+
+// First group by date
+const byDate = Object.groupBy(transactions, t => t.date);
+
+// Then group each date's transactions by category
+const byDateAndCategory = Object.fromEntries(
+  Object.entries(byDate).map(([date, items]) => [
+    date,
+    Object.groupBy(items, item => item.category)
+  ])
+);
+
+console.log(byDateAndCategory);
+// {
+//   "2023-01-15": {
+//     "food": [{ date: "2023-01-15", category: "food", amount: 25 }],
+//     "transport": [{ date: "2023-01-15", category: "transport", amount: 15 }]
+//   },
+//   "2023-01-16": {
+//     "food": [{ date: "2023-01-16", category: "food", amount: 30 }],
+//     "entertainment": [{ date: "2023-01-16", category: "entertainment", amount: 45 }]
+//   }
+// }
+```
+
+### Custom Grouping Logic
+
+```javascript
+const scores = [85, 92, 78, 65, 98, 72, 88, 91];
+
+// Group by grade
+const byGrade = Map.groupBy(scores, score => {
+  if (score >= 90) return 'A';
+  if (score >= 80) return 'B';
+  if (score >= 70) return 'C';
+  if (score >= 60) return 'D';
+  return 'F';
+});
+
+console.log(byGrade);
+// Map {
+//   "A": [92, 98, 91],
+//   "B": [85, 88],
+//   "C": [78, 72],
+//   "D": [65]
+// }
+```
+
+## Performance Considerations
+
+The native `Object.groupBy` and `Map.groupBy` methods are optimized for performance:
+
+1. **Time Complexity**: O(n) where n is the array length
+2. **Memory Usage**: Creates a new object/map with references to original array elements
+3. **Efficiency**: More efficient than manual implementations, especially for large arrays
+
+## Browser and Environment Support
+
+As of 2023, these methods are relatively new:
+
+1. **Check Support**: Use feature detection before using in production
+2. **Polyfills**: Use polyfills for older environments
+3. **Transpilation**: Not directly transpilable (needs runtime support)
+
+```javascript
+// Feature detection
+if (typeof Object.groupBy !== 'function') {
+  // Use polyfill or alternative implementation
+}
+```
+
+## Interview Tips
+
+- Explain the difference between `Object.groupBy` and `Map.groupBy`
+- Describe how to implement grouping manually using `reduce`
+- Discuss when to use object grouping vs. map grouping
+- Explain the performance benefits of native grouping methods
+- Demonstrate knowledge of practical applications for array grouping
+- Mention that these are relatively new features and discuss backward compatibility approaches

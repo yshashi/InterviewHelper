@@ -1,0 +1,198 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Symbol.unscopables in JavaScript
+---
+
+# Symbol.unscopables in JavaScript
+
+`Symbol.unscopables` is a built-in symbol that's used to specify object properties that should not be accessible as variables in `with` statement scopes. It's a specialized feature primarily used to maintain backward compatibility.
+
+## Basic Concept
+
+The `Symbol.unscopables` property is an object whose properties are the names of properties that should be excluded from the environment bindings of a `with` statement.
+
+```javascript
+// Object with Symbol.unscopables
+const obj = {
+  x: 1,
+  y: 2,
+  [Symbol.unscopables]: {
+    y: true // Prevents 'y' from being accessible in a with statement
+  }
+};
+
+with (obj) {
+  console.log(x); // 1 - accessible
+  // console.log(y); // ReferenceError: y is not defined
+}
+```
+
+## Purpose and Origin
+
+`Symbol.unscopables` was introduced to solve compatibility issues when new methods were added to built-in prototypes. The most notable example is `Array.prototype`:
+
+```javascript
+// Without Symbol.unscopables
+Array.prototype.keys = function() {
+  console.log('Custom keys method');
+};
+
+const array = [1, 2, 3];
+with (array) {
+  // This would call our custom method, breaking existing code
+  keys(); // 'Custom keys method'
+}
+
+// With Symbol.unscopables
+Array.prototype[Symbol.unscopables] = {
+  keys: true,
+  // Other methods that shouldn't be accessible in with statements
+  values: true,
+  entries: true,
+  find: true,
+  findIndex: true,
+  // ...etc
+};
+
+with (array) {
+  // Now this would throw a ReferenceError
+  // keys(); // ReferenceError: keys is not defined
+}
+```
+
+## Built-in Unscopables
+
+Several built-in objects have predefined `Symbol.unscopables` properties:
+
+### Array.prototype[Symbol.unscopables]
+
+```javascript
+console.log(Array.prototype[Symbol.unscopables]);
+// {
+//   copyWithin: true,
+//   entries: true,
+//   fill: true,
+//   find: true,
+//   findIndex: true,
+//   flat: true,
+//   flatMap: true,
+//   includes: true,
+//   keys: true,
+//   values: true
+// }
+```
+
+This prevents newer Array methods from being accessible in `with` statements, maintaining backward compatibility with code that might use variables with the same names.
+
+## Implementing Symbol.unscopables
+
+You can define `Symbol.unscopables` for your own objects:
+
+```javascript
+class MyClass {
+  constructor() {
+    this.visible = 'I am visible in with';
+    this.hidden = 'I should be hidden in with';
+  }
+  
+  visibleMethod() {
+    return 'I am a visible method';
+  }
+  
+  hiddenMethod() {
+    return 'I should be a hidden method';
+  }
+}
+
+// Define unscopables
+MyClass.prototype[Symbol.unscopables] = {
+  hidden: true,
+  hiddenMethod: true
+};
+
+const instance = new MyClass();
+
+with (instance) {
+  console.log(visible); // 'I am visible in with'
+  console.log(visibleMethod()); // 'I am a visible method'
+  
+  // These would throw ReferenceError
+  // console.log(hidden);
+  // console.log(hiddenMethod());
+}
+```
+
+## Practical Use Cases
+
+### 1. Library Backward Compatibility
+
+```javascript
+// Adding new methods to a library object while maintaining compatibility
+const myLibrary = {
+  // Existing methods
+  oldMethod() { return 'old'; },
+  
+  // New methods that shouldn't break existing with statements
+  newMethod() { return 'new'; },
+  
+  // Configure unscopables
+  [Symbol.unscopables]: {
+    newMethod: true
+  }
+};
+```
+
+### 2. Preventing Accidental Variable Shadowing
+
+```javascript
+const dataProcessor = {
+  data: [1, 2, 3],
+  
+  process() {
+    // Prevent internal methods from being accessible
+    return this.data.map(item => item * 2);
+  },
+  
+  [Symbol.unscopables]: {
+    // Ensure map, filter, etc. refer to global functions, not Array methods
+    map: true,
+    filter: true,
+    reduce: true
+  }
+};
+
+with (dataProcessor) {
+  // map would refer to global map function, not Array.prototype.map
+}
+```
+
+## Best Practices
+
+1. **Avoid `with` statements**: They're considered bad practice and are disallowed in strict mode
+2. **Use `Symbol.unscopables` for compatibility**: Only when maintaining backward compatibility with legacy code
+3. **Document unscopable properties**: Make it clear which properties are intentionally excluded
+4. **Consider alternatives**: Use destructuring or explicit property access instead of `with`
+
+```javascript
+// Instead of with statements, use destructuring
+const { x, z } = obj;
+console.log(x, z);
+
+// Or explicit property access
+console.log(obj.x, obj.z);
+```
+
+## Limitations and Considerations
+
+1. **Strict Mode**: The `with` statement is not allowed in strict mode, making `Symbol.unscopables` less relevant in modern code
+2. **Performance**: Using `with` statements can negatively impact performance
+3. **Readability**: Code using `with` and `Symbol.unscopables` can be harder to understand
+4. **Debugging**: Issues in `with` blocks can be difficult to debug
+
+## Interview Tips
+
+- Explain that `Symbol.unscopables` is primarily a compatibility feature for the `with` statement
+- Describe how it helps prevent conflicts when new methods are added to built-in prototypes
+- Mention that `with` statements are discouraged and not allowed in strict mode
+- Explain why Array.prototype has several unscopable methods
+- Demonstrate knowledge of Symbol properties and their role in JavaScript's meta-programming features

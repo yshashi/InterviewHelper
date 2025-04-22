@@ -1,0 +1,479 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: Service Workers in JavaScript
+---
+
+# Service Workers in JavaScript
+
+Service Workers are a type of web worker that act as a programmable network proxy, allowing you to control how network requests from your page are handled. They enable powerful offline experiences, background synchronization, and push notifications.
+
+## Basic Concepts
+
+Service Workers run in a separate thread from the main JavaScript execution thread and have no DOM access. They operate on an event-driven model and can intercept network requests.
+
+```javascript
+// Key characteristics of Service Workers:
+// 1. Run in a separate thread
+// 2. No DOM access
+// 3. Can be terminated and restarted
+// 4. Use promises extensively
+// 5. Require HTTPS (except on localhost)
+```
+
+## Lifecycle
+
+```javascript
+// Registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then(registration => {
+      console.log('Service Worker registered with scope:', registration.scope);
+    })
+    .catch(error => {
+      console.error('Service Worker registration failed:', error);
+    });
+}
+
+// sw.js - Service Worker file
+// Install event - triggered when the SW is installed
+self.addEventListener('install', event => {
+  console.log('Service Worker installing...');
+  
+  // Wait until promise is resolved
+  event.waitUntil(
+    caches.open('v1').then(cache => {
+      return cache.addAll([
+        '/',
+        '/index.html',
+        '/styles.css',
+        '/script.js',
+        '/images/logo.png'
+      ]);
+    })
+  );
+});
+
+// Activate event - triggered when the SW is activated
+self.addEventListener('activate', event => {
+  console.log('Service Worker activating...');
+  
+  // Clean up old caches
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.filter(cacheName => {
+          return cacheName !== 'v1';
+        }).map(cacheName => {
+          return caches.delete(cacheName);
+        })
+      );
+    })
+  );
+});
+```
+
+## Fetch Interception
+
+The core functionality of Service Workers is intercepting network requests:
+
+```javascript
+// Fetch event - triggered when the page makes a network request
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Return cached response if found
+        if (response) {
+          return response;
+        }
+        
+        // Clone the request
+        const fetchRequest = event.request.clone();
+        
+        // Make network request
+        return fetch(fetchRequest).then(response => {
+          // Check if valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+          
+          // Clone the response
+          const responseToCache = response.clone();
+          
+          // Add response to cache
+          caches.open('v1')
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+          
+          return response;
+        });
+      })
+  );
+});
+```
+
+## Caching Strategies
+
+Service Workers can implement various caching strategies:
+
+```javascript
+// 1. Cache First (Offline First)
+function cacheFirst(event) {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        return response || fetch(event.request);
+      })
+  );
+}
+
+// 2. Network First
+function networkFirst(event) {
+  event.respondWith(
+    fetch(event.request)
+      .catch(() => {
+        return caches.match(event.request);
+      })
+  );
+}
+
+// 3. Stale While Revalidate
+function staleWhileRevalidate(event) {
+  event.respondWith(
+    caches.open('v1').then(cache => {
+      return cache.match(event.request).then(response => {
+        const fetchPromise = fetch(event.request).then(networkResponse => {
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+        });
+        return response || fetchPromise;
+      });
+    })
+  );
+}
+
+// 4. Cache Only
+function cacheOnly(event) {
+  event.respondWith(caches.match(event.request));
+}
+
+// 5. Network Only
+function networkOnly(event) {
+  event.respondWith(fetch(event.request));
+}
+```
+
+## Background Sync
+
+Service Workers can perform background synchronization when the user has connectivity:
+
+```javascript
+// In the page
+function saveData() {
+  // Save data to IndexedDB
+  saveToIndexedDB(data)
+    .then(() => {
+      // Register for background sync
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        navigator.serviceWorker.ready
+          .then(registration => {
+            return registration.sync.register('sync-data');
+          })
+          .catch(err => console.error('Sync registration failed:', err));
+      } else {
+        // Fallback for browsers that don't support background sync
+        sendDataToServer();
+      }
+    });
+}
+
+// In the Service Worker
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-data') {
+    event.waitUntil(
+      // Get data from IndexedDB and send to server
+      getDataFromIndexedDB().then(dataArray => {
+        return Promise.all(
+          dataArray.map(data => {
+            return fetch('/api/data', {
+              method: 'POST',
+              body: JSON.stringify(data),
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }).then(response => {
+              if (response.ok) {
+                return deleteFromIndexedDB(data.id);
+              }
+              throw new Error('Data sync failed');
+            });
+          })
+        );
+      })
+    );
+  }
+});
+```
+
+## Push Notifications
+
+Service Workers can receive push messages and display notifications:
+
+```javascript
+// In the page - Request notification permission and subscribe to push
+function subscribeToPush() {
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      navigator.serviceWorker.ready.then(registration => {
+        // Get the server's public key
+        return fetch('/api/push-public-key')
+          .then(response => response.json())
+          .then(data => {
+            // Subscribe the user
+            return registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(data.publicKey)
+            });
+          })
+          .then(subscription => {
+            // Send subscription to server
+            return fetch('/api/subscribe', {
+              method: 'POST',
+              body: JSON.stringify(subscription),
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+          });
+      });
+    }
+  });
+}
+
+// In the Service Worker
+self.addEventListener('push', event => {
+  const data = event.data.json();
+  
+  const options = {
+    body: data.body,
+    icon: '/images/icon.png',
+    badge: '/images/badge.png',
+    data: {
+      url: data.url
+    }
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.openWindow(event.notification.data.url)
+  );
+});
+```
+
+## Offline Web Applications
+
+Service Workers enable fully functional offline web applications:
+
+```javascript
+// Comprehensive offline-first approach
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open('app-shell').then(cache => {
+      return cache.addAll([
+        '/',
+        '/index.html',
+        '/offline.html',
+        '/styles.css',
+        '/app.js',
+        '/manifest.json',
+        '/images/logo.png'
+      ]);
+    })
+  );
+});
+
+self.addEventListener('fetch', event => {
+  // HTML files - Network first strategy
+  if (event.request.headers.get('Accept').includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          return caches.match(event.request)
+            .then(response => {
+              return response || caches.match('/offline.html');
+            });
+        })
+    );
+    return;
+  }
+  
+  // Images - Cache first strategy
+  if (event.request.url.match(/\.(jpg|jpeg|png|gif|svg)$/)) {
+    event.respondWith(
+      caches.match(event.request)
+        .then(response => {
+          return response || fetch(event.request)
+            .then(fetchResponse => {
+              return caches.open('images')
+                .then(cache => {
+                  cache.put(event.request, fetchResponse.clone());
+                  return fetchResponse;
+                });
+            })
+            .catch(() => {
+              // Return placeholder image
+              return caches.match('/images/placeholder.png');
+            });
+        })
+    );
+    return;
+  }
+  
+  // Other assets - Stale while revalidate
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        const fetchPromise = fetch(event.request)
+          .then(networkResponse => {
+            return caches.open('assets')
+              .then(cache => {
+                cache.put(event.request, networkResponse.clone());
+                return networkResponse;
+              });
+          });
+        return response || fetchPromise;
+      })
+  );
+});
+```
+
+## Updating Service Workers
+
+```javascript
+// Version your cache
+const CACHE_VERSION = 'v2';
+
+// In the activate event
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.filter(cacheName => {
+          return cacheName.startsWith('app-') && cacheName !== CACHE_VERSION;
+        }).map(cacheName => {
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => {
+      // Take control of all clients
+      return self.clients.claim();
+    })
+  );
+});
+
+// In the page - Check for updates
+function checkForUpdates() {
+  navigator.serviceWorker.ready
+    .then(registration => {
+      registration.update();
+    });
+}
+
+// Handle updates in the page
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+  // The service worker has been updated
+  window.location.reload();
+});
+```
+
+## Debugging Service Workers
+
+```javascript
+// In Chrome DevTools:
+// 1. Open Application tab
+// 2. Navigate to Service Workers section
+// 3. Check "Update on reload" during development
+
+// Logging in Service Worker
+self.addEventListener('fetch', event => {
+  console.log('Fetching:', event.request.url);
+  // ...
+});
+
+// Unregistering a Service Worker
+navigator.serviceWorker.getRegistrations().then(registrations => {
+  for (let registration of registrations) {
+    registration.unregister();
+  }
+});
+```
+
+## Best Practices
+
+```javascript
+// 1. Progressive enhancement
+if ('serviceWorker' in navigator) {
+  // Service Worker code
+} else {
+  // Fallback for browsers without Service Worker support
+}
+
+// 2. Avoid caching large files
+function shouldCache(url) {
+  // Skip large video files
+  if (url.endsWith('.mp4') || url.endsWith('.webm')) {
+    return false;
+  }
+  return true;
+}
+
+// 3. Handle fetch errors gracefully
+fetch(request)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response;
+  })
+  .catch(error => {
+    console.error('Fetch error:', error);
+    return caches.match('/offline.html');
+  });
+
+// 4. Use a separate cache for each type of resource
+const CACHES = {
+  static: 'static-v1',
+  dynamic: 'dynamic-v1',
+  images: 'images-v1'
+};
+
+// 5. Implement cache size limits
+async function limitCacheSize(cacheName, maxItems) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length > maxItems) {
+    await cache.delete(keys[0]);
+    await limitCacheSize(cacheName, maxItems);
+  }
+}
+```
+
+## Interview Tips
+
+- Explain the key differences between Service Workers and other Web Workers
+- Describe the Service Worker lifecycle (registration, installation, activation)
+- Explain different caching strategies and when to use each
+- Discuss how to implement offline functionality in web applications
+- Describe how push notifications work with Service Workers
+- Explain background sync and its use cases
+- Discuss how to handle Service Worker updates
+- Demonstrate knowledge of security considerations (HTTPS requirement)
