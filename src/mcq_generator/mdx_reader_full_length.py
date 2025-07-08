@@ -8,7 +8,7 @@ from pathlib import Path
 from tqdm import tqdm
 from dotenv import load_dotenv
 import time
-
+import tiktoken
 
 class LocalMDXReader:
     def __init__(self, directory_path="pages"):
@@ -167,7 +167,7 @@ class MCQGenerator:
     def __init__(self, api_key: str):
         """Initialize the MCQ Generator with your OpenAI API key."""
         self.client = OpenAI(api_key=api_key)
-        self.model = "gpt-4"
+        self.model = "gpt-4o-2024-08-06"
     
     def generate_mcqs(self, text: str, num_questions: int = 5) -> List[Dict[str, Any]]:
         """
@@ -223,11 +223,46 @@ class MCQGenerator:
             return []
     
     def save_to_file(self, questions: List[Dict[str, Any]], filename: str = "mcqs.json") -> None:
-        """Save the generated questions to a JSON file."""
+        """
+        Save questions to a JSON file. If file exists, append new questions.
+        
+        Args:
+            questions: List of question dictionaries
+            filename: Name of the JSON file to save to
+        """
+        existing_questions = []
+        
+        # Try to read existing file if it exists
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'r', encoding='utf-8') as f:
+                    existing_questions = json.load(f)
+            except json.JSONDecodeError:
+                print(f"Warning: Could not read existing file {filename}. Creating new file.")
+        
+        print("existing_questions:",len(existing_questions))
+        print("questions:",len(questions))
+        
+        # Combine existing and new questions
+        all_questions = existing_questions + questions
+        print("all questions:",len(all_questions))
+        
+        # Remove duplicates based on question text
+        seen = set()
+        unique_questions = []
+        for q in all_questions:
+            q_text = q.get('question', '')
+            if q_text not in seen:
+                seen.add(q_text)
+                unique_questions.append(q)
+        
+        print("unique_questions:",len(unique_questions))
+        
+        # Save combined questions to file
         try:
-            with open(filename, 'w') as f:
-                json.dump(questions, f, indent=2)
-            print(f"MCQs saved to {filename}")
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(unique_questions, f, indent=2, ensure_ascii=False)
+            print(f"Successfully saved {len(unique_questions)} questions to {filename}")
         except Exception as e:
             print(f"Error saving to file: {e}")
 
@@ -266,6 +301,14 @@ def convert_to_json_name(file_path):
     return f"{'_'.join(parent_names)}_{base_name}.json"
 
 
+def count_tokens(text, model="gpt-4"):
+    # Get the encoding for the specified model
+    encoding = tiktoken.encoding_for_model(model)
+    # Encode the text into tokens
+    tokens = encoding.encode(text)
+    return len(tokens)
+
+
 def main():
     # Set the directory containing your MDX files
     mdx_directory = "..\pages"  # Change this to your local directory
@@ -273,34 +316,69 @@ def main():
     generator = MCQGenerator(api_key)
     reader = LocalMDXReader(mdx_directory)    # Get all MDX files and their content
     mdx_files_data = reader.process_all_mdx_files()
+    counter = 0
     
     print("\n==== MDX File Details ====")
     # print(mdx_files_data)
-    counter = 0
+    output_string = ""
     for index,file_data in tqdm(enumerate(mdx_files_data)):
-        if counter%20==0 and counter !=0:
-            print("Sleeping")
-            time.sleep(60) 
-        # print(f"\nFile: {file_data['path']}")
+        # print(file_data['content'])
         output_filename = convert_to_json_name(file_data['path'])
-        # print(f"Metadata: {file_data['metadata']}")
-        if not os.path.exists(f"questions/{output_filename}"):
-            print("path doesnot exists")
-            print(f"questions/{output_filename}")
-            if file_data['content']:
-                print(file_data['content'])
-                questions = generator.generate_mcqs(file_data['content'], num_questions=10)
-                counter+=1
+        print(counter)
+        if "react" in output_filename:
+            output_string += "\n\n" + output_filename + "\n\n" + file_data['content']
+            counter += 1
+            
+            if counter !=0  and counter%1==10:
+                # questions = generator.generate_mcqs(output_string, num_questions=9)
+                print(count_tokens(output_string))
+                output_string = ""
+                # if questions:
+                    # for i, q in enumerate(questions, 1):
+                        # print(f"\nQuestion {i}: {q['question']}")
+                        # for option, text in q['options'].items():
+                            # print(f"  {option}. {text}")
+                        # print(f"Correct answer: {q['correct_answer']}")
+
+                    # generator.save_to_file(questions, f"topic_wise_full_length_questions/react.json")
+            
+            # if counter == 10:
+            #     break
+
+
+
+
+
+
+    # print(counter)
+    # print(count_tokens(output_string))
+
+
+    # counter = 0
+    # for index,file_data in tqdm(enumerate(mdx_files_data)):
+    #     if counter%20==0 and counter !=0:
+    #         print("Sleeping")
+    #         time.sleep(60) 
+    #     # print(f"\nFile: {file_data['path']}")
+    #     output_filename = convert_to_json_name(file_data['path'])
+    #     # print(f"Metadata: {file_data['metadata']}")
+    #     if not os.path.exists(f"questions/{output_filename}"):
+    #         print("path doesnot exists")
+    #         print(f"questions/{output_filename}")
+    #         if file_data['content']:
+    #             print(file_data['content'])
+    #             questions = generator.generate_mcqs(file_data['content'], num_questions=10)
+    #             counter+=1
         
-            # Print the generated questions
-                if questions:
-                    print("\nGenerated MCQs:")
-                    for i, q in enumerate(questions, 1):
-                        print(f"\nQuestion {i}: {q['question']}")
-                        for option, text in q['options'].items():
-                            print(f"  {option}. {text}")
-                        print(f"Correct answer: {q['correct_answer']}")
-                    generator.save_to_file(questions, f"questions/{output_filename}")
+    #         # Print the generated questions
+    #             if questions:
+    #                 print("\nGenerated MCQs:")
+    #                 for i, q in enumerate(questions, 1):
+    #                     print(f"\nQuestion {i}: {q['question']}")
+    #                     for option, text in q['options'].items():
+    #                         print(f"  {option}. {text}")
+    #                     print(f"Correct answer: {q['correct_answer']}")
+    #                 generator.save_to_file(questions, f"questions/{output_filename}")
 
 if __name__ == "__main__":
     main()

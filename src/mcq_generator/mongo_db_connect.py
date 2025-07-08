@@ -52,6 +52,8 @@ def connect_to_mongodb():
 
 def get_json_files(folder_path):
     """Retrieve all JSON files in the given folder."""
+    # print(os.path.join(folder_path, "*.json"))
+    # print(src\mcq_generator\questions\angular_angular-cli.json)
     return glob.glob(os.path.join(folder_path, "*.json"))
 
 def load_json_data(filepath):
@@ -83,12 +85,20 @@ def push_to_mongodb(collection, data, filename):
         existing_doc = collection.find_one({"key": filename})
 
         if existing_doc:
-            # Update the existing document
-            collection.update_one(
-                {"key": filename}, 
-                {"$set": {"questions": data[0]["questions"]}}
-            )
-            print(f"Updated existing document for {filename} in MongoDB.")
+            # Compare existing questions with new questions
+            existing_questions = existing_doc.get("questions", [])
+            new_questions = data[0]["questions"]
+            
+            # Check if the data has actually changed
+            if existing_questions != new_questions:
+                # Update only if data has changed
+                collection.update_one(
+                    {"key": filename}, 
+                    {"$set": {"questions": new_questions}}
+                )
+                print(f"Updated existing document for {filename} in MongoDB - Data was different.")
+            else:
+                print(f"No update needed for {filename} - Data is identical.")
         else:
             # Insert new document
             collection.insert_one(data[0])
@@ -107,8 +117,10 @@ def main(folder_path):
 
     # Get all JSON files in the folder
     json_files = get_json_files(folder_path)
+
     # print(json_files)
     if not json_files:
+        print(len(json_files))
         print("No JSON files found in the folder.")
         return
 
@@ -133,4 +145,5 @@ def main(folder_path):
 
 
 if __name__ == "__main__":
+    # main(r'src\mcq_generator\topic_wise_full_length_questions')
     main(r'src\mcq_generator\questions')

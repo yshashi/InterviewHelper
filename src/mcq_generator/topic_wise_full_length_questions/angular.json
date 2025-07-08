@@ -1,0 +1,1172 @@
+[
+  {
+    "question": "What is Angular CLI and why is it important?",
+    "options": {
+      "A": "Angular CLI is a development tool that automates common tasks in Angular applications. It's important because it streamlines project creation and setup, enforces consistent project structure, provides development tools and commands, and automates build optimization.",
+      "B": "Angular CLI is a library for Angular that provides additional functionalities and features.",
+      "C": "Angular CLI is a command line interface for running Angular applications in the browser.",
+      "D": "Angular CLI is a tool for managing Angular projects and dependencies."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the `ng generate` command in Angular CLI?",
+    "options": {
+      "A": "To generate a new Angular project.",
+      "B": "To generate various application elements with proper naming, files, and boilerplate code.",
+      "C": "To generate a production build of the Angular application.",
+      "D": "To generate a new version of the Angular CLI."
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "How can Angular CLI be configured and customized?",
+    "options": {
+      "A": "Through the `angular.json` file and command-line options.",
+      "B": "Through the `package.json` file.",
+      "C": "Through the Angular CLI configuration file.",
+      "D": "Through the Angular CLI settings in the IDE."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some of the commands provided by Angular CLI for development and testing?",
+    "options": {
+      "A": "ng serve, ng build, ng test, ng lint",
+      "B": "ng start, ng compile, ng debug, ng check",
+      "C": "ng run, ng create, ng verify, ng analyze",
+      "D": "ng init, ng setup, ng validate, ng inspect"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How can Angular CLI be used to optimize builds?",
+    "options": {
+      "A": "By providing various build optimization options to improve application performance and reduce bundle size.",
+      "B": "By compressing the Angular application files.",
+      "C": "By converting the Angular application to a different programming language.",
+      "D": "By removing unused code from the Angular application."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between ng serve and ng build?",
+    "options": {
+      "A": "ng serve runs a development server with live reload, while ng build creates production-ready files.",
+      "B": "ng serve creates a new Angular project, while ng build compiles the Angular application.",
+      "C": "ng serve starts the Angular application, while ng build stops the Angular application.",
+      "D": "ng serve tests the Angular application, while ng build deploys the Angular application."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are Angular animations and how are they implemented?",
+    "options": {
+      "A": "Angular animations are a way to animate HTML elements. They are implemented using CSS and JavaScript.",
+      "B": "Angular animations are a way to animate Angular components. They are implemented using the Angular Animations module.",
+      "C": "Angular animations are a way to animate Angular directives. They are implemented using the Angular Animations library.",
+      "D": "Angular animations are a way to animate Angular modules. They are implemented using the Angular Animations API."
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is AOT compilation in Angular and why is it important?",
+    "options": {
+      "A": "AOT compilation is the process of compiling Angular templates during the build process instead of at runtime. It's important because it results in faster rendering, smaller bundle size, earlier error detection, better security, and reduced server load.",
+      "B": "AOT compilation is the process of compiling Angular components during the build process instead of at runtime.",
+      "C": "AOT compilation is the process of compiling Angular modules during the build process instead of at runtime.",
+      "D": "AOT compilation is the process of compiling Angular services during the build process instead of at runtime."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key components of Angular's architecture?",
+    "options": {
+      "A": "Components, Modules, Dependency Injection, Data Flow and Change Detection, Services and State Management, Routing and Navigation, HTTP and Backend Communication",
+      "B": "Controllers, Views, Models, Services, Directives, Filters",
+      "C": "Components, Directives, Pipes, Services, Modules, Templates",
+      "D": "Components, Directives, Services, Modules, Expressions, Filters"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the methods for implementing component communication in Angular?",
+    "options": {
+      "A": "Shared Service with Signals, State Management, Event Bus Pattern, Parent Component Communication",
+      "B": "Shared Service with Signals, State Management, Event Bus Pattern, Child Component Communication",
+      "C": "Shared Service with Signals, State Management, Event Bus Pattern, Sibling Component Communication",
+      "D": "Shared Service with Signals, State Management, Event Bus Pattern, Grandparent Component Communication"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the SharedDataService class in the given code?",
+    "options": {
+      "A": "To manage state using signals and update state",
+      "B": "To manage state using signals and remove state",
+      "C": "To manage state using signals and reset state",
+      "D": "To manage state using signals and replace state"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the EventBusService class in the given code?",
+    "options": {
+      "A": "To emit and listen to events",
+      "B": "To emit and ignore events",
+      "C": "To emit and filter events",
+      "D": "To emit and block events"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key points emphasized in interviews regarding component communication in Angular?",
+    "options": {
+      "A": "Service-based Communication, Event Bus Pattern, State Management, Best Practices",
+      "B": "Service-based Communication, Event Bus Pattern, State Management, Worst Practices",
+      "C": "Service-based Communication, Event Bus Pattern, State Management, No Practices",
+      "D": "Service-based Communication, Event Bus Pattern, State Management, Some Practices"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key strategies for implementing data-dependent component loading in Angular?",
+    "options": {
+      "A": "Route Resolvers, Loading Guards, Component Initialization Pattern, Progressive Loading",
+      "B": "Route Resolvers, Loading Guards, Component Initialization Pattern, Regressive Loading",
+      "C": "Route Resolvers, Loading Guards, Component Initialization Pattern, No Loading",
+      "D": "Route Resolvers, Loading Guards, Component Initialization Pattern, Fast Loading"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key points emphasized in interviews regarding data-dependent component loading in Angular?",
+    "options": {
+      "A": "Data Loading Strategies, Performance Optimization, User Experience, Best Practices",
+      "B": "Data Loading Strategies, Performance Optimization, User Experience, Worst Practices",
+      "C": "Data Loading Strategies, Performance Optimization, User Experience, No Practices",
+      "D": "Data Loading Strategies, Performance Optimization, User Experience, Some Practices"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key parts of an Angular Component?",
+    "options": {
+      "A": "Component Decorator, Component Class",
+      "B": "Component Decorator, Component Function",
+      "C": "Component Decorator, Component Variable",
+      "D": "Component Decorator, Component Constant"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the key differences between Constructor and ngOnInit in Angular?",
+    "options": {
+      "A": "Timing, Purpose, Access to Properties",
+      "B": "Timing, Purpose, Access to Variables",
+      "C": "Timing, Purpose, Access to Constants",
+      "D": "Timing, Purpose, Access to Functions"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the best practices for using Constructor and ngOnInit in Angular?",
+    "options": {
+      "A": "Use inject() for DI, Initialize signals and subjects, Only basic setup in constructor, Complex operations in ngOnInit",
+      "B": "Use inject() for DI, Initialize signals and subjects, Only complex setup in constructor, Basic operations in ngOnInit",
+      "C": "Use inject() for DI, Initialize signals and subjects, Only basic setup in constructor, Basic operations in ngOnInit",
+      "D": "Use inject() for DI, Initialize signals and subjects, Only complex setup in constructor, Complex operations in ngOnInit"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the new control flow introduced in Angular 17?",
+    "options": {
+      "A": "A new syntax to replace traditional structural directives",
+      "B": "A new way to handle errors",
+      "C": "A new method for handling user input",
+      "D": "A new system for managing state"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the benefits of Angular's new control flow?",
+    "options": {
+      "A": "Improved performance and better type safety",
+      "B": "Simpler syntax and built-in empty state handling",
+      "C": "All of the above",
+      "D": "None of the above"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What does the new @if syntax replace in Angular?",
+    "options": {
+      "A": "*ngIf",
+      "B": "*ngFor",
+      "C": "*ngSwitch",
+      "D": "None of the above"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does the new @for syntax provide in Angular?",
+    "options": {
+      "A": "Better performance",
+      "B": "Built-in empty state handling",
+      "C": "Simpler tracking syntax",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What does the @switch syntax provide in Angular?",
+    "options": {
+      "A": "A cleaner way to handle multiple conditions",
+      "B": "A way to switch between different components",
+      "C": "A method for switching between different states",
+      "D": "None of the above"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some key performance optimization techniques in Angular?",
+    "options": {
+      "A": "Proper tracking in @for",
+      "B": "Efficient error handling",
+      "C": "Both A and B",
+      "D": "None of the above"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What are some best practices when using the new control flow in Angular?",
+    "options": {
+      "A": "Always use track in @for loops",
+      "B": "Implement empty state handling",
+      "C": "Keep nesting levels manageable",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "Can you mix old and new syntax in Angular?",
+    "options": {
+      "A": "Yes, you can mix old and new syntax",
+      "B": "No, you should use either the old or new syntax within a template, not both",
+      "C": "It depends on the specific situation",
+      "D": "None of the above"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "Is the new syntax mandatory in Angular 17+?",
+    "options": {
+      "A": "Yes, the new syntax is mandatory",
+      "B": "No, but it's recommended for new projects and features",
+      "C": "It depends on the specific situation",
+      "D": "None of the above"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is Dependency Injection in Angular?",
+    "options": {
+      "A": "A design pattern where dependencies are provided to a class instead of being created inside it.",
+      "B": "A method of creating dependencies within a class.",
+      "C": "A way to manage service instances and handle dependency hierarchy.",
+      "D": "All of the above."
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are the different ways to configure providers in Angular?",
+    "options": {
+      "A": "Value Provider, Class Provider, Factory Provider, Existing Provider (Alias).",
+      "B": "Value Provider, Class Provider, Factory Provider.",
+      "C": "Value Provider, Class Provider.",
+      "D": "Value Provider."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you handle hierarchical injection and module providers in Angular?",
+    "options": {
+      "A": "Component-level provider, Module-level provider, Lazy-loaded module, Component with viewProviders.",
+      "B": "Component-level provider, Module-level provider, Lazy-loaded module.",
+      "C": "Component-level provider, Module-level provider.",
+      "D": "Component-level provider."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How are optional dependencies and forward refs handled in Angular?",
+    "options": {
+      "A": "Using the @Optional() decorator and forwardRef() to resolve circular dependencies.",
+      "B": "Using the @Optional() decorator.",
+      "C": "Using forwardRef() to resolve circular dependencies.",
+      "D": "None of the above."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are Directives in Angular?",
+    "options": {
+      "A": "Classes that add behavior to elements in your applications.",
+      "B": "Classes that remove behavior from elements in your applications.",
+      "C": "Classes that modify the structure of your applications.",
+      "D": "None of the above."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the types of Directives in Angular?",
+    "options": {
+      "A": "Component Directives, Structural Directives, Attribute Directives.",
+      "B": "Component Directives, Structural Directives.",
+      "C": "Component Directives, Attribute Directives.",
+      "D": "Component Directives."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you create and use Custom Directives in Angular?",
+    "options": {
+      "A": "Custom directives are created using the @Directive decorator and can interact with the host element through ElementRef, HostListener, and HostBinding.",
+      "B": "Custom directives are created using the @Directive decorator and can interact with the host element through ElementRef and HostListener.",
+      "C": "Custom directives are created using the @Directive decorator and can interact with the host element through ElementRef and HostBinding.",
+      "D": "Custom directives are created using the @Directive decorator and can interact with the host element through ElementRef."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do Structural Directives work in Angular?",
+    "options": {
+      "A": "Structural directives manipulate DOM elements using microsyntax (*directive) and work with TemplateRef and ViewContainerRef to add/remove elements.",
+      "B": "Structural directives manipulate DOM elements using microsyntax (*directive) and work with TemplateRef to add/remove elements.",
+      "C": "Structural directives manipulate DOM elements using microsyntax (*directive) and work with ViewContainerRef to add/remove elements.",
+      "D": "Structural directives manipulate DOM elements using microsyntax (*directive)."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you share data between directives and components in Angular?",
+    "options": {
+      "A": "Data can be shared using Input/Output decorators, services, or by accessing the host component through dependency injection.",
+      "B": "Data can be shared using Input/Output decorators or services.",
+      "C": "Data can be shared using Input/Output decorators or by accessing the host component through dependency injection.",
+      "D": "Data can be shared using Input/Output decorators."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the main differences between Template-Driven and Reactive Forms in Angular?",
+    "options": {
+      "A": "Setup and Configuration, Form Building, Data Flow, Validation, Testing",
+      "B": "Setup and Configuration, Form Building, Data Flow, Validation",
+      "C": "Setup and Configuration, Form Building, Data Flow",
+      "D": "Setup and Configuration, Form Building"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the main difference in the setup and configuration of Template-Driven and Reactive Forms?",
+    "options": {
+      "A": "Template-Driven Forms have a more explicit setup and are TypeScript-centric, while Reactive Forms have a simpler setup and are more HTML-centric",
+      "B": "Template-Driven Forms have a simpler setup and are more HTML-centric, while Reactive Forms have a more explicit setup and are TypeScript-centric",
+      "C": "Both Template-Driven and Reactive Forms have a simpler setup and are more HTML-centric",
+      "D": "Both Template-Driven and Reactive Forms have a more explicit setup and are TypeScript-centric"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "How are forms built in Template-Driven and Reactive Forms?",
+    "options": {
+      "A": "In Template-Driven Forms, forms are built programmatically in component class, while in Reactive Forms, forms are built using directives in template",
+      "B": "In Template-Driven Forms, forms are built using directives in template, while in Reactive Forms, forms are built programmatically in component class",
+      "C": "In both Template-Driven and Reactive Forms, forms are built programmatically in component class",
+      "D": "In both Template-Driven and Reactive Forms, forms are built using directives in template"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the main difference in data flow in Template-Driven and Reactive Forms?",
+    "options": {
+      "A": "Template-Driven Forms use reactive patterns with observables, while Reactive Forms use two-way binding with [(ngModel)]",
+      "B": "Template-Driven Forms use two-way binding with [(ngModel)], while Reactive Forms use reactive patterns with observables",
+      "C": "Both Template-Driven and Reactive Forms use reactive patterns with observables",
+      "D": "Both Template-Driven and Reactive Forms use two-way binding with [(ngModel)]"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the main difference in validation in Template-Driven and Reactive Forms?",
+    "options": {
+      "A": "Template-Driven Forms use custom validation functions, while Reactive Forms use HTML5 validation attributes",
+      "B": "Template-Driven Forms use HTML5 validation attributes, while Reactive Forms use custom validation functions",
+      "C": "Both Template-Driven and Reactive Forms use custom validation functions",
+      "D": "Both Template-Driven and Reactive Forms use HTML5 validation attributes"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the main difference in testing in Template-Driven and Reactive Forms?",
+    "options": {
+      "A": "Template-Driven Forms are easier to test due to synchronous nature, while Reactive Forms are more challenging to test",
+      "B": "Template-Driven Forms are more challenging to test, while Reactive Forms are easier to test due to synchronous nature",
+      "C": "Both Template-Driven and Reactive Forms are easier to test due to synchronous nature",
+      "D": "Both Template-Driven and Reactive Forms are more challenging to test"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What are Angular Guards?",
+    "options": {
+      "A": "Angular Guards are mechanisms to control route access and behavior",
+      "B": "Angular Guards are mechanisms to control component access and behavior",
+      "C": "Angular Guards are mechanisms to control service access and behavior",
+      "D": "Angular Guards are mechanisms to control module access and behavior"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What types of Angular Guards are available?",
+    "options": {
+      "A": "CanActivate, CanActivateChild, CanDeactivate, Resolve, CanMatch",
+      "B": "CanActivate, CanActivateChild, CanDeactivate, Resolve",
+      "C": "CanActivate, CanActivateChild, CanDeactivate",
+      "D": "CanActivate, CanActivateChild"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are @Input() and @Output() decorators in Angular?",
+    "options": {
+      "A": "@Input() allows a parent component to pass data to a child component, and @Output() enables a child component to send data back to the parent through event emission",
+      "B": "@Input() allows a child component to pass data to a parent component, and @Output() enables a parent component to send data back to the child through event emission",
+      "C": "@Input() allows a parent component to pass data to a child component, and @Output() enables a parent component to send data back to the child through event emission",
+      "D": "@Input() allows a child component to pass data to a parent component, and @Output() enables a child component to send data back to the parent through event emission"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the key to handling large datasets efficiently in Angular applications?",
+    "options": {
+      "A": "Using a single technique",
+      "B": "Using a combination of techniques",
+      "C": "Using only Web Workers for Heavy Computations",
+      "D": "Using only Virtual Scrolling"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of Virtual Scrolling in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of Data Pagination in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of Lazy Loading in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of Efficient State Management in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of Web Workers for Heavy Computations in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of using proper data structures in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of implementing caching in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of optimizing computations in Angular?",
+    "options": {
+      "A": "To load data in chunks",
+      "B": "To maintain performance",
+      "C": "To reduce memory usage",
+      "D": "All of the above"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the purpose of standalone components in Angular's modern architecture?",
+    "options": {
+      "A": "To represent a significant shift in Angular's architecture, moving away from NgModules towards a more streamlined approach",
+      "B": "To make the code more complex",
+      "C": "To reduce the performance of the application",
+      "D": "To increase the amount of boilerplate code"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of signals in Angular's modern architecture?",
+    "options": {
+      "A": "To introduce a new reactive primitive for managing state and side effects",
+      "B": "To make the code more complex",
+      "C": "To reduce the performance of the application",
+      "D": "To increase the amount of boilerplate code"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the benefits of modern Angular architecture?",
+    "options": {
+      "A": "Simplified Architecture, Better Performance, Improved Developer Experience, Enhanced Testing",
+      "B": "Complex Architecture, Poor Performance, Difficult Developer Experience, Complicated Testing",
+      "C": "Simplified Architecture, Poor Performance, Difficult Developer Experience, Enhanced Testing",
+      "D": "Complex Architecture, Better Performance, Improved Developer Experience, Complicated Testing"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is an Angular module (NgModule)?",
+    "options": {
+      "A": "A container for organizing related components, directives, pipes, and services",
+      "B": "A container for organizing unrelated components, directives, pipes, and services",
+      "C": "A container for disorganizing related components, directives, pipes, and services",
+      "D": "A container for disorganizing unrelated components, directives, pipes, and services"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the different types of Angular Modules?",
+    "options": {
+      "A": "Root Module, Feature Module, Shared Module, Core Module",
+      "B": "Root Module, Unfeatured Module, Shared Module, Core Module",
+      "C": "Root Module, Feature Module, Unshared Module, Core Module",
+      "D": "Root Module, Feature Module, Shared Module, Uncore Module"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you handle module dependencies and imports in Angular?",
+    "options": {
+      "A": "By importing the required modules in the NgModule",
+      "B": "By exporting the required modules in the NgModule",
+      "C": "By importing the required modules in the Component",
+      "D": "By exporting the required modules in the Component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you optimize module loading and performance in Angular?",
+    "options": {
+      "A": "By using Lazy Loading and Preloading Strategy",
+      "B": "By using Eager Loading and Preloading Strategy",
+      "C": "By using Lazy Loading and Postloading Strategy",
+      "D": "By using Eager Loading and Postloading Strategy"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are common module patterns and best practices in Angular?",
+    "options": {
+      "A": "Feature Module Pattern, Shared Module Pattern",
+      "B": "Unfeatured Module Pattern, Shared Module Pattern",
+      "C": "Feature Module Pattern, Unshared Module Pattern",
+      "D": "Unfeatured Module Pattern, Unshared Module Pattern"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How to handle multiple API calls simultaneously in Angular?",
+    "options": {
+      "A": "By using forkJoin to combine all API calls",
+      "B": "By using forkJoin to combine only two API calls",
+      "C": "By using forkJoin to combine only three API calls",
+      "D": "By using forkJoin to combine only four API calls"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some common causes for ngOnInit not executing?",
+    "options": {
+      "A": "Component not properly declared/imported",
+      "B": "Lifecycle hooks not implemented correctly",
+      "C": "Route configuration issues",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are the key differences between Observables and Promises?",
+    "options": {
+      "A": "Promises execute immediately when created, Observables only execute when subscribed to",
+      "B": "Promises resolve once with a single value, Observables can emit multiple values over time",
+      "C": "Promises cannot be cancelled, Observables can be cancelled by unsubscribing",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are the key strategies for optimizing Angular applications?",
+    "options": {
+      "A": "Change Detection Optimization",
+      "B": "Lazy Loading",
+      "C": "Preloading Strategies",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are Angular Pipes and what is their purpose?",
+    "options": {
+      "A": "Angular Pipes are a feature that allows you to transform and format data in your templates without changing the underlying data",
+      "B": "Angular Pipes are a feature that allows you to change the underlying data in your templates",
+      "C": "Angular Pipes are a feature that allows you to format data in your templates and change the underlying data",
+      "D": "None of the above"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between pure and impure pipes?",
+    "options": {
+      "A": "Pure pipes only run on reference changes, impure pipes run on every change detection cycle",
+      "B": "Pure pipes run on every change detection cycle, impure pipes only run on reference changes",
+      "C": "Pure pipes and impure pipes both run on reference changes",
+      "D": "Pure pipes and impure pipes both run on every change detection cycle"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are some common use cases for Angular Pipes?",
+    "options": {
+      "A": "Date formatting",
+      "B": "Number and currency formatting",
+      "C": "Text transformation",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are some key points to emphasize in interviews regarding Angular Pipes?",
+    "options": {
+      "A": "Understanding when to use pipes vs methods",
+      "B": "Performance implications of pure vs impure pipes",
+      "C": "Best practices for creating custom pipes",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are some key points to emphasize in interviews regarding Angular Performance Optimization?",
+    "options": {
+      "A": "Change detection optimization",
+      "B": "Bundle size reduction",
+      "C": "Loading strategies",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are some key points to emphasize in interviews regarding Observables vs Promises in Angular?",
+    "options": {
+      "A": "Understanding fundamental differences",
+      "B": "Knowing when to use each",
+      "C": "Memory management",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is Angular Routing?",
+    "options": {
+      "A": "A mechanism for navigating between different components/views in an Angular application.",
+      "B": "A tool for managing state in an Angular application.",
+      "C": "A library for reactive programming using observables.",
+      "D": "A method for securing an Angular application."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What does Angular Routing enable?",
+    "options": {
+      "A": "Navigation between pages, passing parameters, guards for route protection, lazy loading of modules, child routes and route nesting.",
+      "B": "Handling asynchronous data streams, event handling, HTTP requests, state management, component communication, side effect management.",
+      "C": "XSS (Cross-Site Scripting), CSRF (Cross-Site Request Forgery), Data Injection, Unauthorized Access.",
+      "D": "Built-in Angular Security, Additional Protections, Best Practices, Common Pitfalls."
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is RxJS?",
+    "options": {
+      "A": "A mechanism for navigating between different components/views in an Angular application.",
+      "B": "A tool for managing state in an Angular application.",
+      "C": "A library for reactive programming using observables.",
+      "D": "A method for securing an Angular application."
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is RxJS used for in Angular?",
+    "options": {
+      "A": "Navigation between pages, passing parameters, guards for route protection, lazy loading of modules, child routes and route nesting.",
+      "B": "Handling asynchronous data streams, event handling, HTTP requests, state management, component communication, side effect management.",
+      "C": "XSS (Cross-Site Scripting), CSRF (Cross-Site Request Forgery), Data Injection, Unauthorized Access.",
+      "D": "Built-in Angular Security, Additional Protections, Best Practices, Common Pitfalls."
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What are we protecting against in Angular Security?",
+    "options": {
+      "A": "Navigation between pages, passing parameters, guards for route protection, lazy loading of modules, child routes and route nesting.",
+      "B": "Handling asynchronous data streams, event handling, HTTP requests, state management, component communication, side effect management.",
+      "C": "XSS (Cross-Site Scripting), CSRF (Cross-Site Request Forgery), Data Injection, Unauthorized Access.",
+      "D": "Built-in Angular Security, Additional Protections, Best Practices, Common Pitfalls."
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What are the key points to emphasize in interviews about Angular Security?",
+    "options": {
+      "A": "Navigation between pages, passing parameters, guards for route protection, lazy loading of modules, child routes and route nesting.",
+      "B": "Handling asynchronous data streams, event handling, HTTP requests, state management, component communication, side effect management.",
+      "C": "XSS (Cross-Site Scripting), CSRF (Cross-Site Request Forgery), Data Injection, Unauthorized Access.",
+      "D": "Built-in Angular Security, Additional Protections, Best Practices, Common Pitfalls."
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What are the common pitfalls in Angular Security?",
+    "options": {
+      "A": "Bypassing built-in sanitization",
+      "B": "Insecure localStorage usage",
+      "C": "Missing CSRF protection",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of Angular's built-in sanitization?",
+    "options": {
+      "A": "To prevent XSS attacks",
+      "B": "To prevent CSRF attacks",
+      "C": "To prevent data injection attacks",
+      "D": "All of the above"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of CSRF tokens in Angular?",
+    "options": {
+      "A": "To prevent XSS attacks",
+      "B": "To prevent CSRF attacks",
+      "C": "To prevent data injection attacks",
+      "D": "All of the above"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What are Angular Services used for?",
+    "options": {
+      "A": "Data sharing between components",
+      "B": "Business logic encapsulation",
+      "C": "HTTP communication",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'Injectable' decorator in Angular?",
+    "options": {
+      "A": "It allows the service to be injected as a dependency",
+      "B": "It makes the service available throughout the application",
+      "C": "It ensures that the service is a singleton",
+      "D": "All of the above"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "What is the purpose of the 'HttpClient' in Angular?",
+    "options": {
+      "A": "To make HTTP requests",
+      "B": "To manage application state",
+      "C": "To handle errors",
+      "D": "To manage user authentication"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'catchError' operator in Angular?",
+    "options": {
+      "A": "To handle errors in an Observable stream",
+      "B": "To catch exceptions in the application",
+      "C": "To prevent errors from being thrown",
+      "D": "To log errors to the console"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'map' operator in Angular?",
+    "options": {
+      "A": "To transform the values in an Observable stream",
+      "B": "To filter out values in an Observable stream",
+      "C": "To catch errors in an Observable stream",
+      "D": "To repeat values in an Observable stream"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are Signals in Angular?",
+    "options": {
+      "A": "Objects that wrap a value and notify consumers when that value changes",
+      "B": "Functions that allow you to handle asynchronous operations",
+      "C": "Decorators that allow you to bind component properties to template expressions",
+      "D": "Services that allow you to share data between components"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of the 'computed' function in Angular?",
+    "options": {
+      "A": "To create a new Observable",
+      "B": "To create a new Promise",
+      "C": "To create a new Signal that depends on other Signals",
+      "D": "To create a new component"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the purpose of the 'effect' function in Angular?",
+    "options": {
+      "A": "To handle side effects when a Signal's value changes",
+      "B": "To create a new Observable",
+      "C": "To create a new Promise",
+      "D": "To create a new component"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are Standalone Components in Angular?",
+    "options": {
+      "A": "Components that can be used without declaring them in an NgModule",
+      "B": "Components that do not depend on any other components",
+      "C": "Components that do not have any dependencies",
+      "D": "Components that can be used outside of an Angular application"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are the different approaches to state management in Angular?",
+    "options": {
+      "A": "Signals, Services with RxJS, NgRx (Redux pattern), NGXS, Component State, Local Storage/Session Storage",
+      "B": "Signals, Services with RxJS, NgRx (Redux pattern), NGXS, Component State",
+      "C": "Signals, Services with RxJS, NgRx (Redux pattern), NGXS",
+      "D": "Signals, Services with RxJS, NgRx (Redux pattern)"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of TypeScript in Angular?",
+    "options": {
+      "A": "To provide static typing and type checking, object-oriented features, enhanced IDE support, early error detection, and better code organization and maintainability",
+      "B": "To provide static typing and type checking, object-oriented features, and enhanced IDE support",
+      "C": "To provide static typing and type checking, and object-oriented features",
+      "D": "To provide static typing and type checking"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What are ViewChild and ContentChild in Angular?",
+    "options": {
+      "A": "Decorators for accessing child elements",
+      "B": "Decorators for accessing parent elements",
+      "C": "Decorators for accessing sibling elements",
+      "D": "Decorators for accessing any elements"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is Angular?",
+    "options": {
+      "A": "A modern, powerful TypeScript-based web application framework developed and maintained by Google",
+      "B": "A modern, powerful JavaScript-based web application framework developed and maintained by Google",
+      "C": "A modern, powerful TypeScript-based web application framework developed and maintained by Microsoft",
+      "D": "A modern, powerful JavaScript-based web application framework developed and maintained by Microsoft"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is AngularJS?",
+    "options": {
+      "A": "The original framework released in 2010",
+      "B": "The original framework released in 2012",
+      "C": "The original framework released in 2014",
+      "D": "The original framework released in 2016"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the key difference between Angular and AngularJS in terms of architecture?",
+    "options": {
+      "A": "Angular uses a component-based architecture while AngularJS uses an MVC architecture",
+      "B": "Angular uses an MVC architecture while AngularJS uses a component-based architecture",
+      "C": "Both Angular and AngularJS use a component-based architecture",
+      "D": "Both Angular and AngularJS use an MVC architecture"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the key difference between Angular and AngularJS in terms of language?",
+    "options": {
+      "A": "Angular uses TypeScript while AngularJS uses JavaScript",
+      "B": "Angular uses JavaScript while AngularJS uses TypeScript",
+      "C": "Both Angular and AngularJS use TypeScript",
+      "D": "Both Angular and AngularJS use JavaScript"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the key difference between Angular and AngularJS in terms of mobile support?",
+    "options": {
+      "A": "Angular has better mobile support while AngularJS has limited mobile support",
+      "B": "Angular has limited mobile support while AngularJS has better mobile support",
+      "C": "Both Angular and AngularJS have better mobile support",
+      "D": "Both Angular and AngularJS have limited mobile support"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the key difference between Angular and AngularJS in terms of performance?",
+    "options": {
+      "A": "Angular has improved performance while AngularJS is slower",
+      "B": "Angular is slower while AngularJS has improved performance",
+      "C": "Both Angular and AngularJS have improved performance",
+      "D": "Both Angular and AngularJS are slower"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between RouterModule.forRoot() and forChild()?",
+    "options": {
+      "A": "forRoot() is used in feature modules while forChild() is used in the main app routing module",
+      "B": "forRoot() creates a new router service instance while forChild() creates a singleton router service",
+      "C": "forRoot() is used in the main app routing module and creates a singleton router service while forChild() is used in feature modules and doesn't create a new router service instance",
+      "D": "forRoot() and forChild() are used interchangeably"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What are Route Guards in Angular?",
+    "options": {
+      "A": "They are used to control access to routes",
+      "B": "They are used to define routes",
+      "C": "They are used to create new routes",
+      "D": "They are used to delete routes"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the use of CanActivate guard?",
+    "options": {
+      "A": "It is used for authentication",
+      "B": "It is used for data fetching before route gets activated",
+      "C": "It is used for protecting lazy-loaded modules",
+      "D": "It is used for unsaved changes"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the concept of lazy loading in Angular?",
+    "options": {
+      "A": "It is a technique used to improve application performance by loading feature modules on demand instead of at the initial load",
+      "B": "It is a technique used to load all modules at the start",
+      "C": "It is a technique used to load modules in a sequential manner",
+      "D": "It is a technique used to load modules in a random manner"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between lazy loading and eager loading?",
+    "options": {
+      "A": "Lazy loading loads modules on demand, while eager loading loads all modules at the start",
+      "B": "Lazy loading loads all modules at the start, while eager loading loads modules on demand",
+      "C": "Lazy loading and eager loading both load modules on demand",
+      "D": "Lazy loading and eager loading both load all modules at the start"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How do you navigate from one view to another view in Angular?",
+    "options": {
+      "A": "By using Template Navigation and Programmatic Navigation",
+      "B": "By using only Template Navigation",
+      "C": "By using only Programmatic Navigation",
+      "D": "By using neither Template Navigation nor Programmatic Navigation"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the difference between navigate and navigateByUrl in Angular?",
+    "options": {
+      "A": "navigate takes an array of path segments, while navigateByUrl takes a complete URL string",
+      "B": "navigate takes a complete URL string, while navigateByUrl takes an array of path segments",
+      "C": "navigate and navigateByUrl both take an array of path segments",
+      "D": "navigate and navigateByUrl both take a complete URL string"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "When would you use query parameters instead of route parameters in Angular?",
+    "options": {
+      "A": "When you need to preserve query parameters",
+      "B": "When you need complex navigation options",
+      "C": "When you have a complete URL string",
+      "D": "Query parameters are better for optional, non-hierarchical data like filters, search terms, or pagination"
+    },
+    "correct_answer": "D"
+  },
+  {
+    "question": "How do you preserve query parameters when navigating in Angular?",
+    "options": {
+      "A": "Use queryParamsHandling: 'preserve' or 'merge' in navigation options",
+      "B": "Use queryParamsHandling: 'delete' in navigation options",
+      "C": "Use queryParamsHandling: 'add' in navigation options",
+      "D": "Use queryParamsHandling: 'update' in navigation options"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "How are route parameters defined in the route configuration?",
+    "options": {
+      "A": "Using a semicolon (;) syntax",
+      "B": "Using a colon (:) syntax",
+      "C": "Using a slash (/) syntax",
+      "D": "Using a dot (.) syntax"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the use of ActivatedRoute in Angular?",
+    "options": {
+      "A": "To access route parameters",
+      "B": "To define route parameters",
+      "C": "To redirect to a different route",
+      "D": "To create a new route"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the use of snapshot in Angular?",
+    "options": {
+      "A": "When parameters might change without component destruction",
+      "B": "When parameters won't change during component lifetime",
+      "C": "When parameters are optional",
+      "D": "When parameters have default values"
+    },
+    "correct_answer": "B"
+  },
+  {
+    "question": "What is the use of paramMap in Angular?",
+    "options": {
+      "A": "For handling route parameters defined in the path configuration",
+      "B": "For handling optional parameters",
+      "C": "For handling default parameters",
+      "D": "For handling static parameters"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the use of queryParamMap in Angular?",
+    "options": {
+      "A": "For retrieving optional parameters that appear after the ? in the URL",
+      "B": "For retrieving mandatory parameters that appear after the ? in the URL",
+      "C": "For retrieving static parameters that appear after the ? in the URL",
+      "D": "For retrieving dynamic parameters that appear after the ? in the URL"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of RouterModule.forRoot(routes) in Angular?",
+    "options": {
+      "A": "To register routes and make them available across the app",
+      "B": "To define new routes",
+      "C": "To redirect to a different route",
+      "D": "To create a new route"
+    },
+    "correct_answer": "A"
+  },
+  {
+    "question": "What is the purpose of RouterOutlet in Angular?",
+    "options": {
+      "A": "To define new routes",
+      "B": "To redirect to a different route",
+      "C": "To serve as a placeholder that Angular fills dynamically based on the current route",
+      "D": "To create a new route"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What does the path '**' in Angular routing configuration represent?",
+    "options": {
+      "A": "The root path",
+      "B": "A dynamic path",
+      "C": "A wildcard route that catches all URLs that don't match any other routes",
+      "D": "A static path"
+    },
+    "correct_answer": "C"
+  },
+  {
+    "question": "What is the main difference between AngularJS and Angular?",
+    "options": {
+      "A": "AngularJS uses JavaScript while Angular uses TypeScript",
+      "B": "AngularJS uses TypeScript while Angular uses JavaScript",
+      "C": "Both AngularJS and Angular use JavaScript",
+      "D": "Both AngularJS and Angular use TypeScript"
+    },
+    "correct_answer": "A"
+  }
+]
