@@ -1,0 +1,255 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are indexes and why are they used?
+---
+
+# What are indexes and why are they used?
+
+## Answer
+
+**Indexes** are database objects that improve the speed of data retrieval operations on a table. They work like an index in a book, providing a fast path to locate specific data without scanning the entire table.
+
+## How Indexes Work
+
+Think of an index as a separate structure that contains:
+- **Key values** from one or more columns
+- **Pointers** to the actual rows in the table
+- **Sorted organization** for fast searching
+
+```sql
+-- Without index: Full table scan
+SELECT * FROM employees WHERE last_name = 'Smith';
+-- Database scans all 100,000 rows
+
+-- With index on last_name: Index seek
+CREATE INDEX idx_last_name ON employees(last_name);
+SELECT * FROM employees WHERE last_name = 'Smith';
+-- Database uses index to find rows quickly
+```
+
+## Types of Indexes
+
+### 1. Clustered Index
+- **Physical ordering**: Rows are stored in the same order as the index
+- **One per table**: Only one clustered index allowed
+- **Primary key**: Usually created automatically on primary key
+
+```sql
+-- Clustered index (usually on primary key)
+CREATE CLUSTERED INDEX idx_emp_id ON employees(emp_id);
+```
+
+### 2. Non-Clustered Index
+- **Logical ordering**: Separate structure pointing to data rows
+- **Multiple allowed**: Can have many non-clustered indexes
+- **Additional storage**: Requires extra disk space
+
+```sql
+-- Non-clustered indexes
+CREATE INDEX idx_last_name ON employees(last_name);
+CREATE INDEX idx_department ON employees(department);
+CREATE INDEX idx_hire_date ON employees(hire_date);
+```
+
+### 3. Unique Index
+- **Enforces uniqueness**: Prevents duplicate values
+- **Automatic creation**: Created automatically with UNIQUE constraints
+
+```sql
+-- Unique index
+CREATE UNIQUE INDEX idx_email ON employees(email);
+```
+
+### 4. Composite Index
+- **Multiple columns**: Index on combination of columns
+- **Column order matters**: Most selective column should be first
+
+```sql
+-- Composite index
+CREATE INDEX idx_dept_salary ON employees(department, salary);
+
+-- Effective for queries like:
+SELECT * FROM employees WHERE department = 'IT' AND salary > 50000;
+```
+
+## Benefits of Indexes
+
+### 1. Faster SELECT Operations
+```sql
+-- Without index: O(n) - linear scan
+SELECT * FROM employees WHERE emp_id = 12345;
+
+-- With index: O(log n) - binary search
+-- Dramatically faster on large tables
+```
+
+### 2. Faster JOIN Operations
+```sql
+-- Indexes on join columns improve performance
+SELECT e.name, d.dept_name
+FROM employees e
+JOIN departments d ON e.dept_id = d.dept_id; -- Index on dept_id helps
+```
+
+### 3. Faster ORDER BY
+```sql
+-- Index on ordered column avoids sorting
+SELECT * FROM employees ORDER BY last_name; -- Index on last_name helps
+```
+
+### 4. Faster GROUP BY
+```sql
+-- Index on grouped column improves performance
+SELECT department, COUNT(*) 
+FROM employees 
+GROUP BY department; -- Index on department helps
+```
+
+## Drawbacks of Indexes
+
+### 1. Storage Overhead
+```sql
+-- Each index requires additional disk space
+-- Rule of thumb: 10-20% of table size per index
+```
+
+### 2. Slower INSERT/UPDATE/DELETE
+```sql
+-- Every modification must update indexes too
+INSERT INTO employees (name, department) VALUES ('John Doe', 'IT');
+-- Must update table + all indexes on the table
+```
+
+### 3. Maintenance Overhead
+```sql
+-- Indexes need maintenance as data changes
+-- Fragmentation can occur over time
+```
+
+## When to Create Indexes
+
+### Good Candidates:
+- **Frequently queried columns** in WHERE clauses
+- **JOIN columns** used in table relationships
+- **ORDER BY columns** for sorting
+- **Foreign key columns** for referential integrity
+
+```sql
+-- Good index candidates
+CREATE INDEX idx_customer_id ON orders(customer_id); -- FK column
+CREATE INDEX idx_order_date ON orders(order_date);   -- Frequently filtered
+CREATE INDEX idx_status ON orders(status);           -- WHERE clause column
+```
+
+### Poor Candidates:
+- **Small tables** (< 1000 rows)
+- **Frequently updated columns**
+- **Columns with low selectivity** (few unique values)
+
+```sql
+-- Poor index candidates
+-- CREATE INDEX idx_gender ON employees(gender);     -- Only M/F values
+-- CREATE INDEX idx_active ON users(is_active);      -- Only true/false
+```
+
+## Index Management
+
+### Creating Indexes
+```sql
+-- Basic index
+CREATE INDEX idx_name ON table_name(column_name);
+
+-- Composite index
+CREATE INDEX idx_multi ON table_name(col1, col2, col3);
+
+-- Unique index
+CREATE UNIQUE INDEX idx_unique ON table_name(column_name);
+
+-- Partial index (PostgreSQL)
+CREATE INDEX idx_active_users ON users(email) WHERE is_active = true;
+```
+
+### Viewing Indexes
+```sql
+-- MySQL
+SHOW INDEXES FROM table_name;
+
+-- PostgreSQL
+\d table_name
+
+-- SQL Server
+SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID('table_name');
+```
+
+### Dropping Indexes
+```sql
+DROP INDEX idx_name ON table_name; -- MySQL
+DROP INDEX idx_name;                -- PostgreSQL/SQL Server
+```
+
+## Performance Examples
+
+### Before Index (Slow)
+```sql
+-- Table with 1 million employees
+SELECT * FROM employees WHERE last_name = 'Smith';
+-- Execution time: 2.5 seconds (full table scan)
+-- Rows examined: 1,000,000
+```
+
+### After Index (Fast)
+```sql
+CREATE INDEX idx_last_name ON employees(last_name);
+SELECT * FROM employees WHERE last_name = 'Smith';
+-- Execution time: 0.01 seconds (index seek)
+-- Rows examined: 127 (only matching rows)
+```
+
+## Index Design Best Practices
+
+### 1. Column Order in Composite Indexes
+```sql
+-- Good: Most selective column first
+CREATE INDEX idx_search ON products(category, brand, price);
+-- Effective for: WHERE category = 'Electronics' AND brand = 'Apple'
+
+-- Poor: Less selective column first
+CREATE INDEX idx_poor ON products(price, category, brand);
+-- Less effective for category-based searches
+```
+
+### 2. Include Columns (SQL Server)
+```sql
+-- Covering index with included columns
+CREATE INDEX idx_covering ON employees(department) 
+INCLUDE (name, salary, hire_date);
+-- Query can be satisfied entirely from index
+```
+
+### 3. Filtered Indexes
+```sql
+-- Index only active records
+CREATE INDEX idx_active_employees ON employees(last_name) 
+WHERE status = 'ACTIVE';
+```
+
+## Monitoring Index Usage
+
+```sql
+-- Check index usage statistics (SQL Server)
+SELECT 
+    i.name AS index_name,
+    s.user_seeks,
+    s.user_scans,
+    s.user_lookups
+FROM sys.indexes i
+JOIN sys.dm_db_index_usage_stats s ON i.object_id = s.object_id;
+```
+
+## Interview Tips
+
+- Understand that indexes trade storage space for query speed
+- Know the difference between clustered and non-clustered indexes
+- Be able to identify good and poor index candidates
+- Understand the impact on INSERT/UPDATE/DELETE operations
+- Know how to create composite indexes with proper column ordering

@@ -1,0 +1,550 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you design database schemas for high performance?
+---
+
+# How do you design database schemas for high performance?
+
+## Answer
+
+**High-performance database schema design** involves strategic decisions about data organization, relationships, indexing, and access patterns to optimize query performance, minimize resource usage, and ensure scalability. It requires balancing normalization principles with performance requirements.
+
+## Normalization vs Denormalization Trade-offs
+
+### Strategic Denormalization
+```sql
+-- Normalized design (3NF)
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id),
+    order_date DATE,
+    total_amount DECIMAL(10,2)
+);
+
+CREATE TABLE order_items (
+    item_id INT PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id),
+    product_id INT,
+    quantity INT,
+    unit_price DECIMAL(10,2)
+);
+
+-- Denormalized for performance (common reporting queries)
+CREATE TABLE order_summary_denorm (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    customer_name VARCHAR(100),    -- Denormalized
+    customer_email VARCHAR(100),   -- Denormalized
+    order_date DATE,
+    total_amount DECIMAL(10,2),
+    item_count INT,               -- Calculated field
+    avg_item_price DECIMAL(10,2)  -- Calculated field
+);
+
+-- Eliminates JOINs for common queries
+SELECT customer_name, order_date, total_amount, item_count
+FROM order_summary_denorm
+WHERE order_date >= '2024-01-01'
+ORDER BY total_amount DESC;
+```
+
+### Calculated Fields Storage
+```sql
+-- Store frequently calculated values
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    base_price DECIMAL(10,2),
+    tax_rate DECIMAL(5,4),
+    final_price DECIMAL(10,2) GENERATED ALWAYS AS (base_price * (1 + tax_rate)) STORED,
+    
+    -- Aggregated fields updated via triggers
+    total_sales_count INT DEFAULT 0,
+    total_revenue DECIMAL(15,2) DEFAULT 0,
+    avg_rating DECIMAL(3,2) DEFAULT 0,
+    last_sold_date DATE
+);
+
+-- Trigger to maintain calculated fields
+CREATE OR REPLACE FUNCTION update_product_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE products 
+        SET total_sales_count = total_sales_count + NEW.quantity,
+            total_revenue = total_revenue + (NEW.quantity * NEW.unit_price),
+            last_sold_date = GREATEST(last_sold_date, NEW.sale_date)
+        WHERE product_id = NEW.product_id;
+    END IF;
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_product_stats
+    AFTER INSERT ON sales
+    FOR EACH ROW EXECUTE FUNCTION update_product_stats();
+```
+
+## Partitioning Strategies
+
+### Horizontal Partitioning
+```sql
+-- Time-based partitioning for large tables
+CREATE TABLE sales_data (
+    sale_id BIGSERIAL,
+    customer_id INT,
+    product_id INT,
+    sale_date DATE,
+    amount DECIMAL(10,2),
+    region VARCHAR(20)
+) PARTITION BY RANGE (sale_date);
+
+-- Create monthly partitions
+CREATE TABLE sales_data_2024_01 PARTITION OF sales_data
+FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+
+CREATE TABLE sales_data_2024_02 PARTITION OF sales_data
+FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
+
+-- Composite partitioning (date + region)
+CREATE TABLE sales_data_regional (
+    sale_id BIGSERIAL,
+    customer_id INT,
+    product_id INT,
+    sale_date DATE,
+    amount DECIMAL(10,2),
+    region VARCHAR(20)
+) PARTITION BY RANGE (sale_date);
+
+CREATE TABLE sales_data_2024_01 PARTITION OF sales_data_regional
+FOR VALUES FROM ('2024-01-01') TO ('2024-02-01')
+PARTITION BY LIST (region);
+
+CREATE TABLE sales_data_2024_01_north PARTITION OF sales_data_2024_01
+FOR VALUES IN ('North', 'Northeast', 'Northwest');
+```
+
+### Vertical Partitioning
+```sql
+-- Split frequently accessed from rarely accessed columns
+CREATE TABLE customers_core (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    email VARCHAR(100),
+    status VARCHAR(20),
+    created_date DATE,
+    last_login TIMESTAMP
+);
+
+CREATE TABLE customers_extended (
+    customer_id INT PRIMARY KEY REFERENCES customers_core(customer_id),
+    address TEXT,
+    phone VARCHAR(20),
+    preferences JSONB,
+    notes TEXT,
+    marketing_consent BOOLEAN
+);
+
+-- Hot data (frequently accessed)
+CREATE TABLE user_sessions_hot (
+    session_id VARCHAR(64) PRIMARY KEY,
+    user_id INT,
+    created_at TIMESTAMP,
+    last_activity TIMESTAMP,
+    ip_address INET
+);
+
+-- Cold data (archived/rarely accessed)
+CREATE TABLE user_sessions_cold (
+    session_id VARCHAR(64) PRIMARY KEY,
+    user_id INT,
+    created_at TIMESTAMP,
+    ended_at TIMESTAMP,
+    session_data JSONB,
+    user_agent TEXT
+);
+```
+
+## Data Type Optimization
+
+### Efficient Data Types
+```sql
+-- Use appropriate sizes to minimize storage
+CREATE TABLE optimized_table (
+    -- Use SMALLINT instead of INT when range allows
+    status_code SMALLINT,           -- -32,768 to 32,767
+    category_id SMALLINT,           -- Instead of INT
+    
+    -- Use specific VARCHAR lengths instead of TEXT
+    product_code VARCHAR(20),       -- Known max length
+    description VARCHAR(500),       -- Reasonable limit
+    
+    -- Use DECIMAL only when needed, FLOAT for approximations
+    price DECIMAL(10,2),           -- Exact currency
+    weight REAL,                   -- Approximate is fine
+    
+    -- Use DATE instead of TIMESTAMP when time not needed
+    birth_date DATE,               -- No time component needed
+    created_at TIMESTAMP,          -- Full precision needed
+    
+    -- Use BOOLEAN instead of CHAR(1) or TINYINT
+    is_active BOOLEAN,             -- Clear intent, optimized storage
+    
+    -- Use ENUM for fixed sets (MySQL)
+    priority ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'),
+    
+    -- Use arrays instead of separate junction tables when appropriate
+    tags TEXT[],                   -- PostgreSQL array
+    category_ids INTEGER[]         -- Multiple categories
+);
+```
+
+### JSON and Semi-Structured Data
+```sql
+-- Optimize JSON storage and indexing
+CREATE TABLE products_flexible (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100),
+    base_price DECIMAL(10,2),
+    
+    -- Store variable attributes as JSON
+    attributes JSONB,              -- Use JSONB in PostgreSQL for performance
+    
+    -- Extract frequently queried JSON fields
+    brand VARCHAR(50) GENERATED ALWAYS AS (attributes->>'brand') STORED,
+    category VARCHAR(50) GENERATED ALWAYS AS (attributes->>'category') STORED
+);
+
+-- Index JSON fields efficiently
+CREATE INDEX idx_products_attributes_gin ON products_flexible USING gin(attributes);
+CREATE INDEX idx_products_brand ON products_flexible (brand);
+CREATE INDEX idx_products_category ON products_flexible (category);
+
+-- Specific JSON path indexes
+CREATE INDEX idx_products_color ON products_flexible ((attributes->>'color'));
+CREATE INDEX idx_products_size ON products_flexible ((attributes->>'size'));
+```
+
+## Indexing for Performance
+
+### Strategic Index Design
+```sql
+-- Covering indexes for common queries
+CREATE INDEX idx_orders_customer_covering ON orders (customer_id, order_date)
+INCLUDE (order_total, status, shipping_address);
+
+-- Partial indexes for filtered queries
+CREATE INDEX idx_orders_pending ON orders (order_date, priority)
+WHERE status = 'PENDING';
+
+-- Functional indexes for computed values
+CREATE INDEX idx_customers_name_search ON customers (LOWER(customer_name));
+CREATE INDEX idx_orders_month ON orders (EXTRACT(MONTH FROM order_date));
+
+-- Composite indexes with proper column ordering
+-- Most selective columns first, then range columns, then sort columns
+CREATE INDEX idx_sales_region_date_amount ON sales (region, sale_date, amount);
+```
+
+### Index Maintenance Strategy
+```sql
+-- Monitor index usage and effectiveness
+CREATE VIEW index_usage_stats AS
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    idx_scan as times_used,
+    pg_size_pretty(pg_relation_size(indexrelid)) as index_size,
+    idx_tup_read,
+    idx_tup_fetch
+FROM pg_stat_user_indexes
+ORDER BY idx_scan DESC;
+
+-- Identify unused indexes
+CREATE VIEW unused_indexes AS
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    pg_size_pretty(pg_relation_size(indexrelid)) as wasted_size
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0
+AND indexrelid NOT IN (
+    SELECT indexrelid FROM pg_constraint WHERE contype IN ('p', 'u')
+);
+```
+
+## Query-Driven Design
+
+### Access Pattern Analysis
+```sql
+-- Design tables based on query patterns
+-- Pattern 1: Time-series analytics
+CREATE TABLE metrics_optimized (
+    metric_id BIGSERIAL,
+    timestamp TIMESTAMP NOT NULL,
+    metric_name VARCHAR(50) NOT NULL,
+    value DECIMAL(15,4),
+    tags JSONB,
+    
+    -- Partition by time for efficient range queries
+    PRIMARY KEY (metric_id, timestamp)
+) PARTITION BY RANGE (timestamp);
+
+-- Pattern 2: Hierarchical data with materialized path
+CREATE TABLE categories_hierarchy (
+    category_id SERIAL PRIMARY KEY,
+    category_name VARCHAR(100),
+    parent_id INT REFERENCES categories_hierarchy(category_id),
+    
+    -- Materialized path for efficient subtree queries
+    path VARCHAR(500),              -- e.g., '/1/5/12/'
+    level INT,                      -- Depth in hierarchy
+    
+    -- Nested set model for range queries
+    lft INT,                        -- Left boundary
+    rgt INT                         -- Right boundary
+);
+
+-- Efficient subtree query using materialized path
+SELECT * FROM categories_hierarchy 
+WHERE path LIKE '/1/5/%';
+
+-- Efficient subtree query using nested sets
+SELECT * FROM categories_hierarchy 
+WHERE lft >= 10 AND rgt <= 20;
+```
+
+### Read vs Write Optimization
+```sql
+-- Read-optimized design (OLAP)
+CREATE TABLE sales_summary_read_optimized (
+    summary_id SERIAL PRIMARY KEY,
+    date_key DATE,
+    product_category VARCHAR(50),
+    region VARCHAR(50),
+    
+    -- Pre-aggregated metrics
+    total_sales DECIMAL(15,2),
+    total_quantity INT,
+    unique_customers INT,
+    avg_order_value DECIMAL(10,2),
+    
+    -- Redundant data for fast queries
+    year INT GENERATED ALWAYS AS (EXTRACT(YEAR FROM date_key)) STORED,
+    month INT GENERATED ALWAYS AS (EXTRACT(MONTH FROM date_key)) STORED,
+    quarter INT GENERATED ALWAYS AS (EXTRACT(QUARTER FROM date_key)) STORED
+);
+
+-- Write-optimized design (OLTP)
+CREATE TABLE transactions_write_optimized (
+    transaction_id BIGSERIAL PRIMARY KEY,
+    customer_id INT,
+    amount DECIMAL(10,2),
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Minimal indexes for fast writes
+    INDEX idx_transactions_customer (customer_id),
+    INDEX idx_transactions_date (transaction_date)
+);
+```
+
+## Memory and Storage Optimization
+
+### Buffer Pool Optimization
+```sql
+-- Table design for memory efficiency
+CREATE TABLE session_data (
+    session_id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    last_activity TIMESTAMP NOT NULL,
+    
+    -- Keep frequently accessed data together
+    is_active BOOLEAN DEFAULT true,
+    login_count SMALLINT DEFAULT 1,
+    
+    -- Separate large/variable data
+    session_payload JSONB
+) WITH (fillfactor = 90);  -- Leave space for updates
+
+-- Use appropriate storage parameters
+ALTER TABLE large_table SET (
+    fillfactor = 80,           -- Leave space for updates
+    autovacuum_vacuum_scale_factor = 0.1,
+    autovacuum_analyze_scale_factor = 0.05
+);
+```
+
+### Compression Strategies
+```sql
+-- Column-store simulation with arrays
+CREATE TABLE analytics_compressed (
+    batch_id INT,
+    timestamp_array TIMESTAMP[],
+    value_array DECIMAL(10,2)[],
+    metric_name VARCHAR(50)
+);
+
+-- Use compression-friendly data types
+CREATE TABLE logs_compressed (
+    log_id BIGSERIAL,
+    timestamp TIMESTAMP,
+    level SMALLINT,              -- Instead of VARCHAR
+    message TEXT,
+    
+    -- Dictionary encoding simulation
+    source_id SMALLINT REFERENCES log_sources(source_id),
+    category_id SMALLINT REFERENCES log_categories(category_id)
+);
+```
+
+## Concurrency and Locking Design
+
+### Lock-Free Design Patterns
+```sql
+-- Append-only design for high concurrency
+CREATE TABLE events_append_only (
+    event_id BIGSERIAL PRIMARY KEY,
+    entity_id INT,
+    event_type VARCHAR(50),
+    event_data JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- No updates, only inserts - minimal locking
+    CONSTRAINT no_updates CHECK (created_at IS NOT NULL)
+);
+
+-- Versioned records for optimistic concurrency
+CREATE TABLE documents_versioned (
+    document_id INT,
+    version_number INT,
+    content TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by INT,
+    
+    PRIMARY KEY (document_id, version_number)
+);
+
+-- Current version view
+CREATE VIEW documents_current AS
+SELECT DISTINCT ON (document_id) 
+    document_id, version_number, content, created_at, created_by
+FROM documents_versioned
+ORDER BY document_id, version_number DESC;
+```
+
+### Partition-Based Concurrency
+```sql
+-- Partition hot tables to reduce lock contention
+CREATE TABLE counters_partitioned (
+    counter_id SERIAL,
+    counter_name VARCHAR(50),
+    counter_value BIGINT,
+    partition_key INT GENERATED ALWAYS AS (counter_id % 10) STORED
+) PARTITION BY LIST (partition_key);
+
+-- Create partitions
+DO $$
+BEGIN
+    FOR i IN 0..9 LOOP
+        EXECUTE format('CREATE TABLE counters_p%s PARTITION OF counters_partitioned FOR VALUES IN (%s)', i, i);
+    END LOOP;
+END $$;
+```
+
+## Performance Monitoring Schema
+
+### Built-in Monitoring Tables
+```sql
+-- Performance tracking tables
+CREATE TABLE query_performance_log (
+    log_id BIGSERIAL PRIMARY KEY,
+    query_hash VARCHAR(64),
+    execution_time_ms INT,
+    rows_examined BIGINT,
+    rows_returned BIGINT,
+    index_usage JSONB,
+    execution_plan_hash VARCHAR(64),
+    executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) PARTITION BY RANGE (executed_at);
+
+-- Schema change tracking
+CREATE TABLE schema_changes (
+    change_id SERIAL PRIMARY KEY,
+    change_type VARCHAR(20),
+    object_name VARCHAR(100),
+    change_sql TEXT,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    applied_by VARCHAR(50)
+);
+
+-- Index effectiveness tracking
+CREATE TABLE index_effectiveness (
+    table_name VARCHAR(100),
+    index_name VARCHAR(100),
+    scan_count BIGINT,
+    tuple_reads BIGINT,
+    size_bytes BIGINT,
+    last_used TIMESTAMP,
+    effectiveness_score DECIMAL(5,2),
+    measured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Best Practices Summary
+
+### Design Principles
+```sql
+-- 1. Know your queries first
+-- Design tables based on access patterns, not just entities
+
+-- 2. Balance normalization with performance
+-- Normalize for data integrity, denormalize for performance
+
+-- 3. Choose appropriate data types
+-- Smaller types = better performance and less storage
+
+-- 4. Index strategically
+-- Cover common queries, avoid over-indexing
+
+-- 5. Partition large tables
+-- By time, geography, or other logical boundaries
+
+-- 6. Plan for growth
+-- Design for 10x current size
+
+-- 7. Monitor and iterate
+-- Continuously analyze and optimize based on actual usage
+```
+
+### Common Anti-Patterns to Avoid
+```sql
+-- DON'T: Over-normalize for OLTP workloads
+-- DON'T: Under-index high-frequency queries  
+-- DON'T: Use TEXT for everything
+-- DON'T: Ignore partitioning for large tables
+-- DON'T: Create indexes without monitoring usage
+-- DON'T: Store JSON when relational structure is better
+-- DON'T: Use GUID/UUID as primary keys in high-insert scenarios
+-- DON'T: Ignore query patterns when designing schema
+```
+
+## Interview Tips
+
+- Understand the trade-offs between normalization and performance
+- Know when and how to denormalize effectively
+- Be familiar with partitioning strategies for different scenarios
+- Understand indexing strategies beyond basic single-column indexes
+- Know how to optimize data types for storage and performance
+- Practice designing schemas for specific access patterns (OLTP vs OLAP)
+- Be aware of concurrency implications in schema design
+- Understand how to monitor and measure schema performance

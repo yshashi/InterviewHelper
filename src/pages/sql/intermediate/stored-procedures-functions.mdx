@@ -1,0 +1,477 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are stored procedures and functions? How do they differ?
+---
+
+# What are stored procedures and functions? How do they differ?
+
+## Answer
+
+**Stored procedures** and **functions** are precompiled SQL code blocks stored in the database that can be executed on demand. They encapsulate business logic, improve performance, and provide reusable database operations.
+
+## Key Differences
+
+| Aspect | Stored Procedure | Function |
+|--------|------------------|----------|
+| **Return Value** | Optional, can return multiple values | Must return a single value |
+| **Usage** | Called with CALL/EXEC | Used in SELECT, WHERE, expressions |
+| **Parameters** | IN, OUT, INOUT parameters | Only input parameters |
+| **Side Effects** | Can modify database state | Should be read-only (pure functions) |
+| **Transaction Control** | Can use COMMIT/ROLLBACK | Cannot control transactions |
+| **Recursion** | Limited support | Better recursion support |
+
+## Stored Procedures
+
+### Basic Syntax (MySQL)
+```sql
+DELIMITER //
+CREATE PROCEDURE procedure_name(
+    IN param1 datatype,
+    OUT param2 datatype,
+    INOUT param3 datatype
+)
+BEGIN
+    -- Procedure body
+    DECLARE variable_name datatype;
+    -- SQL statements
+END //
+DELIMITER ;
+```
+
+### Simple Stored Procedure Example
+```sql
+DELIMITER //
+CREATE PROCEDURE GetCustomerOrders(
+    IN customer_id INT,
+    OUT total_orders INT,
+    OUT total_amount DECIMAL(10,2)
+)
+BEGIN
+    SELECT 
+        COUNT(*),
+        COALESCE(SUM(order_total), 0)
+    INTO total_orders, total_amount
+    FROM orders
+    WHERE orders.customer_id = customer_id;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL GetCustomerOrders(123, @order_count, @total_spent);
+SELECT @order_count, @total_spent;
+```
+
+### Complex Business Logic Procedure
+```sql
+DELIMITER //
+CREATE PROCEDURE ProcessMonthlyBilling(
+    IN billing_month DATE,
+    OUT processed_customers INT,
+    OUT total_billed DECIMAL(12,2)
+)
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE cust_id INT;
+    DECLARE monthly_total DECIMAL(10,2);
+    DECLARE customer_cursor CURSOR FOR
+        SELECT customer_id, SUM(order_total)
+        FROM orders
+        WHERE DATE_FORMAT(order_date, '%Y-%m') = DATE_FORMAT(billing_month, '%Y-%m')
+        AND billing_status = 'PENDING'
+        GROUP BY customer_id;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+    
+    SET processed_customers = 0;
+    SET total_billed = 0;
+    
+    -- Start transaction
+    START TRANSACTION;
+    
+    OPEN customer_cursor;
+    
+    customer_loop: LOOP
+        FETCH customer_cursor INTO cust_id, monthly_total;
+        
+        IF done THEN
+            LEAVE customer_loop;
+        END IF;
+        
+        -- Create billing record
+        INSERT INTO billing (
+            customer_id, 
+            billing_date, 
+            amount, 
+            status
+        ) VALUES (
+            cust_id, 
+            billing_month, 
+            monthly_total, 
+            'BILLED'
+        );
+        
+        -- Update order status
+        UPDATE orders 
+        SET billing_status = 'BILLED'
+        WHERE customer_id = cust_id
+        AND DATE_FORMAT(order_date, '%Y-%m') = DATE_FORMAT(billing_month, '%Y-%m');
+        
+        SET processed_customers = processed_customers + 1;
+        SET total_billed = total_billed + monthly_total;
+        
+    END LOOP;
+    
+    CLOSE customer_cursor;
+    
+    -- Commit transaction
+    COMMIT;
+    
+END //
+DELIMITER ;
+```
+
+### Error Handling in Procedures
+```sql
+DELIMITER //
+CREATE PROCEDURE TransferFunds(
+    IN from_account INT,
+    IN to_account INT,
+    IN amount DECIMAL(10,2),
+    OUT result_message VARCHAR(255)
+)
+BEGIN
+    DECLARE current_balance DECIMAL(10,2);
+    DECLARE account_exists INT DEFAULT 0;
+    
+    -- Error handler
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET result_message = 'Transaction failed due to error';
+    END;
+    
+    START TRANSACTION;
+    
+    -- Validate accounts exist
+    SELECT COUNT(*) INTO account_exists
+    FROM accounts
+    WHERE account_id IN (from_account, to_account);
+    
+    IF account_exists != 2 THEN
+        SET result_message = 'Invalid account(s)';
+        ROLLBACK;
+    ELSE
+        -- Check balance
+        SELECT balance INTO current_balance
+        FROM accounts
+        WHERE account_id = from_account
+        FOR UPDATE;  -- Lock row for update
+        
+        IF current_balance < amount THEN
+            SET result_message = 'Insufficient funds';
+            ROLLBACK;
+        ELSE
+            -- Perform transfer
+            UPDATE accounts 
+            SET balance = balance - amount
+            WHERE account_id = from_account;
+            
+            UPDATE accounts 
+            SET balance = balance + amount
+            WHERE account_id = to_account;
+            
+            -- Log transaction
+            INSERT INTO transaction_log (
+                from_account, to_account, amount, transaction_date
+            ) VALUES (
+                from_account, to_account, amount, NOW()
+            );
+            
+            SET result_message = 'Transfer completed successfully';
+            COMMIT;
+        END IF;
+    END IF;
+    
+END //
+DELIMITER ;
+```
+
+## Functions
+
+### Scalar Functions
+```sql
+-- Simple calculation function
+DELIMITER //
+CREATE FUNCTION CalculateDiscount(
+    order_total DECIMAL(10,2),
+    customer_type VARCHAR(20)
+) RETURNS DECIMAL(10,2)
+READS SQL DATA
+DETERMINISTIC
+BEGIN
+    DECLARE discount_rate DECIMAL(3,2) DEFAULT 0.00;
+    
+    CASE customer_type
+        WHEN 'VIP' THEN SET discount_rate = 0.15;
+        WHEN 'PREMIUM' THEN SET discount_rate = 0.10;
+        WHEN 'REGULAR' THEN SET discount_rate = 0.05;
+        ELSE SET discount_rate = 0.00;
+    END CASE;
+    
+    IF order_total > 1000 THEN
+        SET discount_rate = discount_rate + 0.05;
+    END IF;
+    
+    RETURN order_total * discount_rate;
+END //
+DELIMITER ;
+
+-- Usage in queries
+SELECT 
+    order_id,
+    order_total,
+    customer_type,
+    CalculateDiscount(order_total, customer_type) as discount_amount,
+    order_total - CalculateDiscount(order_total, customer_type) as final_amount
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id;
+```
+
+### Table-Valued Functions (SQL Server)
+```sql
+-- Function returning a table
+CREATE FUNCTION GetCustomerOrderHistory(@customer_id INT)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT 
+        o.order_id,
+        o.order_date,
+        o.order_total,
+        oi.product_name,
+        oi.quantity,
+        oi.unit_price
+    FROM orders o
+    JOIN order_items oi ON o.order_id = oi.order_id
+    WHERE o.customer_id = @customer_id
+);
+
+-- Usage
+SELECT * FROM GetCustomerOrderHistory(123)
+WHERE order_date >= '2024-01-01';
+```
+
+### Recursive Function Example
+```sql
+DELIMITER //
+CREATE FUNCTION Factorial(n INT) RETURNS INT
+READS SQL DATA
+DETERMINISTIC
+BEGIN
+    IF n <= 1 THEN
+        RETURN 1;
+    ELSE
+        RETURN n * Factorial(n - 1);
+    END IF;
+END //
+DELIMITER ;
+
+-- Usage
+SELECT Factorial(5) as result;  -- Returns 120
+```
+
+## Advanced Examples
+
+### Audit Trail Procedure
+```sql
+DELIMITER //
+CREATE PROCEDURE CreateAuditTrigger(
+    IN table_name VARCHAR(64),
+    IN operation VARCHAR(10)
+)
+BEGIN
+    SET @sql = CONCAT('
+        CREATE TRIGGER audit_', table_name, '_', operation, '
+        AFTER ', operation, ' ON ', table_name, '
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO audit_log (
+                table_name, operation, record_id, 
+                old_values, new_values, changed_by, changed_at
+            ) VALUES (
+                ''', table_name, ''', ''', operation, ''',
+                COALESCE(NEW.id, OLD.id),
+                CASE WHEN OLD.id IS NOT NULL THEN JSON_OBJECT(', 
+                    GetColumnList(table_name, 'OLD'), ') ELSE NULL END,
+                CASE WHEN NEW.id IS NOT NULL THEN JSON_OBJECT(',
+                    GetColumnList(table_name, 'NEW'), ') ELSE NULL END,
+                USER(), NOW()
+            );
+        END'
+    );
+    
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+END //
+DELIMITER ;
+```
+
+### Data Validation Function
+```sql
+DELIMITER //
+CREATE FUNCTION ValidateEmail(email VARCHAR(255)) 
+RETURNS BOOLEAN
+READS SQL DATA
+DETERMINISTIC
+BEGIN
+    DECLARE is_valid BOOLEAN DEFAULT FALSE;
+    
+    -- Basic email validation
+    IF email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+        SET is_valid = TRUE;
+    END IF;
+    
+    RETURN is_valid;
+END //
+DELIMITER ;
+
+-- Usage in constraints or queries
+SELECT customer_name, email
+FROM customers
+WHERE ValidateEmail(email) = FALSE;
+```
+
+## Performance Considerations
+
+### Compilation and Caching
+```sql
+-- Procedures are compiled once and cached
+DELIMITER //
+CREATE PROCEDURE GetOrdersByDateRange(
+    IN start_date DATE,
+    IN end_date DATE
+)
+BEGIN
+    -- This query plan is cached after first execution
+    SELECT o.*, c.customer_name
+    FROM orders o
+    JOIN customers c ON o.customer_id = c.customer_id
+    WHERE o.order_date BETWEEN start_date AND end_date
+    ORDER BY o.order_date DESC;
+END //
+DELIMITER ;
+```
+
+### Parameter Sniffing Issues
+```sql
+-- Potential parameter sniffing problem
+DELIMITER //
+CREATE PROCEDURE GetOrdersByStatus(IN order_status VARCHAR(20))
+BEGIN
+    -- Query plan optimized for first parameter value
+    SELECT * FROM orders WHERE status = order_status;
+END //
+DELIMITER ;
+
+-- Solution: Use local variables
+DELIMITER //
+CREATE PROCEDURE GetOrdersByStatusOptimized(IN order_status VARCHAR(20))
+BEGIN
+    DECLARE local_status VARCHAR(20);
+    SET local_status = order_status;
+    
+    SELECT * FROM orders WHERE status = local_status;
+END //
+DELIMITER ;
+```
+
+## Security and Best Practices
+
+### SQL Injection Prevention
+```sql
+-- Vulnerable dynamic SQL
+DELIMITER //
+CREATE PROCEDURE BadSearchProcedure(IN search_term VARCHAR(100))
+BEGIN
+    SET @sql = CONCAT('SELECT * FROM products WHERE name LIKE ''%', search_term, '%''');
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+END //
+DELIMITER ;
+
+-- Safe parameterized approach
+DELIMITER //
+CREATE PROCEDURE SafeSearchProcedure(IN search_term VARCHAR(100))
+BEGIN
+    SELECT * FROM products 
+    WHERE name LIKE CONCAT('%', search_term, '%');
+END //
+DELIMITER ;
+```
+
+### Access Control
+```sql
+-- Grant specific procedure execution rights
+GRANT EXECUTE ON PROCEDURE ProcessPayment TO 'payment_user'@'%';
+GRANT EXECUTE ON FUNCTION CalculateDiscount TO 'sales_user'@'%';
+
+-- Revoke direct table access
+REVOKE ALL ON orders FROM 'app_user'@'%';
+-- Allow only through procedures
+GRANT EXECUTE ON PROCEDURE GetCustomerOrders TO 'app_user'@'%';
+```
+
+## Debugging and Monitoring
+
+### Procedure Logging
+```sql
+DELIMITER //
+CREATE PROCEDURE LoggedProcedure(IN param1 INT)
+BEGIN
+    DECLARE proc_start TIMESTAMP DEFAULT NOW();
+    DECLARE proc_name VARCHAR(100) DEFAULT 'LoggedProcedure';
+    
+    -- Log procedure start
+    INSERT INTO procedure_log (procedure_name, start_time, parameters)
+    VALUES (proc_name, proc_start, JSON_OBJECT('param1', param1));
+    
+    -- Main procedure logic
+    SELECT * FROM orders WHERE customer_id = param1;
+    
+    -- Log procedure end
+    UPDATE procedure_log 
+    SET end_time = NOW(), 
+        duration_ms = TIMESTAMPDIFF(MICROSECOND, proc_start, NOW()) / 1000
+    WHERE procedure_name = proc_name 
+    AND start_time = proc_start;
+    
+END //
+DELIMITER ;
+```
+
+## When to Use Each
+
+### Use Stored Procedures for:
+- Complex business logic with multiple operations
+- Data modification operations
+- Transaction management
+- Batch processing operations
+- Operations requiring multiple result sets
+
+### Use Functions for:
+- Calculations and data transformations
+- Data validation
+- Reusable logic in SELECT statements
+- Read-only operations
+- Operations that return single values or tables
+
+## Interview Tips
+
+- Understand the fundamental differences between procedures and functions
+- Know when to use each based on requirements
+- Be familiar with parameter types (IN, OUT, INOUT)
+- Understand performance implications and caching
+- Know security best practices and SQL injection prevention
+- Practice writing error handling and transaction management code

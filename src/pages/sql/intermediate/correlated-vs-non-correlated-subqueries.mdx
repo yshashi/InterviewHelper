@@ -1,0 +1,322 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between correlated and non-correlated subqueries?
+---
+
+# What is the difference between correlated and non-correlated subqueries?
+
+## Answer
+
+The main difference lies in how the subquery executes and whether it depends on values from the outer query.
+
+## Non-Correlated Subquery
+
+**Definition**: A subquery that executes independently of the outer query and can run on its own.
+
+### Characteristics:
+- **Independent execution** - Runs once before the outer query
+- **No reference** to outer query columns
+- **Better performance** - Executes only once
+- **Self-contained** - Can be run separately
+
+```sql
+-- Non-correlated subquery example
+SELECT name, salary
+FROM employees
+WHERE department_id IN (
+    SELECT department_id 
+    FROM departments 
+    WHERE location = 'New York'
+);
+
+-- The subquery can run independently:
+SELECT department_id FROM departments WHERE location = 'New York';
+```
+
+## Correlated Subquery
+
+**Definition**: A subquery that references columns from the outer query and executes once for each row processed by the outer query.
+
+### Characteristics:
+- **Dependent execution** - Runs for each outer query row
+- **References outer query** columns
+- **Slower performance** - Executes multiple times
+- **Cannot run alone** - Depends on outer query context
+
+```sql
+-- Correlated subquery example
+SELECT name, salary
+FROM employees e1
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM employees e2
+    WHERE e2.department_id = e1.department_id  -- References outer query
+);
+
+-- The subquery cannot run independently due to e1.department_id reference
+```
+
+## Execution Flow Comparison
+
+### Non-Correlated Execution:
+```sql
+-- Step 1: Execute subquery once
+SELECT department_id FROM departments WHERE location = 'New York';
+-- Result: [10, 20, 30]
+
+-- Step 2: Use result in outer query
+SELECT name, salary FROM employees WHERE department_id IN (10, 20, 30);
+```
+
+### Correlated Execution:
+```sql
+-- For each employee row:
+-- Row 1: John (dept_id = 10)
+SELECT AVG(salary) FROM employees WHERE department_id = 10;
+-- Compare John's salary with department 10 average
+
+-- Row 2: Jane (dept_id = 20)  
+SELECT AVG(salary) FROM employees WHERE department_id = 20;
+-- Compare Jane's salary with department 20 average
+
+-- ... continues for each row
+```
+
+## Performance Comparison
+
+### Non-Correlated (Faster)
+```sql
+-- Executes subquery once for 1000 employees
+SELECT customer_name
+FROM customers
+WHERE customer_id IN (
+    SELECT DISTINCT customer_id 
+    FROM orders 
+    WHERE order_date >= '2024-01-01'
+);
+-- Subquery executions: 1
+```
+
+### Correlated (Slower)
+```sql
+-- Executes subquery 1000 times for 1000 employees
+SELECT customer_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 
+    FROM orders o 
+    WHERE o.customer_id = c.customer_id 
+    AND o.order_date >= '2024-01-01'
+);
+-- Subquery executions: 1000
+```
+
+## Practical Examples
+
+### Sample Data Setup
+```sql
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    department_id INT,
+    salary DECIMAL(10,2),
+    hire_date DATE
+);
+
+CREATE TABLE departments (
+    department_id INT PRIMARY KEY,
+    department_name VARCHAR(100),
+    location VARCHAR(50)
+);
+```
+
+### Non-Correlated Examples
+
+```sql
+-- 1. Employees in specific locations
+SELECT name, salary
+FROM employees
+WHERE department_id IN (
+    SELECT department_id 
+    FROM departments 
+    WHERE location IN ('New York', 'California')
+);
+
+-- 2. Employees with above-average company salary
+SELECT name, salary
+FROM employees
+WHERE salary > (SELECT AVG(salary) FROM employees);
+
+-- 3. Employees in departments with more than 10 people
+SELECT name, department_id
+FROM employees
+WHERE department_id IN (
+    SELECT department_id
+    FROM employees
+    GROUP BY department_id
+    HAVING COUNT(*) > 10
+);
+```
+
+### Correlated Examples
+
+```sql
+-- 1. Employees earning more than their department average
+SELECT name, salary, department_id
+FROM employees e1
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM employees e2
+    WHERE e2.department_id = e1.department_id
+);
+
+-- 2. Employees who are the highest paid in their department
+SELECT name, salary, department_id
+FROM employees e1
+WHERE salary = (
+    SELECT MAX(salary)
+    FROM employees e2
+    WHERE e2.department_id = e1.department_id
+);
+
+-- 3. Customers with their latest order date
+SELECT customer_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1
+    FROM orders o
+    WHERE o.customer_id = c.customer_id
+    AND o.order_date = (
+        SELECT MAX(order_date)
+        FROM orders o2
+        WHERE o2.customer_id = c.customer_id
+    )
+);
+```
+
+## Converting Between Types
+
+### Correlated to Non-Correlated (When Possible)
+
+```sql
+-- Correlated version
+SELECT name FROM employees e1
+WHERE salary > (
+    SELECT AVG(salary) FROM employees e2 
+    WHERE e2.department_id = e1.department_id
+);
+
+-- Non-correlated version using window functions
+SELECT name
+FROM (
+    SELECT 
+        name,
+        salary,
+        AVG(salary) OVER (PARTITION BY department_id) as dept_avg
+    FROM employees
+) t
+WHERE salary > dept_avg;
+```
+
+### Non-Correlated to Correlated
+
+```sql
+-- Non-correlated version
+SELECT name FROM employees
+WHERE department_id IN (
+    SELECT department_id FROM departments WHERE location = 'New York'
+);
+
+-- Correlated version (less efficient)
+SELECT name FROM employees e
+WHERE EXISTS (
+    SELECT 1 FROM departments d 
+    WHERE d.department_id = e.department_id 
+    AND d.location = 'New York'
+);
+```
+
+## When to Use Each Type
+
+### Use Non-Correlated When:
+- Subquery result is independent of outer query
+- Performance is critical
+- Subquery returns a small result set
+- Logic can be expressed without row-by-row comparison
+
+### Use Correlated When:
+- Need row-by-row comparison with outer query
+- Logic requires context from outer query
+- Using EXISTS/NOT EXISTS for existence checks
+- Finding records based on relationships within the same table
+
+## Optimization Strategies
+
+### 1. Replace Correlated with JOINs
+```sql
+-- Slow correlated subquery
+SELECT c.customer_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.customer_id = c.customer_id
+);
+
+-- Faster JOIN
+SELECT DISTINCT c.customer_name
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id;
+```
+
+### 2. Use Window Functions
+```sql
+-- Instead of correlated subquery
+SELECT name, salary
+FROM employees e1
+WHERE salary = (
+    SELECT MAX(salary) FROM employees e2 
+    WHERE e2.department_id = e1.department_id
+);
+
+-- Use window function
+SELECT name, salary
+FROM (
+    SELECT 
+        name, 
+        salary,
+        MAX(salary) OVER (PARTITION BY department_id) as max_dept_salary
+    FROM employees
+) t
+WHERE salary = max_dept_salary;
+```
+
+## Common Patterns
+
+### EXISTS Pattern (Usually Correlated)
+```sql
+-- Find customers who have placed orders
+SELECT customer_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.customer_id = c.customer_id
+);
+```
+
+### IN Pattern (Usually Non-Correlated)
+```sql
+-- Find employees in specific departments
+SELECT name
+FROM employees
+WHERE department_id IN (
+    SELECT department_id FROM departments WHERE budget > 100000
+);
+```
+
+## Interview Tips
+
+- Understand execution patterns: non-correlated runs once, correlated runs per row
+- Know performance implications: non-correlated is generally faster
+- Practice identifying which type a subquery is
+- Learn to convert between types when possible
+- Understand when each type is most appropriate

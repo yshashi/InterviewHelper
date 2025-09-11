@@ -1,0 +1,548 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you handle deadlocks in SQL databases?
+---
+
+# How do you handle deadlocks in SQL databases?
+
+## Answer
+
+**Deadlocks** occur when two or more transactions are waiting for each other to release locks, creating a circular dependency that prevents any of the transactions from proceeding. Database systems automatically detect and resolve deadlocks by terminating one of the transactions (deadlock victim).
+
+## Understanding Deadlocks
+
+### Classic Deadlock Scenario
+```sql
+-- Transaction 1
+BEGIN TRANSACTION;
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+-- Waits for lock on account_id = 2
+UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;
+COMMIT;
+
+-- Transaction 2 (running simultaneously)
+BEGIN TRANSACTION;
+UPDATE accounts SET balance = balance - 50 WHERE account_id = 2;
+-- Waits for lock on account_id = 1 (DEADLOCK!)
+UPDATE accounts SET balance = balance + 50 WHERE account_id = 1;
+COMMIT;
+```
+
+### Deadlock Detection
+```sql
+-- SQL Server: Monitor deadlocks
+SELECT 
+    session_id,
+    blocking_session_id,
+    wait_type,
+    wait_time,
+    wait_resource
+FROM sys.dm_exec_requests
+WHERE blocking_session_id <> 0;
+
+-- Enable deadlock monitoring
+DBCC TRACEON(1222, -1);  -- Log deadlock information
+
+-- PostgreSQL: Check for locks
+SELECT 
+    blocked_locks.pid AS blocked_pid,
+    blocked_activity.usename AS blocked_user,
+    blocking_locks.pid AS blocking_pid,
+    blocking_activity.usename AS blocking_user,
+    blocked_activity.query AS blocked_statement,
+    blocking_activity.query AS blocking_statement
+FROM pg_catalog.pg_locks blocked_locks
+JOIN pg_catalog.pg_stat_activity blocked_activity 
+    ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks blocking_locks 
+    ON blocking_locks.locktype = blocked_locks.locktype
+    AND blocking_locks.DATABASE IS NOT DISTINCT FROM blocked_locks.DATABASE
+    AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+JOIN pg_catalog.pg_stat_activity blocking_activity 
+    ON blocking_activity.pid = blocking_locks.pid
+WHERE NOT blocked_locks.GRANTED;
+```
+
+## Deadlock Prevention Strategies
+
+### 1. Consistent Lock Ordering
+```sql
+-- BAD: Inconsistent ordering leads to deadlocks
+-- Transaction A
+UPDATE table1 SET col1 = 'value' WHERE id = 1;
+UPDATE table2 SET col2 = 'value' WHERE id = 2;
+
+-- Transaction B
+UPDATE table2 SET col2 = 'value' WHERE id = 2;  -- Different order!
+UPDATE table1 SET col1 = 'value' WHERE id = 1;
+
+-- GOOD: Consistent ordering prevents deadlocks
+-- Both transactions access resources in same order
+-- Transaction A & B
+UPDATE table1 SET col1 = 'value' WHERE id = 1;  -- Always access table1 first
+UPDATE table2 SET col2 = 'value' WHERE id = 2;  -- Then table2
+
+-- Example: Money transfer with consistent ordering
+CREATE OR REPLACE FUNCTION transfer_money(
+    from_account INT,
+    to_account INT,
+    amount DECIMAL(10,2)
+) RETURNS VOID AS $$
+DECLARE
+    first_account INT;
+    second_account INT;
+BEGIN
+    -- Always lock accounts in ascending order of account_id
+    IF from_account < to_account THEN
+        first_account := from_account;
+        second_account := to_account;
+    ELSE
+        first_account := to_account;
+        second_account := from_account;
+    END IF;
+    
+    -- Lock in consistent order
+    UPDATE accounts SET balance = balance - 
+        CASE WHEN account_id = from_account THEN amount ELSE -amount END
+    WHERE account_id IN (first_account, second_account)
+    ORDER BY account_id;  -- Ensures consistent locking order
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 2. Minimize Transaction Scope
+```sql
+-- BAD: Long-running transaction holding locks
+BEGIN TRANSACTION;
+UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 123;
+-- ... lots of business logic, external API calls, user input ...
+INSERT INTO orders (customer_id, product_id, quantity) VALUES (456, 123, 1);
+-- ... more processing ...
+COMMIT;
+
+-- GOOD: Minimize lock duration
+-- Prepare data first
+DECLARE @customer_id INT = 456;
+DECLARE @product_id INT = 123;
+DECLARE @quantity INT = 1;
+
+-- Quick transaction
+BEGIN TRANSACTION;
+UPDATE inventory SET quantity = quantity - @quantity WHERE product_id = @product_id;
+INSERT INTO orders (customer_id, product_id, quantity) 
+VALUES (@customer_id, @product_id, @quantity);
+COMMIT;
+```
+
+### 3. Use Appropriate Isolation Levels
+```sql
+-- Use lower isolation levels when possible
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+-- Or use snapshot isolation to avoid blocking
+SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
+
+-- PostgreSQL: Use advisory locks for application-level coordination
+SELECT pg_advisory_lock(12345);  -- Application-specific lock
+-- ... perform operations ...
+SELECT pg_advisory_unlock(12345);
+
+-- SQL Server: Use application locks
+EXEC sp_getapplock @Resource = 'MyResource', @LockMode = 'Exclusive';
+-- ... perform operations ...
+EXEC sp_releaseapplock @Resource = 'MyResource';
+```
+
+### 4. Lock Timeout Settings
+```sql
+-- SQL Server: Set lock timeout
+SET LOCK_TIMEOUT 5000;  -- 5 seconds
+
+-- PostgreSQL: Set statement timeout
+SET statement_timeout = '30s';
+
+-- MySQL: Set lock wait timeout
+SET innodb_lock_wait_timeout = 10;
+
+-- Example with timeout handling
+BEGIN TRY
+    BEGIN TRANSACTION;
+    
+    UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+    UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;
+    
+    COMMIT;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0
+        ROLLBACK;
+    
+    IF ERROR_NUMBER() = 1222  -- Deadlock
+    BEGIN
+        PRINT 'Deadlock detected, retrying...';
+        -- Implement retry logic
+    END
+    ELSE
+    BEGIN
+        THROW;  -- Re-throw other errors
+    END
+END CATCH;
+```
+
+## Deadlock Resolution Patterns
+
+### 1. Retry Logic with Exponential Backoff
+```sql
+-- SQL Server stored procedure with retry logic
+CREATE PROCEDURE TransferMoneyWithRetry
+    @FromAccount INT,
+    @ToAccount INT,
+    @Amount DECIMAL(10,2),
+    @MaxRetries INT = 3
+AS
+BEGIN
+    DECLARE @RetryCount INT = 0;
+    DECLARE @Success BIT = 0;
+    
+    WHILE @RetryCount < @MaxRetries AND @Success = 0
+    BEGIN
+        BEGIN TRY
+            BEGIN TRANSACTION;
+            
+            UPDATE accounts 
+            SET balance = balance - @Amount 
+            WHERE account_id = @FromAccount AND balance >= @Amount;
+            
+            IF @@ROWCOUNT = 0
+                THROW 50001, 'Insufficient funds', 1;
+            
+            UPDATE accounts 
+            SET balance = balance + @Amount 
+            WHERE account_id = @ToAccount;
+            
+            COMMIT;
+            SET @Success = 1;
+            
+        END TRY
+        BEGIN CATCH
+            IF @@TRANCOUNT > 0
+                ROLLBACK;
+                
+            IF ERROR_NUMBER() = 1205  -- Deadlock victim
+            BEGIN
+                SET @RetryCount = @RetryCount + 1;
+                -- Exponential backoff: wait longer each retry
+                WAITFOR DELAY '00:00:01';  -- Base delay
+                WAITFOR DELAY DATEADD(ms, POWER(2, @RetryCount) * 100, 0);
+            END
+            ELSE
+            BEGIN
+                THROW;  -- Re-throw non-deadlock errors
+            END
+        END CATCH
+    END
+    
+    IF @Success = 0
+        THROW 50002, 'Transaction failed after maximum retries', 1;
+END;
+```
+
+### 2. Application-Level Queueing
+```sql
+-- Create a queue table for serializing conflicting operations
+CREATE TABLE transaction_queue (
+    queue_id SERIAL PRIMARY KEY,
+    account_id INT NOT NULL,
+    operation_type VARCHAR(20) NOT NULL,
+    amount DECIMAL(10,2),
+    target_account_id INT,
+    status VARCHAR(20) DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP
+);
+
+-- Queue processor function
+CREATE OR REPLACE FUNCTION process_transaction_queue()
+RETURNS VOID AS $$
+DECLARE
+    queue_item RECORD;
+BEGIN
+    -- Process queue items in order
+    FOR queue_item IN 
+        SELECT * FROM transaction_queue 
+        WHERE status = 'PENDING' 
+        ORDER BY created_at
+        FOR UPDATE SKIP LOCKED  -- Skip locked rows to avoid blocking
+    LOOP
+        BEGIN
+            -- Process the transaction
+            IF queue_item.operation_type = 'TRANSFER' THEN
+                PERFORM transfer_money(
+                    queue_item.account_id, 
+                    queue_item.target_account_id, 
+                    queue_item.amount
+                );
+            END IF;
+            
+            -- Mark as processed
+            UPDATE transaction_queue 
+            SET status = 'COMPLETED', processed_at = CURRENT_TIMESTAMP
+            WHERE queue_id = queue_item.queue_id;
+            
+        EXCEPTION WHEN OTHERS THEN
+            -- Mark as failed
+            UPDATE transaction_queue 
+            SET status = 'FAILED', processed_at = CURRENT_TIMESTAMP
+            WHERE queue_id = queue_item.queue_id;
+        END;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 3. Optimistic Concurrency Control
+```sql
+-- Add version column for optimistic locking
+ALTER TABLE accounts ADD COLUMN version_number INT DEFAULT 1;
+
+-- Update with version check
+CREATE OR REPLACE FUNCTION update_account_balance(
+    p_account_id INT,
+    p_amount DECIMAL(10,2),
+    p_expected_version INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+    rows_affected INT;
+BEGIN
+    UPDATE accounts 
+    SET balance = balance + p_amount,
+        version_number = version_number + 1
+    WHERE account_id = p_account_id 
+    AND version_number = p_expected_version;
+    
+    GET DIAGNOSTICS rows_affected = ROW_COUNT;
+    
+    RETURN rows_affected > 0;  -- Returns false if version mismatch
+END;
+$$ LANGUAGE plpgsql;
+
+-- Usage with retry on version conflict
+DO $$
+DECLARE
+    current_version INT;
+    current_balance DECIMAL(10,2);
+    success BOOLEAN := FALSE;
+    retry_count INT := 0;
+BEGIN
+    WHILE NOT success AND retry_count < 5 LOOP
+        -- Read current state
+        SELECT balance, version_number 
+        INTO current_balance, current_version
+        FROM accounts 
+        WHERE account_id = 123;
+        
+        -- Check business rules
+        IF current_balance >= 100 THEN
+            -- Attempt update
+            success := update_account_balance(123, -100, current_version);
+            
+            IF NOT success THEN
+                retry_count := retry_count + 1;
+                PERFORM pg_sleep(0.1 * retry_count);  -- Brief delay
+            END IF;
+        ELSE
+            RAISE EXCEPTION 'Insufficient funds';
+        END IF;
+    END LOOP;
+    
+    IF NOT success THEN
+        RAISE EXCEPTION 'Failed to update after % retries', retry_count;
+    END IF;
+END $$;
+```
+
+## Advanced Deadlock Handling
+
+### 1. Deadlock Priority
+```sql
+-- SQL Server: Set deadlock priority
+SET DEADLOCK_PRIORITY LOW;   -- This session more likely to be victim
+SET DEADLOCK_PRIORITY HIGH;  -- This session less likely to be victim
+SET DEADLOCK_PRIORITY NORMAL; -- Default priority
+
+-- Use in stored procedures for background processes
+CREATE PROCEDURE BackgroundDataCleanup
+AS
+BEGIN
+    SET DEADLOCK_PRIORITY LOW;  -- OK to be deadlock victim
+    
+    -- Cleanup operations that can be retried
+    DELETE FROM temp_data WHERE created_date < DATEADD(day, -7, GETDATE());
+END;
+```
+
+### 2. Lock Hints and Query Optimization
+```sql
+-- Use appropriate lock hints to reduce deadlock potential
+-- NOLOCK: Read uncommitted data (use carefully)
+SELECT * FROM orders WITH (NOLOCK) WHERE customer_id = 123;
+
+-- READPAST: Skip locked rows
+SELECT * FROM queue_table WITH (READPAST) WHERE status = 'PENDING';
+
+-- UPDLOCK: Acquire update locks early
+SELECT account_id, balance 
+FROM accounts WITH (UPDLOCK) 
+WHERE account_id IN (1, 2);
+
+-- Optimize queries to use indexes and reduce lock duration
+-- BAD: Table scan holds many locks
+UPDATE orders SET status = 'SHIPPED' WHERE order_date = '2024-01-15';
+
+-- GOOD: Index seek holds fewer locks
+UPDATE orders SET status = 'SHIPPED' WHERE order_id = 12345;
+```
+
+### 3. Partitioning to Reduce Lock Contention
+```sql
+-- Partition hot tables to reduce lock contention
+CREATE TABLE orders (
+    order_id BIGSERIAL,
+    customer_id INT,
+    order_date DATE,
+    status VARCHAR(20),
+    total DECIMAL(10,2)
+) PARTITION BY RANGE (order_date);
+
+-- Create monthly partitions
+CREATE TABLE orders_2024_01 PARTITION OF orders
+FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+
+CREATE TABLE orders_2024_02 PARTITION OF orders
+FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
+
+-- Operations on different partitions won't deadlock each other
+```
+
+## Monitoring and Alerting
+
+### 1. Deadlock Monitoring Queries
+```sql
+-- SQL Server: Query deadlock information from system health session
+WITH DeadlockData AS (
+    SELECT 
+        CAST(event_data AS XML) AS event_data
+    FROM sys.fn_xe_file_target_read_file(
+        'system_health*.xel', NULL, NULL, NULL
+    )
+    WHERE object_name = 'xml_deadlock_report'
+)
+SELECT 
+    event_data.value('(/event/@timestamp)[1]', 'datetime2') AS deadlock_time,
+    event_data.value('(/event/data/value)[1]', 'varchar(max)') AS deadlock_graph
+FROM DeadlockData;
+
+-- PostgreSQL: Create deadlock monitoring function
+CREATE OR REPLACE FUNCTION monitor_locks()
+RETURNS TABLE (
+    blocked_pid INT,
+    blocked_user TEXT,
+    blocking_pid INT,
+    blocking_user TEXT,
+    blocked_query TEXT,
+    blocking_query TEXT,
+    wait_time INTERVAL
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        bl.pid AS blocked_pid,
+        ba.usename AS blocked_user,
+        kl.pid AS blocking_pid,
+        ka.usename AS blocking_user,
+        ba.query AS blocked_query,
+        ka.query AS blocking_query,
+        CURRENT_TIMESTAMP - ba.query_start AS wait_time
+    FROM pg_locks bl
+    JOIN pg_stat_activity ba ON bl.pid = ba.pid
+    JOIN pg_locks kl ON bl.locktype = kl.locktype
+        AND bl.database IS NOT DISTINCT FROM kl.database
+        AND bl.relation IS NOT DISTINCT FROM kl.relation
+        AND bl.page IS NOT DISTINCT FROM kl.page
+        AND bl.tuple IS NOT DISTINCT FROM kl.tuple
+        AND bl.virtualxid IS NOT DISTINCT FROM kl.virtualxid
+        AND bl.transactionid IS NOT DISTINCT FROM kl.transactionid
+        AND bl.classid IS NOT DISTINCT FROM kl.classid
+        AND bl.objid IS NOT DISTINCT FROM kl.objid
+        AND bl.objsubid IS NOT DISTINCT FROM kl.objsubid
+        AND bl.pid != kl.pid
+    JOIN pg_stat_activity ka ON kl.pid = ka.pid
+    WHERE NOT bl.granted AND kl.granted;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 2. Automated Deadlock Resolution
+```sql
+-- Create deadlock alert system
+CREATE TABLE deadlock_alerts (
+    alert_id SERIAL PRIMARY KEY,
+    deadlock_time TIMESTAMP,
+    victim_spid INT,
+    deadlock_graph TEXT,
+    alert_sent BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Stored procedure to handle deadlock alerts
+CREATE OR REPLACE FUNCTION handle_deadlock_alert(
+    p_victim_spid INT,
+    p_deadlock_info TEXT
+) RETURNS VOID AS $$
+BEGIN
+    -- Log the deadlock
+    INSERT INTO deadlock_alerts (deadlock_time, victim_spid, deadlock_graph)
+    VALUES (CURRENT_TIMESTAMP, p_victim_spid, p_deadlock_info);
+    
+    -- Send alert if deadlocks are frequent
+    IF (SELECT COUNT(*) FROM deadlock_alerts 
+        WHERE deadlock_time > CURRENT_TIMESTAMP - INTERVAL '1 hour') > 5 THEN
+        
+        -- Trigger alert (could be email, Slack, etc.)
+        PERFORM pg_notify('deadlock_alert', 
+            'High deadlock frequency detected: ' || p_deadlock_info);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## Best Practices Summary
+
+### 1. Prevention Strategies
+- Always access resources in consistent order
+- Keep transactions short and focused
+- Use appropriate isolation levels
+- Implement proper indexing to reduce lock duration
+- Consider partitioning for high-contention tables
+
+### 2. Detection and Resolution
+- Implement retry logic with exponential backoff
+- Use deadlock priority appropriately
+- Monitor deadlock frequency and patterns
+- Set reasonable lock timeouts
+
+### 3. Application Design
+- Use optimistic concurrency control when appropriate
+- Implement application-level queueing for conflicting operations
+- Design for idempotency to handle retries safely
+- Consider eventual consistency models where strict consistency isn't required
+
+## Interview Tips
+
+- Understand the root causes of deadlocks (circular wait conditions)
+- Know prevention strategies: consistent ordering, short transactions, appropriate isolation levels
+- Be familiar with database-specific deadlock detection and resolution mechanisms
+- Understand retry patterns and when to use them
+- Know how to monitor and troubleshoot deadlock issues
+- Practice designing deadlock-free transaction patterns
+- Be aware of the trade-offs between performance and deadlock prevention

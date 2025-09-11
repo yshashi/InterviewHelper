@@ -1,0 +1,450 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is a view and what are its advantages?
+---
+
+# What is a view and what are its advantages?
+
+## Answer
+
+A **view** is a virtual table based on the result of a SQL query. It contains rows and columns just like a real table, but doesn't store data physically. Views are stored queries that dynamically generate results when accessed.
+
+## Basic View Syntax
+
+```sql
+CREATE VIEW view_name AS
+SELECT column1, column2, ...
+FROM table_name
+WHERE condition;
+```
+
+## Simple View Example
+
+```sql
+-- Create a view for active customers
+CREATE VIEW active_customers AS
+SELECT 
+    customer_id,
+    customer_name,
+    email,
+    phone,
+    registration_date
+FROM customers
+WHERE status = 'ACTIVE'
+AND email IS NOT NULL;
+
+-- Use the view like a table
+SELECT * FROM active_customers
+WHERE registration_date >= '2024-01-01';
+```
+
+## Types of Views
+
+### 1. Simple Views
+Based on a single table with basic filtering.
+
+```sql
+-- Simple view with column selection and filtering
+CREATE VIEW high_value_products AS
+SELECT 
+    product_id,
+    product_name,
+    price,
+    category
+FROM products
+WHERE price > 100;
+```
+
+### 2. Complex Views
+Based on multiple tables with joins, aggregations, or subqueries.
+
+```sql
+-- Complex view with joins and aggregations
+CREATE VIEW customer_order_summary AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    c.email,
+    COUNT(o.order_id) as total_orders,
+    COALESCE(SUM(o.order_total), 0) as total_spent,
+    AVG(o.order_total) as avg_order_value,
+    MAX(o.order_date) as last_order_date
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name, c.email;
+```
+
+### 3. Materialized Views
+Physically store the result set for better performance.
+
+```sql
+-- PostgreSQL materialized view
+CREATE MATERIALIZED VIEW monthly_sales_summary AS
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    COUNT(*) as total_orders,
+    SUM(order_total) as total_revenue,
+    AVG(order_total) as avg_order_value
+FROM orders
+GROUP BY DATE_TRUNC('month', order_date);
+
+-- Refresh when data changes
+REFRESH MATERIALIZED VIEW monthly_sales_summary;
+```
+
+## Advantages of Views
+
+### 1. Data Security and Access Control
+```sql
+-- Create view that hides sensitive columns
+CREATE VIEW employee_public_info AS
+SELECT 
+    employee_id,
+    first_name,
+    last_name,
+    department,
+    job_title,
+    hire_date
+    -- Excludes salary, SSN, personal details
+FROM employees;
+
+-- Grant access to view instead of base table
+GRANT SELECT ON employee_public_info TO 'hr_readonly'@'%';
+REVOKE ALL ON employees FROM 'hr_readonly'@'%';
+```
+
+### 2. Data Abstraction and Simplification
+```sql
+-- Complex query simplified through a view
+CREATE VIEW order_details_full AS
+SELECT 
+    o.order_id,
+    o.order_date,
+    c.customer_name,
+    c.email,
+    p.product_name,
+    oi.quantity,
+    oi.unit_price,
+    (oi.quantity * oi.unit_price) as line_total,
+    cat.category_name
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN products p ON oi.product_id = p.product_id
+JOIN categories cat ON p.category_id = cat.category_id;
+
+-- Simple query for users
+SELECT * FROM order_details_full
+WHERE order_date >= '2024-01-01'
+AND category_name = 'Electronics';
+```
+
+### 3. Consistent Data Presentation
+```sql
+-- Standardize data formatting across applications
+CREATE VIEW formatted_customer_data AS
+SELECT 
+    customer_id,
+    CONCAT(first_name, ' ', last_name) as full_name,
+    UPPER(email) as email,
+    CASE 
+        WHEN phone REGEXP '^[0-9]{10}$' THEN 
+            CONCAT('(', SUBSTR(phone, 1, 3), ') ', 
+                   SUBSTR(phone, 4, 3), '-', SUBSTR(phone, 7, 4))
+        ELSE phone
+    END as formatted_phone,
+    DATE_FORMAT(registration_date, '%M %d, %Y') as registration_date_formatted
+FROM customers;
+```
+
+### 4. Logical Data Independence
+```sql
+-- View maintains interface even if underlying table structure changes
+CREATE VIEW product_catalog AS
+SELECT 
+    product_id,
+    product_name,
+    price,
+    CASE 
+        WHEN inventory_count > 10 THEN 'In Stock'
+        WHEN inventory_count > 0 THEN 'Low Stock'
+        ELSE 'Out of Stock'
+    END as availability_status
+FROM products;
+
+-- If products table is restructured, view can be updated
+-- without affecting applications using the view
+```
+
+## Practical Business Examples
+
+### Sales Dashboard View
+```sql
+CREATE VIEW sales_dashboard AS
+SELECT 
+    DATE(order_date) as sale_date,
+    COUNT(DISTINCT order_id) as total_orders,
+    COUNT(DISTINCT customer_id) as unique_customers,
+    SUM(order_total) as daily_revenue,
+    AVG(order_total) as avg_order_value,
+    MAX(order_total) as highest_order,
+    SUM(CASE WHEN order_total > 100 THEN 1 ELSE 0 END) as high_value_orders
+FROM orders
+WHERE order_date >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+GROUP BY DATE(order_date);
+```
+
+### Customer Segmentation View
+```sql
+CREATE VIEW customer_segments AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    c.email,
+    COALESCE(stats.total_orders, 0) as total_orders,
+    COALESCE(stats.total_spent, 0) as total_spent,
+    COALESCE(stats.avg_order_value, 0) as avg_order_value,
+    DATEDIFF(CURRENT_DATE, stats.last_order_date) as days_since_last_order,
+    CASE 
+        WHEN stats.total_spent > 5000 AND stats.total_orders > 10 THEN 'VIP'
+        WHEN stats.total_spent > 2000 AND stats.total_orders > 5 THEN 'Premium'
+        WHEN stats.total_spent > 500 AND stats.total_orders > 2 THEN 'Regular'
+        WHEN stats.total_orders > 0 THEN 'Occasional'
+        ELSE 'Inactive'
+    END as segment,
+    CASE 
+        WHEN DATEDIFF(CURRENT_DATE, stats.last_order_date) <= 30 THEN 'Active'
+        WHEN DATEDIFF(CURRENT_DATE, stats.last_order_date) <= 90 THEN 'At Risk'
+        WHEN DATEDIFF(CURRENT_DATE, stats.last_order_date) <= 180 THEN 'Dormant'
+        ELSE 'Lost'
+    END as lifecycle_stage
+FROM customers c
+LEFT JOIN (
+    SELECT 
+        customer_id,
+        COUNT(*) as total_orders,
+        SUM(order_total) as total_spent,
+        AVG(order_total) as avg_order_value,
+        MAX(order_date) as last_order_date
+    FROM orders
+    GROUP BY customer_id
+) stats ON c.customer_id = stats.customer_id;
+```
+
+### Inventory Management View
+```sql
+CREATE VIEW inventory_status AS
+SELECT 
+    p.product_id,
+    p.product_name,
+    p.category,
+    i.current_stock,
+    i.reorder_level,
+    i.max_stock_level,
+    CASE 
+        WHEN i.current_stock <= 0 THEN 'Out of Stock'
+        WHEN i.current_stock <= i.reorder_level THEN 'Reorder Required'
+        WHEN i.current_stock >= i.max_stock_level THEN 'Overstocked'
+        ELSE 'Normal'
+    END as stock_status,
+    COALESCE(recent_sales.units_sold_30d, 0) as units_sold_last_30_days,
+    CASE 
+        WHEN recent_sales.units_sold_30d > 0 THEN 
+            ROUND(i.current_stock / (recent_sales.units_sold_30d / 30), 1)
+        ELSE NULL
+    END as days_of_inventory_remaining
+FROM products p
+JOIN inventory i ON p.product_id = i.product_id
+LEFT JOIN (
+    SELECT 
+        oi.product_id,
+        SUM(oi.quantity) as units_sold_30d
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.order_id
+    WHERE o.order_date >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+    GROUP BY oi.product_id
+) recent_sales ON p.product_id = recent_sales.product_id;
+```
+
+## Updatable Views
+
+### Simple Updatable View
+```sql
+-- View based on single table (updatable)
+CREATE VIEW active_employees AS
+SELECT 
+    employee_id,
+    first_name,
+    last_name,
+    email,
+    department,
+    salary
+FROM employees
+WHERE status = 'ACTIVE';
+
+-- Can perform DML operations
+UPDATE active_employees 
+SET salary = salary * 1.05 
+WHERE department = 'Engineering';
+
+INSERT INTO active_employees (first_name, last_name, email, department, salary)
+VALUES ('John', 'Doe', 'john.doe@company.com', 'Marketing', 60000);
+```
+
+### WITH CHECK OPTION
+```sql
+-- Ensure updates/inserts comply with view definition
+CREATE VIEW high_salary_employees AS
+SELECT employee_id, first_name, last_name, salary, department
+FROM employees
+WHERE salary > 50000
+WITH CHECK OPTION;
+
+-- This will fail because salary doesn't meet view criteria
+INSERT INTO high_salary_employees (first_name, last_name, salary, department)
+VALUES ('Jane', 'Smith', 45000, 'Sales');  -- Error: salary < 50000
+```
+
+## View Performance Considerations
+
+### Indexed Views (SQL Server)
+```sql
+-- Create indexed view for better performance
+CREATE VIEW dbo.order_totals_by_customer
+WITH SCHEMABINDING
+AS
+SELECT 
+    customer_id,
+    COUNT_BIG(*) as order_count,
+    SUM(order_total) as total_spent
+FROM dbo.orders
+GROUP BY customer_id;
+
+-- Create unique clustered index
+CREATE UNIQUE CLUSTERED INDEX IX_order_totals_by_customer
+ON dbo.order_totals_by_customer (customer_id);
+```
+
+### View Optimization Tips
+```sql
+-- Use appropriate WHERE clauses in views
+CREATE VIEW recent_orders AS
+SELECT 
+    order_id,
+    customer_id,
+    order_date,
+    order_total
+FROM orders
+WHERE order_date >= DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR);  -- Limit data
+
+-- Avoid SELECT * in views
+CREATE VIEW customer_summary AS
+SELECT 
+    customer_id,        -- Only needed columns
+    customer_name,
+    total_orders,
+    total_spent
+FROM customer_statistics;
+```
+
+## Disadvantages of Views
+
+### 1. Performance Overhead
+```sql
+-- Complex view may be slow
+CREATE VIEW complex_report AS
+SELECT 
+    c.customer_name,
+    (SELECT COUNT(*) FROM orders WHERE customer_id = c.customer_id) as order_count,
+    (SELECT AVG(order_total) FROM orders WHERE customer_id = c.customer_id) as avg_order
+FROM customers c;  -- Correlated subqueries can be slow
+```
+
+### 2. Limited DML Operations
+```sql
+-- Non-updatable view (multiple tables, aggregation)
+CREATE VIEW customer_order_stats AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    COUNT(o.order_id) as total_orders  -- Aggregation makes it non-updatable
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Cannot perform: UPDATE customer_order_stats SET total_orders = 5;
+```
+
+## View Management
+
+### View Information Queries
+```sql
+-- MySQL: Show views
+SHOW FULL TABLES WHERE Table_type = 'VIEW';
+
+-- Get view definition
+SHOW CREATE VIEW view_name;
+
+-- SQL Server: Query system views
+SELECT 
+    TABLE_NAME as view_name,
+    VIEW_DEFINITION
+FROM INFORMATION_SCHEMA.VIEWS
+WHERE TABLE_SCHEMA = 'your_database';
+```
+
+### Modifying Views
+```sql
+-- Replace existing view
+CREATE OR REPLACE VIEW customer_summary AS
+SELECT 
+    customer_id,
+    customer_name,
+    email,
+    phone,
+    total_orders,
+    total_spent
+FROM customer_statistics
+WHERE status = 'ACTIVE';
+
+-- Drop view
+DROP VIEW IF EXISTS old_view_name;
+```
+
+## Best Practices
+
+### 1. Naming Conventions
+```sql
+-- Use descriptive names with view prefix or suffix
+CREATE VIEW vw_active_customers AS ...;
+CREATE VIEW customer_summary_view AS ...;
+```
+
+### 2. Documentation
+```sql
+-- Document view purpose and dependencies
+/*
+View: customer_order_summary
+Purpose: Provides aggregated customer order statistics for reporting
+Dependencies: customers, orders tables
+Last Updated: 2024-01-15
+*/
+CREATE VIEW customer_order_summary AS ...;
+```
+
+### 3. Security Considerations
+```sql
+-- Grant minimal necessary permissions
+GRANT SELECT ON customer_public_view TO 'app_user'@'%';
+REVOKE ALL ON customers FROM 'app_user'@'%';
+```
+
+## Interview Tips
+
+- Understand that views are virtual tables that don't store data
+- Know the difference between simple and complex views
+- Be familiar with updatable vs non-updatable views
+- Understand materialized views and when to use them
+- Know the advantages: security, abstraction, consistency
+- Be aware of performance implications and optimization techniques
+- Practice creating views for common business scenarios

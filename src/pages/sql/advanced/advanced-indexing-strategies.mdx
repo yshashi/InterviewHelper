@@ -1,0 +1,496 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are advanced indexing strategies for performance optimization?
+---
+
+# What are advanced indexing strategies for performance optimization?
+
+## Answer
+
+**Advanced indexing strategies** involve sophisticated techniques beyond basic single-column indexes to optimize database performance for complex queries, large datasets, and specific access patterns. These strategies include composite indexes, covering indexes, partial indexes, functional indexes, and specialized index types.
+
+## Composite Indexes
+
+### Multi-Column Index Design
+```sql
+-- Basic composite index
+CREATE INDEX idx_orders_customer_date ON orders (customer_id, order_date);
+
+-- Query that benefits from composite index
+SELECT * FROM orders 
+WHERE customer_id = 123 AND order_date >= '2024-01-01';
+
+-- Index column order matters
+-- Good: Most selective column first
+CREATE INDEX idx_orders_status_date ON orders (status, order_date);
+-- WHERE status = 'PENDING' AND order_date >= '2024-01-01'
+
+-- Bad: Less selective column first
+CREATE INDEX idx_orders_date_status ON orders (order_date, status);
+-- Less efficient for the same query
+
+-- Optimal ordering based on cardinality
+SELECT 
+    column_name,
+    COUNT(DISTINCT column_name) as cardinality,
+    COUNT(*) as total_rows,
+    COUNT(DISTINCT column_name) * 100.0 / COUNT(*) as selectivity
+FROM orders
+CROSS JOIN (
+    SELECT 'customer_id' as column_name UNION ALL
+    SELECT 'status' UNION ALL
+    SELECT 'order_date'
+) columns
+GROUP BY column_name
+ORDER BY selectivity DESC;
+```
+
+### Index Key Ordering Strategies
+```sql
+-- Range + Equality pattern
+CREATE INDEX idx_sales_region_date_amount ON sales (region, order_date, amount);
+
+-- Optimal for queries like:
+SELECT * FROM sales 
+WHERE region = 'North'           -- Equality (most selective first)
+AND order_date >= '2024-01-01'   -- Range
+AND amount > 1000;               -- Additional filter
+
+-- Equality + Range + Ordering pattern
+CREATE INDEX idx_products_category_price_name ON products (category, price, product_name);
+
+-- Optimal for:
+SELECT product_name FROM products 
+WHERE category = 'Electronics'    -- Equality
+AND price BETWEEN 100 AND 500    -- Range
+ORDER BY product_name;            -- Ordering (covered by index)
+```
+
+## Covering Indexes
+
+### Include Columns Strategy
+```sql
+-- SQL Server: Covering index with INCLUDE
+CREATE INDEX idx_orders_covering ON orders (customer_id, order_date)
+INCLUDE (order_total, status, shipping_address);
+
+-- PostgreSQL: Covering index
+CREATE INDEX idx_orders_covering ON orders (customer_id, order_date, order_total, status);
+
+-- Query fully covered by index (no table lookup needed)
+SELECT customer_id, order_date, order_total, status
+FROM orders
+WHERE customer_id = 123 AND order_date >= '2024-01-01';
+
+-- Analyze index usage
+EXPLAIN (ANALYZE, BUFFERS) 
+SELECT customer_id, order_date, order_total, status
+FROM orders
+WHERE customer_id = 123;
+-- Should show "Index Only Scan" in PostgreSQL
+```
+
+### Covering Index Design Patterns
+```sql
+-- Pattern 1: Frequent SELECT columns
+CREATE INDEX idx_customers_lookup ON customers (customer_id)
+INCLUDE (customer_name, email, phone, registration_date);
+
+-- Pattern 2: Aggregation queries
+CREATE INDEX idx_sales_summary ON sales (product_id, sale_date)
+INCLUDE (quantity, unit_price);
+
+-- Enables efficient aggregation without table access
+SELECT 
+    product_id,
+    SUM(quantity * unit_price) as total_revenue,
+    COUNT(*) as sale_count
+FROM sales
+WHERE sale_date >= '2024-01-01'
+GROUP BY product_id;
+
+-- Pattern 3: Sorting and filtering
+CREATE INDEX idx_employees_dept_salary ON employees (department_id)
+INCLUDE (salary, hire_date, employee_name);
+
+SELECT employee_name, salary, hire_date
+FROM employees
+WHERE department_id = 5
+ORDER BY salary DESC;
+```
+
+## Partial Indexes
+
+### Conditional Indexing
+```sql
+-- PostgreSQL: Partial indexes for specific conditions
+CREATE INDEX idx_orders_pending ON orders (order_date, customer_id)
+WHERE status = 'PENDING';
+
+-- Much smaller index, faster for specific queries
+SELECT * FROM orders 
+WHERE status = 'PENDING' AND order_date >= '2024-01-01';
+
+-- Partial index for active records only
+CREATE INDEX idx_customers_active ON customers (last_login_date)
+WHERE status = 'ACTIVE' AND deleted_at IS NULL;
+
+-- Partial index for recent data
+CREATE INDEX idx_logs_recent ON application_logs (log_level, created_at)
+WHERE created_at >= '2024-01-01';
+
+-- SQL Server: Filtered indexes
+CREATE INDEX idx_products_expensive ON products (category, price)
+WHERE price > 1000 AND status = 'ACTIVE';
+```
+
+### Sparse Index Patterns
+```sql
+-- Index only non-NULL values
+CREATE INDEX idx_customers_referral ON customers (referral_code)
+WHERE referral_code IS NOT NULL;
+
+-- Index for specific value ranges
+CREATE INDEX idx_orders_large ON orders (customer_id, order_total)
+WHERE order_total > 10000;
+
+-- Index for boolean conditions
+CREATE INDEX idx_users_premium ON users (subscription_tier, created_date)
+WHERE is_premium = true;
+
+-- Combine multiple conditions
+CREATE INDEX idx_products_featured ON products (category, price, rating)
+WHERE is_featured = true 
+AND status = 'ACTIVE' 
+AND inventory_count > 0;
+```
+
+## Functional Indexes
+
+### Expression-Based Indexes
+```sql
+-- PostgreSQL: Index on expressions
+CREATE INDEX idx_customers_email_lower ON customers (LOWER(email));
+
+-- Enables case-insensitive searches
+SELECT * FROM customers WHERE LOWER(email) = 'john@example.com';
+
+-- Index on calculated values
+CREATE INDEX idx_orders_tax_total ON orders ((order_total * tax_rate));
+
+SELECT * FROM orders WHERE (order_total * tax_rate) > 100;
+
+-- Date part indexing
+CREATE INDEX idx_sales_month ON sales (EXTRACT(MONTH FROM sale_date));
+CREATE INDEX idx_sales_year_month ON sales (EXTRACT(YEAR FROM sale_date), EXTRACT(MONTH FROM sale_date));
+
+-- Text search indexing
+CREATE INDEX idx_products_search ON products USING gin(to_tsvector('english', product_name || ' ' || description));
+
+SELECT * FROM products 
+WHERE to_tsvector('english', product_name || ' ' || description) @@ to_tsquery('laptop & wireless');
+```
+
+### JSON and Array Indexing
+```sql
+-- PostgreSQL: JSON indexing
+CREATE INDEX idx_orders_metadata ON orders USING gin(metadata);
+
+-- Query JSON data efficiently
+SELECT * FROM orders 
+WHERE metadata @> '{"priority": "high"}';
+
+-- Index specific JSON paths
+CREATE INDEX idx_orders_customer_info ON orders ((metadata->>'customer_type'));
+
+SELECT * FROM orders 
+WHERE metadata->>'customer_type' = 'VIP';
+
+-- Array indexing
+CREATE INDEX idx_products_tags ON products USING gin(tags);
+
+SELECT * FROM products 
+WHERE tags @> ARRAY['electronics', 'mobile'];
+
+-- Multicolumn GIN index
+CREATE INDEX idx_products_complex ON products USING gin(tags, to_tsvector('english', description));
+```
+
+## Specialized Index Types
+
+### B-Tree Variants
+```sql
+-- Unique indexes for constraints
+CREATE UNIQUE INDEX idx_users_email_unique ON users (email) 
+WHERE deleted_at IS NULL;
+
+-- Reverse key indexes (Oracle concept, simulated in PostgreSQL)
+CREATE INDEX idx_orders_reverse ON orders (reverse(order_id::text));
+
+-- Descending indexes for ORDER BY optimization
+CREATE INDEX idx_products_price_desc ON products (price DESC, created_date DESC);
+
+-- Optimizes queries like:
+SELECT * FROM products 
+ORDER BY price DESC, created_date DESC
+LIMIT 10;
+```
+
+### Hash Indexes
+```sql
+-- PostgreSQL: Hash indexes for equality lookups
+CREATE INDEX idx_sessions_hash ON user_sessions USING hash(session_token);
+
+-- Only supports equality operators
+SELECT * FROM user_sessions WHERE session_token = 'abc123def456';
+
+-- Not suitable for range queries or sorting
+-- Use B-tree for those cases
+```
+
+### GiST and SP-GiST Indexes
+```sql
+-- GiST for geometric data
+CREATE INDEX idx_locations_gist ON locations USING gist(coordinates);
+
+-- Range types
+CREATE INDEX idx_bookings_period ON bookings USING gist(booking_period);
+
+SELECT * FROM bookings 
+WHERE booking_period && '[2024-01-01, 2024-01-31]'::daterange;
+
+-- SP-GiST for non-balanced data structures
+CREATE INDEX idx_ip_addresses ON access_logs USING spgist(client_ip inet_ops);
+```
+
+## Index Optimization Techniques
+
+### Index Compression
+```sql
+-- SQL Server: Page compression
+CREATE INDEX idx_sales_compressed ON sales (customer_id, sale_date, amount)
+WITH (DATA_COMPRESSION = PAGE);
+
+-- Row compression for less CPU overhead
+CREATE INDEX idx_orders_row_compressed ON orders (order_date, status)
+WITH (DATA_COMPRESSION = ROW);
+
+-- PostgreSQL: Use appropriate data types to reduce index size
+-- Use SMALLINT instead of INT where possible
+-- Use DATE instead of TIMESTAMP where time is not needed
+-- Use VARCHAR(n) instead of TEXT for known max lengths
+```
+
+### Index Maintenance Strategies
+```sql
+-- Rebuild fragmented indexes
+-- SQL Server
+ALTER INDEX idx_orders_customer_date ON orders REBUILD;
+
+-- PostgreSQL: REINDEX
+REINDEX INDEX idx_orders_customer_date;
+
+-- Monitor index fragmentation
+-- SQL Server
+SELECT 
+    i.name AS index_name,
+    ips.avg_fragmentation_in_percent,
+    ips.page_count
+FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, 'DETAILED') ips
+JOIN sys.indexes i ON ips.object_id = i.object_id AND ips.index_id = i.index_id
+WHERE ips.avg_fragmentation_in_percent > 10;
+
+-- PostgreSQL: Check index bloat
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    pg_size_pretty(pg_relation_size(indexrelid)) as index_size,
+    round(100 * (pg_relation_size(indexrelid) - pg_relation_size(indexrelid, 'main')) / pg_relation_size(indexrelid)::numeric, 2) as bloat_pct
+FROM pg_stat_user_indexes
+WHERE pg_relation_size(indexrelid) > 1000000;  -- Indexes larger than 1MB
+```
+
+## Advanced Query Optimization
+
+### Index Intersection
+```sql
+-- Multiple single-column indexes can be combined
+CREATE INDEX idx_orders_customer ON orders (customer_id);
+CREATE INDEX idx_orders_date ON orders (order_date);
+CREATE INDEX idx_orders_status ON orders (status);
+
+-- Query optimizer may use index intersection
+SELECT * FROM orders 
+WHERE customer_id = 123 
+AND order_date >= '2024-01-01' 
+AND status = 'SHIPPED';
+
+-- However, a composite index is usually more efficient
+CREATE INDEX idx_orders_composite ON orders (customer_id, order_date, status);
+```
+
+### Index Skip Scan
+```sql
+-- Oracle/SQL Server: Index skip scan for non-leading columns
+CREATE INDEX idx_employees_dept_salary ON employees (department_id, salary);
+
+-- Can use index even when department_id is not specified
+SELECT * FROM employees WHERE salary > 50000;
+
+-- PostgreSQL equivalent using partial indexes
+CREATE INDEX idx_employees_salary_dept1 ON employees (salary) WHERE department_id = 1;
+CREATE INDEX idx_employees_salary_dept2 ON employees (salary) WHERE department_id = 2;
+-- ... for each department
+```
+
+### Bitmap Index Scans
+```sql
+-- PostgreSQL: Bitmap scans for multiple index usage
+CREATE INDEX idx_products_category ON products (category);
+CREATE INDEX idx_products_price ON products (price);
+CREATE INDEX idx_products_rating ON products (rating);
+
+-- Query uses bitmap scan to combine multiple indexes
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM products 
+WHERE category = 'Electronics' 
+AND price BETWEEN 100 AND 500 
+AND rating >= 4.0;
+
+-- Shows: BitmapAnd -> BitmapIndexScan on each index
+```
+
+## Performance Monitoring
+
+### Index Usage Analysis
+```sql
+-- PostgreSQL: Index usage statistics
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    idx_tup_read,
+    idx_tup_fetch,
+    idx_scan,
+    pg_size_pretty(pg_relation_size(indexrelid)) as index_size
+FROM pg_stat_user_indexes
+ORDER BY idx_scan DESC;
+
+-- Find unused indexes
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    pg_size_pretty(pg_relation_size(indexrelid)) as index_size
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0
+AND indexrelid NOT IN (
+    SELECT indexrelid FROM pg_constraint WHERE contype IN ('p', 'u')
+);
+
+-- SQL Server: Index usage stats
+SELECT 
+    i.name AS index_name,
+    ius.user_seeks,
+    ius.user_scans,
+    ius.user_lookups,
+    ius.user_updates,
+    ius.last_user_seek,
+    ius.last_user_scan
+FROM sys.indexes i
+LEFT JOIN sys.dm_db_index_usage_stats ius 
+    ON i.object_id = ius.object_id AND i.index_id = ius.index_id
+WHERE i.object_id = OBJECT_ID('orders');
+```
+
+### Query Plan Analysis
+```sql
+-- Analyze index effectiveness
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+SELECT o.order_id, c.customer_name, o.order_total
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+WHERE o.order_date >= '2024-01-01'
+AND c.customer_type = 'PREMIUM'
+ORDER BY o.order_total DESC
+LIMIT 100;
+
+-- Look for:
+-- - Index Only Scan vs Index Scan vs Seq Scan
+-- - Nested Loop vs Hash Join vs Merge Join
+-- - Sort operations (indicate missing indexes for ORDER BY)
+-- - Filter operations (indicate missing WHERE clause indexes)
+```
+
+## Index Design Patterns
+
+### Star Schema Optimization
+```sql
+-- Fact table with foreign key indexes
+CREATE TABLE fact_sales (
+    sale_id BIGINT PRIMARY KEY,
+    date_key INT,
+    customer_key INT,
+    product_key INT,
+    store_key INT,
+    quantity INT,
+    amount DECIMAL(10,2)
+);
+
+-- Composite indexes for common query patterns
+CREATE INDEX idx_fact_sales_date_customer ON fact_sales (date_key, customer_key);
+CREATE INDEX idx_fact_sales_date_product ON fact_sales (date_key, product_key);
+CREATE INDEX idx_fact_sales_customer_product ON fact_sales (customer_key, product_key);
+
+-- Covering index for aggregations
+CREATE INDEX idx_fact_sales_summary ON fact_sales (date_key, product_key)
+INCLUDE (quantity, amount);
+```
+
+### Time-Series Optimization
+```sql
+-- Partition by time with appropriate indexes
+CREATE TABLE sensor_data (
+    sensor_id INT,
+    reading_time TIMESTAMP,
+    temperature DECIMAL(5,2),
+    humidity DECIMAL(5,2)
+) PARTITION BY RANGE (reading_time);
+
+-- Index on each partition
+CREATE INDEX idx_sensor_data_2024_01_sensor_time 
+ON sensor_data_2024_01 (sensor_id, reading_time);
+
+-- Partial index for anomalies
+CREATE INDEX idx_sensor_data_2024_01_anomalies 
+ON sensor_data_2024_01 (sensor_id, reading_time)
+WHERE temperature > 100 OR temperature < -50;
+```
+
+## Best Practices
+
+### Index Design Guidelines
+- Analyze query patterns before creating indexes
+- Use composite indexes for multi-column WHERE clauses
+- Include frequently selected columns in covering indexes
+- Use partial indexes for filtered queries
+- Consider index maintenance overhead vs query performance
+- Monitor and remove unused indexes regularly
+
+### Performance Considerations
+- Index selectivity should be high (> 95% for unique values)
+- Avoid over-indexing (impacts INSERT/UPDATE performance)
+- Use appropriate data types to minimize index size
+- Consider index compression for large indexes
+- Plan for index maintenance windows
+
+## Interview Tips
+
+- Understand different index types and their use cases
+- Know how to design composite indexes with proper column ordering
+- Be familiar with covering indexes and when to use them
+- Understand partial indexes and functional indexes
+- Know how to analyze query plans to identify indexing opportunities
+- Practice designing indexes for complex query patterns
+- Be aware of the trade-offs between query performance and maintenance overhead

@@ -1,0 +1,452 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you handle NULL values in SQL?
+---
+
+# How do you handle NULL values in SQL?
+
+## Answer
+
+**NULL** represents missing, unknown, or undefined data in SQL. NULL values require special handling because they don't equal anything (including other NULLs) and can affect query results, aggregations, and joins in unexpected ways.
+
+## Understanding NULL Behavior
+
+### NULL Comparisons
+```sql
+-- NULL comparisons always return UNKNOWN (treated as FALSE)
+SELECT * FROM customers WHERE phone = NULL;        -- Returns no rows
+SELECT * FROM customers WHERE phone != NULL;       -- Returns no rows
+SELECT * FROM customers WHERE phone <> NULL;       -- Returns no rows
+
+-- Correct way to check for NULL
+SELECT * FROM customers WHERE phone IS NULL;       -- Returns rows with NULL phone
+SELECT * FROM customers WHERE phone IS NOT NULL;   -- Returns rows with non-NULL phone
+```
+
+### Three-Valued Logic
+```sql
+-- SQL uses three-valued logic: TRUE, FALSE, UNKNOWN
+SELECT 
+    customer_name,
+    phone,
+    CASE 
+        WHEN phone IS NULL THEN 'No Phone'
+        WHEN phone = '555-0000' THEN 'Default Phone'
+        ELSE 'Has Phone'
+    END as phone_status
+FROM customers;
+```
+
+## NULL Handling Functions
+
+### COALESCE()
+Returns the first non-NULL value from a list.
+
+```sql
+-- Basic COALESCE usage
+SELECT 
+    customer_name,
+    COALESCE(phone, email, 'No Contact Info') as contact_method
+FROM customers;
+
+-- Multiple column fallback
+SELECT 
+    product_name,
+    COALESCE(sale_price, list_price, cost_price, 0) as display_price
+FROM products;
+
+-- Handling NULL in calculations
+SELECT 
+    order_id,
+    quantity,
+    unit_price,
+    COALESCE(discount, 0) as discount,
+    quantity * unit_price * (1 - COALESCE(discount, 0)) as total
+FROM order_items;
+```
+
+### ISNULL() / IFNULL() / NVL()
+Database-specific NULL handling functions.
+
+```sql
+-- SQL Server: ISNULL()
+SELECT 
+    customer_name,
+    ISNULL(phone, 'No Phone') as phone_display
+FROM customers;
+
+-- MySQL: IFNULL()
+SELECT 
+    customer_name,
+    IFNULL(phone, 'No Phone') as phone_display
+FROM customers;
+
+-- Oracle: NVL()
+SELECT 
+    customer_name,
+    NVL(phone, 'No Phone') as phone_display
+FROM customers;
+
+-- PostgreSQL: COALESCE() is preferred
+SELECT 
+    customer_name,
+    COALESCE(phone, 'No Phone') as phone_display
+FROM customers;
+```
+
+### NULLIF()
+Returns NULL if two expressions are equal.
+
+```sql
+-- Convert empty strings to NULL
+SELECT 
+    customer_name,
+    NULLIF(phone, '') as phone,  -- Empty string becomes NULL
+    NULLIF(email, '') as email
+FROM customers;
+
+-- Avoid division by zero
+SELECT 
+    product_name,
+    total_sales,
+    total_returns,
+    total_sales / NULLIF(total_returns, 0) as sales_to_returns_ratio
+FROM product_stats;
+
+-- Handle default values
+SELECT 
+    employee_name,
+    NULLIF(department, 'UNASSIGNED') as department  -- Convert 'UNASSIGNED' to NULL
+FROM employees;
+```
+
+## NULL in Aggregations
+
+### Aggregate Functions and NULL
+```sql
+-- Sample data with NULLs
+CREATE TABLE sales (
+    salesperson VARCHAR(50),
+    region VARCHAR(50),
+    sales_amount DECIMAL(10,2)
+);
+
+INSERT INTO sales VALUES 
+('John', 'North', 1000),
+('Jane', 'South', NULL),    -- NULL sales amount
+('Mike', 'North', 1500),
+('Sarah', NULL, 800);       -- NULL region
+
+-- Aggregate functions ignore NULL values
+SELECT 
+    COUNT(*) as total_rows,           -- 4 (counts all rows)
+    COUNT(sales_amount) as non_null_sales,  -- 3 (ignores NULL)
+    SUM(sales_amount) as total_sales,       -- 3300 (ignores NULL)
+    AVG(sales_amount) as avg_sales,         -- 1100 (3300/3, not 3300/4)
+    MIN(sales_amount) as min_sales,         -- 800
+    MAX(sales_amount) as max_sales          -- 1500
+FROM sales;
+```
+
+### Counting with NULL Considerations
+```sql
+-- Different counting approaches
+SELECT 
+    COUNT(*) as all_customers,                    -- All rows
+    COUNT(phone) as customers_with_phone,         -- Non-NULL phone
+    COUNT(email) as customers_with_email,         -- Non-NULL email
+    COUNT(CASE WHEN phone IS NOT NULL OR email IS NOT NULL 
+          THEN 1 END) as customers_with_contact   -- Has phone OR email
+FROM customers;
+
+-- Conditional aggregation with NULLs
+SELECT 
+    region,
+    COUNT(*) as total_sales,
+    COUNT(sales_amount) as completed_sales,
+    SUM(COALESCE(sales_amount, 0)) as total_including_zero,
+    SUM(sales_amount) as total_excluding_null
+FROM sales
+GROUP BY region;
+```
+
+## NULL in JOINs
+
+### NULL Values in JOIN Conditions
+```sql
+-- NULLs don't match in JOINs
+SELECT 
+    c.customer_name,
+    c.region,
+    r.region_manager
+FROM customers c
+LEFT JOIN regions r ON c.region = r.region_name;
+-- Customers with NULL region won't match any region
+
+-- Handling NULL in JOINs
+SELECT 
+    c.customer_name,
+    COALESCE(c.region, 'UNASSIGNED') as region,
+    COALESCE(r.region_manager, 'No Manager') as manager
+FROM customers c
+LEFT JOIN regions r ON COALESCE(c.region, 'UNASSIGNED') = COALESCE(r.region_name, 'UNASSIGNED');
+```
+
+### Outer JOINs and NULL
+```sql
+-- LEFT JOIN introduces NULLs for unmatched rows
+SELECT 
+    c.customer_name,
+    o.order_id,
+    CASE 
+        WHEN o.order_id IS NULL THEN 'No Orders'
+        ELSE 'Has Orders'
+    END as order_status
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id;
+
+-- Filter out NULL results from outer joins
+SELECT 
+    c.customer_name,
+    o.order_total
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.order_id IS NOT NULL;  -- Only customers with orders
+```
+
+## NULL in WHERE Clauses
+
+### Filtering with NULL Considerations
+```sql
+-- Unexpected results with NULL
+SELECT * FROM products WHERE discount != 0.1;
+-- Products with NULL discount are excluded (not what you might expect)
+
+-- Correct approach
+SELECT * FROM products 
+WHERE discount != 0.1 OR discount IS NULL;
+
+-- Using COALESCE in WHERE
+SELECT * FROM products 
+WHERE COALESCE(discount, 0) != 0.1;
+
+-- Complex NULL filtering
+SELECT 
+    product_name,
+    price,
+    discount
+FROM products
+WHERE 
+    price > 50 
+    AND (discount IS NULL OR discount < 0.2)
+    AND category IS NOT NULL;
+```
+
+## Practical Business Examples
+
+### Customer Contact Information
+```sql
+-- Comprehensive contact handling
+SELECT 
+    customer_id,
+    customer_name,
+    COALESCE(
+        CASE WHEN phone IS NOT NULL AND phone != '' THEN phone END,
+        CASE WHEN email IS NOT NULL AND email != '' THEN email END,
+        CASE WHEN address IS NOT NULL AND address != '' THEN 'Mail Only' END,
+        'No Contact Info'
+    ) as primary_contact,
+    
+    CASE 
+        WHEN phone IS NOT NULL AND email IS NOT NULL THEN 'Complete'
+        WHEN phone IS NOT NULL OR email IS NOT NULL THEN 'Partial'
+        ELSE 'Missing'
+    END as contact_completeness
+FROM customers;
+```
+
+### Sales Performance with NULL Handling
+```sql
+-- Sales report handling missing data
+SELECT 
+    salesperson,
+    region,
+    COALESCE(SUM(sales_amount), 0) as total_sales,
+    COUNT(CASE WHEN sales_amount IS NOT NULL THEN 1 END) as completed_sales,
+    COUNT(*) as total_opportunities,
+    ROUND(
+        COUNT(CASE WHEN sales_amount IS NOT NULL THEN 1 END) * 100.0 / COUNT(*), 
+        2
+    ) as completion_rate,
+    COALESCE(AVG(sales_amount), 0) as avg_sale_amount
+FROM sales_opportunities
+GROUP BY salesperson, region
+ORDER BY total_sales DESC;
+```
+
+### Inventory Management
+```sql
+-- Product availability with NULL stock handling
+SELECT 
+    product_id,
+    product_name,
+    COALESCE(current_stock, 0) as stock_level,
+    COALESCE(reserved_stock, 0) as reserved,
+    COALESCE(current_stock, 0) - COALESCE(reserved_stock, 0) as available,
+    
+    CASE 
+        WHEN current_stock IS NULL THEN 'Stock Unknown'
+        WHEN current_stock = 0 THEN 'Out of Stock'
+        WHEN current_stock <= reorder_level THEN 'Low Stock'
+        ELSE 'In Stock'
+    END as stock_status,
+    
+    -- Handle NULL reorder levels
+    CASE 
+        WHEN reorder_level IS NULL THEN 'No Reorder Policy'
+        WHEN COALESCE(current_stock, 0) <= reorder_level THEN 'Reorder Required'
+        ELSE 'Stock OK'
+    END as reorder_status
+FROM products;
+```
+
+## NULL in Subqueries and EXISTS
+
+### NULL in IN/NOT IN
+```sql
+-- Dangerous: NOT IN with NULL values
+SELECT customer_name 
+FROM customers 
+WHERE customer_id NOT IN (
+    SELECT customer_id FROM orders WHERE order_date > '2024-01-01'
+);
+-- If any order has NULL customer_id, this returns no rows!
+
+-- Safe alternatives
+SELECT customer_name 
+FROM customers c
+WHERE NOT EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.customer_id = c.customer_id 
+    AND o.order_date > '2024-01-01'
+);
+
+-- Or filter out NULLs
+SELECT customer_name 
+FROM customers 
+WHERE customer_id NOT IN (
+    SELECT customer_id FROM orders 
+    WHERE order_date > '2024-01-01' 
+    AND customer_id IS NOT NULL
+);
+```
+
+## Data Quality and NULL Management
+
+### Identifying NULL Patterns
+```sql
+-- Analyze NULL distribution
+SELECT 
+    'customers' as table_name,
+    COUNT(*) as total_rows,
+    COUNT(phone) as phone_not_null,
+    COUNT(*) - COUNT(phone) as phone_null,
+    ROUND((COUNT(*) - COUNT(phone)) * 100.0 / COUNT(*), 2) as phone_null_pct,
+    COUNT(email) as email_not_null,
+    COUNT(*) - COUNT(email) as email_null,
+    ROUND((COUNT(*) - COUNT(email)) * 100.0 / COUNT(*), 2) as email_null_pct
+FROM customers;
+
+-- Find records with multiple NULL values
+SELECT 
+    customer_id,
+    customer_name,
+    CASE WHEN phone IS NULL THEN 1 ELSE 0 END +
+    CASE WHEN email IS NULL THEN 1 ELSE 0 END +
+    CASE WHEN address IS NULL THEN 1 ELSE 0 END as null_count
+FROM customers
+HAVING null_count >= 2;
+```
+
+### Data Cleaning with NULL Handling
+```sql
+-- Clean and standardize data
+UPDATE customers 
+SET 
+    phone = NULLIF(TRIM(phone), ''),           -- Empty strings to NULL
+    email = NULLIF(TRIM(LOWER(email)), ''),    -- Clean and normalize email
+    address = NULLIF(TRIM(address), '')        -- Empty addresses to NULL
+WHERE 
+    phone = '' OR phone = 'N/A' OR phone = 'NULL'
+    OR email = '' OR email = 'N/A' 
+    OR address = '' OR address = 'N/A';
+
+-- Set default values for critical fields
+UPDATE products 
+SET 
+    reorder_level = COALESCE(reorder_level, 10),  -- Default reorder level
+    category = COALESCE(category, 'UNCATEGORIZED') -- Default category
+WHERE reorder_level IS NULL OR category IS NULL;
+```
+
+## Best Practices
+
+### 1. Explicit NULL Checks
+```sql
+-- Always be explicit about NULL handling
+SELECT 
+    customer_name,
+    CASE 
+        WHEN phone IS NOT NULL THEN phone
+        WHEN email IS NOT NULL THEN email
+        ELSE 'No Contact'
+    END as contact_info
+FROM customers;
+```
+
+### 2. Use COALESCE for Defaults
+```sql
+-- Provide meaningful defaults
+SELECT 
+    product_name,
+    COALESCE(description, 'No description available') as description,
+    COALESCE(weight, 0) as weight,
+    COALESCE(category, 'Uncategorized') as category
+FROM products;
+```
+
+### 3. Be Careful with Aggregations
+```sql
+-- Consider NULL impact on calculations
+SELECT 
+    department,
+    COUNT(*) as total_employees,
+    COUNT(salary) as employees_with_salary,
+    AVG(salary) as avg_salary_excluding_null,
+    SUM(COALESCE(salary, 0)) / COUNT(*) as avg_salary_including_null_as_zero
+FROM employees
+GROUP BY department;
+```
+
+### 4. Document NULL Handling Strategy
+```sql
+-- Document your NULL handling approach
+/*
+NULL Handling Strategy for Orders Table:
+- customer_id: Never NULL (enforced by NOT NULL constraint)
+- shipping_address: NULL allowed for digital products
+- discount: NULL means no discount (treat as 0 in calculations)
+- notes: NULL allowed (empty notes)
+- estimated_delivery: NULL for immediate/digital delivery
+*/
+```
+
+## Interview Tips
+
+- Understand that NULL represents unknown/missing data, not zero or empty string
+- Know that NULL comparisons require IS NULL/IS NOT NULL operators
+- Be familiar with COALESCE, ISNULL, NULLIF functions
+- Understand how NULL affects aggregations (ignored by most functions)
+- Know the dangers of NOT IN with NULL values
+- Practice NULL handling in JOINs and subqueries
+- Be able to explain three-valued logic (TRUE, FALSE, UNKNOWN)

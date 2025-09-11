@@ -1,0 +1,401 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are execution plans and how do you read them?
+---
+
+# What are execution plans and how do you read them?
+
+## Answer
+
+**Execution plans** are detailed roadmaps that show how the database engine will execute a SQL query. They reveal the sequence of operations, algorithms used, estimated costs, and resource consumption, making them essential for query optimization and performance tuning.
+
+## Types of Execution Plans
+
+### 1. Estimated Execution Plan
+Generated without executing the query, based on statistics and cost estimates.
+
+```sql
+-- SQL Server
+SET SHOWPLAN_ALL ON
+SELECT * FROM orders WHERE customer_id = 123;
+SET SHOWPLAN_ALL OFF
+
+-- PostgreSQL
+EXPLAIN SELECT * FROM orders WHERE customer_id = 123;
+
+-- MySQL
+EXPLAIN FORMAT=JSON SELECT * FROM orders WHERE customer_id = 123;
+```
+
+### 2. Actual Execution Plan
+Generated after query execution, showing real resource usage and row counts.
+
+```sql
+-- SQL Server
+SET STATISTICS IO ON
+SET STATISTICS TIME ON
+SELECT * FROM orders WHERE customer_id = 123;
+
+-- PostgreSQL
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 123;
+
+-- MySQL
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 123;
+```
+
+## Key Components of Execution Plans
+
+### Operators and Operations
+```sql
+-- Common execution plan operators:
+-- Table Scan: Reads entire table
+-- Index Seek: Uses index to find specific rows
+-- Index Scan: Reads entire index
+-- Nested Loop Join: Join algorithm for small datasets
+-- Hash Join: Join algorithm for large datasets
+-- Sort: Ordering operation
+-- Filter: WHERE clause filtering
+
+-- Example query to demonstrate operators
+SELECT o.order_id, c.customer_name, p.product_name
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN products p ON oi.product_id = p.product_id
+WHERE o.order_date >= '2024-01-01'
+AND c.region = 'North';
+```
+
+### Cost Estimates
+```sql
+-- SQL Server execution plan shows:
+-- Estimated CPU Cost
+-- Estimated I/O Cost
+-- Estimated Number of Rows
+-- Estimated Row Size
+
+-- PostgreSQL EXPLAIN output:
+-- cost=0.29..8.31 rows=1 width=64
+-- First number: startup cost
+-- Second number: total cost
+-- rows: estimated row count
+-- width: average row size in bytes
+```
+
+## Reading Execution Plans
+
+### SQL Server Execution Plans
+```sql
+-- Enable actual execution plan
+SET STATISTICS IO ON;
+SET STATISTICS XML ON;
+
+SELECT 
+    c.customer_name,
+    COUNT(o.order_id) as order_count,
+    SUM(o.order_total) as total_spent
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE c.registration_date >= '2024-01-01'
+GROUP BY c.customer_id, c.customer_name
+HAVING COUNT(o.order_id) > 5;
+
+-- Key metrics to examine:
+-- Logical reads: Pages read from buffer cache
+-- Physical reads: Pages read from disk
+-- CPU time: Processing time
+-- Elapsed time: Total execution time
+```
+
+### PostgreSQL Execution Plans
+```sql
+-- Detailed execution plan
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE) 
+SELECT 
+    c.customer_name,
+    COUNT(o.order_id) as order_count
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Sample output interpretation:
+/*
+HashAggregate  (cost=23.14..25.64 rows=200 width=64) 
+               (actual time=0.234..0.456 rows=150 loops=1)
+  Group Key: c.customer_id, c.customer_name
+  Buffers: shared hit=12 read=3
+  ->  Hash Left Join  (cost=4.25..20.00 rows=628 width=36) 
+                      (actual time=0.123..0.234 rows=500 loops=1)
+        Hash Cond: (c.customer_id = o.customer_id)
+        Buffers: shared hit=8 read=2
+*/
+```
+
+### MySQL Execution Plans
+```sql
+-- Traditional EXPLAIN
+EXPLAIN 
+SELECT c.customer_name, COUNT(o.order_id)
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id;
+
+-- JSON format for detailed information
+EXPLAIN FORMAT=JSON
+SELECT c.customer_name, COUNT(o.order_id)
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id;
+
+-- Visual explain (MySQL Workbench)
+EXPLAIN FORMAT=TREE
+SELECT c.customer_name, COUNT(o.order_id)
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id;
+```
+
+## Common Performance Issues in Execution Plans
+
+### 1. Table Scans
+```sql
+-- Problem: Full table scan on large table
+SELECT * FROM orders WHERE YEAR(order_date) = 2024;
+
+-- Solution: Use sargable predicates
+SELECT * FROM orders 
+WHERE order_date >= '2024-01-01' 
+AND order_date < '2025-01-01';
+
+-- Create appropriate index
+CREATE INDEX IX_orders_date ON orders(order_date);
+```
+
+### 2. Missing Indexes
+```sql
+-- Query causing table scan
+SELECT * FROM orders WHERE customer_id = 123 AND status = 'PENDING';
+
+-- Execution plan shows: Table Scan (costly)
+-- Solution: Create covering index
+CREATE INDEX IX_orders_customer_status 
+ON orders(customer_id, status) 
+INCLUDE (order_id, order_date, order_total);
+```
+
+### 3. Inefficient Joins
+```sql
+-- Nested loop join on large tables (inefficient)
+SELECT c.customer_name, o.order_total
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id;
+
+-- Check for:
+-- Missing indexes on join columns
+-- Data type mismatches
+-- Outdated statistics
+
+-- Solutions:
+CREATE INDEX IX_customers_id ON customers(customer_id);
+CREATE INDEX IX_orders_customer_id ON orders(customer_id);
+UPDATE STATISTICS customers;
+UPDATE STATISTICS orders;
+```
+
+### 4. Expensive Sorts
+```sql
+-- Large sort operation
+SELECT * FROM orders 
+ORDER BY order_total DESC, order_date DESC;
+
+-- Solution: Create index to eliminate sort
+CREATE INDEX IX_orders_total_date ON orders(order_total DESC, order_date DESC);
+```
+
+## Advanced Execution Plan Analysis
+
+### Parallelism
+```sql
+-- SQL Server parallel execution
+SELECT 
+    customer_id,
+    SUM(order_total) as total_spent
+FROM orders
+GROUP BY customer_id;
+
+-- Look for:
+-- Parallelism operators (Distribute Streams, Gather Streams)
+-- MAXDOP settings
+-- Cost threshold for parallelism
+-- CXPACKET waits
+```
+
+### Memory Usage
+```sql
+-- Monitor memory grants and spills
+SELECT 
+    c.customer_name,
+    STRING_AGG(p.product_name, ', ') as products
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN products p ON oi.product_id = p.product_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Check for:
+-- Memory grant warnings
+-- Tempdb spills
+-- Hash spill warnings
+```
+
+### Statistics and Cardinality Estimation
+```sql
+-- Check statistics quality
+DBCC SHOW_STATISTICS('orders', 'IX_orders_customer_id');
+
+-- Update statistics if needed
+UPDATE STATISTICS orders WITH FULLSCAN;
+
+-- Auto-update statistics
+ALTER DATABASE MyDB SET AUTO_UPDATE_STATISTICS ON;
+```
+
+## Execution Plan Optimization Techniques
+
+### 1. Index Optimization
+```sql
+-- Analyze index usage
+SELECT 
+    i.name as index_name,
+    s.user_seeks,
+    s.user_scans,
+    s.user_lookups,
+    s.user_updates
+FROM sys.indexes i
+JOIN sys.dm_db_index_usage_stats s ON i.object_id = s.object_id;
+
+-- Create missing indexes based on execution plans
+-- SQL Server provides missing index recommendations
+```
+
+### 2. Query Rewriting
+```sql
+-- Original query with subquery
+SELECT customer_name
+FROM customers
+WHERE customer_id IN (
+    SELECT customer_id FROM orders WHERE order_total > 1000
+);
+
+-- Rewritten with EXISTS (often more efficient)
+SELECT customer_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.customer_id = c.customer_id 
+    AND o.order_total > 1000
+);
+```
+
+### 3. Partitioning Benefits
+```sql
+-- Partitioned table query
+SELECT * FROM sales_partitioned
+WHERE sale_date BETWEEN '2024-01-01' AND '2024-01-31';
+
+-- Execution plan shows:
+-- Partition elimination
+-- Parallel partition processing
+-- Reduced I/O operations
+```
+
+## Tools for Execution Plan Analysis
+
+### SQL Server Tools
+```sql
+-- SQL Server Management Studio
+-- Built-in graphical execution plans
+-- Query Store for historical plans
+-- Database Engine Tuning Advisor
+
+-- DMVs for plan analysis
+SELECT 
+    qs.sql_handle,
+    qs.execution_count,
+    qs.total_elapsed_time,
+    qs.total_cpu_time,
+    st.text
+FROM sys.dm_exec_query_stats qs
+CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st
+ORDER BY qs.total_elapsed_time DESC;
+```
+
+### PostgreSQL Tools
+```sql
+-- pg_stat_statements extension
+SELECT 
+    query,
+    calls,
+    total_time,
+    mean_time,
+    rows
+FROM pg_stat_statements
+ORDER BY total_time DESC;
+
+-- Auto_explain extension for automatic logging
+SET auto_explain.log_min_duration = 1000;
+SET auto_explain.log_analyze = true;
+```
+
+### MySQL Tools
+```sql
+-- Performance Schema
+SELECT 
+    digest_text,
+    count_star,
+    sum_timer_wait,
+    avg_timer_wait
+FROM performance_schema.events_statements_summary_by_digest
+ORDER BY sum_timer_wait DESC;
+
+-- MySQL Workbench Visual Explain
+-- Percona Toolkit for analysis
+```
+
+## Best Practices for Execution Plan Analysis
+
+### 1. Regular Monitoring
+```sql
+-- Set up automated plan collection
+-- Monitor plan changes over time
+-- Identify regression patterns
+-- Track resource consumption trends
+```
+
+### 2. Baseline Establishment
+```sql
+-- Capture baseline execution plans
+-- Document expected performance metrics
+-- Set up alerts for plan changes
+-- Regular performance reviews
+```
+
+### 3. Optimization Workflow
+```sql
+-- 1. Identify slow queries
+-- 2. Capture execution plans
+-- 3. Analyze bottlenecks
+-- 4. Implement optimizations
+-- 5. Validate improvements
+-- 6. Monitor ongoing performance
+```
+
+## Interview Tips
+
+- Understand the difference between estimated and actual execution plans
+- Know how to identify common performance bottlenecks in plans
+- Be familiar with execution plan operators and their costs
+- Understand how indexes affect execution plans
+- Know database-specific tools for plan analysis
+- Practice reading and interpreting execution plan outputs
+- Be able to explain optimization strategies based on plan analysis

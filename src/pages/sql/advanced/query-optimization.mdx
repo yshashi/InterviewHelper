@@ -1,0 +1,419 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you optimize SQL queries for better performance?
+---
+
+# How do you optimize SQL queries for better performance?
+
+## Answer
+
+SQL query optimization involves analyzing and improving query performance through various techniques including proper indexing, query structure optimization, execution plan analysis, and database design improvements.
+
+## 1. Understanding Execution Plans
+
+### Analyzing Query Execution
+```sql
+-- View execution plan (varies by database)
+-- PostgreSQL
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 123;
+
+-- SQL Server
+SET STATISTICS IO ON;
+SELECT * FROM orders WHERE customer_id = 123;
+
+-- MySQL
+EXPLAIN FORMAT=JSON SELECT * FROM orders WHERE customer_id = 123;
+```
+
+### Key Metrics to Monitor
+- **Execution time**
+- **Rows examined vs rows returned**
+- **Index usage**
+- **Join algorithms**
+- **Sort operations**
+- **I/O operations**
+
+## 2. Indexing Strategies
+
+### Single Column Indexes
+```sql
+-- Create index on frequently queried columns
+CREATE INDEX idx_orders_customer_id ON orders(customer_id);
+CREATE INDEX idx_orders_order_date ON orders(order_date);
+
+-- Query that benefits from index
+SELECT * FROM orders WHERE customer_id = 123;  -- Uses idx_orders_customer_id
+```
+
+### Composite Indexes
+```sql
+-- Multi-column index for complex queries
+CREATE INDEX idx_orders_customer_date ON orders(customer_id, order_date);
+
+-- Optimal query for composite index
+SELECT * FROM orders 
+WHERE customer_id = 123 AND order_date >= '2024-01-01';
+
+-- Suboptimal - doesn't use index efficiently
+SELECT * FROM orders WHERE order_date >= '2024-01-01';  -- Missing leading column
+```
+
+### Covering Indexes
+```sql
+-- Include frequently selected columns in index
+CREATE INDEX idx_orders_covering ON orders(customer_id, order_date) 
+INCLUDE (order_total, status);
+
+-- Query satisfied entirely by index (no table lookup needed)
+SELECT order_date, order_total, status 
+FROM orders 
+WHERE customer_id = 123;
+```
+
+### Partial Indexes
+```sql
+-- Index only relevant subset of data
+CREATE INDEX idx_orders_active ON orders(customer_id) 
+WHERE status = 'ACTIVE';
+
+-- Efficient for queries on active orders only
+SELECT * FROM orders 
+WHERE customer_id = 123 AND status = 'ACTIVE';
+```
+
+## 3. Query Structure Optimization
+
+### SELECT Optimization
+```sql
+-- Bad: Select all columns
+SELECT * FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id;
+
+-- Good: Select only needed columns
+SELECT o.order_id, o.order_date, c.customer_name
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id;
+```
+
+### WHERE Clause Optimization
+```sql
+-- Bad: Function in WHERE clause prevents index usage
+SELECT * FROM orders 
+WHERE YEAR(order_date) = 2024;
+
+-- Good: Use range conditions
+SELECT * FROM orders 
+WHERE order_date >= '2024-01-01' AND order_date < '2025-01-01';
+
+-- Bad: Leading wildcards prevent index usage
+SELECT * FROM customers WHERE customer_name LIKE '%Smith%';
+
+-- Good: Trailing wildcards can use index
+SELECT * FROM customers WHERE customer_name LIKE 'Smith%';
+```
+
+### JOIN Optimization
+```sql
+-- Ensure JOIN conditions use indexed columns
+CREATE INDEX idx_orders_customer_id ON orders(customer_id);
+CREATE INDEX idx_customers_id ON customers(customer_id);
+
+-- Efficient JOIN
+SELECT o.order_id, c.customer_name
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id  -- Both columns indexed
+WHERE o.order_date >= '2024-01-01';
+```
+
+## 4. Subquery vs JOIN Optimization
+
+### EXISTS vs IN
+```sql
+-- Often more efficient with large datasets
+SELECT c.customer_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.customer_id = c.customer_id 
+    AND o.order_date >= '2024-01-01'
+);
+
+-- Can be less efficient with large subquery results
+SELECT c.customer_name
+FROM customers c
+WHERE c.customer_id IN (
+    SELECT o.customer_id FROM orders o 
+    WHERE o.order_date >= '2024-01-01'
+);
+
+-- Often most efficient - JOIN with DISTINCT
+SELECT DISTINCT c.customer_name
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.order_date >= '2024-01-01';
+```
+
+### Correlated vs Non-Correlated Subqueries
+```sql
+-- Correlated subquery (executes for each outer row)
+SELECT c.customer_name
+FROM customers c
+WHERE (
+    SELECT COUNT(*) FROM orders o 
+    WHERE o.customer_id = c.customer_id
+) > 5;
+
+-- Better: Use JOIN with GROUP BY
+SELECT c.customer_name
+FROM customers c
+JOIN (
+    SELECT customer_id, COUNT(*) as order_count
+    FROM orders
+    GROUP BY customer_id
+    HAVING COUNT(*) > 5
+) o ON c.customer_id = o.customer_id;
+```
+
+## 5. Aggregate Function Optimization
+
+### Efficient Aggregation
+```sql
+-- Use indexes for GROUP BY columns
+CREATE INDEX idx_orders_customer_status ON orders(customer_id, status);
+
+-- Efficient aggregation query
+SELECT customer_id, status, COUNT(*), SUM(order_total)
+FROM orders
+GROUP BY customer_id, status;  -- Uses index for grouping
+```
+
+### Window Functions vs Self-Joins
+```sql
+-- Inefficient: Self-join for running totals
+SELECT o1.order_id, o1.order_date, SUM(o2.order_total) as running_total
+FROM orders o1
+JOIN orders o2 ON o1.customer_id = o2.customer_id 
+    AND o2.order_date <= o1.order_date
+GROUP BY o1.order_id, o1.order_date;
+
+-- Efficient: Window function
+SELECT order_id, order_date,
+    SUM(order_total) OVER (
+        PARTITION BY customer_id 
+        ORDER BY order_date 
+        ROWS UNBOUNDED PRECEDING
+    ) as running_total
+FROM orders;
+```
+
+## 6. LIMIT and Pagination Optimization
+
+### Efficient Pagination
+```sql
+-- Inefficient: Large OFFSET
+SELECT * FROM orders 
+ORDER BY order_date DESC 
+LIMIT 20 OFFSET 10000;  -- Scans and discards 10000 rows
+
+-- Efficient: Cursor-based pagination
+SELECT * FROM orders 
+WHERE order_date < '2024-06-15 10:30:00'  -- Last seen timestamp
+ORDER BY order_date DESC 
+LIMIT 20;
+
+-- Or use ID-based pagination
+SELECT * FROM orders 
+WHERE order_id < 50000  -- Last seen ID
+ORDER BY order_id DESC 
+LIMIT 20;
+```
+
+## 7. Database Design Optimization
+
+### Normalization vs Denormalization
+```sql
+-- Normalized (good for writes, complex reads)
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE
+);
+
+CREATE TABLE order_items (
+    item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    price DECIMAL(10,2)
+);
+
+-- Denormalized (good for reads, complex writes)
+CREATE TABLE order_summary (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    customer_name VARCHAR(100),  -- Denormalized
+    order_date DATE,
+    total_items INT,             -- Denormalized
+    order_total DECIMAL(10,2)    -- Denormalized
+);
+```
+
+### Partitioning
+```sql
+-- Range partitioning by date
+CREATE TABLE orders_2024 PARTITION OF orders
+FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
+
+CREATE TABLE orders_2023 PARTITION OF orders
+FOR VALUES FROM ('2023-01-01') TO ('2024-01-01');
+
+-- Query automatically uses appropriate partition
+SELECT * FROM orders WHERE order_date >= '2024-06-01';
+```
+
+## 8. Advanced Optimization Techniques
+
+### Query Hints (Use Sparingly)
+```sql
+-- Force index usage (SQL Server)
+SELECT * FROM orders WITH (INDEX(idx_orders_customer_id))
+WHERE customer_id = 123;
+
+-- Force join order (MySQL)
+SELECT /*+ USE_INDEX(orders, idx_customer_date) */ 
+    o.order_id, c.customer_name
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id;
+```
+
+### Materialized Views
+```sql
+-- Create materialized view for expensive aggregations
+CREATE MATERIALIZED VIEW customer_order_summary AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    COUNT(o.order_id) as total_orders,
+    SUM(o.order_total) as total_spent,
+    MAX(o.order_date) as last_order_date
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Refresh periodically
+REFRESH MATERIALIZED VIEW customer_order_summary;
+```
+
+### Query Caching
+```sql
+-- Enable query result caching (MySQL)
+SET SESSION query_cache_type = ON;
+
+-- Parameterized queries for better cache hit rates
+PREPARE stmt FROM 'SELECT * FROM orders WHERE customer_id = ?';
+SET @customer_id = 123;
+EXECUTE stmt USING @customer_id;
+```
+
+## 9. Monitoring and Analysis Tools
+
+### Performance Monitoring Queries
+```sql
+-- Find slow queries (PostgreSQL)
+SELECT query, mean_time, calls, total_time
+FROM pg_stat_statements
+ORDER BY mean_time DESC
+LIMIT 10;
+
+-- Index usage statistics
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    idx_tup_read,
+    idx_tup_fetch
+FROM pg_stat_user_indexes
+ORDER BY idx_tup_read DESC;
+
+-- Table scan statistics
+SELECT 
+    schemaname,
+    tablename,
+    seq_scan,
+    seq_tup_read,
+    idx_scan,
+    idx_tup_fetch
+FROM pg_stat_user_tables
+WHERE seq_scan > idx_scan;  -- Tables with more sequential scans than index scans
+```
+
+## 10. Common Anti-Patterns to Avoid
+
+### N+1 Query Problem
+```sql
+-- Bad: N+1 queries
+-- First query
+SELECT customer_id FROM customers WHERE region = 'North';
+
+-- Then N queries (one for each customer)
+SELECT * FROM orders WHERE customer_id = ?;  -- Executed N times
+
+-- Good: Single JOIN query
+SELECT c.customer_id, o.*
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE c.region = 'North';
+```
+
+### Unnecessary DISTINCT
+```sql
+-- Bad: DISTINCT when not needed
+SELECT DISTINCT customer_id FROM orders;  -- If customer_id is already unique per order
+
+-- Good: Remove unnecessary DISTINCT
+SELECT customer_id FROM orders;
+```
+
+### Inefficient Data Types
+```sql
+-- Bad: Oversized data types
+CREATE TABLE products (
+    product_id VARCHAR(255),  -- INT would be more efficient
+    price DECIMAL(20,10)      -- DECIMAL(10,2) sufficient for currency
+);
+
+-- Good: Appropriate data types
+CREATE TABLE products (
+    product_id INT,
+    price DECIMAL(10,2)
+);
+```
+
+## Performance Testing Approach
+
+### Benchmarking Process
+1. **Establish baseline** - Measure current performance
+2. **Identify bottlenecks** - Use execution plans and monitoring
+3. **Apply optimizations** - One change at a time
+4. **Measure impact** - Compare before/after metrics
+5. **Validate results** - Ensure correctness maintained
+
+### Load Testing
+```sql
+-- Create test data for performance testing
+INSERT INTO orders (customer_id, order_date, order_total)
+SELECT 
+    (RANDOM() * 1000)::INT + 1,
+    CURRENT_DATE - (RANDOM() * 365)::INT,
+    (RANDOM() * 1000)::DECIMAL(10,2)
+FROM generate_series(1, 1000000);  -- Generate 1M test records
+```
+
+## Interview Tips
+
+- Always start with execution plan analysis
+- Understand the cost of different operations (table scan vs index seek)
+- Know when to use different types of indexes
+- Understand the trade-offs between normalization and denormalization
+- Be familiar with database-specific optimization features
+- Practice identifying and fixing common performance anti-patterns

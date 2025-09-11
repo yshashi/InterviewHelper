@@ -1,0 +1,390 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are window functions and how do they work?
+---
+
+# What are window functions and how do they work?
+
+## Answer
+
+**Window functions** perform calculations across a set of table rows that are related to the current row, without collapsing the result set like aggregate functions do. They provide powerful analytical capabilities for ranking, running totals, and comparative analysis.
+
+## Basic Syntax
+
+```sql
+SELECT 
+    column1,
+    column2,
+    WINDOW_FUNCTION() OVER (
+        [PARTITION BY column1, column2, ...]
+        [ORDER BY column3, column4, ...]
+        [ROWS/RANGE BETWEEN ... AND ...]
+    ) AS result_column
+FROM table_name;
+```
+
+## Key Components
+
+### OVER Clause
+Defines the window (set of rows) for the function to operate on.
+
+### PARTITION BY
+Divides the result set into partitions (similar to GROUP BY but doesn't collapse rows).
+
+### ORDER BY
+Defines the logical order of rows within each partition.
+
+### Frame Specification
+Defines which rows within the partition to include in the calculation.
+
+## Common Window Functions
+
+### 1. ROW_NUMBER()
+Assigns a unique sequential integer to each row.
+
+```sql
+-- Sample data
+CREATE TABLE sales (
+    salesperson VARCHAR(50),
+    region VARCHAR(50),
+    sales_amount DECIMAL(10,2),
+    sale_date DATE
+);
+
+-- Assign row numbers
+SELECT 
+    salesperson,
+    region,
+    sales_amount,
+    ROW_NUMBER() OVER (ORDER BY sales_amount DESC) as overall_rank,
+    ROW_NUMBER() OVER (PARTITION BY region ORDER BY sales_amount DESC) as region_rank
+FROM sales;
+```
+
+### 2. RANK() and DENSE_RANK()
+Assign ranks with different tie-handling behavior.
+
+```sql
+SELECT 
+    salesperson,
+    sales_amount,
+    RANK() OVER (ORDER BY sales_amount DESC) as rank_with_gaps,
+    DENSE_RANK() OVER (ORDER BY sales_amount DESC) as dense_rank,
+    ROW_NUMBER() OVER (ORDER BY sales_amount DESC) as row_num
+FROM sales;
+
+-- Example output:
+-- Name     | Amount | RANK | DENSE_RANK | ROW_NUMBER
+-- John     | 1000   | 1    | 1          | 1
+-- Jane     | 1000   | 1    | 1          | 2  (tie)
+-- Mike     | 900    | 3    | 2          | 3  (RANK skips 2)
+-- Sarah    | 800    | 4    | 3          | 4
+```
+
+### 3. LAG() and LEAD()
+Access data from previous or next rows.
+
+```sql
+SELECT 
+    salesperson,
+    sale_date,
+    sales_amount,
+    LAG(sales_amount) OVER (ORDER BY sale_date) as previous_sale,
+    LEAD(sales_amount) OVER (ORDER BY sale_date) as next_sale,
+    sales_amount - LAG(sales_amount) OVER (ORDER BY sale_date) as change_from_previous
+FROM sales
+ORDER BY sale_date;
+```
+
+### 4. FIRST_VALUE() and LAST_VALUE()
+Get the first or last value in the window.
+
+```sql
+SELECT 
+    salesperson,
+    region,
+    sales_amount,
+    FIRST_VALUE(sales_amount) OVER (
+        PARTITION BY region 
+        ORDER BY sales_amount DESC
+    ) as highest_in_region,
+    LAST_VALUE(sales_amount) OVER (
+        PARTITION BY region 
+        ORDER BY sales_amount DESC
+        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+    ) as lowest_in_region
+FROM sales;
+```
+
+## Aggregate Window Functions
+
+### Running Totals
+```sql
+SELECT 
+    sale_date,
+    sales_amount,
+    SUM(sales_amount) OVER (ORDER BY sale_date) as running_total,
+    AVG(sales_amount) OVER (ORDER BY sale_date) as running_average
+FROM sales
+ORDER BY sale_date;
+```
+
+### Moving Averages
+```sql
+SELECT 
+    sale_date,
+    sales_amount,
+    AVG(sales_amount) OVER (
+        ORDER BY sale_date 
+        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ) as three_day_moving_avg
+FROM sales
+ORDER BY sale_date;
+```
+
+## Frame Specifications
+
+### ROWS vs RANGE
+```sql
+-- ROWS: Physical number of rows
+SELECT 
+    sale_date,
+    sales_amount,
+    SUM(sales_amount) OVER (
+        ORDER BY sale_date 
+        ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+    ) as sum_3_rows
+FROM sales;
+
+-- RANGE: Logical range of values
+SELECT 
+    sale_date,
+    sales_amount,
+    SUM(sales_amount) OVER (
+        ORDER BY sales_amount 
+        RANGE BETWEEN 100 PRECEDING AND 100 FOLLOWING
+    ) as sum_similar_amounts
+FROM sales;
+```
+
+### Frame Boundaries
+```sql
+-- Different frame specifications
+SELECT 
+    salesperson,
+    sales_amount,
+    -- From start of partition to current row
+    SUM(sales_amount) OVER (
+        ORDER BY sales_amount 
+        ROWS UNBOUNDED PRECEDING
+    ) as cumulative_sum,
+    
+    -- Last 3 rows including current
+    AVG(sales_amount) OVER (
+        ORDER BY sales_amount 
+        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ) as last_3_avg,
+    
+    -- Entire partition
+    COUNT(*) OVER (
+        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+    ) as total_count
+FROM sales;
+```
+
+## Practical Business Examples
+
+### Top N per Group
+```sql
+-- Top 3 salespeople per region
+WITH ranked_sales AS (
+    SELECT 
+        salesperson,
+        region,
+        SUM(sales_amount) as total_sales,
+        ROW_NUMBER() OVER (
+            PARTITION BY region 
+            ORDER BY SUM(sales_amount) DESC
+        ) as rank_in_region
+    FROM sales
+    GROUP BY salesperson, region
+)
+SELECT salesperson, region, total_sales
+FROM ranked_sales
+WHERE rank_in_region <= 3;
+```
+
+### Percentage of Total
+```sql
+SELECT 
+    salesperson,
+    region,
+    sales_amount,
+    ROUND(
+        sales_amount * 100.0 / SUM(sales_amount) OVER (PARTITION BY region),
+        2
+    ) as pct_of_region_total,
+    ROUND(
+        sales_amount * 100.0 / SUM(sales_amount) OVER (),
+        2
+    ) as pct_of_grand_total
+FROM sales;
+```
+
+### Year-over-Year Growth
+```sql
+WITH monthly_sales AS (
+    SELECT 
+        YEAR(sale_date) as year,
+        MONTH(sale_date) as month,
+        SUM(sales_amount) as monthly_total
+    FROM sales
+    GROUP BY YEAR(sale_date), MONTH(sale_date)
+)
+SELECT 
+    year,
+    month,
+    monthly_total,
+    LAG(monthly_total, 12) OVER (ORDER BY year, month) as same_month_last_year,
+    ROUND(
+        (monthly_total - LAG(monthly_total, 12) OVER (ORDER BY year, month)) * 100.0 /
+        LAG(monthly_total, 12) OVER (ORDER BY year, month),
+        2
+    ) as yoy_growth_pct
+FROM monthly_sales
+ORDER BY year, month;
+```
+
+### Customer Lifetime Value Analysis
+```sql
+WITH customer_orders AS (
+    SELECT 
+        customer_id,
+        order_date,
+        order_amount,
+        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) as order_sequence,
+        SUM(order_amount) OVER (
+            PARTITION BY customer_id 
+            ORDER BY order_date 
+            ROWS UNBOUNDED PRECEDING
+        ) as cumulative_value
+    FROM orders
+)
+SELECT 
+    customer_id,
+    order_sequence,
+    order_amount,
+    cumulative_value,
+    CASE 
+        WHEN order_sequence = 1 THEN 'First Purchase'
+        WHEN cumulative_value >= 1000 THEN 'High Value'
+        WHEN cumulative_value >= 500 THEN 'Medium Value'
+        ELSE 'Low Value'
+    END as customer_segment
+FROM customer_orders;
+```
+
+## Advanced Patterns
+
+### Gaps and Islands
+```sql
+-- Find consecutive sales periods
+WITH sales_with_groups AS (
+    SELECT 
+        sale_date,
+        sales_amount,
+        sale_date - INTERVAL ROW_NUMBER() OVER (ORDER BY sale_date) DAY as group_date
+    FROM sales
+    WHERE sales_amount > 1000
+)
+SELECT 
+    MIN(sale_date) as period_start,
+    MAX(sale_date) as period_end,
+    COUNT(*) as consecutive_days
+FROM sales_with_groups
+GROUP BY group_date
+ORDER BY period_start;
+```
+
+### Median Calculation
+```sql
+-- Calculate median using window functions
+WITH ordered_sales AS (
+    SELECT 
+        sales_amount,
+        ROW_NUMBER() OVER (ORDER BY sales_amount) as row_num,
+        COUNT(*) OVER () as total_count
+    FROM sales
+)
+SELECT 
+    AVG(sales_amount) as median_sales
+FROM ordered_sales
+WHERE row_num IN (
+    (total_count + 1) / 2,
+    (total_count + 2) / 2
+);
+```
+
+## Performance Considerations
+
+### Indexing for Window Functions
+```sql
+-- Create appropriate indexes
+CREATE INDEX idx_sales_region_amount ON sales(region, sales_amount DESC);
+CREATE INDEX idx_sales_date ON sales(sale_date);
+
+-- Efficient window function query
+SELECT 
+    salesperson,
+    region,
+    sales_amount,
+    RANK() OVER (PARTITION BY region ORDER BY sales_amount DESC) as rank
+FROM sales;
+```
+
+### Avoiding Repeated Calculations
+```sql
+-- Instead of multiple similar window functions
+SELECT 
+    salesperson,
+    RANK() OVER (ORDER BY sales_amount DESC) as overall_rank,
+    RANK() OVER (PARTITION BY region ORDER BY sales_amount DESC) as region_rank
+FROM sales;
+
+-- Use CTE to calculate once
+WITH ranked_sales AS (
+    SELECT 
+        salesperson,
+        region,
+        sales_amount,
+        RANK() OVER (ORDER BY sales_amount DESC) as overall_rank,
+        RANK() OVER (PARTITION BY region ORDER BY sales_amount DESC) as region_rank
+    FROM sales
+)
+SELECT * FROM ranked_sales WHERE overall_rank <= 10 OR region_rank <= 3;
+```
+
+## Window Functions vs GROUP BY
+
+```sql
+-- GROUP BY collapses rows
+SELECT region, AVG(sales_amount) as avg_sales
+FROM sales
+GROUP BY region;
+
+-- Window function preserves all rows
+SELECT 
+    salesperson,
+    region,
+    sales_amount,
+    AVG(sales_amount) OVER (PARTITION BY region) as region_avg
+FROM sales;
+```
+
+## Interview Tips
+
+- Understand that window functions don't collapse rows like GROUP BY
+- Know the difference between RANK(), DENSE_RANK(), and ROW_NUMBER()
+- Practice using LAG() and LEAD() for time-series analysis
+- Understand frame specifications (ROWS vs RANGE)
+- Be familiar with common business use cases like top N per group

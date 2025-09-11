@@ -1,0 +1,187 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between WHERE and HAVING clauses?
+---
+
+# What is the difference between WHERE and HAVING clauses?
+
+## Answer
+
+Both WHERE and HAVING clauses are used to filter data in SQL, but they operate at different stages of query execution and serve different purposes.
+
+## WHERE Clause
+
+**Purpose**: Filters rows **before** grouping and aggregation occurs.
+
+### Characteristics:
+- Applied to individual rows
+- Cannot use aggregate functions
+- Executed before GROUP BY
+- More efficient for large datasets
+
+```sql
+-- Example table
+CREATE TABLE sales (
+    id INT,
+    salesperson VARCHAR(50),
+    region VARCHAR(50),
+    amount DECIMAL(10,2),
+    sale_date DATE
+);
+
+-- WHERE clause examples
+SELECT * FROM sales 
+WHERE amount > 1000;
+
+SELECT * FROM sales 
+WHERE region = 'North' AND sale_date >= '2024-01-01';
+
+SELECT salesperson, SUM(amount) as total_sales
+FROM sales 
+WHERE region = 'North'  -- Filter rows before grouping
+GROUP BY salesperson;
+```
+
+## HAVING Clause
+
+**Purpose**: Filters groups **after** grouping and aggregation occurs.
+
+### Characteristics:
+- Applied to grouped results
+- Can use aggregate functions
+- Executed after GROUP BY
+- Used with GROUP BY clause
+
+```sql
+-- HAVING clause examples
+SELECT salesperson, SUM(amount) as total_sales
+FROM sales 
+GROUP BY salesperson
+HAVING SUM(amount) > 5000;  -- Filter groups after aggregation
+
+SELECT region, COUNT(*) as sale_count, AVG(amount) as avg_amount
+FROM sales 
+GROUP BY region
+HAVING COUNT(*) > 10 AND AVG(amount) > 1500;
+```
+
+## Key Differences
+
+| Aspect | WHERE | HAVING |
+|--------|-------|--------|
+| **Applied to** | Individual rows | Grouped results |
+| **Execution order** | Before GROUP BY | After GROUP BY |
+| **Aggregate functions** | Cannot use | Can use |
+| **Performance** | Generally faster | Slower (processes groups) |
+| **Usage** | Row-level filtering | Group-level filtering |
+
+## Execution Order
+
+```sql
+SELECT column1, aggregate_function(column2)
+FROM table_name
+WHERE condition1          -- 1. Filter rows first
+GROUP BY column1          -- 2. Group the filtered rows
+HAVING condition2         -- 3. Filter the groups
+ORDER BY column1;         -- 4. Sort the final result
+```
+
+## Practical Examples
+
+### Example 1: Sales Analysis
+```sql
+-- Find salespeople in the North region who have total sales > $10,000
+SELECT salesperson, SUM(amount) as total_sales
+FROM sales 
+WHERE region = 'North'              -- Filter rows: only North region
+GROUP BY salesperson 
+HAVING SUM(amount) > 10000;         -- Filter groups: total sales > $10,000
+```
+
+### Example 2: Customer Orders
+```sql
+-- Find customers who placed more than 5 orders with individual order value > $100
+SELECT customer_id, COUNT(*) as order_count, AVG(order_amount) as avg_order
+FROM orders 
+WHERE order_amount > 100            -- Filter: only orders > $100
+GROUP BY customer_id 
+HAVING COUNT(*) > 5;                -- Filter: customers with > 5 orders
+```
+
+### Example 3: Product Categories
+```sql
+-- Find product categories with average price > $50 and more than 3 products
+SELECT category, COUNT(*) as product_count, AVG(price) as avg_price
+FROM products 
+WHERE status = 'active'             -- Filter: only active products
+GROUP BY category 
+HAVING COUNT(*) > 3 AND AVG(price) > 50;  -- Filter: categories meeting criteria
+```
+
+## Common Mistakes
+
+### ❌ Wrong: Using aggregate functions in WHERE
+```sql
+-- This will cause an error
+SELECT department, COUNT(*) 
+FROM employees 
+WHERE COUNT(*) > 5  -- ERROR: Cannot use aggregate in WHERE
+GROUP BY department;
+```
+
+### ✅ Correct: Using aggregate functions in HAVING
+```sql
+SELECT department, COUNT(*) 
+FROM employees 
+GROUP BY department 
+HAVING COUNT(*) > 5;  -- Correct: Use HAVING for aggregates
+```
+
+### ❌ Wrong: Using HAVING without GROUP BY for non-aggregates
+```sql
+-- This works but is inefficient
+SELECT * FROM employees 
+HAVING salary > 50000;  -- Should use WHERE instead
+```
+
+### ✅ Correct: Using WHERE for non-aggregates
+```sql
+SELECT * FROM employees 
+WHERE salary > 50000;  -- More efficient
+```
+
+## Performance Considerations
+
+### WHERE is more efficient:
+```sql
+-- Better performance - filters early
+SELECT department, AVG(salary)
+FROM employees 
+WHERE hire_date >= '2020-01-01'  -- Reduces rows before grouping
+GROUP BY department;
+```
+
+### HAVING processes more data:
+```sql
+-- Less efficient - processes all rows first
+SELECT department, AVG(salary)
+FROM employees 
+GROUP BY department 
+HAVING MIN(hire_date) >= '2020-01-01';  -- Filters after grouping
+```
+
+## Best Practices
+
+1. **Use WHERE for row filtering** - Filter individual rows before grouping
+2. **Use HAVING for group filtering** - Filter aggregated results
+3. **Combine both when needed** - WHERE first, then HAVING
+4. **Consider performance** - WHERE is generally faster than HAVING
+5. **Be specific** - Use the most restrictive filters in WHERE clause
+
+## Interview Tips
+
+- Remember: WHERE filters rows, HAVING filters groups
+- Know the execution order: WHERE → GROUP BY → HAVING
+- Understand that WHERE cannot use aggregate functions
+- Practice examples that use both clauses together
+- Be able to explain performance differences

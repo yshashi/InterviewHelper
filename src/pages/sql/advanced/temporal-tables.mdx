@@ -1,0 +1,619 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are temporal tables and how do they work?
+---
+
+# What are temporal tables and how do they work?
+
+## Answer
+
+**Temporal tables** are database tables that automatically track the history of data changes over time. They maintain both current data and historical versions, allowing you to query data as it existed at any point in time. This feature is also known as system-versioned tables or bi-temporal tables.
+
+## System-Versioned Temporal Tables
+
+### SQL Server Implementation
+```sql
+-- Create a temporal table
+CREATE TABLE Employees (
+    EmployeeId INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    Department NVARCHAR(50),
+    Salary DECIMAL(10,2),
+    
+    -- System time columns (automatically managed)
+    ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN,
+    ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN,
+    
+    PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo)
+)
+WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.EmployeesHistory));
+
+-- Insert data
+INSERT INTO Employees (Name, Department, Salary)
+VALUES ('John Doe', 'IT', 50000),
+       ('Jane Smith', 'HR', 45000);
+
+-- Update data (creates history automatically)
+UPDATE Employees 
+SET Salary = 55000, Department = 'Engineering'
+WHERE Name = 'John Doe';
+
+-- Query current data
+SELECT * FROM Employees;
+
+-- Query historical data
+SELECT * FROM Employees FOR SYSTEM_TIME ALL
+WHERE Name = 'John Doe';
+
+-- Query data as of specific time
+SELECT * FROM Employees FOR SYSTEM_TIME AS OF '2024-01-15 10:00:00'
+WHERE Name = 'John Doe';
+
+-- Query data between time periods
+SELECT * FROM Employees 
+FOR SYSTEM_TIME BETWEEN '2024-01-01' AND '2024-01-31'
+WHERE Name = 'John Doe';
+```
+
+### PostgreSQL Implementation (Manual)
+```sql
+-- PostgreSQL doesn't have built-in temporal tables, but we can implement them
+CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    department VARCHAR(50),
+    salary DECIMAL(10,2),
+    
+    -- Temporal columns
+    valid_from TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    valid_to TIMESTAMP NOT NULL DEFAULT 'infinity'::timestamp,
+    
+    -- Exclude overlapping periods for same employee
+    EXCLUDE USING gist (
+        employee_id WITH =,
+        tsrange(valid_from, valid_to) WITH &&
+    )
+);
+
+-- History table
+CREATE TABLE employees_history (
+    LIKE employees INCLUDING ALL
+);
+
+-- Trigger function to maintain history
+CREATE OR REPLACE FUNCTION maintain_employee_history()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        -- Close the old record
+        UPDATE employees 
+        SET valid_to = CURRENT_TIMESTAMP
+        WHERE employee_id = OLD.employee_id 
+        AND valid_to = 'infinity'::timestamp;
+        
+        -- Insert old version into history
+        INSERT INTO employees_history 
+        SELECT OLD.*, CURRENT_TIMESTAMP;
+        
+        -- Set valid_from for new record
+        NEW.valid_from = CURRENT_TIMESTAMP;
+        NEW.valid_to = 'infinity'::timestamp;
+        
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        -- Close the record and move to history
+        UPDATE employees 
+        SET valid_to = CURRENT_TIMESTAMP
+        WHERE employee_id = OLD.employee_id 
+        AND valid_to = 'infinity'::timestamp;
+        
+        INSERT INTO employees_history 
+        SELECT OLD.*, CURRENT_TIMESTAMP;
+        
+        RETURN OLD;
+    END IF;
+    
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create triggers
+CREATE TRIGGER trg_employee_history
+    BEFORE UPDATE OR DELETE ON employees
+    FOR EACH ROW EXECUTE FUNCTION maintain_employee_history();
+```
+
+## Bi-Temporal Tables
+
+### Valid Time and Transaction Time
+```sql
+-- Bi-temporal table with both valid time and transaction time
+CREATE TABLE insurance_policies (
+    policy_id INT IDENTITY(1,1) PRIMARY KEY,
+    policy_number VARCHAR(20) NOT NULL,
+    customer_id INT NOT NULL,
+    coverage_amount DECIMAL(15,2),
+    premium DECIMAL(10,2),
+    
+    -- Valid time (business time - when the fact was true in reality)
+    valid_start_date DATE NOT NULL,
+    valid_end_date DATE NOT NULL DEFAULT '9999-12-31',
+    
+    -- Transaction time (system time - when the fact was recorded)
+    transaction_start DATETIME2 GENERATED ALWAYS AS ROW START,
+    transaction_end DATETIME2 GENERATED ALWAYS AS ROW END,
+    
+    PERIOD FOR SYSTEM_TIME (transaction_start, transaction_end),
+    
+    -- Ensure no overlapping valid periods for same policy
+    INDEX IX_policy_valid_time UNIQUE (policy_number, valid_start_date, valid_end_date)
+)
+WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.insurance_policies_history));
+
+-- Insert a policy effective from 2024-01-01
+INSERT INTO insurance_policies (policy_number, customer_id, coverage_amount, premium, valid_start_date)
+VALUES ('POL001', 123, 100000, 1200, '2024-01-01');
+
+-- Update coverage effective from 2024-06-01 (creates new valid time period)
+INSERT INTO insurance_policies (policy_number, customer_id, coverage_amount, premium, valid_start_date)
+VALUES ('POL001', 123, 150000, 1500, '2024-06-01');
+
+-- Close the previous period
+UPDATE insurance_policies 
+SET valid_end_date = '2024-05-31'
+WHERE policy_number = 'POL001' 
+AND valid_end_date = '9999-12-31'
+AND valid_start_date = '2024-01-01';
+```
+
+## Temporal Query Patterns
+
+### Time Travel Queries
+```sql
+-- SQL Server: Various temporal query types
+
+-- 1. Point-in-time query (AS OF)
+SELECT employee_id, name, department, salary
+FROM Employees FOR SYSTEM_TIME AS OF '2024-03-15 14:30:00'
+WHERE department = 'IT';
+
+-- 2. All versions of a record
+SELECT 
+    employee_id,
+    name,
+    department,
+    salary,
+    ValidFrom,
+    ValidTo
+FROM Employees FOR SYSTEM_TIME ALL
+WHERE employee_id = 1
+ORDER BY ValidFrom;
+
+-- 3. Changes within a period (FROM...TO)
+SELECT 
+    employee_id,
+    name,
+    department,
+    salary,
+    ValidFrom,
+    ValidTo
+FROM Employees FOR SYSTEM_TIME FROM '2024-01-01' TO '2024-03-31'
+WHERE employee_id = 1;
+
+-- 4. Changes between two points (BETWEEN)
+SELECT 
+    employee_id,
+    name,
+    department,
+    salary,
+    ValidFrom,
+    ValidTo
+FROM Employees FOR SYSTEM_TIME BETWEEN '2024-01-01' AND '2024-03-31'
+WHERE employee_id = 1;
+
+-- 5. Records that existed during a period (CONTAINED IN)
+SELECT 
+    employee_id,
+    name,
+    department,
+    salary
+FROM Employees FOR SYSTEM_TIME CONTAINED IN ('2024-01-01', '2024-03-31')
+WHERE department = 'Engineering';
+```
+
+### Audit and Change Tracking
+```sql
+-- Track salary changes over time
+WITH SalaryChanges AS (
+    SELECT 
+        employee_id,
+        name,
+        salary,
+        ValidFrom,
+        ValidTo,
+        LAG(salary) OVER (PARTITION BY employee_id ORDER BY ValidFrom) AS previous_salary
+    FROM Employees FOR SYSTEM_TIME ALL
+    WHERE employee_id = 1
+)
+SELECT 
+    employee_id,
+    name,
+    salary,
+    previous_salary,
+    salary - previous_salary AS salary_change,
+    ValidFrom AS change_date
+FROM SalaryChanges
+WHERE previous_salary IS NOT NULL
+ORDER BY ValidFrom;
+
+-- Find employees who changed departments
+SELECT DISTINCT
+    e1.employee_id,
+    e1.name,
+    e1.department AS old_department,
+    e2.department AS new_department,
+    e2.ValidFrom AS change_date
+FROM Employees FOR SYSTEM_TIME ALL e1
+JOIN Employees FOR SYSTEM_TIME ALL e2 
+    ON e1.employee_id = e2.employee_id
+    AND e1.ValidTo = e2.ValidFrom
+WHERE e1.department <> e2.department;
+```
+
+## Advanced Temporal Operations
+
+### Temporal Joins
+```sql
+-- Join temporal tables based on time overlap
+SELECT 
+    e.name,
+    e.department,
+    e.salary,
+    p.project_name,
+    p.budget
+FROM Employees FOR SYSTEM_TIME ALL e
+JOIN Projects FOR SYSTEM_TIME ALL p
+    ON e.department = p.department
+    AND e.ValidFrom < p.ValidTo
+    AND e.ValidTo > p.ValidFrom  -- Time overlap condition
+WHERE e.employee_id = 1;
+
+-- Point-in-time join (both tables as of same time)
+DECLARE @PointInTime DATETIME2 = '2024-06-15 10:00:00';
+
+SELECT 
+    e.name,
+    e.department,
+    e.salary,
+    d.budget,
+    d.manager_name
+FROM Employees FOR SYSTEM_TIME AS OF @PointInTime e
+JOIN Departments FOR SYSTEM_TIME AS OF @PointInTime d
+    ON e.department = d.department_name;
+```
+
+### Temporal Aggregations
+```sql
+-- Calculate average salary over time periods
+SELECT 
+    department,
+    YEAR(ValidFrom) AS year,
+    MONTH(ValidFrom) AS month,
+    AVG(salary) AS avg_salary,
+    COUNT(*) AS employee_count
+FROM Employees FOR SYSTEM_TIME ALL
+WHERE ValidFrom >= '2024-01-01'
+GROUP BY department, YEAR(ValidFrom), MONTH(ValidFrom)
+ORDER BY department, year, month;
+
+-- Track headcount changes over time
+WITH HeadcountByMonth AS (
+    SELECT 
+        department,
+        DATEFROMPARTS(YEAR(ValidFrom), MONTH(ValidFrom), 1) AS month_start,
+        COUNT(*) AS headcount
+    FROM Employees FOR SYSTEM_TIME ALL
+    WHERE ValidFrom >= '2024-01-01'
+    GROUP BY department, YEAR(ValidFrom), MONTH(ValidFrom)
+)
+SELECT 
+    department,
+    month_start,
+    headcount,
+    LAG(headcount) OVER (PARTITION BY department ORDER BY month_start) AS prev_headcount,
+    headcount - LAG(headcount) OVER (PARTITION BY department ORDER BY month_start) AS change
+FROM HeadcountByMonth
+ORDER BY department, month_start;
+```
+
+## Performance Optimization
+
+### Indexing Temporal Tables
+```sql
+-- Indexes for temporal queries
+-- 1. Index on temporal columns
+CREATE INDEX IX_Employees_ValidFrom ON Employees (ValidFrom);
+CREATE INDEX IX_Employees_ValidTo ON Employees (ValidTo);
+CREATE INDEX IX_Employees_Period ON Employees (ValidFrom, ValidTo);
+
+-- 2. Covering indexes for common queries
+CREATE INDEX IX_Employees_Dept_Period_Covering 
+ON Employees (department, ValidFrom, ValidTo)
+INCLUDE (employee_id, name, salary);
+
+-- 3. History table indexes
+CREATE INDEX IX_EmployeesHistory_EmployeeId_Period 
+ON EmployeesHistory (employee_id, ValidFrom, ValidTo);
+
+CREATE INDEX IX_EmployeesHistory_ValidFrom 
+ON EmployeesHistory (ValidFrom);
+
+-- 4. Filtered indexes for active records
+CREATE INDEX IX_Employees_Active 
+ON Employees (employee_id, department)
+WHERE ValidTo = '9999-12-31 23:59:59.9999999';
+```
+
+### Partitioning Historical Data
+```sql
+-- Partition history table by time periods
+CREATE PARTITION FUNCTION pf_EmployeeHistory (DATETIME2)
+AS RANGE RIGHT FOR VALUES 
+('2023-01-01', '2024-01-01', '2025-01-01');
+
+CREATE PARTITION SCHEME ps_EmployeeHistory
+AS PARTITION pf_EmployeeHistory
+TO (History2022, History2023, History2024, HistoryCurrent);
+
+-- Apply partitioning to history table
+ALTER TABLE EmployeesHistory 
+DROP PERIOD FOR SYSTEM_TIME;
+
+ALTER TABLE Employees 
+SET (SYSTEM_VERSIONING = OFF);
+
+-- Recreate with partitioning
+CREATE TABLE EmployeesHistory_New (
+    -- Same structure as main table
+    EmployeeId INT NOT NULL,
+    Name NVARCHAR(100) NOT NULL,
+    Department NVARCHAR(50),
+    Salary DECIMAL(10,2),
+    ValidFrom DATETIME2 NOT NULL,
+    ValidTo DATETIME2 NOT NULL
+) ON ps_EmployeeHistory(ValidFrom);
+
+-- Re-enable system versioning
+ALTER TABLE Employees 
+SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.EmployeesHistory_New));
+```
+
+## Data Retention and Cleanup
+
+### Automated History Cleanup
+```sql
+-- SQL Server: Temporal table retention policy
+ALTER TABLE Employees 
+SET (SYSTEM_VERSIONING = ON (
+    HISTORY_TABLE = dbo.EmployeesHistory,
+    HISTORY_RETENTION_PERIOD = 2 YEARS
+));
+
+-- Manual cleanup of old history
+DELETE FROM EmployeesHistory
+WHERE ValidTo < DATEADD(YEAR, -7, GETDATE());
+
+-- PostgreSQL: Cleanup function
+CREATE OR REPLACE FUNCTION cleanup_old_history(
+    retention_years INT DEFAULT 7
+) RETURNS INT AS $$
+DECLARE
+    deleted_count INT;
+    cutoff_date TIMESTAMP;
+BEGIN
+    cutoff_date := CURRENT_TIMESTAMP - (retention_years || ' years')::INTERVAL;
+    
+    DELETE FROM employees_history 
+    WHERE valid_to < cutoff_date;
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule cleanup job
+SELECT cron.schedule('cleanup-employee-history', '0 2 1 * *', 
+    'SELECT cleanup_old_history(7);');
+```
+
+## Application Integration
+
+### Temporal Data Access Layer
+```python
+class TemporalEmployeeRepository:
+    def __init__(self, connection):
+        self.conn = connection
+    
+    def get_current_employee(self, employee_id):
+        """Get current version of employee"""
+        query = "SELECT * FROM Employees WHERE employee_id = ?"
+        return self.conn.execute(query, (employee_id,)).fetchone()
+    
+    def get_employee_as_of(self, employee_id, as_of_date):
+        """Get employee as of specific date"""
+        query = """
+        SELECT * FROM Employees FOR SYSTEM_TIME AS OF ?
+        WHERE employee_id = ?
+        """
+        return self.conn.execute(query, (as_of_date, employee_id)).fetchone()
+    
+    def get_employee_history(self, employee_id, start_date=None, end_date=None):
+        """Get complete history of employee"""
+        if start_date and end_date:
+            query = """
+            SELECT * FROM Employees FOR SYSTEM_TIME BETWEEN ? AND ?
+            WHERE employee_id = ?
+            ORDER BY ValidFrom
+            """
+            return self.conn.execute(query, (start_date, end_date, employee_id)).fetchall()
+        else:
+            query = """
+            SELECT * FROM Employees FOR SYSTEM_TIME ALL
+            WHERE employee_id = ?
+            ORDER BY ValidFrom
+            """
+            return self.conn.execute(query, (employee_id,)).fetchall()
+    
+    def get_salary_changes(self, employee_id):
+        """Get salary change history"""
+        query = """
+        WITH SalaryChanges AS (
+            SELECT 
+                salary,
+                ValidFrom,
+                LAG(salary) OVER (ORDER BY ValidFrom) AS previous_salary
+            FROM Employees FOR SYSTEM_TIME ALL
+            WHERE employee_id = ?
+        )
+        SELECT 
+            salary,
+            previous_salary,
+            salary - previous_salary AS change_amount,
+            ValidFrom AS change_date
+        FROM SalaryChanges
+        WHERE previous_salary IS NOT NULL
+        ORDER BY ValidFrom
+        """
+        return self.conn.execute(query, (employee_id,)).fetchall()
+```
+
+### REST API for Temporal Data
+```python
+from flask import Flask, request, jsonify
+from datetime import datetime
+
+app = Flask(__name__)
+
+@app.route('/employees/<int:employee_id>')
+def get_employee(employee_id):
+    """Get current or historical employee data"""
+    as_of = request.args.get('as_of')
+    
+    if as_of:
+        # Parse date and get historical data
+        as_of_date = datetime.fromisoformat(as_of)
+        employee = repo.get_employee_as_of(employee_id, as_of_date)
+    else:
+        # Get current data
+        employee = repo.get_current_employee(employee_id)
+    
+    return jsonify(employee) if employee else ('', 404)
+
+@app.route('/employees/<int:employee_id>/history')
+def get_employee_history(employee_id):
+    """Get employee change history"""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if start_date:
+        start_date = datetime.fromisoformat(start_date)
+    if end_date:
+        end_date = datetime.fromisoformat(end_date)
+    
+    history = repo.get_employee_history(employee_id, start_date, end_date)
+    return jsonify(history)
+
+@app.route('/employees/<int:employee_id>/salary-changes')
+def get_salary_changes(employee_id):
+    """Get salary change history"""
+    changes = repo.get_salary_changes(employee_id)
+    return jsonify(changes)
+```
+
+## Use Cases and Benefits
+
+### Compliance and Auditing
+```sql
+-- Regulatory compliance queries
+-- Show all changes to sensitive data
+SELECT 
+    employee_id,
+    name,
+    salary,
+    ValidFrom AS change_date,
+    SYSTEM_USER AS changed_by  -- If tracking user context
+FROM Employees FOR SYSTEM_TIME ALL
+WHERE employee_id = 123
+ORDER BY ValidFrom;
+
+-- Audit trail for specific time period
+SELECT 
+    'Employee' AS entity_type,
+    employee_id AS entity_id,
+    'UPDATE' AS operation,
+    ValidFrom AS timestamp
+FROM Employees FOR SYSTEM_TIME ALL
+WHERE ValidFrom BETWEEN '2024-01-01' AND '2024-01-31'
+UNION ALL
+SELECT 
+    'Employee' AS entity_type,
+    employee_id AS entity_id,
+    'DELETE' AS operation,
+    ValidTo AS timestamp
+FROM EmployeesHistory
+WHERE ValidTo BETWEEN '2024-01-01' AND '2024-01-31'
+ORDER BY timestamp;
+```
+
+### Business Intelligence
+```sql
+-- Trend analysis over time
+SELECT 
+    department,
+    YEAR(ValidFrom) AS year,
+    MONTH(ValidFrom) AS month,
+    AVG(salary) AS avg_salary,
+    COUNT(*) AS headcount
+FROM Employees FOR SYSTEM_TIME ALL
+WHERE ValidFrom >= '2023-01-01'
+GROUP BY department, YEAR(ValidFrom), MONTH(ValidFrom)
+ORDER BY department, year, month;
+
+-- Point-in-time reporting
+DECLARE @ReportDate DATETIME2 = '2024-03-31 23:59:59';
+
+SELECT 
+    department,
+    COUNT(*) AS headcount,
+    AVG(salary) AS avg_salary,
+    SUM(salary) AS total_payroll
+FROM Employees FOR SYSTEM_TIME AS OF @ReportDate
+GROUP BY department;
+```
+
+## Best Practices
+
+### Design Considerations
+- Use temporal tables for audit requirements and compliance
+- Consider storage implications of keeping full history
+- Design appropriate retention policies
+- Index temporal columns for query performance
+- Plan for history table partitioning in high-volume scenarios
+
+### Performance Guidelines
+- Use filtered indexes for current data queries
+- Partition history tables by time periods
+- Implement data retention policies to manage storage
+- Monitor query patterns and optimize indexes accordingly
+- Consider read replicas for historical data analytics
+
+## Interview Tips
+
+- Understand the difference between system-versioned and application-time period tables
+- Know how to write temporal queries using FOR SYSTEM_TIME clause
+- Be familiar with bi-temporal concepts (valid time vs transaction time)
+- Understand performance implications and optimization strategies
+- Know use cases: auditing, compliance, trend analysis, point-in-time reporting
+- Practice writing queries for change tracking and historical analysis
+- Be aware of storage and maintenance considerations for temporal data

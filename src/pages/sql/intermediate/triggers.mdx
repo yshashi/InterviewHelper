@@ -1,0 +1,539 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are database triggers and how do you implement them?
+---
+
+# What are database triggers and how do you implement them?
+
+## Answer
+
+**Database triggers** are special stored procedures that automatically execute (or "fire") in response to specific database events such as INSERT, UPDATE, DELETE, or DDL operations. They run implicitly without being explicitly called.
+
+## Types of Triggers
+
+### By Timing
+- **BEFORE**: Executes before the triggering event
+- **AFTER**: Executes after the triggering event
+- **INSTEAD OF**: Replaces the triggering event (views only)
+
+### By Event
+- **INSERT**: Fires when new records are added
+- **UPDATE**: Fires when existing records are modified
+- **DELETE**: Fires when records are removed
+- **DDL**: Fires on schema changes (CREATE, ALTER, DROP)
+
+## Basic Trigger Syntax
+
+### MySQL Syntax
+```sql
+CREATE TRIGGER trigger_name
+    {BEFORE | AFTER} {INSERT | UPDATE | DELETE}
+    ON table_name
+    FOR EACH ROW
+BEGIN
+    -- Trigger logic
+END;
+```
+
+### SQL Server Syntax
+```sql
+CREATE TRIGGER trigger_name
+    ON table_name
+    {FOR | AFTER | INSTEAD OF} {INSERT, UPDATE, DELETE}
+AS
+BEGIN
+    -- Trigger logic
+END;
+```
+
+## Common Trigger Examples
+
+### 1. Audit Trail Trigger
+```sql
+-- Create audit table
+CREATE TABLE audit_log (
+    audit_id INT AUTO_INCREMENT PRIMARY KEY,
+    table_name VARCHAR(50),
+    operation VARCHAR(10),
+    record_id INT,
+    old_values JSON,
+    new_values JSON,
+    changed_by VARCHAR(100),
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Audit trigger for employee updates
+DELIMITER //
+CREATE TRIGGER employee_audit_trigger
+    AFTER UPDATE ON employees
+    FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (
+        table_name, operation, record_id, 
+        old_values, new_values, changed_by
+    ) VALUES (
+        'employees', 'UPDATE', NEW.employee_id,
+        JSON_OBJECT(
+            'name', OLD.name,
+            'salary', OLD.salary,
+            'department', OLD.department
+        ),
+        JSON_OBJECT(
+            'name', NEW.name,
+            'salary', NEW.salary,
+            'department', NEW.department
+        ),
+        USER()
+    );
+END //
+DELIMITER ;
+```
+
+### 2. Automatic Timestamp Updates
+```sql
+-- Update modified_at timestamp automatically
+DELIMITER //
+CREATE TRIGGER update_timestamp_trigger
+    BEFORE UPDATE ON products
+    FOR EACH ROW
+BEGIN
+    SET NEW.modified_at = CURRENT_TIMESTAMP;
+END //
+DELIMITER ;
+
+-- Usage example
+UPDATE products SET price = 29.99 WHERE product_id = 1;
+-- modified_at is automatically updated
+```
+
+### 3. Data Validation Trigger
+```sql
+-- Validate business rules before insert/update
+DELIMITER //
+CREATE TRIGGER validate_employee_trigger
+    BEFORE INSERT ON employees
+    FOR EACH ROW
+BEGIN
+    -- Validate salary range
+    IF NEW.salary < 0 OR NEW.salary > 1000000 THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Salary must be between 0 and 1,000,000';
+    END IF;
+    
+    -- Validate email format
+    IF NEW.email NOT REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Invalid email format';
+    END IF;
+    
+    -- Validate hire date
+    IF NEW.hire_date > CURRENT_DATE THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Hire date cannot be in the future';
+    END IF;
+END //
+DELIMITER ;
+```
+
+### 4. Inventory Management Trigger
+```sql
+-- Automatically update inventory when orders are placed
+DELIMITER //
+CREATE TRIGGER update_inventory_trigger
+    AFTER INSERT ON order_items
+    FOR EACH ROW
+BEGIN
+    DECLARE current_stock INT;
+    
+    -- Get current stock
+    SELECT quantity INTO current_stock
+    FROM inventory
+    WHERE product_id = NEW.product_id;
+    
+    -- Check if sufficient stock
+    IF current_stock < NEW.quantity THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Insufficient inventory';
+    END IF;
+    
+    -- Update inventory
+    UPDATE inventory 
+    SET quantity = quantity - NEW.quantity,
+        last_updated = CURRENT_TIMESTAMP
+    WHERE product_id = NEW.product_id;
+    
+    -- Log inventory change
+    INSERT INTO inventory_log (
+        product_id, change_type, quantity_change, 
+        reason, changed_at
+    ) VALUES (
+        NEW.product_id, 'DECREASE', -NEW.quantity,
+        CONCAT('Order #', NEW.order_id), CURRENT_TIMESTAMP
+    );
+END //
+DELIMITER ;
+```
+
+## Advanced Trigger Patterns
+
+### 5. Cascading Updates with Triggers
+```sql
+-- Update related tables when customer information changes
+DELIMITER //
+CREATE TRIGGER customer_update_cascade
+    AFTER UPDATE ON customers
+    FOR EACH ROW
+BEGIN
+    -- Update customer name in orders table if changed
+    IF OLD.customer_name != NEW.customer_name THEN
+        UPDATE orders 
+        SET customer_name = NEW.customer_name
+        WHERE customer_id = NEW.customer_id;
+    END IF;
+    
+    -- Update customer status in related tables
+    IF OLD.status != NEW.status THEN
+        UPDATE subscriptions 
+        SET customer_status = NEW.status
+        WHERE customer_id = NEW.customer_id;
+        
+        -- Log status change
+        INSERT INTO customer_status_log (
+            customer_id, old_status, new_status, changed_at
+        ) VALUES (
+            NEW.customer_id, OLD.status, NEW.status, CURRENT_TIMESTAMP
+        );
+    END IF;
+END //
+DELIMITER ;
+```
+
+### 6. Complex Business Logic Trigger
+```sql
+-- Calculate and update customer tier based on purchase history
+DELIMITER //
+CREATE TRIGGER update_customer_tier
+    AFTER INSERT ON orders
+    FOR EACH ROW
+BEGIN
+    DECLARE total_spent DECIMAL(12,2);
+    DECLARE order_count INT;
+    DECLARE new_tier VARCHAR(20);
+    
+    -- Calculate customer metrics
+    SELECT 
+        COUNT(*), 
+        COALESCE(SUM(order_total), 0)
+    INTO order_count, total_spent
+    FROM orders
+    WHERE customer_id = NEW.customer_id;
+    
+    -- Determine new tier
+    CASE 
+        WHEN total_spent >= 10000 AND order_count >= 20 THEN 
+            SET new_tier = 'PLATINUM';
+        WHEN total_spent >= 5000 AND order_count >= 10 THEN 
+            SET new_tier = 'GOLD';
+        WHEN total_spent >= 1000 AND order_count >= 5 THEN 
+            SET new_tier = 'SILVER';
+        ELSE 
+            SET new_tier = 'BRONZE';
+    END CASE;
+    
+    -- Update customer tier if changed
+    UPDATE customers 
+    SET tier = new_tier, tier_updated_at = CURRENT_TIMESTAMP
+    WHERE customer_id = NEW.customer_id 
+    AND (tier != new_tier OR tier IS NULL);
+    
+END //
+DELIMITER ;
+```
+
+## SQL Server Specific Features
+
+### 7. INSTEAD OF Triggers (Views)
+```sql
+-- Create a view combining multiple tables
+CREATE VIEW employee_details AS
+SELECT 
+    e.employee_id,
+    e.name,
+    e.email,
+    d.department_name,
+    p.position_title
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+JOIN positions p ON e.position_id = p.position_id;
+
+-- INSTEAD OF trigger to handle updates through the view
+CREATE TRIGGER update_employee_details
+    INSTEAD OF UPDATE ON employee_details
+AS
+BEGIN
+    -- Update employees table
+    UPDATE employees 
+    SET name = i.name, email = i.email
+    FROM employees e
+    JOIN inserted i ON e.employee_id = i.employee_id;
+    
+    -- Update department if changed
+    UPDATE employees 
+    SET department_id = d.department_id
+    FROM employees e
+    JOIN inserted i ON e.employee_id = i.employee_id
+    JOIN departments d ON i.department_name = d.department_name
+    WHERE e.department_id != d.department_id;
+END;
+```
+
+### 8. DDL Triggers
+```sql
+-- Audit schema changes
+CREATE TRIGGER audit_ddl_changes
+    ON DATABASE
+    FOR CREATE_TABLE, ALTER_TABLE, DROP_TABLE
+AS
+BEGIN
+    DECLARE @event_data XML = EVENTDATA();
+    
+    INSERT INTO ddl_audit_log (
+        event_type,
+        object_name,
+        object_type,
+        sql_command,
+        login_name,
+        event_time
+    ) VALUES (
+        @event_data.value('(/EVENT_INSTANCE/EventType)[1]', 'VARCHAR(50)'),
+        @event_data.value('(/EVENT_INSTANCE/ObjectName)[1]', 'VARCHAR(100)'),
+        @event_data.value('(/EVENT_INSTANCE/ObjectType)[1]', 'VARCHAR(50)'),
+        @event_data.value('(/EVENT_INSTANCE/TSQLCommand)[1]', 'NVARCHAR(MAX)'),
+        @event_data.value('(/EVENT_INSTANCE/LoginName)[1]', 'VARCHAR(100)'),
+        GETDATE()
+    );
+END;
+```
+
+## Trigger Performance Considerations
+
+### 9. Efficient Trigger Design
+```sql
+-- Inefficient: Processes all rows individually
+DELIMITER //
+CREATE TRIGGER inefficient_trigger
+    AFTER UPDATE ON orders
+    FOR EACH ROW
+BEGIN
+    -- This executes for every updated row
+    UPDATE customer_stats 
+    SET total_orders = (
+        SELECT COUNT(*) FROM orders WHERE customer_id = NEW.customer_id
+    )
+    WHERE customer_id = NEW.customer_id;
+END //
+DELIMITER ;
+
+-- Efficient: Batch processing (SQL Server style)
+CREATE TRIGGER efficient_trigger
+    ON orders
+    AFTER UPDATE
+AS
+BEGIN
+    -- Process all affected customers in one operation
+    UPDATE cs
+    SET total_orders = o.order_count,
+        total_spent = o.total_amount
+    FROM customer_stats cs
+    JOIN (
+        SELECT 
+            customer_id,
+            COUNT(*) as order_count,
+            SUM(order_total) as total_amount
+        FROM orders
+        WHERE customer_id IN (SELECT DISTINCT customer_id FROM inserted)
+        GROUP BY customer_id
+    ) o ON cs.customer_id = o.customer_id;
+END;
+```
+
+### 10. Conditional Trigger Execution
+```sql
+-- Only execute trigger logic when specific columns change
+DELIMITER //
+CREATE TRIGGER conditional_update_trigger
+    BEFORE UPDATE ON products
+    FOR EACH ROW
+BEGIN
+    -- Only process if price or category changed
+    IF OLD.price != NEW.price OR OLD.category_id != NEW.category_id THEN
+        
+        -- Update price history
+        IF OLD.price != NEW.price THEN
+            INSERT INTO price_history (
+                product_id, old_price, new_price, changed_at
+            ) VALUES (
+                NEW.product_id, OLD.price, NEW.price, CURRENT_TIMESTAMP
+            );
+        END IF;
+        
+        -- Update category statistics
+        IF OLD.category_id != NEW.category_id THEN
+            -- Decrease count in old category
+            UPDATE category_stats 
+            SET product_count = product_count - 1
+            WHERE category_id = OLD.category_id;
+            
+            -- Increase count in new category
+            UPDATE category_stats 
+            SET product_count = product_count + 1
+            WHERE category_id = NEW.category_id;
+        END IF;
+        
+    END IF;
+END //
+DELIMITER ;
+```
+
+## Error Handling in Triggers
+
+### 11. Robust Error Handling
+```sql
+DELIMITER //
+CREATE TRIGGER safe_order_trigger
+    BEFORE INSERT ON orders
+    FOR EACH ROW
+BEGIN
+    DECLARE customer_exists INT DEFAULT 0;
+    DECLARE customer_active INT DEFAULT 0;
+    
+    -- Declare error handler
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- Log error
+        INSERT INTO trigger_errors (
+            trigger_name, error_message, error_time
+        ) VALUES (
+            'safe_order_trigger', 
+            'Error processing order insert', 
+            CURRENT_TIMESTAMP
+        );
+        
+        -- Re-raise the error
+        RESIGNAL;
+    END;
+    
+    -- Validate customer exists and is active
+    SELECT COUNT(*), SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END)
+    INTO customer_exists, customer_active
+    FROM customers
+    WHERE customer_id = NEW.customer_id;
+    
+    IF customer_exists = 0 THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Customer does not exist';
+    END IF;
+    
+    IF customer_active = 0 THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Customer account is not active';
+    END IF;
+    
+    -- Set default values
+    IF NEW.order_date IS NULL THEN
+        SET NEW.order_date = CURRENT_DATE;
+    END IF;
+    
+    IF NEW.status IS NULL THEN
+        SET NEW.status = 'PENDING';
+    END IF;
+    
+END //
+DELIMITER ;
+```
+
+## Trigger Management
+
+### Viewing Triggers
+```sql
+-- MySQL: Show triggers
+SHOW TRIGGERS;
+SHOW TRIGGERS FROM database_name;
+SHOW TRIGGERS LIKE 'pattern%';
+
+-- Get trigger definition
+SHOW CREATE TRIGGER trigger_name;
+
+-- SQL Server: Query system views
+SELECT 
+    t.name as trigger_name,
+    t.type_desc,
+    t.is_disabled,
+    o.name as table_name
+FROM sys.triggers t
+JOIN sys.objects o ON t.parent_id = o.object_id;
+```
+
+### Disabling/Enabling Triggers
+```sql
+-- MySQL: Drop and recreate (no disable option)
+DROP TRIGGER IF EXISTS trigger_name;
+
+-- SQL Server: Disable/Enable
+ALTER TABLE table_name DISABLE TRIGGER trigger_name;
+ALTER TABLE table_name ENABLE TRIGGER trigger_name;
+
+-- Disable all triggers on a table
+ALTER TABLE table_name DISABLE TRIGGER ALL;
+```
+
+## Best Practices
+
+### 1. Keep Triggers Simple and Fast
+- Minimize complex logic in triggers
+- Avoid long-running operations
+- Use triggers for simple, atomic operations
+
+### 2. Avoid Recursive Triggers
+```sql
+-- Prevent infinite recursion
+DELIMITER //
+CREATE TRIGGER prevent_recursion
+    BEFORE UPDATE ON employees
+    FOR EACH ROW
+BEGIN
+    -- Check if trigger is already running
+    IF @trigger_running IS NULL THEN
+        SET @trigger_running = 1;
+        
+        -- Trigger logic here
+        
+        SET @trigger_running = NULL;
+    END IF;
+END //
+DELIMITER ;
+```
+
+### 3. Document Trigger Dependencies
+```sql
+-- Document what the trigger does and its dependencies
+/*
+Trigger: update_order_totals
+Purpose: Automatically calculate order totals when items are added/updated
+Dependencies: 
+- order_items table
+- products table (for pricing)
+- tax_rates table (for tax calculation)
+Tables affected:
+- orders (order_total, tax_amount)
+*/
+```
+
+## Interview Tips
+
+- Understand the different types of triggers and when to use each
+- Know the performance implications of triggers
+- Be familiar with trigger syntax for different database systems
+- Understand how triggers fit into transaction processing
+- Know best practices for trigger design and error handling
+- Be able to explain alternatives to triggers (stored procedures, application logic)

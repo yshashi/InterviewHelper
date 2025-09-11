@@ -1,0 +1,322 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between RANK(), DENSE_RANK(), and ROW_NUMBER()?
+---
+
+# What is the difference between RANK(), DENSE_RANK(), and ROW_NUMBER()?
+
+## Answer
+
+These are three window functions that assign sequential numbers to rows, but they handle ties (duplicate values) differently.
+
+## Key Differences
+
+| Function | Handles Ties | Gaps After Ties | Use Case |
+|----------|--------------|-----------------|----------|
+| **ROW_NUMBER()** | Assigns unique numbers | N/A | Unique sequential numbering |
+| **RANK()** | Same rank for ties | Creates gaps | Traditional ranking with gaps |
+| **DENSE_RANK()** | Same rank for ties | No gaps | Continuous ranking without gaps |
+
+## Sample Data
+
+```sql
+CREATE TABLE students (
+    student_id INT,
+    name VARCHAR(100),
+    score INT
+);
+
+INSERT INTO students VALUES 
+(1, 'Alice', 95),
+(2, 'Bob', 87),
+(3, 'Charlie', 92),
+(4, 'Diana', 87),    -- Tie with Bob
+(5, 'Eve', 87),      -- Tie with Bob and Diana
+(6, 'Frank', 78),
+(7, 'Grace', 92);    -- Tie with Charlie
+```
+
+## Function Comparisons
+
+### All Three Functions Together
+```sql
+SELECT 
+    name,
+    score,
+    ROW_NUMBER() OVER (ORDER BY score DESC) as row_num,
+    RANK() OVER (ORDER BY score DESC) as rank_func,
+    DENSE_RANK() OVER (ORDER BY score DESC) as dense_rank_func
+FROM students
+ORDER BY score DESC, name;
+
+-- Result:
+-- name    | score | row_num | rank_func | dense_rank_func
+-- Alice   | 95    | 1       | 1         | 1
+-- Charlie | 92    | 2       | 2         | 2
+-- Grace   | 92    | 3       | 2         | 2  (tie)
+-- Bob     | 87    | 4       | 4         | 3  (RANK skips 3)
+-- Diana   | 87    | 5       | 4         | 3  (tie)
+-- Eve     | 87    | 6       | 4         | 3  (tie)
+-- Frank   | 78    | 7       | 7         | 4  (RANK skips 5,6)
+```
+
+## ROW_NUMBER()
+
+**Purpose**: Assigns a unique sequential integer to each row.
+
+### Characteristics:
+- **Always unique** - No two rows get the same number
+- **Deterministic with ORDER BY** - Same order produces same numbers
+- **Arbitrary for ties** - Ties get different numbers (order depends on implementation)
+
+```sql
+-- Basic ROW_NUMBER usage
+SELECT 
+    name,
+    score,
+    ROW_NUMBER() OVER (ORDER BY score DESC) as position
+FROM students;
+
+-- ROW_NUMBER with PARTITION BY
+SELECT 
+    name,
+    score,
+    grade_level,
+    ROW_NUMBER() OVER (PARTITION BY grade_level ORDER BY score DESC) as rank_in_grade
+FROM students;
+
+-- Pagination using ROW_NUMBER
+SELECT name, score
+FROM (
+    SELECT 
+        name, 
+        score,
+        ROW_NUMBER() OVER (ORDER BY score DESC) as rn
+    FROM students
+) ranked
+WHERE rn BETWEEN 3 AND 5;  -- Get rows 3-5
+```
+
+## RANK()
+
+**Purpose**: Assigns the same rank to tied values, with gaps in subsequent rankings.
+
+### Characteristics:
+- **Ties get same rank** - Equal values receive identical ranks
+- **Creates gaps** - Next rank skips numbers equal to tie count
+- **Traditional ranking** - Like Olympic medal rankings
+
+```sql
+-- Basic RANK usage
+SELECT 
+    name,
+    score,
+    RANK() OVER (ORDER BY score DESC) as rank_position
+FROM students;
+
+-- Find top 3 unique scores (handles ties)
+SELECT DISTINCT
+    score,
+    RANK() OVER (ORDER BY score DESC) as rank_position
+FROM students
+WHERE RANK() OVER (ORDER BY score DESC) <= 3;
+
+-- Rank within departments
+SELECT 
+    employee_name,
+    department,
+    salary,
+    RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank
+FROM employees;
+```
+
+## DENSE_RANK()
+
+**Purpose**: Assigns the same rank to tied values, without gaps in subsequent rankings.
+
+### Characteristics:
+- **Ties get same rank** - Equal values receive identical ranks
+- **No gaps** - Next rank is always consecutive
+- **Continuous sequence** - Like academic grading systems
+
+```sql
+-- Basic DENSE_RANK usage
+SELECT 
+    name,
+    score,
+    DENSE_RANK() OVER (ORDER BY score DESC) as dense_rank_position
+FROM students;
+
+-- Find students in top 3 score categories
+SELECT name, score
+FROM (
+    SELECT 
+        name, 
+        score,
+        DENSE_RANK() OVER (ORDER BY score DESC) as dr
+    FROM students
+) ranked
+WHERE dr <= 3;  -- Gets all students with top 3 distinct scores
+
+-- Quartile ranking
+SELECT 
+    name,
+    score,
+    DENSE_RANK() OVER (ORDER BY score DESC) as rank_pos,
+    CASE 
+        WHEN DENSE_RANK() OVER (ORDER BY score DESC) <= 2 THEN 'Top Tier'
+        WHEN DENSE_RANK() OVER (ORDER BY score DESC) <= 4 THEN 'Middle Tier'
+        ELSE 'Lower Tier'
+    END as tier
+FROM students;
+```
+
+## Practical Use Cases
+
+### 1. E-commerce Product Ranking
+```sql
+-- Product popularity ranking
+SELECT 
+    product_name,
+    total_sales,
+    ROW_NUMBER() OVER (ORDER BY total_sales DESC) as sales_position,
+    RANK() OVER (ORDER BY total_sales DESC) as sales_rank,
+    DENSE_RANK() OVER (ORDER BY total_sales DESC) as sales_category
+FROM (
+    SELECT 
+        product_name,
+        SUM(quantity * price) as total_sales
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+    GROUP BY product_name
+) product_sales;
+```
+
+### 2. Employee Performance Evaluation
+```sql
+-- Performance ranking by department
+SELECT 
+    employee_name,
+    department,
+    performance_score,
+    RANK() OVER (
+        PARTITION BY department 
+        ORDER BY performance_score DESC
+    ) as dept_rank,
+    DENSE_RANK() OVER (
+        ORDER BY performance_score DESC
+    ) as company_rank
+FROM employee_performance
+WHERE evaluation_year = 2024;
+```
+
+### 3. Sales Leaderboard
+```sql
+-- Monthly sales ranking
+WITH monthly_sales AS (
+    SELECT 
+        salesperson_id,
+        salesperson_name,
+        SUM(sale_amount) as monthly_total
+    FROM sales
+    WHERE MONTH(sale_date) = MONTH(CURRENT_DATE)
+    GROUP BY salesperson_id, salesperson_name
+)
+SELECT 
+    salesperson_name,
+    monthly_total,
+    ROW_NUMBER() OVER (ORDER BY monthly_total DESC) as position,
+    RANK() OVER (ORDER BY monthly_total DESC) as rank_with_ties,
+    CASE 
+        WHEN DENSE_RANK() OVER (ORDER BY monthly_total DESC) = 1 THEN 'Gold'
+        WHEN DENSE_RANK() OVER (ORDER BY monthly_total DESC) = 2 THEN 'Silver'
+        WHEN DENSE_RANK() OVER (ORDER BY monthly_total DESC) = 3 THEN 'Bronze'
+        ELSE 'Participant'
+    END as medal_category
+FROM monthly_sales;
+```
+
+## When to Use Each Function
+
+### Use ROW_NUMBER() when:
+- Need unique sequential numbers for each row
+- Implementing pagination
+- Breaking ties arbitrarily is acceptable
+- Creating unique identifiers for duplicate data
+
+```sql
+-- Pagination example
+SELECT * FROM (
+    SELECT 
+        product_name,
+        price,
+        ROW_NUMBER() OVER (ORDER BY price DESC) as rn
+    FROM products
+) ranked
+WHERE rn BETWEEN 21 AND 30;  -- Page 3 (10 items per page)
+```
+
+### Use RANK() when:
+- Traditional ranking system is needed
+- Gaps after ties are acceptable/desired
+- Following sports/competition ranking conventions
+- Need to know how many items are better than current item
+
+```sql
+-- Olympic-style ranking
+SELECT 
+    athlete_name,
+    score,
+    RANK() OVER (ORDER BY score DESC) as olympic_rank,
+    CASE 
+        WHEN RANK() OVER (ORDER BY score DESC) = 1 THEN 'Gold Medal'
+        WHEN RANK() OVER (ORDER BY score DESC) = 2 THEN 'Silver Medal'
+        WHEN RANK() OVER (ORDER BY score DESC) = 3 THEN 'Bronze Medal'
+        ELSE 'No Medal'
+    END as medal
+FROM competition_results;
+```
+
+### Use DENSE_RANK() when:
+- Need continuous ranking without gaps
+- Categorizing into performance tiers
+- Academic grading systems
+- Want to know distinct performance levels
+
+```sql
+-- Academic grade categories
+SELECT 
+    student_name,
+    final_score,
+    DENSE_RANK() OVER (ORDER BY final_score DESC) as performance_level,
+    CASE 
+        WHEN DENSE_RANK() OVER (ORDER BY final_score DESC) <= 2 THEN 'A'
+        WHEN DENSE_RANK() OVER (ORDER BY final_score DESC) <= 4 THEN 'B'
+        WHEN DENSE_RANK() OVER (ORDER BY final_score DESC) <= 6 THEN 'C'
+        ELSE 'D'
+    END as letter_grade
+FROM student_scores;
+```
+
+## Performance Considerations
+
+```sql
+-- Ensure proper indexing for ranking functions
+CREATE INDEX idx_students_score ON students(score DESC);
+
+-- Efficient ranking query
+SELECT 
+    name,
+    score,
+    RANK() OVER (ORDER BY score DESC) as rank_pos
+FROM students
+WHERE score >= 80;  -- Filter before ranking when possible
+```
+
+## Interview Tips
+
+- Remember: ROW_NUMBER() is always unique, RANK() has gaps, DENSE_RANK() has no gaps
+- Understand how each handles ties differently
+- Know when to use each function based on business requirements
+- Practice with examples that have multiple ties
+- Be able to explain the gap behavior in RANK() vs DENSE_RANK()

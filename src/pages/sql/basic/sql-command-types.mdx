@@ -1,0 +1,170 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are the different types of SQL commands?
+---
+
+# What are the different types of SQL commands?
+
+## Answer
+
+SQL commands are categorized into five main types based on their functionality and purpose. Each type serves a specific role in database management and operations.
+
+## 1. DDL (Data Definition Language)
+
+**Purpose**: Define and modify database structure and schema.
+
+### Commands:
+- **CREATE** - Creates new database objects
+- **ALTER** - Modifies existing database objects
+- **DROP** - Deletes database objects
+- **TRUNCATE** - Removes all data from a table (structure remains)
+
+```sql
+-- CREATE examples
+CREATE DATABASE company_db;
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    hire_date DATE
+);
+
+-- ALTER examples
+ALTER TABLE employees ADD COLUMN email VARCHAR(100);
+ALTER TABLE employees MODIFY COLUMN first_name VARCHAR(75);
+
+-- DROP examples
+DROP TABLE employees;
+DROP DATABASE company_db;
+
+-- TRUNCATE example
+TRUNCATE TABLE employees; -- Removes all rows, keeps structure
+```
+
+## 2. DML (Data Manipulation Language)
+
+**Purpose**: Manipulate data within existing database objects.
+
+### Commands:
+- **INSERT** - Adds new records
+- **UPDATE** - Modifies existing records
+- **DELETE** - Removes specific records
+
+```sql
+-- INSERT examples
+INSERT INTO employees (emp_id, first_name, last_name, hire_date)
+VALUES (1, 'John', 'Doe', '2023-01-15');
+
+INSERT INTO employees (emp_id, first_name, last_name)
+VALUES 
+    (2, 'Jane', 'Smith'),
+    (3, 'Mike', 'Johnson');
+
+-- UPDATE examples
+UPDATE employees 
+SET email = 'john.doe@company.com' 
+WHERE emp_id = 1;
+
+UPDATE employees 
+SET hire_date = '2023-02-01' 
+WHERE first_name = 'Jane';
+
+-- DELETE examples
+DELETE FROM employees WHERE emp_id = 3;
+DELETE FROM employees WHERE hire_date < '2023-01-01';
+```
+
+## 3. DQL (Data Query Language)
+
+**Purpose**: Retrieve and query data from database objects.
+
+### Commands:
+- **SELECT** - Retrieves data from one or more tables
+
+```sql
+-- Basic SELECT examples
+SELECT * FROM employees;
+SELECT first_name, last_name FROM employees;
+SELECT * FROM employees WHERE hire_date > '2023-01-01';
+
+-- Advanced SELECT with JOINs
+SELECT e.first_name, e.last_name, d.department_name
+FROM employees e
+JOIN departments d ON e.dept_id = d.dept_id;
+
+-- SELECT with aggregation
+SELECT COUNT(*) as total_employees FROM employees;
+SELECT AVG(salary) as average_salary FROM employees;
+```
+
+## 4. DCL (Data Control Language)
+
+**Purpose**: Control access permissions and security.
+
+### Commands:
+- **GRANT** - Provides specific privileges to users
+- **REVOKE** - Removes specific privileges from users
+
+```sql
+-- GRANT examples
+GRANT SELECT ON employees TO user1;
+GRANT INSERT, UPDATE ON employees TO user2;
+GRANT ALL PRIVILEGES ON company_db.* TO admin_user;
+
+-- REVOKE examples
+REVOKE INSERT ON employees FROM user2;
+REVOKE ALL PRIVILEGES ON company_db.* FROM admin_user;
+```
+
+## 5. TCL (Transaction Control Language)
+
+**Purpose**: Manage database transactions and ensure data integrity.
+
+### Commands:
+- **BEGIN/START TRANSACTION** - Starts a new transaction
+- **COMMIT** - Saves all changes made in the current transaction
+- **ROLLBACK** - Undoes all changes made in the current transaction
+- **SAVEPOINT** - Creates a point within a transaction to rollback to
+
+```sql
+-- Transaction example
+BEGIN TRANSACTION;
+
+INSERT INTO employees (emp_id, first_name, last_name)
+VALUES (4, 'Sarah', 'Wilson');
+
+SAVEPOINT sp1;
+
+UPDATE employees SET email = 'sarah.wilson@company.com' WHERE emp_id = 4;
+
+-- If something goes wrong, rollback to savepoint
+ROLLBACK TO sp1;
+
+-- Or commit all changes
+COMMIT;
+```
+
+## Command Categories Summary
+
+| Category | Purpose | Key Commands | When to Use |
+|----------|---------|--------------|-------------|
+| **DDL** | Structure Definition | CREATE, ALTER, DROP, TRUNCATE | Database design, schema changes |
+| **DML** | Data Manipulation | INSERT, UPDATE, DELETE | Daily data operations |
+| **DQL** | Data Querying | SELECT | Data retrieval and reporting |
+| **DCL** | Access Control | GRANT, REVOKE | Security and user management |
+| **TCL** | Transaction Control | COMMIT, ROLLBACK, SAVEPOINT | Data integrity and consistency |
+
+## Interview Tips
+
+1. **Remember the acronyms**: DDL, DML, DQL, DCL, TCL
+2. **Understand the purpose**: Each category serves a specific database function
+3. **Know the commands**: Memorize the main commands in each category
+4. **Practice examples**: Be able to write basic examples for each command type
+5. **Understand relationships**: Know how these commands work together in database operations
+
+## Common Interview Questions
+
+- "What's the difference between DELETE and TRUNCATE?"
+- "When would you use ROLLBACK vs COMMIT?"
+- "What permissions does GRANT provide?"
+- "How do DDL and DML commands differ?"

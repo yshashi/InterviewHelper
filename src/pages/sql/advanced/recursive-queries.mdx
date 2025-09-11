@@ -1,0 +1,535 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are recursive queries and how do you implement them?
+---
+
+# What are recursive queries and how do you implement them?
+
+## Answer
+
+**Recursive queries** use Common Table Expressions (CTEs) to reference themselves, enabling traversal of hierarchical or tree-structured data. They're essential for handling organizational charts, bill of materials, category trees, and graph-like data structures.
+
+## Basic Recursive CTE Structure
+
+```sql
+WITH RECURSIVE cte_name AS (
+    -- Anchor member (base case)
+    SELECT initial_columns
+    FROM base_table
+    WHERE base_condition
+    
+    UNION ALL
+    
+    -- Recursive member (recursive case)
+    SELECT recursive_columns
+    FROM base_table
+    JOIN cte_name ON join_condition
+    WHERE recursive_condition
+)
+SELECT * FROM cte_name;
+```
+
+## Employee Hierarchy Example
+
+### Sample Data Structure
+```sql
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    manager_id INT,
+    department VARCHAR(50),
+    salary DECIMAL(10,2),
+    hire_date DATE
+);
+
+INSERT INTO employees VALUES
+(1, 'John CEO', NULL, 'Executive', 200000, '2020-01-01'),
+(2, 'Jane VP Sales', 1, 'Sales', 150000, '2020-02-01'),
+(3, 'Mike VP Tech', 1, 'Technology', 160000, '2020-02-15'),
+(4, 'Sarah Sales Mgr', 2, 'Sales', 90000, '2020-03-01'),
+(5, 'Tom Dev Lead', 3, 'Technology', 120000, '2020-03-15'),
+(6, 'Lisa Sales Rep', 4, 'Sales', 60000, '2020-04-01'),
+(7, 'Bob Developer', 5, 'Technology', 80000, '2020-04-15'),
+(8, 'Alice Developer', 5, 'Technology', 85000, '2020-05-01');
+```
+
+### Find All Subordinates
+```sql
+-- Get all employees under a specific manager
+WITH RECURSIVE subordinates AS (
+    -- Anchor: Start with the target manager
+    SELECT 
+        employee_id,
+        name,
+        manager_id,
+        department,
+        salary,
+        0 as level,
+        CAST(name AS VARCHAR(1000)) as hierarchy_path
+    FROM employees
+    WHERE employee_id = 2  -- Jane VP Sales
+    
+    UNION ALL
+    
+    -- Recursive: Find direct and indirect reports
+    SELECT 
+        e.employee_id,
+        e.name,
+        e.manager_id,
+        e.department,
+        e.salary,
+        s.level + 1,
+        CONCAT(s.hierarchy_path, ' -> ', e.name)
+    FROM employees e
+    JOIN subordinates s ON e.manager_id = s.employee_id
+)
+SELECT 
+    employee_id,
+    name,
+    department,
+    salary,
+    level,
+    hierarchy_path
+FROM subordinates
+ORDER BY level, name;
+```
+
+### Find Management Chain
+```sql
+-- Get management chain for a specific employee
+WITH RECURSIVE management_chain AS (
+    -- Anchor: Start with target employee
+    SELECT 
+        employee_id,
+        name,
+        manager_id,
+        department,
+        0 as level_up,
+        name as chain
+    FROM employees
+    WHERE employee_id = 7  -- Bob Developer
+    
+    UNION ALL
+    
+    -- Recursive: Go up the management chain
+    SELECT 
+        e.employee_id,
+        e.name,
+        e.manager_id,
+        e.department,
+        mc.level_up + 1,
+        CONCAT(e.name, ' -> ', mc.chain)
+    FROM employees e
+    JOIN management_chain mc ON e.employee_id = mc.manager_id
+)
+SELECT 
+    name,
+    department,
+    level_up,
+    chain as management_chain
+FROM management_chain
+ORDER BY level_up DESC;
+```
+
+## Category Tree Navigation
+
+### Product Category Hierarchy
+```sql
+CREATE TABLE categories (
+    category_id INT PRIMARY KEY,
+    category_name VARCHAR(100),
+    parent_category_id INT,
+    description TEXT
+);
+
+INSERT INTO categories VALUES
+(1, 'Electronics', NULL, 'All electronic products'),
+(2, 'Computers', 1, 'Computing devices'),
+(3, 'Mobile Devices', 1, 'Portable electronic devices'),
+(4, 'Laptops', 2, 'Portable computers'),
+(5, 'Desktops', 2, 'Desktop computers'),
+(6, 'Smartphones', 3, 'Smart mobile phones'),
+(7, 'Tablets', 3, 'Tablet devices'),
+(8, 'Gaming Laptops', 4, 'High-performance gaming laptops'),
+(9, 'Business Laptops', 4, 'Professional laptops');
+
+-- Get all subcategories under Electronics
+WITH RECURSIVE category_tree AS (
+    -- Anchor: Root category
+    SELECT 
+        category_id,
+        category_name,
+        parent_category_id,
+        0 as depth,
+        category_name as path
+    FROM categories
+    WHERE category_id = 1  -- Electronics
+    
+    UNION ALL
+    
+    -- Recursive: Get all child categories
+    SELECT 
+        c.category_id,
+        c.category_name,
+        c.parent_category_id,
+        ct.depth + 1,
+        CONCAT(ct.path, ' > ', c.category_name)
+    FROM categories c
+    JOIN category_tree ct ON c.parent_category_id = ct.category_id
+)
+SELECT 
+    category_id,
+    REPEAT('  ', depth) || category_name as indented_name,
+    depth,
+    path
+FROM category_tree
+ORDER BY path;
+```
+
+## Bill of Materials (BOM)
+
+### Manufacturing Components
+```sql
+CREATE TABLE parts (
+    part_id VARCHAR(20) PRIMARY KEY,
+    part_name VARCHAR(100),
+    unit_cost DECIMAL(8,2)
+);
+
+CREATE TABLE bill_of_materials (
+    parent_part_id VARCHAR(20),
+    child_part_id VARCHAR(20),
+    quantity_required INT,
+    PRIMARY KEY (parent_part_id, child_part_id)
+);
+
+-- Sample data
+INSERT INTO parts VALUES
+('BIKE-001', 'Mountain Bike', 500.00),
+('FRAME-001', 'Bike Frame', 150.00),
+('WHEEL-001', 'Front Wheel', 75.00),
+('WHEEL-002', 'Rear Wheel', 80.00),
+('TIRE-001', 'Bike Tire', 25.00),
+('RIM-001', 'Wheel Rim', 30.00),
+('SPOKE-001', 'Wheel Spoke', 2.00);
+
+INSERT INTO bill_of_materials VALUES
+('BIKE-001', 'FRAME-001', 1),
+('BIKE-001', 'WHEEL-001', 1),
+('BIKE-001', 'WHEEL-002', 1),
+('WHEEL-001', 'TIRE-001', 1),
+('WHEEL-001', 'RIM-001', 1),
+('WHEEL-001', 'SPOKE-001', 32),
+('WHEEL-002', 'TIRE-001', 1),
+('WHEEL-002', 'RIM-001', 1),
+('WHEEL-002', 'SPOKE-001', 32);
+
+-- Calculate total cost breakdown
+WITH RECURSIVE bom_explosion AS (
+    -- Anchor: Top-level product
+    SELECT 
+        parent_part_id,
+        child_part_id,
+        quantity_required,
+        0 as level,
+        CAST(child_part_id AS VARCHAR(500)) as path
+    FROM bill_of_materials
+    WHERE parent_part_id = 'BIKE-001'
+    
+    UNION ALL
+    
+    -- Recursive: Explode sub-assemblies
+    SELECT 
+        bom.parent_part_id,
+        bom.child_part_id,
+        be.quantity_required * bom.quantity_required,
+        be.level + 1,
+        CONCAT(be.path, ' -> ', bom.child_part_id)
+    FROM bill_of_materials bom
+    JOIN bom_explosion be ON bom.parent_part_id = be.child_part_id
+)
+SELECT 
+    be.child_part_id,
+    p.part_name,
+    be.quantity_required,
+    p.unit_cost,
+    be.quantity_required * p.unit_cost as total_cost,
+    be.level,
+    be.path
+FROM bom_explosion be
+JOIN parts p ON be.child_part_id = p.part_id
+ORDER BY be.level, be.child_part_id;
+```
+
+## Graph Traversal
+
+### Social Network Connections
+```sql
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    username VARCHAR(50),
+    email VARCHAR(100)
+);
+
+CREATE TABLE friendships (
+    user_id INT,
+    friend_id INT,
+    created_date DATE,
+    PRIMARY KEY (user_id, friend_id)
+);
+
+-- Find friends of friends (2nd degree connections)
+WITH RECURSIVE friend_network AS (
+    -- Anchor: Direct friends
+    SELECT 
+        user_id,
+        friend_id,
+        1 as degree,
+        CAST(CONCAT(user_id, '->', friend_id) AS VARCHAR(1000)) as path
+    FROM friendships
+    WHERE user_id = 1
+    
+    UNION ALL
+    
+    -- Recursive: Friends of friends
+    SELECT 
+        fn.user_id,
+        f.friend_id,
+        fn.degree + 1,
+        CONCAT(fn.path, '->', f.friend_id)
+    FROM friend_network fn
+    JOIN friendships f ON fn.friend_id = f.user_id
+    WHERE fn.degree < 3  -- Limit to 3 degrees of separation
+    AND f.friend_id != fn.user_id  -- Avoid cycles back to original user
+)
+SELECT DISTINCT
+    fn.friend_id,
+    u.username,
+    MIN(fn.degree) as closest_degree,
+    COUNT(*) as connection_paths
+FROM friend_network fn
+JOIN users u ON fn.friend_id = u.user_id
+WHERE fn.friend_id != 1  -- Exclude the original user
+GROUP BY fn.friend_id, u.username
+ORDER BY closest_degree, u.username;
+```
+
+## Advanced Recursive Patterns
+
+### Path Finding with Costs
+```sql
+CREATE TABLE locations (
+    location_id INT PRIMARY KEY,
+    location_name VARCHAR(100)
+);
+
+CREATE TABLE routes (
+    from_location INT,
+    to_location INT,
+    distance INT,
+    travel_time INT
+);
+
+-- Find shortest path between two locations
+WITH RECURSIVE shortest_path AS (
+    -- Anchor: Starting location
+    SELECT 
+        from_location,
+        to_location,
+        distance,
+        travel_time,
+        1 as hop_count,
+        CAST(CONCAT(from_location, '->', to_location) AS VARCHAR(1000)) as path,
+        distance as total_distance,
+        travel_time as total_time
+    FROM routes
+    WHERE from_location = 1  -- Starting point
+    
+    UNION ALL
+    
+    -- Recursive: Extend paths
+    SELECT 
+        sp.from_location,
+        r.to_location,
+        r.distance,
+        r.travel_time,
+        sp.hop_count + 1,
+        CONCAT(sp.path, '->', r.to_location),
+        sp.total_distance + r.distance,
+        sp.total_time + r.travel_time
+    FROM shortest_path sp
+    JOIN routes r ON sp.to_location = r.from_location
+    WHERE sp.hop_count < 5  -- Prevent infinite loops
+    AND sp.path NOT LIKE CONCAT('%', r.to_location, '%')  -- Avoid cycles
+)
+SELECT 
+    to_location as destination,
+    MIN(total_distance) as shortest_distance,
+    MIN(total_time) as fastest_time
+FROM shortest_path
+WHERE to_location = 10  -- Destination
+GROUP BY to_location;
+```
+
+### Recursive Aggregations
+```sql
+-- Calculate running totals in hierarchical data
+WITH RECURSIVE sales_hierarchy AS (
+    -- Anchor: Top-level regions
+    SELECT 
+        region_id,
+        region_name,
+        parent_region_id,
+        sales_amount,
+        0 as level
+    FROM sales_regions
+    WHERE parent_region_id IS NULL
+    
+    UNION ALL
+    
+    -- Recursive: Child regions
+    SELECT 
+        sr.region_id,
+        sr.region_name,
+        sr.parent_region_id,
+        sr.sales_amount,
+        sh.level + 1
+    FROM sales_regions sr
+    JOIN sales_hierarchy sh ON sr.parent_region_id = sh.region_id
+),
+region_totals AS (
+    SELECT 
+        region_id,
+        region_name,
+        level,
+        sales_amount,
+        (SELECT SUM(sales_amount) 
+         FROM sales_hierarchy sh2 
+         WHERE sh2.region_id = sh1.region_id 
+         OR sh2.parent_region_id = sh1.region_id) as total_including_children
+    FROM sales_hierarchy sh1
+)
+SELECT * FROM region_totals ORDER BY level, region_name;
+```
+
+## Performance Considerations
+
+### Limiting Recursion Depth
+```sql
+-- PostgreSQL: Set recursion limit
+SET max_stack_depth = '2MB';
+
+-- SQL Server: Use MAXRECURSION hint
+WITH RECURSIVE hierarchy AS (
+    -- Base case
+    SELECT employee_id, name, manager_id, 0 as level
+    FROM employees
+    WHERE manager_id IS NULL
+    
+    UNION ALL
+    
+    -- Recursive case
+    SELECT e.employee_id, e.name, e.manager_id, h.level + 1
+    FROM employees e
+    JOIN hierarchy h ON e.manager_id = h.employee_id
+    WHERE h.level < 10  -- Explicit depth limit
+)
+SELECT * FROM hierarchy
+OPTION (MAXRECURSION 100);  -- SQL Server syntax
+```
+
+### Optimizing Recursive Queries
+```sql
+-- Create appropriate indexes
+CREATE INDEX IX_employees_manager_id ON employees(manager_id);
+CREATE INDEX IX_categories_parent_id ON categories(parent_category_id);
+
+-- Use breadth-first vs depth-first traversal
+WITH RECURSIVE breadth_first AS (
+    SELECT employee_id, name, manager_id, 0 as level
+    FROM employees
+    WHERE employee_id = 1
+    
+    UNION ALL
+    
+    SELECT e.employee_id, e.name, e.manager_id, bf.level + 1
+    FROM employees e
+    JOIN breadth_first bf ON e.manager_id = bf.employee_id
+)
+SELECT * FROM breadth_first ORDER BY level, employee_id;
+```
+
+## Database-Specific Implementations
+
+### PostgreSQL
+```sql
+-- PostgreSQL supports RECURSIVE keyword
+WITH RECURSIVE t(n) AS (
+    VALUES (1)
+    UNION ALL
+    SELECT n+1 FROM t WHERE n < 100
+)
+SELECT * FROM t;
+```
+
+### SQL Server
+```sql
+-- SQL Server uses CTE without RECURSIVE keyword
+WITH hierarchy AS (
+    SELECT employee_id, name, manager_id, 0 as level
+    FROM employees
+    WHERE manager_id IS NULL
+    
+    UNION ALL
+    
+    SELECT e.employee_id, e.name, e.manager_id, h.level + 1
+    FROM employees e
+    INNER JOIN hierarchy h ON e.manager_id = h.employee_id
+)
+SELECT * FROM hierarchy;
+```
+
+### MySQL
+```sql
+-- MySQL 8.0+ supports recursive CTEs
+WITH RECURSIVE fibonacci AS (
+    SELECT 1 as n, 0 as fib_n, 1 as fib_n1
+    UNION ALL
+    SELECT n + 1, fib_n1, fib_n + fib_n1
+    FROM fibonacci
+    WHERE n < 10
+)
+SELECT n, fib_n as fibonacci_number FROM fibonacci;
+```
+
+## Common Use Cases
+
+### 1. Organizational Charts
+- Employee hierarchies
+- Department structures
+- Reporting relationships
+
+### 2. Product Catalogs
+- Category trees
+- Product classifications
+- Nested menus
+
+### 3. Geographic Hierarchies
+- Country > State > City > District
+- Sales territories
+- Administrative divisions
+
+### 4. Financial Structures
+- Account hierarchies
+- Cost center rollups
+- Budget allocations
+
+## Interview Tips
+
+- Understand the anchor and recursive member concepts
+- Know how to prevent infinite loops with depth limits
+- Be familiar with cycle detection techniques
+- Practice common hierarchical data scenarios
+- Understand performance implications of recursive queries
+- Know database-specific syntax differences
+- Be able to explain when to use recursive vs iterative approaches

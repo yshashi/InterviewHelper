@@ -1,0 +1,234 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between DELETE, DROP, and TRUNCATE?
+---
+
+# What is the difference between DELETE, DROP, and TRUNCATE?
+
+## Answer
+
+DELETE, DROP, and TRUNCATE are SQL commands that remove data, but they operate at different levels and have distinct characteristics.
+
+## DELETE Command
+
+**Purpose**: Removes specific rows from a table based on conditions.
+
+### Characteristics:
+- **DML command** - Data Manipulation Language
+- **Row-level operation** - Can delete specific rows
+- **Conditional** - Uses WHERE clause for filtering
+- **Transactional** - Can be rolled back
+- **Triggers** - Fires DELETE triggers
+- **Slower** - Logs each row deletion
+
+```sql
+-- Delete specific rows
+DELETE FROM employees WHERE department = 'Marketing';
+
+-- Delete all rows (but keeps table structure)
+DELETE FROM employees;
+
+-- Delete with JOIN
+DELETE e FROM employees e
+JOIN departments d ON e.dept_id = d.dept_id
+WHERE d.dept_name = 'Closed Department';
+
+-- Transaction example
+BEGIN TRANSACTION;
+DELETE FROM employees WHERE salary < 30000;
+-- Can be rolled back
+ROLLBACK;
+```
+
+## DROP Command
+
+**Purpose**: Removes entire database objects (tables, databases, indexes, etc.).
+
+### Characteristics:
+- **DDL command** - Data Definition Language
+- **Object-level operation** - Removes entire structure
+- **Complete removal** - Data and structure both deleted
+- **Auto-commit** - Cannot be rolled back (usually)
+- **Cascading** - May affect dependent objects
+- **Fastest** - No logging of individual rows
+
+```sql
+-- Drop entire table
+DROP TABLE employees;
+
+-- Drop database
+DROP DATABASE company_db;
+
+-- Drop with CASCADE (removes dependent objects)
+DROP TABLE departments CASCADE;
+
+-- Drop if exists (prevents errors)
+DROP TABLE IF EXISTS temp_table;
+```
+
+## TRUNCATE Command
+
+**Purpose**: Removes all rows from a table quickly while preserving structure.
+
+### Characteristics:
+- **DDL command** - Data Definition Language
+- **Table-level operation** - Removes all rows at once
+- **No conditions** - Cannot use WHERE clause
+- **Fast** - Deallocates data pages
+- **Resets identity** - Resets auto-increment counters
+- **Limited rollback** - Usually cannot be rolled back
+
+```sql
+-- Remove all rows quickly
+TRUNCATE TABLE employees;
+
+-- Cannot use WHERE clause
+-- TRUNCATE TABLE employees WHERE dept_id = 1; -- ERROR
+
+-- Resets auto-increment
+TRUNCATE TABLE orders; -- Next insert will start from 1 again
+```
+
+## Key Differences
+
+| Aspect | DELETE | DROP | TRUNCATE |
+|--------|--------|------|----------|
+| **Command Type** | DML | DDL | DDL |
+| **Operation Level** | Row-level | Object-level | Table-level |
+| **Conditions** | WHERE clause | N/A | No conditions |
+| **Rollback** | Yes | Usually No | Usually No |
+| **Speed** | Slowest | Fastest | Fast |
+| **Triggers** | Fires triggers | N/A | No triggers |
+| **Structure** | Preserved | Removed | Preserved |
+| **Identity Reset** | No | N/A | Yes |
+
+## Practical Examples
+
+### Sample Table Setup
+```sql
+CREATE TABLE test_employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    department VARCHAR(50)
+);
+
+INSERT INTO test_employees (name, department) VALUES 
+('John Doe', 'IT'),
+('Jane Smith', 'HR'),
+('Mike Johnson', 'IT'),
+('Sarah Wilson', 'Finance');
+```
+
+### DELETE Examples
+```sql
+-- Delete specific records
+DELETE FROM test_employees WHERE department = 'IT';
+-- Result: Removes John Doe and Mike Johnson, keeps table structure
+
+-- Delete all records
+DELETE FROM test_employees;
+-- Result: Empty table, but structure remains, next insert ID continues sequence
+```
+
+### TRUNCATE Examples
+```sql
+-- Remove all data quickly
+TRUNCATE TABLE test_employees;
+-- Result: Empty table, structure remains, auto-increment resets to 1
+```
+
+### DROP Examples
+```sql
+-- Remove entire table
+DROP TABLE test_employees;
+-- Result: Table no longer exists, all data and structure gone
+```
+
+## Performance Comparison
+
+```sql
+-- Scenario: Remove all data from a large table (1 million rows)
+
+-- DELETE - Slowest (logs each row deletion)
+DELETE FROM large_table; -- Takes several minutes
+
+-- TRUNCATE - Fast (deallocates pages)
+TRUNCATE TABLE large_table; -- Takes seconds
+
+-- DROP - Fastest (removes entire object)
+DROP TABLE large_table; -- Nearly instantaneous
+```
+
+## Use Cases
+
+### Use DELETE when:
+- Removing specific rows based on conditions
+- Need to maintain referential integrity
+- Want to trigger DELETE triggers
+- Need transaction rollback capability
+- Working with small datasets
+
+### Use TRUNCATE when:
+- Removing all rows from a table
+- Need to reset auto-increment counters
+- Performance is critical
+- Don't need to fire triggers
+- Table has no foreign key references
+
+### Use DROP when:
+- Removing entire table permanently
+- Table is no longer needed
+- Cleaning up temporary tables
+- Removing test or staging tables
+
+## Constraints and Limitations
+
+### DELETE Limitations:
+```sql
+-- Can be slow on large tables
+DELETE FROM million_row_table; -- Very slow
+
+-- May cause lock escalation
+DELETE FROM busy_table WHERE condition; -- May block other operations
+```
+
+### TRUNCATE Limitations:
+```sql
+-- Cannot use WHERE clause
+-- TRUNCATE TABLE employees WHERE dept_id = 1; -- ERROR
+
+-- Cannot truncate table with foreign key references
+-- TRUNCATE TABLE departments; -- ERROR if employees references it
+```
+
+### DROP Limitations:
+```sql
+-- Cannot drop table with dependent objects (without CASCADE)
+-- DROP TABLE departments; -- ERROR if foreign keys reference it
+
+-- Permanent operation (usually cannot be undone)
+DROP TABLE important_data; -- Gone forever (unless backed up)
+```
+
+## Recovery Considerations
+
+```sql
+-- DELETE - Can be recovered from transaction log
+BEGIN TRANSACTION;
+DELETE FROM employees WHERE id = 1;
+ROLLBACK; -- Data recovered
+
+-- TRUNCATE - Limited recovery options
+TRUNCATE TABLE employees; -- Usually cannot rollback
+
+-- DROP - Requires backup restoration
+DROP TABLE employees; -- Must restore from backup
+```
+
+## Interview Tips
+
+- Remember: DELETE removes rows, TRUNCATE removes all rows, DROP removes everything
+- Know that DELETE is DML (transactional), while TRUNCATE and DROP are DDL
+- Understand performance implications of each command
+- Be aware of when each command can or cannot be rolled back
+- Practice scenarios where each command is most appropriate

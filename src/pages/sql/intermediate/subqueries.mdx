@@ -1,0 +1,339 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are subqueries and how do they work?
+---
+
+# What are subqueries and how do they work?
+
+## Answer
+
+A **subquery** (also called an inner query or nested query) is a query embedded within another SQL statement. The subquery executes first, and its result is used by the outer query.
+
+## Basic Syntax
+
+```sql
+SELECT column1, column2
+FROM table1
+WHERE column1 = (SELECT column1 FROM table2 WHERE condition);
+```
+
+## Types of Subqueries
+
+### 1. Scalar Subquery
+Returns a single value (one row, one column).
+
+```sql
+-- Find employees with salary higher than average
+SELECT name, salary
+FROM employees
+WHERE salary > (SELECT AVG(salary) FROM employees);
+
+-- Get employee with highest salary in each department
+SELECT name, department, salary
+FROM employees e1
+WHERE salary = (
+    SELECT MAX(salary) 
+    FROM employees e2 
+    WHERE e2.department = e1.department
+);
+```
+
+### 2. Row Subquery
+Returns a single row with multiple columns.
+
+```sql
+-- Find employee with same department and salary as John Doe
+SELECT name, department, salary
+FROM employees
+WHERE (department, salary) = (
+    SELECT department, salary 
+    FROM employees 
+    WHERE name = 'John Doe'
+);
+```
+
+### 3. Table Subquery
+Returns multiple rows and columns.
+
+```sql
+-- Find employees in departments with more than 5 employees
+SELECT name, department
+FROM employees
+WHERE department IN (
+    SELECT department
+    FROM employees
+    GROUP BY department
+    HAVING COUNT(*) > 5
+);
+```
+
+## Subquery Locations
+
+### 1. WHERE Clause
+```sql
+-- Employees earning more than department average
+SELECT name, salary, department
+FROM employees e1
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM employees e2
+    WHERE e2.department = e1.department
+);
+```
+
+### 2. FROM Clause (Derived Table)
+```sql
+-- Department statistics
+SELECT dept_stats.department, dept_stats.avg_salary
+FROM (
+    SELECT department, AVG(salary) as avg_salary
+    FROM employees
+    GROUP BY department
+) AS dept_stats
+WHERE dept_stats.avg_salary > 50000;
+```
+
+### 3. SELECT Clause
+```sql
+-- Employee details with department average
+SELECT 
+    name,
+    salary,
+    department,
+    (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e1.department) as dept_avg
+FROM employees e1;
+```
+
+### 4. HAVING Clause
+```sql
+-- Departments with average salary higher than company average
+SELECT department, AVG(salary) as dept_avg
+FROM employees
+GROUP BY department
+HAVING AVG(salary) > (SELECT AVG(salary) FROM employees);
+```
+
+## Common Subquery Operators
+
+### EXISTS / NOT EXISTS
+```sql
+-- Customers who have placed orders
+SELECT customer_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.customer_id = c.customer_id
+);
+
+-- Customers who haven't placed orders
+SELECT customer_name
+FROM customers c
+WHERE NOT EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.customer_id = c.customer_id
+);
+```
+
+### IN / NOT IN
+```sql
+-- Products in specific categories
+SELECT product_name, price
+FROM products
+WHERE category_id IN (
+    SELECT category_id 
+    FROM categories 
+    WHERE category_name IN ('Electronics', 'Books')
+);
+
+-- Handle NULL values carefully with NOT IN
+SELECT product_name
+FROM products
+WHERE category_id NOT IN (
+    SELECT category_id 
+    FROM categories 
+    WHERE category_id IS NOT NULL  -- Important!
+);
+```
+
+### ANY / SOME
+```sql
+-- Products more expensive than ANY book
+SELECT product_name, price
+FROM products
+WHERE price > ANY (
+    SELECT price 
+    FROM products 
+    WHERE category = 'Books'
+);
+```
+
+### ALL
+```sql
+-- Products more expensive than ALL books
+SELECT product_name, price
+FROM products
+WHERE price > ALL (
+    SELECT price 
+    FROM products 
+    WHERE category = 'Books'
+);
+```
+
+## Practical Examples
+
+### E-commerce Scenarios
+
+```sql
+-- Sample tables
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    city VARCHAR(50)
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total_amount DECIMAL(10,2)
+);
+
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    price DECIMAL(10,2)
+);
+```
+
+### Complex Business Queries
+
+```sql
+-- 1. Find customers who spent more than average in the last year
+SELECT customer_name
+FROM customers c
+WHERE (
+    SELECT SUM(total_amount)
+    FROM orders o
+    WHERE o.customer_id = c.customer_id
+    AND o.order_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+) > (
+    SELECT AVG(yearly_total)
+    FROM (
+        SELECT SUM(total_amount) as yearly_total
+        FROM orders
+        WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        GROUP BY customer_id
+    ) as customer_totals
+);
+
+-- 2. Products never ordered
+SELECT product_name
+FROM products p
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM order_items oi 
+    WHERE oi.product_id = p.product_id
+);
+
+-- 3. Top 3 customers by order value in each city
+SELECT customer_name, city, total_orders
+FROM (
+    SELECT 
+        c.customer_name,
+        c.city,
+        SUM(o.total_amount) as total_orders,
+        ROW_NUMBER() OVER (PARTITION BY c.city ORDER BY SUM(o.total_amount) DESC) as rn
+    FROM customers c
+    JOIN orders o ON c.customer_id = o.customer_id
+    GROUP BY c.customer_id, c.customer_name, c.city
+) ranked
+WHERE rn <= 3;
+```
+
+## Performance Considerations
+
+### Correlated vs Non-Correlated Subqueries
+
+```sql
+-- Non-correlated (executes once)
+SELECT name FROM employees
+WHERE department_id IN (SELECT id FROM departments WHERE location = 'NYC');
+
+-- Correlated (executes for each outer row)
+SELECT name FROM employees e1
+WHERE salary > (SELECT AVG(salary) FROM employees e2 WHERE e2.dept_id = e1.dept_id);
+```
+
+### Optimization Tips
+
+```sql
+-- Instead of correlated subquery
+SELECT e1.name, e1.salary
+FROM employees e1
+WHERE e1.salary > (
+    SELECT AVG(e2.salary)
+    FROM employees e2
+    WHERE e2.department = e1.department
+);
+
+-- Use window function (often faster)
+SELECT name, salary
+FROM (
+    SELECT 
+        name, 
+        salary, 
+        department,
+        AVG(salary) OVER (PARTITION BY department) as dept_avg
+    FROM employees
+) t
+WHERE salary > dept_avg;
+```
+
+## Common Pitfalls
+
+### 1. NULL Handling with NOT IN
+```sql
+-- Dangerous: Returns no results if subquery contains NULL
+SELECT * FROM products
+WHERE category_id NOT IN (SELECT category_id FROM categories);
+
+-- Safe: Filter out NULLs
+SELECT * FROM products
+WHERE category_id NOT IN (
+    SELECT category_id FROM categories WHERE category_id IS NOT NULL
+);
+```
+
+### 2. Multiple Row Subquery with Scalar Operator
+```sql
+-- Error: Subquery returns multiple rows
+SELECT * FROM employees
+WHERE salary = (SELECT salary FROM employees WHERE department = 'IT');
+
+-- Correct: Use IN or ANY
+SELECT * FROM employees
+WHERE salary IN (SELECT salary FROM employees WHERE department = 'IT');
+```
+
+## Subquery vs JOIN Performance
+
+```sql
+-- Subquery approach
+SELECT customer_name
+FROM customers
+WHERE customer_id IN (SELECT customer_id FROM orders);
+
+-- JOIN approach (often faster)
+SELECT DISTINCT c.customer_name
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id;
+```
+
+## Interview Tips
+
+- Understand the difference between correlated and non-correlated subqueries
+- Know when to use EXISTS vs IN
+- Be aware of NULL handling issues with NOT IN
+- Practice converting subqueries to JOINs and vice versa
+- Understand performance implications of different subquery types

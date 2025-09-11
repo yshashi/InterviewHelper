@@ -1,0 +1,631 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are database locks and their types?
+---
+
+# What are database locks and their types?
+
+## Answer
+
+**Database locks** are mechanisms used by database management systems to control concurrent access to data, ensuring data consistency and preventing conflicts when multiple transactions access the same resources simultaneously. Locks implement the isolation property of ACID transactions.
+
+## Lock Granularity Levels
+
+### 1. Database Level Locks
+```sql
+-- SQL Server: Exclusive database lock
+ALTER DATABASE MyDatabase SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+-- Perform maintenance operations
+ALTER DATABASE MyDatabase SET MULTI_USER;
+
+-- PostgreSQL: Database-level operations
+-- Implicit database lock during CREATE/DROP DATABASE
+CREATE DATABASE new_database;
+DROP DATABASE old_database;
+```
+
+### 2. Table Level Locks
+```sql
+-- Explicit table locking
+-- PostgreSQL
+BEGIN;
+LOCK TABLE customers IN EXCLUSIVE MODE;
+-- Perform bulk operations
+UPDATE customers SET status = 'INACTIVE' WHERE last_login < '2023-01-01';
+COMMIT;
+
+-- MySQL
+LOCK TABLES customers WRITE, orders READ;
+-- Perform operations
+UPDATE customers SET region = 'APAC' WHERE country IN ('JP', 'KR', 'SG');
+UNLOCK TABLES;
+
+-- SQL Server (implicit table locks)
+SELECT * FROM customers WITH (TABLOCKX);  -- Exclusive table lock
+```
+
+### 3. Page Level Locks
+```sql
+-- SQL Server: Page-level locking (automatic)
+-- Occurs when multiple rows on same page are accessed
+UPDATE products SET price = price * 1.1 
+WHERE category = 'Electronics' AND price < 100;
+
+-- Monitor page locks
+SELECT 
+    resource_type,
+    resource_description,
+    request_mode,
+    request_status
+FROM sys.dm_tran_locks
+WHERE resource_type = 'PAGE';
+```
+
+### 4. Row Level Locks
+```sql
+-- Most common granularity for OLTP systems
+-- PostgreSQL: Row-level locking
+BEGIN;
+SELECT * FROM accounts WHERE account_id = 123 FOR UPDATE;  -- Row lock
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 123;
+COMMIT;
+
+-- SQL Server: Row-level locks (default for most operations)
+UPDATE customers SET email = 'new@email.com' WHERE customer_id = 456;
+
+-- Oracle: Row-level locking with ROWID
+SELECT ROWID, customer_name FROM customers WHERE customer_id = 789 FOR UPDATE;
+```
+
+## Lock Types and Modes
+
+### 1. Shared Locks (S)
+```sql
+-- Read operations acquire shared locks
+-- Multiple shared locks can coexist
+SELECT * FROM products WHERE category = 'Books';
+
+-- Explicit shared lock
+-- PostgreSQL
+BEGIN;
+SELECT * FROM inventory WHERE product_id = 123 FOR SHARE;
+-- Other transactions can read but not modify
+COMMIT;
+
+-- SQL Server
+SELECT * FROM inventory WITH (HOLDLOCK) WHERE product_id = 123;
+```
+
+### 2. Exclusive Locks (X)
+```sql
+-- Write operations acquire exclusive locks
+-- Only one exclusive lock allowed, blocks all other locks
+UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 123;
+
+-- Explicit exclusive lock
+-- PostgreSQL
+BEGIN;
+SELECT * FROM accounts WHERE account_id = 456 FOR UPDATE;
+-- No other transaction can read or write this row
+UPDATE accounts SET balance = balance - 50 WHERE account_id = 456;
+COMMIT;
+
+-- SQL Server
+SELECT * FROM accounts WITH (UPDLOCK, HOLDLOCK) WHERE account_id = 456;
+```
+
+### 3. Update Locks (U)
+```sql
+-- SQL Server: Update locks prevent deadlocks
+-- Acquired during the search phase of an update
+-- Converted to exclusive lock when actual update occurs
+BEGIN TRANSACTION;
+SELECT * FROM products WITH (UPDLOCK) WHERE category = 'Electronics';
+-- Update lock held during search
+UPDATE products SET price = price * 1.1 WHERE category = 'Electronics';
+-- Converted to exclusive lock during update
+COMMIT;
+```
+
+### 4. Intent Locks
+```sql
+-- Indicate intention to acquire locks at lower granularity
+-- Intent Shared (IS), Intent Exclusive (IX), Shared with Intent Exclusive (SIX)
+
+-- SQL Server: Monitor intent locks
+SELECT 
+    resource_type,
+    resource_description,
+    request_mode,
+    request_status
+FROM sys.dm_tran_locks
+WHERE request_mode IN ('IS', 'IX', 'SIX');
+
+-- Example: Row update creates IX lock on table, X lock on row
+UPDATE customers SET status = 'VIP' WHERE customer_id = 123;
+```
+
+### 5. Schema Locks
+```sql
+-- Schema Modification (Sch-M) and Schema Stability (Sch-S)
+-- DDL operations acquire schema modification locks
+ALTER TABLE customers ADD COLUMN loyalty_points INT DEFAULT 0;
+
+-- DML operations acquire schema stability locks
+SELECT * FROM customers;  -- Sch-S lock prevents schema changes
+```
+
+## Lock Compatibility Matrix
+
+### Understanding Lock Conflicts
+```sql
+-- Create test scenario to demonstrate lock conflicts
+-- Session 1
+BEGIN TRANSACTION;
+SELECT * FROM accounts WHERE account_id = 1 FOR UPDATE;  -- X lock
+-- Session 1 holds exclusive lock
+
+-- Session 2 (will be blocked)
+BEGIN TRANSACTION;
+SELECT * FROM accounts WHERE account_id = 1;  -- Wants S lock, blocked by X
+-- This will wait until Session 1 commits or rolls back
+
+-- Session 3 (will also be blocked)
+BEGIN TRANSACTION;
+UPDATE accounts SET balance = 1000 WHERE account_id = 1;  -- Wants X lock, blocked
+```
+
+### Lock Compatibility Table
+```sql
+/*
+Lock Compatibility Matrix:
+         S    X    U    IS   IX   SIX
+    S    ✓    ✗    ✓    ✓    ✗    ✗
+    X    ✗    ✗    ✗    ✗    ✗    ✗
+    U    ✓    ✗    ✗    ✓    ✗    ✗
+    IS   ✓    ✗    ✓    ✓    ✓    ✓
+    IX   ✗    ✗    ✗    ✓    ✓    ✗
+    SIX  ✗    ✗    ✗    ✓    ✗    ✗
+
+✓ = Compatible (can coexist)
+✗ = Incompatible (one must wait)
+*/
+```
+
+## Advanced Locking Concepts
+
+### 1. Lock Escalation
+```sql
+-- SQL Server: Lock escalation from row to table
+-- Occurs when too many row locks are held
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+UPDATE products SET price = price * 1.1;  -- May escalate to table lock
+
+-- Prevent lock escalation
+ALTER TABLE products SET (LOCK_ESCALATION = DISABLE);
+
+-- Monitor lock escalation events
+SELECT 
+    object_name(resource_associated_entity_id) AS table_name,
+    request_mode,
+    COUNT(*) AS lock_count
+FROM sys.dm_tran_locks
+WHERE resource_type = 'OBJECT'
+GROUP BY resource_associated_entity_id, request_mode;
+```
+
+### 2. Lock Duration and Isolation Levels
+```sql
+-- READ UNCOMMITTED: No shared locks
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+SELECT * FROM orders;  -- No locks acquired
+
+-- READ COMMITTED: Shared locks released immediately after read
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT * FROM orders;  -- S locks acquired and released
+
+-- REPEATABLE READ: Shared locks held until transaction end
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN TRANSACTION;
+SELECT * FROM orders WHERE customer_id = 123;  -- S locks held
+-- Locks remain until COMMIT/ROLLBACK
+COMMIT;
+
+-- SERIALIZABLE: Range locks to prevent phantoms
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN TRANSACTION;
+SELECT * FROM orders WHERE order_date = '2024-01-15';  -- Range locks
+-- Prevents other transactions from inserting matching rows
+COMMIT;
+```
+
+### 3. Snapshot Isolation
+```sql
+-- SQL Server: Enable snapshot isolation
+ALTER DATABASE MyDatabase SET ALLOW_SNAPSHOT_ISOLATION ON;
+ALTER DATABASE MyDatabase SET READ_COMMITTED_SNAPSHOT ON;
+
+-- PostgreSQL: MVCC provides snapshot isolation by default
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT * FROM accounts WHERE account_id = 123;
+-- Reads consistent snapshot, no blocking
+
+-- Oracle: Flashback queries for point-in-time consistency
+SELECT * FROM accounts AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '5' MINUTE)
+WHERE account_id = 123;
+```
+
+## Lock Monitoring and Troubleshooting
+
+### 1. Identifying Lock Contention
+```sql
+-- SQL Server: Current locks and blocking
+SELECT 
+    l.request_session_id AS session_id,
+    l.resource_type,
+    l.resource_database_id,
+    l.resource_description,
+    l.request_mode,
+    l.request_status,
+    s.program_name,
+    s.host_name,
+    s.login_name,
+    t.text AS sql_text
+FROM sys.dm_tran_locks l
+LEFT JOIN sys.dm_exec_sessions s ON l.request_session_id = s.session_id
+LEFT JOIN sys.dm_exec_requests r ON l.request_session_id = r.session_id
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+WHERE l.request_status = 'WAIT'
+ORDER BY l.request_session_id;
+
+-- PostgreSQL: Lock monitoring
+SELECT 
+    pl.pid,
+    pl.locktype,
+    pl.mode,
+    pl.granted,
+    psa.usename,
+    psa.query,
+    psa.query_start
+FROM pg_locks pl
+JOIN pg_stat_activity psa ON pl.pid = psa.pid
+WHERE NOT pl.granted
+ORDER BY pl.pid;
+```
+
+### 2. Lock Wait Statistics
+```sql
+-- SQL Server: Lock wait statistics
+SELECT 
+    wait_type,
+    waiting_tasks_count,
+    wait_time_ms,
+    max_wait_time_ms,
+    signal_wait_time_ms
+FROM sys.dm_os_wait_stats
+WHERE wait_type LIKE 'LCK%'
+ORDER BY wait_time_ms DESC;
+
+-- PostgreSQL: Lock wait events
+SELECT 
+    wait_event_type,
+    wait_event,
+    COUNT(*) as count
+FROM pg_stat_activity
+WHERE wait_event IS NOT NULL
+GROUP BY wait_event_type, wait_event
+ORDER BY count DESC;
+```
+
+### 3. Blocking Chain Analysis
+```sql
+-- SQL Server: Find blocking chains
+WITH BlockingChain AS (
+    SELECT 
+        session_id,
+        blocking_session_id,
+        wait_type,
+        wait_resource,
+        0 AS level
+    FROM sys.dm_exec_requests
+    WHERE blocking_session_id = 0
+    AND session_id IN (
+        SELECT DISTINCT blocking_session_id 
+        FROM sys.dm_exec_requests 
+        WHERE blocking_session_id <> 0
+    )
+    
+    UNION ALL
+    
+    SELECT 
+        r.session_id,
+        r.blocking_session_id,
+        r.wait_type,
+        r.wait_resource,
+        bc.level + 1
+    FROM sys.dm_exec_requests r
+    INNER JOIN BlockingChain bc ON r.blocking_session_id = bc.session_id
+)
+SELECT 
+    level,
+    session_id,
+    blocking_session_id,
+    wait_type,
+    wait_resource
+FROM BlockingChain
+ORDER BY level, session_id;
+```
+
+## Lock Optimization Strategies
+
+### 1. Index Optimization
+```sql
+-- Poor indexing leads to lock escalation
+-- BAD: Table scan locks many rows
+UPDATE orders SET status = 'SHIPPED' 
+WHERE order_date = '2024-01-15';  -- No index on order_date
+
+-- GOOD: Index seek locks fewer rows
+CREATE INDEX IX_orders_date ON orders (order_date);
+UPDATE orders SET status = 'SHIPPED' 
+WHERE order_date = '2024-01-15';  -- Uses index, fewer locks
+
+-- Covering indexes reduce lock duration
+CREATE INDEX IX_orders_covering ON orders (customer_id) 
+INCLUDE (order_date, status, total);
+```
+
+### 2. Query Optimization
+```sql
+-- Minimize lock duration with efficient queries
+-- BAD: Long-running query holds locks
+UPDATE products SET price = price * 1.1
+WHERE category IN (
+    SELECT category FROM category_updates 
+    WHERE update_date = CURRENT_DATE
+);
+
+-- GOOD: Pre-compute and use efficient joins
+WITH categories_to_update AS (
+    SELECT DISTINCT category 
+    FROM category_updates 
+    WHERE update_date = CURRENT_DATE
+)
+UPDATE products 
+SET price = price * 1.1
+FROM categories_to_update ctu
+WHERE products.category = ctu.category;
+```
+
+### 3. Batch Processing
+```sql
+-- Process large updates in smaller batches
+-- BAD: Single large transaction
+UPDATE large_table SET status = 'PROCESSED' 
+WHERE created_date < '2024-01-01';  -- Millions of rows
+
+-- GOOD: Batch processing with smaller transactions
+DECLARE @BatchSize INT = 10000;
+DECLARE @RowsAffected INT = @BatchSize;
+
+WHILE @RowsAffected = @BatchSize
+BEGIN
+    UPDATE TOP (@BatchSize) large_table 
+    SET status = 'PROCESSED' 
+    WHERE created_date < '2024-01-01' 
+    AND status <> 'PROCESSED';
+    
+    SET @RowsAffected = @@ROWCOUNT;
+    
+    -- Brief pause to allow other transactions
+    WAITFOR DELAY '00:00:01';
+END;
+```
+
+### 4. Lock Hints and Directives
+```sql
+-- SQL Server lock hints
+-- NOLOCK: Read uncommitted (use with caution)
+SELECT * FROM orders WITH (NOLOCK) WHERE customer_id = 123;
+
+-- READPAST: Skip locked rows
+SELECT TOP 10 * FROM queue_table WITH (READPAST) 
+WHERE status = 'PENDING';
+
+-- UPDLOCK: Acquire update locks early
+SELECT account_id, balance FROM accounts WITH (UPDLOCK) 
+WHERE account_id = 123;
+
+-- XLOCK: Acquire exclusive locks
+SELECT * FROM temp_processing WITH (XLOCK) WHERE batch_id = 456;
+
+-- PostgreSQL: Lock strength options
+SELECT * FROM orders WHERE order_id = 123 FOR UPDATE;        -- Exclusive
+SELECT * FROM orders WHERE order_id = 123 FOR SHARE;         -- Shared
+SELECT * FROM orders WHERE order_id = 123 FOR UPDATE NOWAIT; -- Don't wait
+SELECT * FROM orders WHERE order_id = 123 FOR UPDATE SKIP LOCKED; -- Skip if locked
+```
+
+## Application-Level Lock Management
+
+### 1. Advisory Locks
+```sql
+-- PostgreSQL: Application-level advisory locks
+-- Useful for coordinating application processes
+SELECT pg_advisory_lock(12345);  -- Acquire lock with ID 12345
+
+-- Perform critical section operations
+-- Only one process can hold this lock at a time
+
+SELECT pg_advisory_unlock(12345);  -- Release lock
+
+-- Non-blocking version
+SELECT pg_try_advisory_lock(12345);  -- Returns true if acquired, false if not
+
+-- Session-level advisory locks (automatically released on disconnect)
+SELECT pg_advisory_lock(12345);
+
+-- Transaction-level advisory locks (released on commit/rollback)
+SELECT pg_advisory_xact_lock(12345);
+```
+
+### 2. Named Locks
+```sql
+-- MySQL: Named locks for application coordination
+SELECT GET_LOCK('my_process_lock', 10);  -- Wait up to 10 seconds
+
+-- Perform exclusive operations
+-- Process inventory update, file processing, etc.
+
+SELECT RELEASE_LOCK('my_process_lock');
+
+-- Check if lock is in use
+SELECT IS_USED_LOCK('my_process_lock');
+
+-- SQL Server: Application locks
+EXEC sp_getapplock 
+    @Resource = 'InventoryUpdate',
+    @LockMode = 'Exclusive',
+    @LockTimeout = 30000;  -- 30 seconds
+
+-- Perform operations
+
+EXEC sp_releaseapplock @Resource = 'InventoryUpdate';
+```
+
+### 3. Distributed Locking
+```sql
+-- Redis-based distributed locks (pseudo-SQL for concept)
+-- SET lock_key "process_id" EX 30 NX  -- Acquire lock for 30 seconds
+-- ... perform operations ...
+-- DEL lock_key  -- Release lock
+
+-- Database-based distributed locking table
+CREATE TABLE distributed_locks (
+    lock_name VARCHAR(100) PRIMARY KEY,
+    locked_by VARCHAR(100) NOT NULL,
+    locked_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL
+);
+
+-- Acquire distributed lock
+CREATE OR REPLACE FUNCTION acquire_distributed_lock(
+    p_lock_name VARCHAR(100),
+    p_process_id VARCHAR(100),
+    p_timeout_seconds INT DEFAULT 30
+) RETURNS BOOLEAN AS $$
+DECLARE
+    lock_acquired BOOLEAN := FALSE;
+BEGIN
+    -- Clean up expired locks
+    DELETE FROM distributed_locks 
+    WHERE expires_at < CURRENT_TIMESTAMP;
+    
+    -- Try to acquire lock
+    INSERT INTO distributed_locks (lock_name, locked_by, locked_at, expires_at)
+    VALUES (
+        p_lock_name, 
+        p_process_id, 
+        CURRENT_TIMESTAMP, 
+        CURRENT_TIMESTAMP + (p_timeout_seconds || ' seconds')::INTERVAL
+    )
+    ON CONFLICT (lock_name) DO NOTHING;
+    
+    GET DIAGNOSTICS lock_acquired = ROW_COUNT;
+    RETURN lock_acquired > 0;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## Performance Impact and Optimization
+
+### 1. Lock Memory Usage
+```sql
+-- SQL Server: Monitor lock memory usage
+SELECT 
+    counter_name,
+    cntr_value
+FROM sys.dm_os_performance_counters
+WHERE object_name = 'SQLServer:Locks'
+AND counter_name IN ('Lock Memory (KB)', 'Number of Deadlocks/sec');
+
+-- Configure lock memory
+-- sp_configure 'locks', 0;  -- 0 = dynamic allocation
+```
+
+### 2. Lock Timeout Configuration
+```sql
+-- SQL Server: Set lock timeout
+SET LOCK_TIMEOUT 30000;  -- 30 seconds
+
+-- PostgreSQL: Statement timeout
+SET statement_timeout = '30s';
+
+-- MySQL: Lock wait timeout
+SET innodb_lock_wait_timeout = 30;
+
+-- Application-level timeout handling
+BEGIN TRY
+    BEGIN TRANSACTION;
+    -- Operations that might timeout
+    UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+    COMMIT;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK;
+    
+    IF ERROR_NUMBER() = 1222  -- Lock timeout
+        PRINT 'Operation timed out due to lock contention';
+    ELSE
+        THROW;
+END CATCH;
+```
+
+### 3. Lock Partitioning
+```sql
+-- Reduce lock contention through partitioning
+CREATE TABLE orders (
+    order_id BIGSERIAL,
+    customer_id INT,
+    order_date DATE,
+    status VARCHAR(20)
+) PARTITION BY RANGE (order_date);
+
+-- Create monthly partitions
+CREATE TABLE orders_2024_01 PARTITION OF orders
+FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+
+-- Operations on different partitions have reduced lock contention
+UPDATE orders SET status = 'SHIPPED' 
+WHERE order_date = '2024-01-15';  -- Only affects January partition
+```
+
+## Best Practices
+
+### 1. Transaction Design
+- Keep transactions short and focused
+- Access resources in consistent order to prevent deadlocks
+- Use appropriate isolation levels
+- Implement proper error handling and retry logic
+
+### 2. Query Optimization
+- Use proper indexing to minimize lock duration
+- Avoid unnecessary locking with query hints
+- Process large operations in batches
+- Use covering indexes to reduce I/O and lock time
+
+### 3. Monitoring and Maintenance
+- Regularly monitor lock contention and blocking
+- Set up alerts for excessive lock waits
+- Analyze deadlock graphs to identify patterns
+- Maintain statistics for optimal query plans
+
+## Interview Tips
+
+- Understand different lock types and their compatibility
+- Know the relationship between isolation levels and locking
+- Be familiar with lock escalation and its performance implications
+- Understand how to diagnose and resolve lock contention issues
+- Know when to use different lock hints and their trade-offs
+- Practice identifying deadlock scenarios and prevention strategies
+- Be aware of database-specific locking mechanisms and features

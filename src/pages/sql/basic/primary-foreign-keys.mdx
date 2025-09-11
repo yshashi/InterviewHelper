@@ -1,0 +1,184 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are primary keys and foreign keys?
+---
+
+# What are primary keys and foreign keys?
+
+## Answer
+
+Primary keys and foreign keys are fundamental concepts in relational databases that establish data integrity and relationships between tables.
+
+## Primary Key
+
+A **Primary Key** is a column (or combination of columns) that uniquely identifies each row in a table.
+
+### Characteristics:
+- **Unique**: No two rows can have the same primary key value
+- **Not NULL**: Primary key values cannot be NULL
+- **Immutable**: Should not change once assigned
+- **One per table**: Each table can have only one primary key
+
+### Examples:
+```sql
+-- Single column primary key
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    email VARCHAR(100)
+);
+
+-- Composite primary key (multiple columns)
+CREATE TABLE order_items (
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    price DECIMAL(10,2),
+    PRIMARY KEY (order_id, product_id)
+);
+
+-- Adding primary key to existing table
+ALTER TABLE employees ADD PRIMARY KEY (emp_id);
+```
+
+## Foreign Key
+
+A **Foreign Key** is a column (or combination of columns) that creates a link between two tables by referencing the primary key of another table.
+
+### Characteristics:
+- **References**: Points to primary key of another table
+- **Can be NULL**: Unless specified otherwise
+- **Multiple allowed**: A table can have multiple foreign keys
+- **Enforces referential integrity**: Prevents invalid references
+
+### Examples:
+```sql
+-- Create parent table first
+CREATE TABLE departments (
+    dept_id INT PRIMARY KEY,
+    dept_name VARCHAR(100)
+);
+
+-- Create child table with foreign key
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+
+-- Adding foreign key to existing table
+ALTER TABLE employees 
+ADD CONSTRAINT fk_dept 
+FOREIGN KEY (dept_id) REFERENCES departments(dept_id);
+```
+
+## Key Differences
+
+| Aspect | Primary Key | Foreign Key |
+|--------|-------------|-------------|
+| **Purpose** | Uniquely identifies rows | Links tables together |
+| **Uniqueness** | Must be unique | Can have duplicates |
+| **NULL values** | Cannot be NULL | Can be NULL |
+| **Quantity per table** | Only one | Multiple allowed |
+| **References** | Referenced by foreign keys | References primary keys |
+
+## Referential Integrity
+
+Foreign keys enforce **referential integrity** through various constraints:
+
+### ON DELETE Actions:
+```sql
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+        ON DELETE CASCADE  -- Delete employee if department is deleted
+);
+
+-- Other options:
+-- ON DELETE SET NULL     -- Set dept_id to NULL
+-- ON DELETE RESTRICT     -- Prevent deletion if referenced
+-- ON DELETE NO ACTION    -- Same as RESTRICT
+```
+
+### ON UPDATE Actions:
+```sql
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+        ON UPDATE CASCADE  -- Update dept_id if department ID changes
+);
+```
+
+## Practical Example
+
+```sql
+-- Create tables with relationships
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total_amount DECIMAL(10,2),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    price DECIMAL(10,2)
+);
+
+CREATE TABLE order_details (
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+-- Insert data respecting relationships
+INSERT INTO customers VALUES (1, 'John Doe', 'john@email.com');
+INSERT INTO products VALUES (1, 'Laptop', 999.99);
+INSERT INTO orders VALUES (1, 1, '2024-01-15', 999.99);
+INSERT INTO order_details VALUES (1, 1, 1);
+```
+
+## Benefits
+
+### Primary Keys:
+- Ensure entity integrity
+- Provide unique row identification
+- Enable efficient indexing
+- Support replication and clustering
+
+### Foreign Keys:
+- Maintain referential integrity
+- Prevent orphaned records
+- Document table relationships
+- Enable JOIN operations
+
+## Common Mistakes to Avoid
+
+1. **Missing Primary Keys**: Every table should have a primary key
+2. **Changing Primary Key Values**: Avoid updating primary key values
+3. **Circular References**: Be careful with self-referencing foreign keys
+4. **Performance Impact**: Foreign key constraints can slow down operations
+
+## Interview Tips
+
+- Understand that primary keys ensure entity integrity
+- Know that foreign keys maintain referential integrity
+- Be familiar with CASCADE, SET NULL, and RESTRICT options
+- Practice creating tables with proper key relationships
+- Understand the performance implications of keys and indexes

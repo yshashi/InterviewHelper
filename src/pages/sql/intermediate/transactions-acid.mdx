@@ -1,0 +1,541 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are database transactions and ACID properties?
+---
+
+# What are database transactions and ACID properties?
+
+## Answer
+
+A **database transaction** is a sequence of one or more SQL operations that are executed as a single logical unit of work. **ACID properties** ensure that database transactions are processed reliably and maintain data integrity even in the presence of errors, power failures, or concurrent access.
+
+## ACID Properties
+
+### A - Atomicity
+**All operations in a transaction succeed or all fail together.**
+
+```sql
+-- Example: Bank transfer (all or nothing)
+START TRANSACTION;
+
+UPDATE accounts 
+SET balance = balance - 1000 
+WHERE account_id = 'ACC001';
+
+UPDATE accounts 
+SET balance = balance + 1000 
+WHERE account_id = 'ACC002';
+
+-- If any operation fails, entire transaction is rolled back
+COMMIT;  -- Only if both updates succeed
+```
+
+### C - Consistency
+**Database remains in a valid state before and after the transaction.**
+
+```sql
+-- Consistency example: Maintaining referential integrity
+START TRANSACTION;
+
+-- Insert order (parent record)
+INSERT INTO orders (order_id, customer_id, order_date, total)
+VALUES (1001, 123, '2024-01-15', 250.00);
+
+-- Insert order items (child records)
+INSERT INTO order_items (order_id, product_id, quantity, price)
+VALUES 
+    (1001, 'P001', 2, 50.00),
+    (1001, 'P002', 1, 150.00);
+
+-- Database constraints ensure consistency
+-- Foreign key constraints prevent orphaned records
+COMMIT;
+```
+
+### I - Isolation
+**Concurrent transactions don't interfere with each other.**
+
+```sql
+-- Transaction 1
+START TRANSACTION;
+SELECT balance FROM accounts WHERE account_id = 'ACC001';  -- Reads 1000
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 'ACC001';
+-- Transaction sees balance as 900, but not yet committed
+
+-- Transaction 2 (running concurrently)
+START TRANSACTION;
+SELECT balance FROM accounts WHERE account_id = 'ACC001';  -- Still reads 1000 (isolation)
+-- Won't see Transaction 1's changes until it commits
+```
+
+### D - Durability
+**Committed changes persist even after system failures.**
+
+```sql
+START TRANSACTION;
+
+INSERT INTO critical_data (id, value, timestamp)
+VALUES (1, 'Important Data', NOW());
+
+COMMIT;  -- Once committed, data survives system crashes
+-- Database ensures data is written to persistent storage
+```
+
+## Transaction Control Statements
+
+### Basic Transaction Control
+```sql
+-- Start a transaction
+START TRANSACTION;  -- or BEGIN;
+
+-- Perform operations
+INSERT INTO customers (name, email) VALUES ('John Doe', 'john@email.com');
+UPDATE orders SET status = 'PROCESSED' WHERE customer_id = LAST_INSERT_ID();
+
+-- Commit changes (make permanent)
+COMMIT;
+
+-- Or rollback changes (undo all operations)
+ROLLBACK;
+```
+
+### Savepoints
+```sql
+START TRANSACTION;
+
+INSERT INTO orders (customer_id, order_date) VALUES (123, NOW());
+SAVEPOINT order_created;
+
+INSERT INTO order_items (order_id, product_id, quantity) 
+VALUES (LAST_INSERT_ID(), 'P001', 2);
+SAVEPOINT items_added;
+
+-- Something goes wrong with shipping calculation
+INSERT INTO shipping (order_id, cost) VALUES (LAST_INSERT_ID(), -10);  -- Invalid cost
+
+-- Rollback to savepoint (keeps order and items, removes invalid shipping)
+ROLLBACK TO SAVEPOINT items_added;
+
+-- Add correct shipping
+INSERT INTO shipping (order_id, cost) VALUES (LAST_INSERT_ID(), 15.99);
+
+COMMIT;  -- Commits order, items, and correct shipping
+```
+
+## Isolation Levels
+
+### Read Uncommitted
+**Lowest isolation level - allows dirty reads.**
+
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+START TRANSACTION;
+
+-- Session 2
+START TRANSACTION;
+UPDATE products SET price = 99.99 WHERE product_id = 'P001';
+-- Not yet committed
+
+-- Session 1 can read uncommitted changes (dirty read)
+SELECT price FROM products WHERE product_id = 'P001';  -- Sees 99.99
+
+-- Session 2
+ROLLBACK;  -- Session 1 read data that was rolled back!
+```
+
+### Read Committed
+**Prevents dirty reads but allows non-repeatable reads.**
+
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+START TRANSACTION;
+SELECT price FROM products WHERE product_id = 'P001';  -- Reads 50.00
+
+-- Session 2
+START TRANSACTION;
+UPDATE products SET price = 75.00 WHERE product_id = 'P001';
+COMMIT;
+
+-- Session 1
+SELECT price FROM products WHERE product_id = 'P001';  -- Now reads 75.00 (non-repeatable read)
+COMMIT;
+```
+
+### Repeatable Read
+**Prevents dirty and non-repeatable reads but allows phantom reads.**
+
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+START TRANSACTION;
+SELECT COUNT(*) FROM products WHERE category = 'Electronics';  -- Returns 10
+
+-- Session 2
+START TRANSACTION;
+INSERT INTO products (name, category, price) 
+VALUES ('New Phone', 'Electronics', 599.99);
+COMMIT;
+
+-- Session 1
+SELECT COUNT(*) FROM products WHERE category = 'Electronics';  -- Still returns 10 in MySQL
+-- But might return 11 in other databases (phantom read)
+COMMIT;
+```
+
+### Serializable
+**Highest isolation level - prevents all phenomena.**
+
+```sql
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION;
+
+-- This transaction will have complete isolation
+-- No other transaction can modify data this transaction has read
+SELECT * FROM accounts WHERE balance > 1000;
+
+-- Any concurrent transaction trying to modify these accounts will wait
+UPDATE accounts SET balance = balance * 1.05 WHERE balance > 1000;
+
+COMMIT;
+```
+
+## Concurrency Control Mechanisms
+
+### Locking
+```sql
+-- Explicit locking
+START TRANSACTION;
+
+-- Shared lock (read lock)
+SELECT * FROM products WHERE product_id = 'P001' LOCK IN SHARE MODE;
+
+-- Exclusive lock (write lock)
+SELECT * FROM accounts WHERE account_id = 'ACC001' FOR UPDATE;
+
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 'ACC001';
+
+COMMIT;  -- Releases locks
+```
+
+### Deadlock Handling
+```sql
+-- Transaction 1
+START TRANSACTION;
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 'ACC001';
+-- Waits for lock on ACC002
+
+-- Transaction 2 (concurrent)
+START TRANSACTION;
+UPDATE accounts SET balance = balance + 50 WHERE account_id = 'ACC002';
+-- Waits for lock on ACC001
+
+-- Deadlock! Database will automatically rollback one transaction
+
+-- Prevention: Always acquire locks in same order
+-- Transaction 1 & 2 should both lock ACC001 first, then ACC002
+```
+
+## Practical Transaction Examples
+
+### E-commerce Order Processing
+```sql
+DELIMITER //
+CREATE PROCEDURE ProcessOrder(
+    IN p_customer_id INT,
+    IN p_product_id VARCHAR(20),
+    IN p_quantity INT,
+    OUT p_order_id INT,
+    OUT p_result_message VARCHAR(255)
+)
+BEGIN
+    DECLARE v_product_price DECIMAL(10,2);
+    DECLARE v_available_stock INT;
+    DECLARE v_order_total DECIMAL(10,2);
+    
+    -- Error handler for rollback
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_result_message = 'Order processing failed';
+        SET p_order_id = NULL;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Check product availability (with lock)
+    SELECT price, stock_quantity 
+    INTO v_product_price, v_available_stock
+    FROM products 
+    WHERE product_id = p_product_id
+    FOR UPDATE;  -- Lock the row
+    
+    -- Validate stock
+    IF v_available_stock < p_quantity THEN
+        SET p_result_message = 'Insufficient stock';
+        ROLLBACK;
+    ELSE
+        -- Calculate total
+        SET v_order_total = v_product_price * p_quantity;
+        
+        -- Create order
+        INSERT INTO orders (customer_id, order_date, total_amount, status)
+        VALUES (p_customer_id, NOW(), v_order_total, 'PENDING');
+        
+        SET p_order_id = LAST_INSERT_ID();
+        
+        -- Add order items
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+        VALUES (p_order_id, p_product_id, p_quantity, v_product_price);
+        
+        -- Update inventory
+        UPDATE products 
+        SET stock_quantity = stock_quantity - p_quantity
+        WHERE product_id = p_product_id;
+        
+        -- Log inventory change
+        INSERT INTO inventory_log (product_id, change_type, quantity_change, reference_id)
+        VALUES (p_product_id, 'SALE', -p_quantity, p_order_id);
+        
+        SET p_result_message = 'Order processed successfully';
+        COMMIT;
+    END IF;
+    
+END //
+DELIMITER ;
+```
+
+### Financial Transfer with Audit
+```sql
+DELIMITER //
+CREATE PROCEDURE TransferFunds(
+    IN p_from_account VARCHAR(20),
+    IN p_to_account VARCHAR(20),
+    IN p_amount DECIMAL(12,2),
+    IN p_description VARCHAR(255),
+    OUT p_transaction_id INT,
+    OUT p_status VARCHAR(50)
+)
+BEGIN
+    DECLARE v_from_balance DECIMAL(12,2);
+    DECLARE v_to_balance DECIMAL(12,2);
+    DECLARE v_from_exists INT DEFAULT 0;
+    DECLARE v_to_exists INT DEFAULT 0;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_status = 'FAILED - Database Error';
+        
+        -- Log failed transaction
+        INSERT INTO transaction_log (
+            from_account, to_account, amount, status, 
+            description, created_at
+        ) VALUES (
+            p_from_account, p_to_account, p_amount, 'FAILED',
+            p_description, NOW()
+        );
+    END;
+    
+    START TRANSACTION;
+    
+    -- Validate accounts exist and get balances (with locks)
+    SELECT COUNT(*), COALESCE(SUM(balance), 0)
+    INTO v_from_exists, v_from_balance
+    FROM accounts 
+    WHERE account_number = p_from_account
+    FOR UPDATE;
+    
+    SELECT COUNT(*), COALESCE(SUM(balance), 0)
+    INTO v_to_exists, v_to_balance
+    FROM accounts 
+    WHERE account_number = p_to_account
+    FOR UPDATE;
+    
+    -- Validation checks
+    IF v_from_exists = 0 THEN
+        SET p_status = 'FAILED - Source account not found';
+        ROLLBACK;
+    ELSEIF v_to_exists = 0 THEN
+        SET p_status = 'FAILED - Destination account not found';
+        ROLLBACK;
+    ELSEIF v_from_balance < p_amount THEN
+        SET p_status = 'FAILED - Insufficient funds';
+        ROLLBACK;
+    ELSEIF p_amount <= 0 THEN
+        SET p_status = 'FAILED - Invalid amount';
+        ROLLBACK;
+    ELSE
+        -- Perform transfer
+        UPDATE accounts 
+        SET balance = balance - p_amount,
+            last_transaction_date = NOW()
+        WHERE account_number = p_from_account;
+        
+        UPDATE accounts 
+        SET balance = balance + p_amount,
+            last_transaction_date = NOW()
+        WHERE account_number = p_to_account;
+        
+        -- Create transaction record
+        INSERT INTO transactions (
+            from_account, to_account, amount, description, 
+            status, created_at
+        ) VALUES (
+            p_from_account, p_to_account, p_amount, p_description,
+            'COMPLETED', NOW()
+        );
+        
+        SET p_transaction_id = LAST_INSERT_ID();
+        
+        -- Create audit entries
+        INSERT INTO account_audit (
+            account_number, transaction_type, amount, 
+            balance_before, balance_after, transaction_id, created_at
+        ) VALUES 
+        (p_from_account, 'DEBIT', p_amount, v_from_balance, 
+         v_from_balance - p_amount, p_transaction_id, NOW()),
+        (p_to_account, 'CREDIT', p_amount, v_to_balance, 
+         v_to_balance + p_amount, p_transaction_id, NOW());
+        
+        SET p_status = 'SUCCESS';
+        COMMIT;
+    END IF;
+    
+END //
+DELIMITER ;
+```
+
+## Transaction Performance Optimization
+
+### Minimize Transaction Scope
+```sql
+-- Bad: Long-running transaction
+START TRANSACTION;
+SELECT * FROM large_table;  -- Long operation
+-- ... lots of processing ...
+UPDATE summary_table SET total = 12345;
+COMMIT;
+
+-- Good: Minimize transaction time
+-- Do processing outside transaction
+SELECT * FROM large_table;
+-- ... process data ...
+
+-- Quick transaction for updates only
+START TRANSACTION;
+UPDATE summary_table SET total = 12345;
+COMMIT;
+```
+
+### Batch Processing
+```sql
+-- Process large datasets in batches
+DELIMITER //
+CREATE PROCEDURE ProcessLargeUpdate()
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE batch_size INT DEFAULT 1000;
+    DECLARE processed_count INT DEFAULT 0;
+    
+    WHILE NOT done DO
+        START TRANSACTION;
+        
+        -- Process batch
+        UPDATE products 
+        SET price = price * 1.1 
+        WHERE last_updated < DATE_SUB(NOW(), INTERVAL 1 YEAR)
+        LIMIT batch_size;
+        
+        SET processed_count = ROW_COUNT();
+        
+        COMMIT;
+        
+        -- Check if we're done
+        IF processed_count < batch_size THEN
+            SET done = TRUE;
+        END IF;
+        
+        -- Small delay to prevent overwhelming the system
+        SELECT SLEEP(0.1);
+        
+    END WHILE;
+END //
+DELIMITER ;
+```
+
+## Monitoring Transactions
+
+### Transaction Status Queries
+```sql
+-- MySQL: Show running transactions
+SELECT 
+    trx_id,
+    trx_state,
+    trx_started,
+    trx_requested_lock_id,
+    trx_wait_started,
+    trx_mysql_thread_id
+FROM information_schema.innodb_trx;
+
+-- Show locks
+SELECT 
+    lock_id,
+    lock_trx_id,
+    lock_mode,
+    lock_type,
+    lock_table,
+    lock_index
+FROM information_schema.innodb_locks;
+
+-- Show lock waits
+SELECT 
+    requesting_trx_id,
+    requested_lock_id,
+    blocking_trx_id,
+    blocking_lock_id
+FROM information_schema.innodb_lock_waits;
+```
+
+## Best Practices
+
+### 1. Keep Transactions Short
+- Minimize the time between START TRANSACTION and COMMIT
+- Avoid user interaction within transactions
+- Process data outside transactions when possible
+
+### 2. Handle Errors Properly
+```sql
+-- Always include error handling
+START TRANSACTION;
+
+-- Use savepoints for complex operations
+SAVEPOINT sp1;
+
+-- Check for errors after each critical operation
+IF @@ERROR != 0 THEN
+    ROLLBACK TO SAVEPOINT sp1;
+END IF;
+
+COMMIT;
+```
+
+### 3. Choose Appropriate Isolation Levels
+- Use READ COMMITTED for most applications
+- Use REPEATABLE READ for financial applications
+- Use SERIALIZABLE only when absolutely necessary
+
+### 4. Avoid Deadlocks
+- Always acquire locks in the same order
+- Keep transactions short
+- Use appropriate timeout settings
+
+## Interview Tips
+
+- Understand all four ACID properties and be able to explain each with examples
+- Know the different isolation levels and their trade-offs
+- Be familiar with deadlock prevention and resolution
+- Understand when to use explicit locking vs relying on database defaults
+- Know how to design transactions for high-concurrency applications
+- Be able to explain the performance implications of different isolation levels

@@ -1,0 +1,550 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are materialized views and when should you use them?
+---
+
+# What are materialized views and when should you use them?
+
+## Answer
+
+**Materialized views** are database objects that store the result of a query physically on disk, unlike regular views which are virtual. They provide pre-computed results for complex queries, significantly improving performance at the cost of storage space and data freshness.
+
+## Materialized Views vs Regular Views
+
+### Regular Views
+```sql
+-- Regular view (virtual)
+CREATE VIEW customer_summary AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    COUNT(o.order_id) as total_orders,
+    SUM(o.order_total) as total_spent,
+    AVG(o.order_total) as avg_order_value
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Query executes underlying SQL every time
+SELECT * FROM customer_summary WHERE total_spent > 1000;
+```
+
+### Materialized Views
+```sql
+-- PostgreSQL materialized view
+CREATE MATERIALIZED VIEW customer_summary_mv AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    COUNT(o.order_id) as total_orders,
+    SUM(o.order_total) as total_spent,
+    AVG(o.order_total) as avg_order_value,
+    MAX(o.order_date) as last_order_date
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Create index for better performance
+CREATE INDEX idx_customer_summary_mv_spent 
+ON customer_summary_mv (total_spent);
+
+-- Query reads pre-computed results (fast)
+SELECT * FROM customer_summary_mv WHERE total_spent > 1000;
+```
+
+## Creating Materialized Views
+
+### PostgreSQL Implementation
+```sql
+-- Basic materialized view
+CREATE MATERIALIZED VIEW sales_monthly_summary AS
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    COUNT(*) as order_count,
+    SUM(order_total) as total_revenue,
+    AVG(order_total) as avg_order_value,
+    COUNT(DISTINCT customer_id) as unique_customers
+FROM orders
+WHERE order_date >= '2023-01-01'
+GROUP BY DATE_TRUNC('month', order_date);
+
+-- With additional options
+CREATE MATERIALIZED VIEW product_performance_mv
+TABLESPACE fast_ssd  -- Specify tablespace
+AS
+SELECT 
+    p.product_id,
+    p.product_name,
+    p.category,
+    COUNT(oi.order_id) as times_ordered,
+    SUM(oi.quantity) as total_quantity_sold,
+    SUM(oi.quantity * oi.unit_price) as total_revenue,
+    AVG(oi.unit_price) as avg_selling_price
+FROM products p
+LEFT JOIN order_items oi ON p.product_id = oi.product_id
+LEFT JOIN orders o ON oi.order_id = o.order_id
+WHERE o.order_date >= '2023-01-01'
+GROUP BY p.product_id, p.product_name, p.category
+WITH NO DATA;  -- Create structure without data
+
+-- Populate the materialized view
+REFRESH MATERIALIZED VIEW product_performance_mv;
+```
+
+### Oracle Implementation
+```sql
+-- Oracle materialized view with automatic refresh
+CREATE MATERIALIZED VIEW customer_sales_mv
+BUILD IMMEDIATE
+REFRESH COMPLETE ON DEMAND
+ENABLE QUERY REWRITE
+AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    c.region,
+    SUM(o.order_total) as total_sales,
+    COUNT(o.order_id) as order_count,
+    MAX(o.order_date) as last_order_date
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name, c.region;
+
+-- Fast refresh materialized view (requires materialized view log)
+CREATE MATERIALIZED VIEW LOG ON orders
+WITH ROWID, SEQUENCE (customer_id, order_total, order_date)
+INCLUDING NEW VALUES;
+
+CREATE MATERIALIZED VIEW fast_refresh_mv
+REFRESH FAST ON COMMIT
+AS
+SELECT 
+    customer_id,
+    SUM(order_total) as total_sales,
+    COUNT(*) as order_count
+FROM orders
+GROUP BY customer_id;
+```
+
+### SQL Server Indexed Views
+```sql
+-- SQL Server indexed view (similar to materialized view)
+CREATE VIEW customer_totals_iv
+WITH SCHEMABINDING
+AS
+SELECT 
+    c.customer_id,
+    COUNT_BIG(*) as order_count,
+    SUM(o.order_total) as total_sales
+FROM dbo.customers c
+JOIN dbo.orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id;
+
+-- Create unique clustered index (makes it "materialized")
+CREATE UNIQUE CLUSTERED INDEX IX_customer_totals_iv
+ON customer_totals_iv (customer_id);
+
+-- Additional non-clustered indexes
+CREATE NONCLUSTERED INDEX IX_customer_totals_sales
+ON customer_totals_iv (total_sales DESC);
+```
+
+## Refresh Strategies
+
+### Manual Refresh
+```sql
+-- PostgreSQL: Complete refresh
+REFRESH MATERIALIZED VIEW customer_summary_mv;
+
+-- Concurrent refresh (non-blocking)
+REFRESH MATERIALIZED VIEW CONCURRENTLY customer_summary_mv;
+
+-- Oracle: Manual refresh
+EXEC DBMS_MVIEW.REFRESH('customer_sales_mv', 'C');  -- Complete
+EXEC DBMS_MVIEW.REFRESH('customer_sales_mv', 'F');  -- Fast
+```
+
+### Scheduled Refresh
+```sql
+-- PostgreSQL: Using pg_cron extension
+SELECT cron.schedule('refresh-customer-summary', '0 2 * * *', 
+    'REFRESH MATERIALIZED VIEW customer_summary_mv;');
+
+-- Oracle: Using DBMS_SCHEDULER
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB(
+        job_name => 'REFRESH_CUSTOMER_MV',
+        job_type => 'PLSQL_BLOCK',
+        job_action => 'BEGIN DBMS_MVIEW.REFRESH(''customer_sales_mv''); END;',
+        start_date => SYSTIMESTAMP,
+        repeat_interval => 'FREQ=DAILY;BYHOUR=2',
+        enabled => TRUE
+    );
+END;
+```
+
+### Incremental Refresh
+```sql
+-- Oracle fast refresh setup
+CREATE MATERIALIZED VIEW LOG ON orders
+WITH ROWID, SEQUENCE (customer_id, order_total, order_date)
+INCLUDING NEW VALUES;
+
+CREATE MATERIALIZED VIEW LOG ON customers
+WITH ROWID, SEQUENCE (customer_id, customer_name)
+INCLUDING NEW VALUES;
+
+-- Materialized view with fast refresh capability
+CREATE MATERIALIZED VIEW customer_sales_fast_mv
+REFRESH FAST ON DEMAND
+AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    SUM(o.order_total) as total_sales,
+    COUNT(o.order_id) as order_count
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name;
+```
+
+## Advanced Use Cases
+
+### Data Warehouse Aggregations
+```sql
+-- Multi-dimensional sales cube
+CREATE MATERIALIZED VIEW sales_cube_mv AS
+SELECT 
+    DATE_TRUNC('month', o.order_date) as month,
+    c.region,
+    p.category,
+    COUNT(*) as order_count,
+    SUM(oi.quantity) as total_quantity,
+    SUM(oi.quantity * oi.unit_price) as total_revenue,
+    AVG(oi.unit_price) as avg_price
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN products p ON oi.product_id = p.product_id
+WHERE o.order_date >= '2023-01-01'
+GROUP BY 
+    DATE_TRUNC('month', o.order_date),
+    c.region,
+    p.category;
+
+-- Create indexes for different query patterns
+CREATE INDEX idx_sales_cube_month ON sales_cube_mv (month);
+CREATE INDEX idx_sales_cube_region ON sales_cube_mv (region);
+CREATE INDEX idx_sales_cube_category ON sales_cube_mv (category);
+CREATE INDEX idx_sales_cube_revenue ON sales_cube_mv (total_revenue DESC);
+```
+
+### Real-time Analytics Dashboard
+```sql
+-- Dashboard metrics materialized view
+CREATE MATERIALIZED VIEW dashboard_metrics_mv AS
+WITH daily_stats AS (
+    SELECT 
+        DATE(order_date) as date,
+        COUNT(*) as daily_orders,
+        SUM(order_total) as daily_revenue,
+        COUNT(DISTINCT customer_id) as daily_customers
+    FROM orders
+    WHERE order_date >= CURRENT_DATE - INTERVAL '30 days'
+    GROUP BY DATE(order_date)
+),
+product_stats AS (
+    SELECT 
+        p.product_name,
+        SUM(oi.quantity) as quantity_sold,
+        ROW_NUMBER() OVER (ORDER BY SUM(oi.quantity) DESC) as rank
+    FROM products p
+    JOIN order_items oi ON p.product_id = oi.product_id
+    JOIN orders o ON oi.order_id = o.order_id
+    WHERE o.order_date >= CURRENT_DATE - INTERVAL '7 days'
+    GROUP BY p.product_id, p.product_name
+)
+SELECT 
+    'summary' as metric_type,
+    json_build_object(
+        'total_orders', (SELECT SUM(daily_orders) FROM daily_stats),
+        'total_revenue', (SELECT SUM(daily_revenue) FROM daily_stats),
+        'avg_daily_orders', (SELECT AVG(daily_orders) FROM daily_stats),
+        'top_products', (SELECT json_agg(product_name ORDER BY rank) 
+                        FROM product_stats WHERE rank <= 5)
+    ) as metrics
+UNION ALL
+SELECT 
+    'daily_trend' as metric_type,
+    json_agg(json_build_object(
+        'date', date,
+        'orders', daily_orders,
+        'revenue', daily_revenue,
+        'customers', daily_customers
+    ) ORDER BY date) as metrics
+FROM daily_stats;
+```
+
+### Complex Reporting Views
+```sql
+-- Customer lifecycle analysis
+CREATE MATERIALIZED VIEW customer_lifecycle_mv AS
+WITH customer_metrics AS (
+    SELECT 
+        c.customer_id,
+        c.customer_name,
+        c.registration_date,
+        MIN(o.order_date) as first_order_date,
+        MAX(o.order_date) as last_order_date,
+        COUNT(o.order_id) as total_orders,
+        SUM(o.order_total) as total_spent,
+        AVG(o.order_total) as avg_order_value
+    FROM customers c
+    LEFT JOIN orders o ON c.customer_id = o.customer_id
+    GROUP BY c.customer_id, c.customer_name, c.registration_date
+)
+SELECT 
+    customer_id,
+    customer_name,
+    registration_date,
+    first_order_date,
+    last_order_date,
+    total_orders,
+    total_spent,
+    avg_order_value,
+    CASE 
+        WHEN total_orders = 0 THEN 'Never Purchased'
+        WHEN last_order_date >= CURRENT_DATE - INTERVAL '30 days' THEN 'Active'
+        WHEN last_order_date >= CURRENT_DATE - INTERVAL '90 days' THEN 'At Risk'
+        WHEN last_order_date >= CURRENT_DATE - INTERVAL '180 days' THEN 'Dormant'
+        ELSE 'Lost'
+    END as lifecycle_stage,
+    CASE 
+        WHEN total_spent > 5000 THEN 'VIP'
+        WHEN total_spent > 2000 THEN 'Premium'
+        WHEN total_spent > 500 THEN 'Regular'
+        WHEN total_orders > 0 THEN 'Occasional'
+        ELSE 'Prospect'
+    END as customer_tier,
+    EXTRACT(DAYS FROM (last_order_date - first_order_date)) as customer_lifespan_days
+FROM customer_metrics;
+```
+
+## Performance Optimization
+
+### Indexing Strategies
+```sql
+-- Create appropriate indexes on materialized views
+CREATE INDEX idx_customer_lifecycle_stage 
+ON customer_lifecycle_mv (lifecycle_stage);
+
+CREATE INDEX idx_customer_lifecycle_tier 
+ON customer_lifecycle_mv (customer_tier);
+
+CREATE INDEX idx_customer_lifecycle_spent 
+ON customer_lifecycle_mv (total_spent DESC);
+
+-- Composite indexes for common query patterns
+CREATE INDEX idx_customer_lifecycle_stage_tier 
+ON customer_lifecycle_mv (lifecycle_stage, customer_tier);
+
+-- Partial indexes for specific conditions
+CREATE INDEX idx_customer_lifecycle_active 
+ON customer_lifecycle_mv (total_spent) 
+WHERE lifecycle_stage = 'Active';
+```
+
+### Query Rewriting
+```sql
+-- Original expensive query
+SELECT 
+    lifecycle_stage,
+    COUNT(*) as customer_count,
+    AVG(total_spent) as avg_spent,
+    SUM(total_spent) as total_revenue
+FROM (
+    -- Complex subquery with multiple joins and calculations
+    SELECT c.customer_id, /* ... complex logic ... */
+    FROM customers c
+    LEFT JOIN orders o ON c.customer_id = o.customer_id
+    -- ... more joins and calculations
+) customer_analysis
+GROUP BY lifecycle_stage;
+
+-- Optimized query using materialized view
+SELECT 
+    lifecycle_stage,
+    COUNT(*) as customer_count,
+    AVG(total_spent) as avg_spent,
+    SUM(total_spent) as total_revenue
+FROM customer_lifecycle_mv
+GROUP BY lifecycle_stage;
+```
+
+### Partitioned Materialized Views
+```sql
+-- Partitioned materialized view for large datasets
+CREATE MATERIALIZED VIEW sales_summary_partitioned
+PARTITION BY RANGE (month)
+AS
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    region,
+    SUM(order_total) as total_sales,
+    COUNT(*) as order_count
+FROM orders
+GROUP BY DATE_TRUNC('month', order_date), region;
+
+-- Create partitions
+CREATE TABLE sales_summary_2024_q1 PARTITION OF sales_summary_partitioned
+FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE sales_summary_2024_q2 PARTITION OF sales_summary_partitioned
+FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+```
+
+## Monitoring and Maintenance
+
+### Materialized View Statistics
+```sql
+-- PostgreSQL: Monitor materialized view usage
+SELECT 
+    schemaname,
+    matviewname,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||matviewname)) as size,
+    ispopulated
+FROM pg_matviews;
+
+-- Check last refresh time (requires custom tracking)
+CREATE TABLE mv_refresh_log (
+    mv_name TEXT,
+    refresh_time TIMESTAMP,
+    refresh_duration INTERVAL
+);
+
+-- Oracle: Materialized view information
+SELECT 
+    mview_name,
+    last_refresh_date,
+    refresh_method,
+    build_mode,
+    fast_refreshable
+FROM user_mviews;
+```
+
+### Automated Maintenance
+```sql
+-- PostgreSQL: Automated refresh with logging
+CREATE OR REPLACE FUNCTION refresh_materialized_view(mv_name TEXT)
+RETURNS VOID AS $$
+DECLARE
+    start_time TIMESTAMP;
+    end_time TIMESTAMP;
+BEGIN
+    start_time := clock_timestamp();
+    
+    EXECUTE 'REFRESH MATERIALIZED VIEW CONCURRENTLY ' || mv_name;
+    
+    end_time := clock_timestamp();
+    
+    INSERT INTO mv_refresh_log (mv_name, refresh_time, refresh_duration)
+    VALUES (mv_name, start_time, end_time - start_time);
+    
+    RAISE NOTICE 'Refreshed % in %', mv_name, end_time - start_time;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule regular refreshes
+SELECT cron.schedule('refresh-sales-summary', '0 */4 * * *', 
+    'SELECT refresh_materialized_view(''sales_monthly_summary'');');
+```
+
+## When to Use Materialized Views
+
+### Good Use Cases
+```sql
+-- 1. Complex aggregations over large datasets
+CREATE MATERIALIZED VIEW sales_analytics_mv AS
+SELECT 
+    region,
+    product_category,
+    DATE_TRUNC('quarter', order_date) as quarter,
+    SUM(order_total) as total_sales,
+    COUNT(DISTINCT customer_id) as unique_customers,
+    AVG(order_total) as avg_order_value
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN products p ON oi.product_id = p.product_id
+GROUP BY region, product_category, DATE_TRUNC('quarter', order_date);
+
+-- 2. Frequently accessed reports
+CREATE MATERIALIZED VIEW monthly_kpi_report_mv AS
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    COUNT(*) as total_orders,
+    SUM(order_total) as revenue,
+    COUNT(DISTINCT customer_id) as active_customers,
+    AVG(order_total) as avg_order_value,
+    SUM(order_total) / COUNT(DISTINCT customer_id) as revenue_per_customer
+FROM orders
+GROUP BY DATE_TRUNC('month', order_date);
+
+-- 3. Data warehouse star schema fact tables
+CREATE MATERIALIZED VIEW fact_sales_mv AS
+SELECT 
+    d.date_key,
+    c.customer_key,
+    p.product_key,
+    l.location_key,
+    SUM(oi.quantity) as quantity_sold,
+    SUM(oi.quantity * oi.unit_price) as sales_amount,
+    COUNT(DISTINCT o.order_id) as transaction_count
+FROM orders o
+JOIN dim_date d ON DATE(o.order_date) = d.date_value
+JOIN dim_customer c ON o.customer_id = c.customer_id
+JOIN dim_location l ON o.location_id = l.location_id
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN dim_product p ON oi.product_id = p.product_id
+GROUP BY d.date_key, c.customer_key, p.product_key, l.location_key;
+```
+
+### When NOT to Use
+```sql
+-- Avoid for:
+-- 1. Frequently changing data (high refresh overhead)
+-- 2. Simple queries that are already fast
+-- 3. Small datasets where views are sufficient
+-- 4. Real-time requirements (data freshness issues)
+-- 5. Limited storage environments
+```
+
+## Best Practices
+
+### 1. Design Considerations
+- Choose appropriate refresh strategy based on data freshness requirements
+- Consider storage costs vs query performance benefits
+- Design for common query patterns
+- Include necessary columns for filtering and sorting
+
+### 2. Refresh Strategy
+- Use incremental refresh when possible (Oracle fast refresh)
+- Schedule refreshes during low-activity periods
+- Monitor refresh performance and duration
+- Consider concurrent refresh for minimal downtime
+
+### 3. Indexing
+- Create indexes based on query patterns
+- Use partial indexes for filtered queries
+- Consider composite indexes for multi-column filters
+- Monitor index usage and effectiveness
+
+## Interview Tips
+
+- Understand the trade-offs: performance vs storage vs data freshness
+- Know different refresh strategies and when to use each
+- Be familiar with database-specific implementations
+- Understand when materialized views are beneficial vs regular views
+- Know how to monitor and maintain materialized views
+- Practice designing materialized views for common business scenarios
+- Be aware of limitations and potential issues (stale data, storage costs)

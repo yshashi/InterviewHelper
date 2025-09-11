@@ -1,0 +1,498 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are pivot and unpivot operations?
+---
+
+# What are pivot and unpivot operations?
+
+## Answer
+
+**PIVOT** transforms rows into columns by rotating data, while **UNPIVOT** transforms columns into rows. These operations are useful for reshaping data for reporting, analysis, and data presentation purposes.
+
+## PIVOT Operation
+
+### Concept
+PIVOT takes unique values from one column and transforms them into multiple columns, aggregating data in the process.
+
+```sql
+-- Before PIVOT (rows)
+-- Month    | Product | Sales
+-- January  | A       | 100
+-- January  | B       | 150
+-- February | A       | 120
+-- February | B       | 180
+
+-- After PIVOT (columns)
+-- Month    | A   | B
+-- January  | 100 | 150
+-- February | 120 | 180
+```
+
+### SQL Server PIVOT Syntax
+```sql
+-- Sample data
+CREATE TABLE MonthlySales (
+    Month VARCHAR(20),
+    Product VARCHAR(10),
+    SalesAmount DECIMAL(10,2)
+);
+
+INSERT INTO MonthlySales VALUES
+('January', 'ProductA', 1000),
+('January', 'ProductB', 1500),
+('January', 'ProductC', 800),
+('February', 'ProductA', 1200),
+('February', 'ProductB', 1800),
+('February', 'ProductC', 900),
+('March', 'ProductA', 1100),
+('March', 'ProductB', 1600),
+('March', 'ProductC', 950);
+
+-- PIVOT query
+SELECT Month, ProductA, ProductB, ProductC
+FROM (
+    SELECT Month, Product, SalesAmount
+    FROM MonthlySales
+) AS SourceTable
+PIVOT (
+    SUM(SalesAmount)
+    FOR Product IN ([ProductA], [ProductB], [ProductC])
+) AS PivotTable;
+```
+
+### MySQL PIVOT (Using CASE Statements)
+```sql
+-- MySQL doesn't have native PIVOT, use conditional aggregation
+SELECT 
+    Month,
+    SUM(CASE WHEN Product = 'ProductA' THEN SalesAmount ELSE 0 END) AS ProductA,
+    SUM(CASE WHEN Product = 'ProductB' THEN SalesAmount ELSE 0 END) AS ProductB,
+    SUM(CASE WHEN Product = 'ProductC' THEN SalesAmount ELSE 0 END) AS ProductC
+FROM MonthlySales
+GROUP BY Month
+ORDER BY Month;
+
+-- More flexible approach with NULL handling
+SELECT 
+    Month,
+    SUM(CASE WHEN Product = 'ProductA' THEN SalesAmount END) AS ProductA,
+    SUM(CASE WHEN Product = 'ProductB' THEN SalesAmount END) AS ProductB,
+    SUM(CASE WHEN Product = 'ProductC' THEN SalesAmount END) AS ProductC
+FROM MonthlySales
+GROUP BY Month
+ORDER BY Month;
+```
+
+### PostgreSQL PIVOT (Using crosstab)
+```sql
+-- Install tablefunc extension
+CREATE EXTENSION IF NOT EXISTS tablefunc;
+
+-- Using crosstab function
+SELECT * FROM crosstab(
+    'SELECT Month, Product, SalesAmount FROM MonthlySales ORDER BY 1,2',
+    'VALUES (''ProductA''), (''ProductB''), (''ProductC'')'
+) AS ct(Month VARCHAR, ProductA DECIMAL, ProductB DECIMAL, ProductC DECIMAL);
+
+-- Alternative: Manual PIVOT with CASE
+SELECT 
+    Month,
+    SUM(CASE WHEN Product = 'ProductA' THEN SalesAmount END) AS ProductA,
+    SUM(CASE WHEN Product = 'ProductB' THEN SalesAmount END) AS ProductB,
+    SUM(CASE WHEN Product = 'ProductC' THEN SalesAmount END) AS ProductC
+FROM MonthlySales
+GROUP BY Month
+ORDER BY Month;
+```
+
+## UNPIVOT Operation
+
+### Concept
+UNPIVOT transforms columns into rows, essentially the reverse of PIVOT.
+
+```sql
+-- Before UNPIVOT (columns)
+-- Month    | ProductA | ProductB | ProductC
+-- January  | 1000     | 1500     | 800
+-- February | 1200     | 1800     | 900
+
+-- After UNPIVOT (rows)
+-- Month    | Product   | Sales
+-- January  | ProductA  | 1000
+-- January  | ProductB  | 1500
+-- January  | ProductC  | 800
+-- February | ProductA  | 1200
+-- February | ProductB  | 1800
+-- February | ProductC  | 900
+```
+
+### SQL Server UNPIVOT Syntax
+```sql
+-- Sample pivoted data
+CREATE TABLE PivotedSales (
+    Month VARCHAR(20),
+    ProductA DECIMAL(10,2),
+    ProductB DECIMAL(10,2),
+    ProductC DECIMAL(10,2)
+);
+
+INSERT INTO PivotedSales VALUES
+('January', 1000, 1500, 800),
+('February', 1200, 1800, 900),
+('March', 1100, 1600, 950);
+
+-- UNPIVOT query
+SELECT Month, Product, SalesAmount
+FROM PivotedSales
+UNPIVOT (
+    SalesAmount FOR Product IN (ProductA, ProductB, ProductC)
+) AS UnpivotTable;
+```
+
+### MySQL UNPIVOT (Using UNION ALL)
+```sql
+-- MySQL doesn't have native UNPIVOT, use UNION ALL
+SELECT Month, 'ProductA' AS Product, ProductA AS SalesAmount
+FROM PivotedSales
+WHERE ProductA IS NOT NULL
+
+UNION ALL
+
+SELECT Month, 'ProductB' AS Product, ProductB AS SalesAmount
+FROM PivotedSales
+WHERE ProductB IS NOT NULL
+
+UNION ALL
+
+SELECT Month, 'ProductC' AS Product, ProductC AS SalesAmount
+FROM PivotedSales
+WHERE ProductC IS NOT NULL
+
+ORDER BY Month, Product;
+```
+
+### PostgreSQL UNPIVOT (Using UNION ALL)
+```sql
+-- Similar to MySQL approach
+SELECT Month, 'ProductA' AS Product, ProductA AS SalesAmount
+FROM PivotedSales
+WHERE ProductA IS NOT NULL
+
+UNION ALL
+
+SELECT Month, 'ProductB' AS Product, ProductB AS SalesAmount
+FROM PivotedSales
+WHERE ProductB IS NOT NULL
+
+UNION ALL
+
+SELECT Month, 'ProductC' AS Product, ProductC AS SalesAmount
+FROM PivotedSales
+WHERE ProductC IS NOT NULL
+
+ORDER BY Month, Product;
+```
+
+## Practical Business Examples
+
+### Sales Dashboard Pivot
+```sql
+-- Transform sales data for dashboard display
+-- Original data: Date, Salesperson, Region, Amount
+-- Desired: Date with columns for each region
+
+-- MySQL approach
+SELECT 
+    DATE(sale_date) as SaleDate,
+    SUM(CASE WHEN region = 'North' THEN amount END) AS North,
+    SUM(CASE WHEN region = 'South' THEN amount END) AS South,
+    SUM(CASE WHEN region = 'East' THEN amount END) AS East,
+    SUM(CASE WHEN region = 'West' THEN amount END) AS West,
+    SUM(amount) AS Total
+FROM sales
+WHERE sale_date >= '2024-01-01'
+GROUP BY DATE(sale_date)
+ORDER BY SaleDate;
+
+-- SQL Server approach
+SELECT SaleDate, North, South, East, West
+FROM (
+    SELECT DATE(sale_date) as SaleDate, region, amount
+    FROM sales
+    WHERE sale_date >= '2024-01-01'
+) AS SourceTable
+PIVOT (
+    SUM(amount)
+    FOR region IN ([North], [South], [East], [West])
+) AS PivotTable
+ORDER BY SaleDate;
+```
+
+### Employee Skills Matrix
+```sql
+-- Transform employee skills data
+-- Original: EmployeeID, SkillName, ProficiencyLevel
+-- Desired: Employee with columns for each skill
+
+CREATE TABLE EmployeeSkills (
+    EmployeeID INT,
+    EmployeeName VARCHAR(100),
+    SkillName VARCHAR(50),
+    ProficiencyLevel INT
+);
+
+-- Pivot to create skills matrix
+SELECT 
+    EmployeeID,
+    EmployeeName,
+    MAX(CASE WHEN SkillName = 'SQL' THEN ProficiencyLevel END) AS SQL_Level,
+    MAX(CASE WHEN SkillName = 'Python' THEN ProficiencyLevel END) AS Python_Level,
+    MAX(CASE WHEN SkillName = 'JavaScript' THEN ProficiencyLevel END) AS JavaScript_Level,
+    MAX(CASE WHEN SkillName = 'Java' THEN ProficiencyLevel END) AS Java_Level
+FROM EmployeeSkills
+GROUP BY EmployeeID, EmployeeName
+ORDER BY EmployeeID;
+```
+
+### Financial Reporting Pivot
+```sql
+-- Monthly financial report pivot
+-- Transform account transactions into monthly columns
+
+SELECT 
+    account_name,
+    account_type,
+    SUM(CASE WHEN MONTH(transaction_date) = 1 THEN amount END) AS January,
+    SUM(CASE WHEN MONTH(transaction_date) = 2 THEN amount END) AS February,
+    SUM(CASE WHEN MONTH(transaction_date) = 3 THEN amount END) AS March,
+    SUM(CASE WHEN MONTH(transaction_date) = 4 THEN amount END) AS April,
+    SUM(CASE WHEN MONTH(transaction_date) = 5 THEN amount END) AS May,
+    SUM(CASE WHEN MONTH(transaction_date) = 6 THEN amount END) AS June,
+    SUM(amount) AS YTD_Total
+FROM account_transactions
+WHERE YEAR(transaction_date) = 2024
+GROUP BY account_name, account_type
+ORDER BY account_type, account_name;
+```
+
+## Dynamic PIVOT
+
+### Dynamic Column Generation
+```sql
+-- SQL Server: Dynamic PIVOT with unknown column values
+DECLARE @columns NVARCHAR(MAX), @sql NVARCHAR(MAX)
+
+-- Get distinct product names
+SELECT @columns = COALESCE(@columns + ',[' + Product + ']', '[' + Product + ']')
+FROM (SELECT DISTINCT Product FROM MonthlySales) AS Products
+
+-- Build dynamic PIVOT query
+SET @sql = '
+SELECT Month, ' + @columns + '
+FROM (
+    SELECT Month, Product, SalesAmount
+    FROM MonthlySales
+) AS SourceTable
+PIVOT (
+    SUM(SalesAmount)
+    FOR Product IN (' + @columns + ')
+) AS PivotTable
+ORDER BY Month'
+
+EXEC sp_executesql @sql
+```
+
+### MySQL Dynamic PIVOT
+```sql
+-- MySQL: Dynamic PIVOT using prepared statements
+SET @sql = NULL;
+
+SELECT
+  GROUP_CONCAT(DISTINCT
+    CONCAT(
+      'SUM(CASE WHEN Product = ''',
+      Product,
+      ''' THEN SalesAmount END) AS `',
+      Product, '`'
+    )
+  ) INTO @sql
+FROM MonthlySales;
+
+SET @sql = CONCAT('SELECT Month, ', @sql, ' 
+                   FROM MonthlySales 
+                   GROUP BY Month 
+                   ORDER BY Month');
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+```
+
+## Advanced PIVOT Scenarios
+
+### Multiple Aggregations
+```sql
+-- PIVOT with multiple aggregation functions
+SELECT 
+    Month,
+    SUM(CASE WHEN Product = 'ProductA' THEN SalesAmount END) AS ProductA_Sales,
+    COUNT(CASE WHEN Product = 'ProductA' THEN 1 END) AS ProductA_Count,
+    AVG(CASE WHEN Product = 'ProductA' THEN SalesAmount END) AS ProductA_Avg,
+    SUM(CASE WHEN Product = 'ProductB' THEN SalesAmount END) AS ProductB_Sales,
+    COUNT(CASE WHEN Product = 'ProductB' THEN 1 END) AS ProductB_Count,
+    AVG(CASE WHEN Product = 'ProductB' THEN SalesAmount END) AS ProductB_Avg
+FROM MonthlySales
+GROUP BY Month
+ORDER BY Month;
+```
+
+### Conditional PIVOT
+```sql
+-- PIVOT with conditions
+SELECT 
+    Region,
+    SUM(CASE WHEN MONTH(sale_date) = 1 AND amount > 1000 THEN amount END) AS Jan_HighValue,
+    SUM(CASE WHEN MONTH(sale_date) = 1 AND amount <= 1000 THEN amount END) AS Jan_LowValue,
+    SUM(CASE WHEN MONTH(sale_date) = 2 AND amount > 1000 THEN amount END) AS Feb_HighValue,
+    SUM(CASE WHEN MONTH(sale_date) = 2 AND amount <= 1000 THEN amount END) AS Feb_LowValue
+FROM sales
+WHERE YEAR(sale_date) = 2024
+GROUP BY Region;
+```
+
+## UNPIVOT for Data Normalization
+
+### Normalizing Wide Tables
+```sql
+-- Convert wide survey response table to normalized form
+CREATE TABLE SurveyResponses (
+    ResponseID INT,
+    CustomerID INT,
+    Question1_Rating INT,
+    Question2_Rating INT,
+    Question3_Rating INT,
+    Question4_Rating INT
+);
+
+-- UNPIVOT to normalized form
+SELECT 
+    ResponseID,
+    CustomerID,
+    'Question1' AS QuestionName,
+    Question1_Rating AS Rating
+FROM SurveyResponses
+WHERE Question1_Rating IS NOT NULL
+
+UNION ALL
+
+SELECT 
+    ResponseID,
+    CustomerID,
+    'Question2' AS QuestionName,
+    Question2_Rating AS Rating
+FROM SurveyResponses
+WHERE Question2_Rating IS NOT NULL
+
+UNION ALL
+
+SELECT 
+    ResponseID,
+    CustomerID,
+    'Question3' AS QuestionName,
+    Question3_Rating AS Rating
+FROM SurveyResponses
+WHERE Question3_Rating IS NOT NULL
+
+UNION ALL
+
+SELECT 
+    ResponseID,
+    CustomerID,
+    'Question4' AS QuestionName,
+    Question4_Rating AS Rating
+FROM SurveyResponses
+WHERE Question4_Rating IS NOT NULL
+
+ORDER BY ResponseID, QuestionName;
+```
+
+## Performance Considerations
+
+### Indexing for PIVOT Operations
+```sql
+-- Create appropriate indexes for PIVOT queries
+CREATE INDEX IX_MonthlySales_Month_Product 
+ON MonthlySales (Month, Product) 
+INCLUDE (SalesAmount);
+
+-- This index supports both grouping and filtering in PIVOT operations
+```
+
+### Optimizing Large PIVOT Operations
+```sql
+-- Use CTEs for complex PIVOT operations
+WITH MonthlySummary AS (
+    SELECT 
+        Month,
+        Product,
+        SUM(SalesAmount) AS TotalSales
+    FROM MonthlySales
+    WHERE Month IN ('January', 'February', 'March')
+    GROUP BY Month, Product
+)
+SELECT 
+    Month,
+    SUM(CASE WHEN Product = 'ProductA' THEN TotalSales END) AS ProductA,
+    SUM(CASE WHEN Product = 'ProductB' THEN TotalSales END) AS ProductB,
+    SUM(CASE WHEN Product = 'ProductC' THEN TotalSales END) AS ProductC
+FROM MonthlySummary
+GROUP BY Month
+ORDER BY Month;
+```
+
+## Best Practices
+
+### 1. Handle NULL Values
+```sql
+-- Use COALESCE to handle NULLs in PIVOT results
+SELECT 
+    Month,
+    COALESCE(SUM(CASE WHEN Product = 'ProductA' THEN SalesAmount END), 0) AS ProductA,
+    COALESCE(SUM(CASE WHEN Product = 'ProductB' THEN SalesAmount END), 0) AS ProductB,
+    COALESCE(SUM(CASE WHEN Product = 'ProductC' THEN SalesAmount END), 0) AS ProductC
+FROM MonthlySales
+GROUP BY Month;
+```
+
+### 2. Use Meaningful Column Names
+```sql
+-- Create descriptive column names in PIVOT
+SELECT 
+    Month,
+    SUM(CASE WHEN Product = 'ProductA' THEN SalesAmount END) AS "Product A Sales",
+    SUM(CASE WHEN Product = 'ProductB' THEN SalesAmount END) AS "Product B Sales",
+    SUM(CASE WHEN Product = 'ProductC' THEN SalesAmount END) AS "Product C Sales"
+FROM MonthlySales
+GROUP BY Month;
+```
+
+### 3. Document Dynamic PIVOT Logic
+```sql
+-- Document the purpose and maintenance of dynamic PIVOT queries
+/*
+Dynamic PIVOT Query for Product Sales Report
+Purpose: Creates monthly sales report with columns for each product
+Maintenance: Automatically includes new products as they are added
+Performance: Requires rebuild when product list changes significantly
+*/
+```
+
+## Interview Tips
+
+- Understand that PIVOT transforms rows to columns, UNPIVOT does the reverse
+- Know that not all databases have native PIVOT/UNPIVOT (MySQL uses CASE statements)
+- Be familiar with conditional aggregation using CASE WHEN for PIVOT operations
+- Understand when to use UNION ALL for UNPIVOT operations
+- Know how to handle NULL values in PIVOT results
+- Practice dynamic PIVOT scenarios for unknown column values
+- Be able to explain performance implications and indexing strategies

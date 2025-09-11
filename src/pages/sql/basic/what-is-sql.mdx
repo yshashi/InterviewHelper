@@ -1,0 +1,104 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is SQL and what are its main components?
+---
+
+# What is SQL and what are its main components?
+
+## Answer
+
+**SQL (Structured Query Language)** is a standardized programming language designed for managing and manipulating relational databases. It provides a way to communicate with database management systems to perform various operations on data.
+
+## Main Components of SQL
+
+### 1. **DDL (Data Definition Language)**
+Commands that define the database structure:
+- `CREATE` - Creates database objects (tables, indexes, views)
+- `ALTER` - Modifies existing database objects
+- `DROP` - Deletes database objects
+- `TRUNCATE` - Removes all records from a table
+
+```sql
+-- Example DDL commands
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    salary DECIMAL(10,2)
+);
+
+ALTER TABLE employees ADD COLUMN department VARCHAR(50);
+
+DROP TABLE employees;
+```
+
+### 2. **DML (Data Manipulation Language)**
+Commands that manipulate data within tables:
+- `SELECT` - Retrieves data from tables
+- `INSERT` - Adds new records
+- `UPDATE` - Modifies existing records
+- `DELETE` - Removes records
+
+```sql
+-- Example DML commands
+INSERT INTO employees (id, name, salary) VALUES (1, 'John Doe', 50000);
+
+SELECT * FROM employees WHERE salary > 40000;
+
+UPDATE employees SET salary = 55000 WHERE id = 1;
+
+DELETE FROM employees WHERE id = 1;
+```
+
+### 3. **DCL (Data Control Language)**
+Commands that control access to data:
+- `GRANT` - Gives user access privileges
+- `REVOKE` - Removes user access privileges
+
+```sql
+-- Example DCL commands
+GRANT SELECT, INSERT ON employees TO user1;
+
+REVOKE INSERT ON employees FROM user1;
+```
+
+### 4. **TCL (Transaction Control Language)**
+Commands that manage database transactions:
+- `COMMIT` - Saves transaction changes
+- `ROLLBACK` - Undoes transaction changes
+- `SAVEPOINT` - Creates a point within a transaction
+- `SET TRANSACTION` - Sets transaction properties
+
+```sql
+-- Example TCL commands
+BEGIN TRANSACTION;
+INSERT INTO employees (id, name, salary) VALUES (2, 'Jane Smith', 60000);
+SAVEPOINT sp1;
+UPDATE employees SET salary = 65000 WHERE id = 2;
+ROLLBACK TO sp1;
+COMMIT;
+```
+
+## Key Features of SQL
+
+1. **Declarative Language**: You specify what you want, not how to get it
+2. **Standardized**: ANSI/ISO standard with vendor-specific extensions
+3. **Portable**: Works across different database systems
+4. **Powerful**: Handles complex queries and data operations
+5. **Scalable**: Efficient for both small and large datasets
+
+## Common SQL Database Systems
+
+- **MySQL** - Open-source, widely used for web applications
+- **PostgreSQL** - Advanced open-source with extensive features
+- **Microsoft SQL Server** - Enterprise-grade database system
+- **Oracle Database** - High-performance enterprise solution
+- **SQLite** - Lightweight, embedded database
+
+## Interview Tips
+
+- Understand that SQL is both a language and a standard
+- Know the four main categories of SQL commands
+- Be familiar with basic syntax and common operations
+- Understand that different database systems may have slight variations
+- Practice writing basic queries for each command type
+

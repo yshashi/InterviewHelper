@@ -1,0 +1,364 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are Common Table Expressions (CTEs)?
+---
+
+# What are Common Table Expressions (CTEs)?
+
+## Answer
+
+**Common Table Expressions (CTEs)** are temporary named result sets that exist only within the scope of a single SQL statement. They provide a way to write more readable and maintainable complex queries.
+
+## Basic Syntax
+
+```sql
+WITH cte_name (column1, column2, ...) AS (
+    -- CTE query definition
+    SELECT column1, column2, ...
+    FROM table_name
+    WHERE condition
+)
+-- Main query using the CTE
+SELECT * FROM cte_name WHERE condition;
+```
+
+## Simple CTE Example
+
+```sql
+-- Without CTE (subquery in FROM clause)
+SELECT dept_name, avg_salary
+FROM (
+    SELECT department_id, AVG(salary) as avg_salary
+    FROM employees
+    GROUP BY department_id
+) emp_avg
+JOIN departments d ON emp_avg.department_id = d.department_id
+WHERE avg_salary > 50000;
+
+-- With CTE (more readable)
+WITH department_averages AS (
+    SELECT department_id, AVG(salary) as avg_salary
+    FROM employees
+    GROUP BY department_id
+)
+SELECT d.dept_name, da.avg_salary
+FROM department_averages da
+JOIN departments d ON da.department_id = d.department_id
+WHERE da.avg_salary > 50000;
+```
+
+## Multiple CTEs
+
+```sql
+WITH 
+high_earners AS (
+    SELECT employee_id, name, salary, department_id
+    FROM employees
+    WHERE salary > 75000
+),
+department_stats AS (
+    SELECT 
+        department_id,
+        COUNT(*) as total_employees,
+        AVG(salary) as avg_salary
+    FROM employees
+    GROUP BY department_id
+)
+SELECT 
+    he.name,
+    he.salary,
+    ds.avg_salary,
+    ds.total_employees
+FROM high_earners he
+JOIN department_stats ds ON he.department_id = ds.department_id;
+```
+
+## Recursive CTEs
+
+**Purpose**: Handle hierarchical or tree-structured data.
+
+### Employee Hierarchy Example
+```sql
+-- Sample hierarchical data
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    manager_id INT,
+    salary DECIMAL(10,2)
+);
+
+-- Recursive CTE to find all subordinates
+WITH RECURSIVE employee_hierarchy AS (
+    -- Anchor: Start with top-level managers
+    SELECT 
+        employee_id,
+        name,
+        manager_id,
+        salary,
+        0 as level,
+        CAST(name AS VARCHAR(1000)) as hierarchy_path
+    FROM employees
+    WHERE manager_id IS NULL
+    
+    UNION ALL
+    
+    -- Recursive: Find direct reports
+    SELECT 
+        e.employee_id,
+        e.name,
+        e.manager_id,
+        e.salary,
+        eh.level + 1,
+        CONCAT(eh.hierarchy_path, ' -> ', e.name)
+    FROM employees e
+    JOIN employee_hierarchy eh ON e.manager_id = eh.employee_id
+)
+SELECT 
+    employee_id,
+    name,
+    level,
+    hierarchy_path
+FROM employee_hierarchy
+ORDER BY level, name;
+```
+
+### Organizational Chart
+```sql
+WITH RECURSIVE org_chart AS (
+    -- Find CEO (no manager)
+    SELECT 
+        employee_id,
+        name,
+        manager_id,
+        1 as level,
+        name as path
+    FROM employees
+    WHERE manager_id IS NULL
+    
+    UNION ALL
+    
+    -- Find all subordinates recursively
+    SELECT 
+        e.employee_id,
+        e.name,
+        e.manager_id,
+        oc.level + 1,
+        CONCAT(oc.path, ' > ', e.name)
+    FROM employees e
+    JOIN org_chart oc ON e.manager_id = oc.employee_id
+    WHERE oc.level < 10  -- Prevent infinite recursion
+)
+SELECT * FROM org_chart ORDER BY level, name;
+```
+
+## Practical Business Examples
+
+### Sales Analysis
+```sql
+WITH 
+monthly_sales AS (
+    SELECT 
+        DATE_FORMAT(order_date, '%Y-%m') as month,
+        SUM(total_amount) as monthly_total
+    FROM orders
+    WHERE order_date >= '2024-01-01'
+    GROUP BY DATE_FORMAT(order_date, '%Y-%m')
+),
+sales_with_growth AS (
+    SELECT 
+        month,
+        monthly_total,
+        LAG(monthly_total) OVER (ORDER BY month) as prev_month_total,
+        monthly_total - LAG(monthly_total) OVER (ORDER BY month) as growth
+    FROM monthly_sales
+)
+SELECT 
+    month,
+    monthly_total,
+    prev_month_total,
+    growth,
+    ROUND((growth / prev_month_total) * 100, 2) as growth_percentage
+FROM sales_with_growth
+WHERE prev_month_total IS NOT NULL
+ORDER BY month;
+```
+
+### Customer Segmentation
+```sql
+WITH 
+customer_metrics AS (
+    SELECT 
+        c.customer_id,
+        c.customer_name,
+        COUNT(o.order_id) as order_count,
+        SUM(o.total_amount) as total_spent,
+        AVG(o.total_amount) as avg_order_value,
+        MAX(o.order_date) as last_order_date
+    FROM customers c
+    LEFT JOIN orders o ON c.customer_id = o.customer_id
+    GROUP BY c.customer_id, c.customer_name
+),
+customer_segments AS (
+    SELECT 
+        *,
+        CASE 
+            WHEN total_spent > 10000 AND order_count > 20 THEN 'VIP'
+            WHEN total_spent > 5000 AND order_count > 10 THEN 'Premium'
+            WHEN total_spent > 1000 AND order_count > 5 THEN 'Regular'
+            WHEN order_count > 0 THEN 'Occasional'
+            ELSE 'Inactive'
+        END as segment
+    FROM customer_metrics
+)
+SELECT 
+    segment,
+    COUNT(*) as customer_count,
+    AVG(total_spent) as avg_total_spent,
+    AVG(order_count) as avg_order_count
+FROM customer_segments
+GROUP BY segment
+ORDER BY avg_total_spent DESC;
+```
+
+## CTE vs Subqueries vs Temporary Tables
+
+### CTE Advantages:
+- **Readability**: More readable than nested subqueries
+- **Reusability**: Can reference the same CTE multiple times
+- **Recursion**: Supports recursive operations
+- **Maintainability**: Easier to debug and modify
+
+### CTE vs Subquery
+```sql
+-- Complex subquery (hard to read)
+SELECT *
+FROM (
+    SELECT department_id, AVG(salary) as avg_sal
+    FROM employees
+    GROUP BY department_id
+) dept_avg
+WHERE dept_avg.avg_sal > (
+    SELECT AVG(salary) * 1.1
+    FROM employees
+);
+
+-- CTE version (more readable)
+WITH 
+company_avg AS (
+    SELECT AVG(salary) * 1.1 as threshold
+    FROM employees
+),
+dept_averages AS (
+    SELECT department_id, AVG(salary) as avg_sal
+    FROM employees
+    GROUP BY department_id
+)
+SELECT *
+FROM dept_averages da
+CROSS JOIN company_avg ca
+WHERE da.avg_sal > ca.threshold;
+```
+
+### CTE vs Temporary Table
+```sql
+-- Temporary table approach
+CREATE TEMPORARY TABLE temp_dept_stats AS
+SELECT department_id, AVG(salary) as avg_salary
+FROM employees
+GROUP BY department_id;
+
+SELECT * FROM temp_dept_stats WHERE avg_salary > 50000;
+DROP TEMPORARY TABLE temp_dept_stats;
+
+-- CTE approach (simpler)
+WITH dept_stats AS (
+    SELECT department_id, AVG(salary) as avg_salary
+    FROM employees
+    GROUP BY department_id
+)
+SELECT * FROM dept_stats WHERE avg_salary > 50000;
+```
+
+## Performance Considerations
+
+### CTE Materialization
+```sql
+-- CTE may be materialized (stored temporarily)
+WITH expensive_cte AS (
+    SELECT customer_id, SUM(order_amount) as total
+    FROM large_orders_table
+    GROUP BY customer_id
+)
+SELECT c1.customer_id, c1.total
+FROM expensive_cte c1
+JOIN expensive_cte c2 ON c1.total = c2.total  -- CTE used twice
+WHERE c1.customer_id != c2.customer_id;
+```
+
+### Optimization Tips
+```sql
+-- Use indexes on CTE source tables
+WITH recent_orders AS (
+    SELECT customer_id, order_date, total_amount
+    FROM orders
+    WHERE order_date >= '2024-01-01'  -- Make sure there's an index on order_date
+)
+SELECT * FROM recent_orders WHERE customer_id = 12345;
+```
+
+## Advanced CTE Patterns
+
+### Running Totals
+```sql
+WITH daily_sales AS (
+    SELECT 
+        order_date,
+        SUM(total_amount) as daily_total
+    FROM orders
+    GROUP BY order_date
+),
+running_totals AS (
+    SELECT 
+        order_date,
+        daily_total,
+        SUM(daily_total) OVER (ORDER BY order_date) as running_total
+    FROM daily_sales
+)
+SELECT * FROM running_totals ORDER BY order_date;
+```
+
+### Data Validation
+```sql
+WITH data_quality_checks AS (
+    SELECT 
+        'Missing emails' as check_name,
+        COUNT(*) as issue_count
+    FROM customers
+    WHERE email IS NULL OR email = ''
+    
+    UNION ALL
+    
+    SELECT 
+        'Negative prices' as check_name,
+        COUNT(*) as issue_count
+    FROM products
+    WHERE price < 0
+    
+    UNION ALL
+    
+    SELECT 
+        'Future order dates' as check_name,
+        COUNT(*) as issue_count
+    FROM orders
+    WHERE order_date > CURRENT_DATE
+)
+SELECT * FROM data_quality_checks WHERE issue_count > 0;
+```
+
+## Interview Tips
+
+- Understand that CTEs improve query readability and maintainability
+- Know the difference between regular and recursive CTEs
+- Practice writing hierarchical queries with recursive CTEs
+- Understand when to use CTEs vs subqueries vs temporary tables
+- Be familiar with CTE performance characteristics and limitations

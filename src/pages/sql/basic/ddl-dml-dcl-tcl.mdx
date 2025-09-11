@@ -1,0 +1,174 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between DDL, DML, DCL, and TCL?
+---
+
+# What is the difference between DDL, DML, DCL, and TCL?
+
+## Answer
+
+SQL commands are categorized into four main types based on their functionality. Understanding these categories is crucial for database management and is a common interview topic.
+
+## DDL (Data Definition Language)
+
+**Purpose**: Defines and modifies the structure of database objects.
+
+### Characteristics:
+- **Auto-commit**: Changes are automatically committed
+- **Schema-level**: Works on database structure, not data
+- **Irreversible**: Cannot be rolled back in most databases
+
+### Commands:
+```sql
+-- CREATE: Creates new database objects
+CREATE TABLE students (
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    age INT
+);
+
+-- ALTER: Modifies existing structure
+ALTER TABLE students ADD COLUMN email VARCHAR(150);
+ALTER TABLE students DROP COLUMN age;
+
+-- DROP: Removes database objects completely
+DROP TABLE students;
+DROP DATABASE school_db;
+
+-- TRUNCATE: Removes all data, keeps structure
+TRUNCATE TABLE students;
+```
+
+## DML (Data Manipulation Language)
+
+**Purpose**: Manipulates data within existing database structures.
+
+### Characteristics:
+- **Transaction-based**: Can be committed or rolled back
+- **Data-level**: Works on actual data, not structure
+- **Reversible**: Changes can be undone before commit
+
+### Commands:
+```sql
+-- INSERT: Adds new records
+INSERT INTO students (id, name, email) 
+VALUES (1, 'John Doe', 'john@email.com');
+
+-- UPDATE: Modifies existing records
+UPDATE students 
+SET email = 'john.doe@school.com' 
+WHERE id = 1;
+
+-- DELETE: Removes specific records
+DELETE FROM students WHERE id = 1;
+
+-- SELECT: Retrieves data (sometimes classified as DQL)
+SELECT * FROM students WHERE age > 18;
+```
+
+## DCL (Data Control Language)
+
+**Purpose**: Controls access permissions and security for database objects.
+
+### Characteristics:
+- **Security-focused**: Manages user privileges
+- **Administrative**: Typically used by database administrators
+- **User-specific**: Controls what users can do
+
+### Commands:
+```sql
+-- GRANT: Provides privileges to users
+GRANT SELECT ON students TO teacher_user;
+GRANT INSERT, UPDATE ON students TO admin_user;
+GRANT ALL PRIVILEGES ON school_db.* TO super_admin;
+
+-- REVOKE: Removes privileges from users
+REVOKE INSERT ON students FROM teacher_user;
+REVOKE ALL PRIVILEGES ON school_db.* FROM admin_user;
+```
+
+## TCL (Transaction Control Language)
+
+**Purpose**: Manages database transactions to ensure data integrity.
+
+### Characteristics:
+- **Transaction-focused**: Controls transaction boundaries
+- **ACID compliance**: Ensures Atomicity, Consistency, Isolation, Durability
+- **Data integrity**: Maintains database consistency
+
+### Commands:
+```sql
+-- BEGIN/START TRANSACTION: Starts a new transaction
+BEGIN TRANSACTION;
+
+-- COMMIT: Saves all changes permanently
+INSERT INTO students (id, name) VALUES (2, 'Jane Smith');
+UPDATE students SET email = 'jane@email.com' WHERE id = 2;
+COMMIT; -- All changes are now permanent
+
+-- ROLLBACK: Undoes all changes in current transaction
+BEGIN TRANSACTION;
+DELETE FROM students WHERE id = 1;
+ROLLBACK; -- Delete operation is undone
+
+-- SAVEPOINT: Creates a checkpoint within transaction
+BEGIN TRANSACTION;
+INSERT INTO students (id, name) VALUES (3, 'Mike Johnson');
+SAVEPOINT sp1;
+UPDATE students SET name = 'Michael Johnson' WHERE id = 3;
+ROLLBACK TO sp1; -- Only the UPDATE is undone
+COMMIT;
+```
+
+## Key Differences Summary
+
+| Aspect | DDL | DML | DCL | TCL |
+|--------|-----|-----|-----|-----|
+| **Purpose** | Structure definition | Data manipulation | Access control | Transaction management |
+| **Auto-commit** | Yes | No | Varies | N/A |
+| **Rollback** | Usually No | Yes | Varies | Controls rollback |
+| **Scope** | Schema/Structure | Data/Records | User permissions | Transaction boundaries |
+| **Frequency** | Occasional | Frequent | Administrative | With every transaction |
+
+## Practical Examples
+
+### Database Setup Scenario:
+```sql
+-- 1. DDL: Create the database structure
+CREATE DATABASE library_db;
+CREATE TABLE books (
+    book_id INT PRIMARY KEY,
+    title VARCHAR(200),
+    author VARCHAR(100),
+    price DECIMAL(10,2)
+);
+
+-- 2. DCL: Set up user permissions
+GRANT SELECT, INSERT ON books TO librarian;
+GRANT SELECT ON books TO public_user;
+
+-- 3. DML with TCL: Manage data with transactions
+BEGIN TRANSACTION;
+INSERT INTO books VALUES (1, '1984', 'George Orwell', 15.99);
+INSERT INTO books VALUES (2, 'To Kill a Mockingbird', 'Harper Lee', 12.50);
+COMMIT;
+
+-- 4. DML: Query and update data
+SELECT * FROM books WHERE price < 20;
+UPDATE books SET price = 14.99 WHERE book_id = 1;
+```
+
+## Interview Tips
+
+1. **Remember the acronyms**: DDL, DML, DCL, TCL
+2. **Understand auto-commit behavior**: DDL usually auto-commits, DML doesn't
+3. **Know transaction control**: TCL manages when changes become permanent
+4. **Security context**: DCL is about who can do what
+5. **Practice scenarios**: Be ready to categorize any SQL command
+
+## Common Interview Questions
+
+- "Is SELECT a DML or DQL command?" (Can be either, depending on classification)
+- "Why can't you rollback a DROP TABLE statement?" (DDL auto-commits)
+- "What happens if you don't COMMIT after DML operations?" (Changes may be lost)
+- "Who typically uses DCL commands?" (Database administrators)

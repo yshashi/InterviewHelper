@@ -1,0 +1,621 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is database replication and its types?
+---
+
+# What is database replication and its types?
+
+## Answer
+
+**Database replication** is the process of creating and maintaining multiple copies of a database across different servers or locations. It provides high availability, disaster recovery, load distribution, and improved performance by allowing read operations to be distributed across multiple database instances.
+
+## Types of Database Replication
+
+### 1. Master-Slave Replication (Primary-Secondary)
+```sql
+-- MySQL Master-Slave Setup
+-- On Master Server
+CREATE USER 'replication_user'@'%' IDENTIFIED BY 'secure_password';
+GRANT REPLICATION SLAVE ON *.* TO 'replication_user'@'%';
+FLUSH PRIVILEGES;
+
+-- Enable binary logging in my.cnf
+-- server-id = 1
+-- log-bin = mysql-bin
+-- binlog-format = ROW
+
+-- Get master status
+SHOW MASTER STATUS;
+-- Note the File and Position values
+
+-- On Slave Server (my.cnf)
+-- server-id = 2
+-- relay-log = mysql-relay-bin
+-- read-only = 1
+
+-- Configure slave
+CHANGE MASTER TO
+    MASTER_HOST='master-server-ip',
+    MASTER_USER='replication_user',
+    MASTER_PASSWORD='secure_password',
+    MASTER_LOG_FILE='mysql-bin.000001',
+    MASTER_LOG_POS=154;
+
+START SLAVE;
+SHOW SLAVE STATUS\G;
+
+-- PostgreSQL Streaming Replication
+-- On Primary (postgresql.conf)
+-- wal_level = replica
+-- max_wal_senders = 3
+-- wal_keep_segments = 64
+-- archive_mode = on
+-- archive_command = 'cp %p /path/to/archive/%f'
+
+-- Create replication user
+CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD 'secure_password';
+
+-- On Standby Server
+-- Create base backup
+pg_basebackup -h primary-server -D /var/lib/postgresql/data -U replicator -W
+
+-- Configure recovery.conf
+-- standby_mode = 'on'
+-- primary_conninfo = 'host=primary-server port=5432 user=replicator'
+-- trigger_file = '/tmp/postgresql.trigger'
+```
+
+### 2. Master-Master Replication (Multi-Master)
+```sql
+-- MySQL Master-Master Setup
+-- Server 1 Configuration (my.cnf)
+-- server-id = 1
+-- log-bin = mysql-bin
+-- binlog-format = ROW
+-- auto-increment-increment = 2
+-- auto-increment-offset = 1
+
+-- Server 2 Configuration (my.cnf)
+-- server-id = 2
+-- log-bin = mysql-bin
+-- binlog-format = ROW
+-- auto-increment-increment = 2
+-- auto-increment-offset = 2
+
+-- On Server 1
+CREATE USER 'repl_user'@'server2_ip' IDENTIFIED BY 'password';
+GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'server2_ip';
+
+-- On Server 2
+CREATE USER 'repl_user'@'server1_ip' IDENTIFIED BY 'password';
+GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'server1_ip';
+
+-- Configure each server to replicate from the other
+-- Server 1 replicates from Server 2
+CHANGE MASTER TO
+    MASTER_HOST='server2_ip',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password',
+    MASTER_LOG_FILE='mysql-bin.000001',
+    MASTER_LOG_POS=154;
+
+-- Server 2 replicates from Server 1
+CHANGE MASTER TO
+    MASTER_HOST='server1_ip',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password',
+    MASTER_LOG_FILE='mysql-bin.000001',
+    MASTER_LOG_POS=154;
+
+START SLAVE;
+```
+
+### 3. Synchronous vs Asynchronous Replication
+```sql
+-- PostgreSQL Synchronous Replication
+-- On Primary (postgresql.conf)
+-- synchronous_standby_names = 'standby1,standby2'
+-- synchronous_commit = on
+
+-- This ensures writes wait for confirmation from standby
+INSERT INTO orders (customer_id, total) VALUES (123, 99.99);
+-- This INSERT waits for standby confirmation before committing
+
+-- MySQL Semi-Synchronous Replication
+-- Install plugin on master and slave
+INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
+INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';
+
+-- Enable on master
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_timeout = 1000; -- 1 second timeout
+
+-- Enable on slave
+SET GLOBAL rpl_semi_sync_slave_enabled = 1;
+
+-- Monitor semi-sync status
+SHOW STATUS LIKE 'Rpl_semi_sync%';
+```
+
+## Replication Architectures
+
+### 1. Chain Replication
+```sql
+-- Master -> Slave1 -> Slave2 -> Slave3
+-- Each server replicates from the previous one
+
+-- Slave1 configuration
+CHANGE MASTER TO
+    MASTER_HOST='master-server',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password';
+
+-- Slave2 configuration (replicates from Slave1)
+CHANGE MASTER TO
+    MASTER_HOST='slave1-server',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password';
+
+-- Enable binary logging on slaves for chain replication
+-- log-bin = mysql-bin
+-- log-slave-updates = 1
+```
+
+### 2. Star Replication
+```sql
+-- Central master with multiple slaves
+-- Master -> Slave1, Slave2, Slave3, ...
+
+-- Each slave configured identically
+CHANGE MASTER TO
+    MASTER_HOST='central-master',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password',
+    MASTER_LOG_FILE='mysql-bin.000001',
+    MASTER_LOG_POS=154;
+
+-- Load balancing reads across slaves
+-- Application configuration
+$read_servers = [
+    'slave1.example.com',
+    'slave2.example.com',
+    'slave3.example.com'
+];
+
+$write_server = 'master.example.com';
+```
+
+### 3. Circular Replication
+```sql
+-- Server1 -> Server2 -> Server3 -> Server1
+-- Each server replicates from previous and to next
+
+-- Server1 replicates from Server3
+CHANGE MASTER TO
+    MASTER_HOST='server3',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password';
+
+-- Server2 replicates from Server1
+CHANGE MASTER TO
+    MASTER_HOST='server1',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password';
+
+-- Server3 replicates from Server2
+CHANGE MASTER TO
+    MASTER_HOST='server2',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password';
+
+-- Prevent infinite loops with server-id checking
+-- replicate-same-server-id = 0
+```
+
+## Advanced Replication Features
+
+### 1. Selective Replication
+```sql
+-- MySQL: Replicate only specific databases
+-- On slave (my.cnf)
+-- replicate-do-db = production_db
+-- replicate-do-db = analytics_db
+-- replicate-ignore-db = temp_db
+-- replicate-ignore-db = test_db
+
+-- Table-level filtering
+-- replicate-do-table = production_db.orders
+-- replicate-do-table = production_db.customers
+-- replicate-ignore-table = production_db.temp_data
+
+-- Wildcard patterns
+-- replicate-wild-do-table = production_db.log_%
+-- replicate-wild-ignore-table = %.temp_%
+
+-- PostgreSQL: Publication/Subscription (Logical Replication)
+-- On Publisher
+CREATE PUBLICATION my_publication FOR TABLE orders, customers;
+CREATE PUBLICATION all_tables FOR ALL TABLES;
+
+-- On Subscriber
+CREATE SUBSCRIPTION my_subscription
+CONNECTION 'host=publisher-host dbname=mydb user=repl_user'
+PUBLICATION my_publication;
+```
+
+### 2. Row-Based vs Statement-Based Replication
+```sql
+-- MySQL: Configure replication format
+-- Statement-based (default in older versions)
+SET GLOBAL binlog_format = 'STATEMENT';
+
+-- Row-based (recommended for consistency)
+SET GLOBAL binlog_format = 'ROW';
+
+-- Mixed mode (automatic selection)
+SET GLOBAL binlog_format = 'MIXED';
+
+-- Example showing difference
+-- Statement-based: Replicates the SQL statement
+UPDATE products SET price = price * RAND();
+-- Slave executes same statement but RAND() gives different values
+
+-- Row-based: Replicates actual row changes
+-- Slave receives exact before/after values for each row
+```
+
+### 3. GTID (Global Transaction Identifier)
+```sql
+-- MySQL: Enable GTID
+-- On all servers (my.cnf)
+-- gtid-mode = ON
+-- enforce-gtid-consistency = ON
+-- log-slave-updates = ON
+
+-- Simplified slave setup with GTID
+CHANGE MASTER TO
+    MASTER_HOST='master-server',
+    MASTER_USER='repl_user',
+    MASTER_PASSWORD='password',
+    MASTER_AUTO_POSITION = 1;  -- Use GTID instead of log file/position
+
+-- Check GTID status
+SHOW MASTER STATUS;
+SHOW SLAVE STATUS\G;
+
+-- PostgreSQL: Logical Replication with LSN
+SELECT pg_current_wal_lsn();  -- Current Write-Ahead Log position
+```
+
+## Monitoring and Management
+
+### 1. Replication Status Monitoring
+```sql
+-- MySQL: Comprehensive replication monitoring
+SELECT 
+    CHANNEL_NAME,
+    HOST,
+    PORT,
+    USER,
+    SOURCE_LOG_FILE,
+    READ_SOURCE_LOG_POS,
+    RELAY_LOG_FILE,
+    RELAY_LOG_POS,
+    SLAVE_IO_RUNNING,
+    SLAVE_SQL_RUNNING,
+    SECONDS_BEHIND_SOURCE,
+    LAST_IO_ERROR,
+    LAST_SQL_ERROR
+FROM performance_schema.replication_connection_status rcs
+JOIN performance_schema.replication_applier_status_by_coordinator rasc 
+    ON rcs.CHANNEL_NAME = rasc.CHANNEL_NAME;
+
+-- PostgreSQL: Replication status
+SELECT 
+    client_addr,
+    client_hostname,
+    client_port,
+    state,
+    sent_lsn,
+    write_lsn,
+    flush_lsn,
+    replay_lsn,
+    write_lag,
+    flush_lag,
+    replay_lag
+FROM pg_stat_replication;
+
+-- Check replication delay
+SELECT 
+    now() - pg_last_xact_replay_timestamp() AS replication_delay;
+```
+
+### 2. Automated Failover Setup
+```sql
+-- MySQL: Using MySQL Router for automatic failover
+-- Configuration in mysqlrouter.conf
+[routing:primary]
+bind_address = 0.0.0.0
+bind_port = 7001
+destinations = primary-server:3306
+routing_strategy = first-available
+protocol = classic
+
+[routing:secondary]
+bind_address = 0.0.0.0
+bind_port = 7002
+destinations = slave1:3306,slave2:3306,slave3:3306
+routing_strategy = round-robin
+protocol = classic
+
+-- PostgreSQL: Using pg_auto_failover
+-- Install and initialize
+pg_autoctl create postgres --hostname node1 --auth trust
+pg_autoctl create postgres --hostname node2 --auth trust
+
+-- Monitor failover status
+pg_autoctl show state
+```
+
+### 3. Replication Conflict Resolution
+```sql
+-- Handle replication conflicts in multi-master setup
+-- MySQL: Conflict detection and resolution
+-- slave-skip-errors = 1062,1032  -- Skip duplicate key and missing row errors
+
+-- Manual conflict resolution
+STOP SLAVE;
+SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1;  -- Skip one problematic statement
+START SLAVE;
+
+-- PostgreSQL: Logical replication conflict resolution
+-- Configure conflict resolution
+ALTER SUBSCRIPTION my_subscription 
+SET (disable_on_error = false);
+
+-- Handle conflicts programmatically
+CREATE OR REPLACE FUNCTION handle_replication_conflict()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Custom conflict resolution logic
+    IF TG_OP = 'INSERT' THEN
+        -- Handle duplicate key conflicts
+        INSERT INTO conflict_log (table_name, operation, old_data, new_data)
+        VALUES (TG_TABLE_NAME, TG_OP, NULL, row_to_json(NEW));
+        RETURN NULL;  -- Skip the insert
+    END IF;
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## Performance Optimization
+
+### 1. Replication Performance Tuning
+```sql
+-- MySQL: Optimize replication performance
+-- On master (my.cnf)
+-- sync_binlog = 1  -- Ensure durability
+-- innodb_flush_log_at_trx_commit = 1
+-- binlog_cache_size = 1M
+-- max_binlog_cache_size = 2G
+
+-- On slave (my.cnf)
+-- relay_log_recovery = ON
+-- slave_parallel_workers = 4  -- Parallel replication
+-- slave_parallel_type = LOGICAL_CLOCK
+-- slave_preserve_commit_order = ON
+
+-- PostgreSQL: Optimize streaming replication
+-- On primary (postgresql.conf)
+-- wal_level = replica
+-- max_wal_senders = 10
+-- wal_keep_segments = 100
+-- wal_sender_timeout = 60s
+-- wal_receiver_timeout = 60s
+
+-- On standby (postgresql.conf)
+-- hot_standby = on
+-- max_standby_streaming_delay = 30s
+-- wal_receiver_status_interval = 10s
+```
+
+### 2. Network Optimization
+```sql
+-- MySQL: Compress replication traffic
+-- slave_compressed_protocol = 1
+
+-- SSL encryption for replication
+-- On master
+CREATE USER 'repl_ssl'@'%' IDENTIFIED BY 'password' REQUIRE SSL;
+GRANT REPLICATION SLAVE ON *.* TO 'repl_ssl'@'%';
+
+-- On slave
+CHANGE MASTER TO
+    MASTER_HOST='master-server',
+    MASTER_USER='repl_ssl',
+    MASTER_PASSWORD='password',
+    MASTER_SSL=1,
+    MASTER_SSL_CA='/path/to/ca-cert.pem',
+    MASTER_SSL_CERT='/path/to/client-cert.pem',
+    MASTER_SSL_KEY='/path/to/client-key.pem';
+
+-- PostgreSQL: SSL replication
+-- In postgresql.conf
+-- ssl = on
+-- ssl_cert_file = 'server.crt'
+-- ssl_key_file = 'server.key'
+-- ssl_ca_file = 'ca.crt'
+
+-- In pg_hba.conf
+-- hostssl replication replicator 0.0.0.0/0 cert
+```
+
+### 3. Storage Optimization
+```sql
+-- MySQL: Optimize binary log storage
+-- expire_logs_days = 7  -- Auto-purge old binary logs
+-- max_binlog_size = 1G  -- Rotate logs at 1GB
+-- binlog_row_image = MINIMAL  -- Reduce log size
+
+-- Manual binary log management
+SHOW BINARY LOGS;
+PURGE BINARY LOGS BEFORE '2024-01-01 00:00:00';
+PURGE BINARY LOGS TO 'mysql-bin.000010';
+
+-- PostgreSQL: WAL archiving and cleanup
+-- archive_command = 'cp %p /archive/%f'
+-- archive_timeout = 300  -- Force WAL switch every 5 minutes
+
+-- Cleanup old WAL files
+SELECT pg_switch_wal();  -- Force WAL switch
+SELECT pg_walfile_name(pg_current_wal_lsn());  -- Current WAL file
+```
+
+## Disaster Recovery and Backup
+
+### 1. Point-in-Time Recovery
+```sql
+-- MySQL: Binary log-based PITR
+-- Restore from backup
+mysql < full_backup_2024_01_15.sql
+
+-- Apply binary logs up to specific point
+mysqlbinlog --start-datetime="2024-01-15 10:00:00" \
+           --stop-datetime="2024-01-15 11:30:00" \
+           mysql-bin.000001 mysql-bin.000002 | mysql
+
+-- PostgreSQL: WAL-based PITR
+-- Configure continuous archiving
+-- archive_mode = on
+-- archive_command = 'cp %p /backup/archive/%f'
+
+-- Restore to specific point in time
+-- In recovery.conf
+-- restore_command = 'cp /backup/archive/%f %p'
+-- recovery_target_time = '2024-01-15 11:30:00'
+```
+
+### 2. Cross-Region Replication
+```sql
+-- MySQL: Cross-region master-slave setup
+-- Configure for high latency networks
+-- On slave (my.cnf)
+-- slave_net_timeout = 120
+-- slave_compressed_protocol = 1
+-- slave_parallel_workers = 8
+
+-- Monitor cross-region replication lag
+SELECT 
+    SECONDS_BEHIND_SOURCE,
+    LAST_IO_ERRNO,
+    LAST_IO_ERROR,
+    LAST_SQL_ERRNO,
+    LAST_SQL_ERROR
+FROM performance_schema.replication_applier_status_by_worker;
+
+-- PostgreSQL: Cross-region streaming replication
+-- Configure for WAN latency
+-- wal_sender_timeout = 0  -- Disable timeout for high latency
+-- wal_receiver_timeout = 0
+-- tcp_keepalives_idle = 600
+-- tcp_keepalives_interval = 30
+-- tcp_keepalives_count = 3
+```
+
+## Application Integration
+
+### 1. Read-Write Splitting
+```python
+# Python example with database routing
+class DatabaseRouter:
+    def __init__(self):
+        self.write_db = "mysql://user:pass@master:3306/db"
+        self.read_dbs = [
+            "mysql://user:pass@slave1:3306/db",
+            "mysql://user:pass@slave2:3306/db",
+            "mysql://user:pass@slave3:3306/db"
+        ]
+        self.read_index = 0
+    
+    def get_write_connection(self):
+        return connect(self.write_db)
+    
+    def get_read_connection(self):
+        # Round-robin load balancing
+        db = self.read_dbs[self.read_index]
+        self.read_index = (self.read_index + 1) % len(self.read_dbs)
+        return connect(db)
+    
+    def execute_write(self, query, params=None):
+        conn = self.get_write_connection()
+        return conn.execute(query, params)
+    
+    def execute_read(self, query, params=None):
+        conn = self.get_read_connection()
+        return conn.execute(query, params)
+```
+
+### 2. Connection Pooling for Replicas
+```sql
+-- MySQL: Configure connection pooling
+-- Using ProxySQL for connection pooling and routing
+INSERT INTO mysql_servers(hostgroup_id, hostname, port, weight) VALUES
+(0, 'master-server', 3306, 1000),    -- Write group
+(1, 'slave1-server', 3306, 900),     -- Read group
+(1, 'slave2-server', 3306, 900),     -- Read group
+(1, 'slave3-server', 3306, 800);     -- Read group (lower weight)
+
+-- Query routing rules
+INSERT INTO mysql_query_rules(rule_id, active, match_pattern, destination_hostgroup, apply) VALUES
+(1, 1, '^SELECT.*', 1, 1),           -- Route SELECTs to read group
+(2, 1, '^INSERT|UPDATE|DELETE.*', 0, 1); -- Route writes to write group
+
+LOAD MYSQL SERVERS TO RUNTIME;
+LOAD MYSQL QUERY RULES TO RUNTIME;
+```
+
+## Best Practices
+
+### 1. Replication Design Principles
+- Choose appropriate replication type based on requirements
+- Plan for network partitions and split-brain scenarios
+- Implement proper monitoring and alerting
+- Design for eventual consistency in asynchronous setups
+- Use consistent backup and recovery procedures
+
+### 2. Security Considerations
+```sql
+-- Secure replication connections
+-- Use SSL/TLS encryption
+-- Restrict replication user privileges
+-- Network-level security (VPN, firewall rules)
+-- Regular credential rotation
+
+-- MySQL: Secure replication user
+CREATE USER 'repl_user'@'slave-subnet' IDENTIFIED BY 'strong_password';
+GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'slave-subnet';
+-- Don't grant unnecessary privileges
+
+-- PostgreSQL: Secure replication
+-- In pg_hba.conf - restrict by IP and require SSL
+hostssl replication replicator 10.0.1.0/24 cert
+```
+
+### 3. Testing and Validation
+- Regularly test failover procedures
+- Validate data consistency between replicas
+- Monitor replication lag and performance
+- Test disaster recovery scenarios
+- Implement automated health checks
+
+## Interview Tips
+
+- Understand different replication types and their use cases
+- Know the trade-offs between synchronous and asynchronous replication
+- Be familiar with common replication architectures and their pros/cons
+- Understand how to monitor and troubleshoot replication issues
+- Know how to handle replication conflicts and failures
+- Practice designing replication solutions for different scenarios
+- Be aware of the CAP theorem implications in distributed database systems

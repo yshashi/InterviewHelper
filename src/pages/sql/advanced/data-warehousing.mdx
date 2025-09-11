@@ -1,0 +1,653 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: How do you implement data warehousing concepts in SQL?
+---
+
+# How do you implement data warehousing concepts in SQL?
+
+## Answer
+
+**Data warehousing in SQL** involves implementing dimensional modeling concepts, ETL processes, and analytical query patterns to support business intelligence and reporting needs. Key concepts include fact tables, dimension tables, star/snowflake schemas, slowly changing dimensions, and OLAP operations.
+
+## Dimensional Modeling
+
+### Star Schema Implementation
+```sql
+-- Dimension Tables
+CREATE TABLE dim_date (
+    date_key INT PRIMARY KEY,
+    date_value DATE NOT NULL,
+    year INT NOT NULL,
+    quarter INT NOT NULL,
+    month INT NOT NULL,
+    month_name VARCHAR(20) NOT NULL,
+    day_of_week INT NOT NULL,
+    day_name VARCHAR(20) NOT NULL,
+    is_weekend BOOLEAN NOT NULL,
+    is_holiday BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE dim_customer (
+    customer_key INT IDENTITY(1,1) PRIMARY KEY,
+    customer_id VARCHAR(20) NOT NULL,  -- Business key
+    customer_name VARCHAR(100) NOT NULL,
+    customer_type VARCHAR(20),
+    region VARCHAR(50),
+    country VARCHAR(50),
+    
+    -- SCD Type 2 columns
+    effective_date DATE NOT NULL,
+    expiry_date DATE DEFAULT '9999-12-31',
+    is_current BOOLEAN DEFAULT TRUE,
+    
+    -- Metadata
+    created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_date DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE dim_product (
+    product_key INT IDENTITY(1,1) PRIMARY KEY,
+    product_id VARCHAR(20) NOT NULL,
+    product_name VARCHAR(100) NOT NULL,
+    category VARCHAR(50),
+    subcategory VARCHAR(50),
+    brand VARCHAR(50),
+    unit_cost DECIMAL(10,2),
+    
+    -- SCD columns
+    effective_date DATE NOT NULL,
+    expiry_date DATE DEFAULT '9999-12-31',
+    is_current BOOLEAN DEFAULT TRUE
+);
+
+-- Fact Table
+CREATE TABLE fact_sales (
+    sales_key BIGINT IDENTITY(1,1) PRIMARY KEY,
+    
+    -- Foreign keys to dimensions
+    date_key INT NOT NULL REFERENCES dim_date(date_key),
+    customer_key INT NOT NULL REFERENCES dim_customer(customer_key),
+    product_key INT NOT NULL REFERENCES dim_product(product_key),
+    
+    -- Measures
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    discount_amount DECIMAL(10,2) DEFAULT 0,
+    tax_amount DECIMAL(10,2) DEFAULT 0,
+    total_amount DECIMAL(12,2) NOT NULL,
+    
+    -- Degenerate dimensions
+    order_number VARCHAR(20),
+    invoice_number VARCHAR(20),
+    
+    -- Metadata
+    created_date DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance
+CREATE INDEX IX_fact_sales_date ON fact_sales (date_key);
+CREATE INDEX IX_fact_sales_customer ON fact_sales (customer_key);
+CREATE INDEX IX_fact_sales_product ON fact_sales (product_key);
+CREATE INDEX IX_fact_sales_composite ON fact_sales (date_key, customer_key, product_key);
+```
+
+### Snowflake Schema Implementation
+```sql
+-- Normalized dimension tables
+CREATE TABLE dim_product_category (
+    category_key INT IDENTITY(1,1) PRIMARY KEY,
+    category_id VARCHAR(10) NOT NULL,
+    category_name VARCHAR(50) NOT NULL,
+    department VARCHAR(50)
+);
+
+CREATE TABLE dim_product_brand (
+    brand_key INT IDENTITY(1,1) PRIMARY KEY,
+    brand_id VARCHAR(10) NOT NULL,
+    brand_name VARCHAR(50) NOT NULL,
+    manufacturer VARCHAR(100)
+);
+
+-- Modified product dimension (snowflake)
+CREATE TABLE dim_product_snowflake (
+    product_key INT IDENTITY(1,1) PRIMARY KEY,
+    product_id VARCHAR(20) NOT NULL,
+    product_name VARCHAR(100) NOT NULL,
+    
+    -- Foreign keys to other dimension tables
+    category_key INT REFERENCES dim_product_category(category_key),
+    brand_key INT REFERENCES dim_product_brand(brand_key),
+    
+    unit_cost DECIMAL(10,2),
+    effective_date DATE NOT NULL,
+    expiry_date DATE DEFAULT '9999-12-31',
+    is_current BOOLEAN DEFAULT TRUE
+);
+```
+
+## Slowly Changing Dimensions (SCD)
+
+### SCD Type 1 - Overwrite
+```sql
+-- Simple update overwrites old values
+CREATE OR REPLACE FUNCTION update_customer_scd1(
+    p_customer_id VARCHAR(20),
+    p_customer_name VARCHAR(100),
+    p_region VARCHAR(50)
+) RETURNS VOID AS $$
+BEGIN
+    UPDATE dim_customer 
+    SET customer_name = p_customer_name,
+        region = p_region,
+        updated_date = CURRENT_TIMESTAMP
+    WHERE customer_id = p_customer_id 
+    AND is_current = TRUE;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### SCD Type 2 - Add New Record
+```sql
+-- Maintain history by adding new records
+CREATE OR REPLACE FUNCTION update_customer_scd2(
+    p_customer_id VARCHAR(20),
+    p_customer_name VARCHAR(100),
+    p_customer_type VARCHAR(20),
+    p_region VARCHAR(50)
+) RETURNS VOID AS $$
+DECLARE
+    current_record RECORD;
+BEGIN
+    -- Get current record
+    SELECT * INTO current_record 
+    FROM dim_customer 
+    WHERE customer_id = p_customer_id 
+    AND is_current = TRUE;
+    
+    -- Check if data has changed
+    IF current_record.customer_name <> p_customer_name 
+       OR current_record.customer_type <> p_customer_type 
+       OR current_record.region <> p_region THEN
+        
+        -- Expire current record
+        UPDATE dim_customer 
+        SET expiry_date = CURRENT_DATE - 1,
+            is_current = FALSE,
+            updated_date = CURRENT_TIMESTAMP
+        WHERE customer_key = current_record.customer_key;
+        
+        -- Insert new record
+        INSERT INTO dim_customer (
+            customer_id, customer_name, customer_type, region,
+            effective_date, expiry_date, is_current
+        ) VALUES (
+            p_customer_id, p_customer_name, p_customer_type, p_region,
+            CURRENT_DATE, '9999-12-31', TRUE
+        );
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### SCD Type 3 - Add New Column
+```sql
+-- Track previous value in separate column
+ALTER TABLE dim_customer 
+ADD COLUMN previous_region VARCHAR(50),
+ADD COLUMN region_change_date DATE;
+
+CREATE OR REPLACE FUNCTION update_customer_scd3(
+    p_customer_id VARCHAR(20),
+    p_new_region VARCHAR(50)
+) RETURNS VOID AS $$
+BEGIN
+    UPDATE dim_customer 
+    SET previous_region = region,
+        region = p_new_region,
+        region_change_date = CURRENT_DATE,
+        updated_date = CURRENT_TIMESTAMP
+    WHERE customer_id = p_customer_id 
+    AND is_current = TRUE
+    AND region <> p_new_region;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## ETL Implementation
+
+### Extract, Transform, Load Process
+```sql
+-- Staging tables for ETL
+CREATE TABLE staging_sales (
+    transaction_id VARCHAR(50),
+    transaction_date DATE,
+    customer_id VARCHAR(20),
+    product_id VARCHAR(20),
+    quantity INT,
+    unit_price DECIMAL(10,2),
+    discount_percent DECIMAL(5,2),
+    
+    -- ETL metadata
+    batch_id INT,
+    load_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed BOOLEAN DEFAULT FALSE
+);
+
+-- ETL procedure
+CREATE OR REPLACE FUNCTION etl_load_sales_fact(p_batch_id INT)
+RETURNS TABLE(processed_rows INT, error_rows INT) AS $$
+DECLARE
+    v_processed_rows INT := 0;
+    v_error_rows INT := 0;
+    staging_record RECORD;
+BEGIN
+    -- Process each staging record
+    FOR staging_record IN 
+        SELECT * FROM staging_sales 
+        WHERE batch_id = p_batch_id AND NOT processed
+    LOOP
+        BEGIN
+            -- Transform and load
+            INSERT INTO fact_sales (
+                date_key,
+                customer_key,
+                product_key,
+                quantity,
+                unit_price,
+                discount_amount,
+                total_amount,
+                order_number
+            )
+            SELECT 
+                d.date_key,
+                c.customer_key,
+                p.product_key,
+                s.quantity,
+                s.unit_price,
+                s.unit_price * s.quantity * s.discount_percent / 100,
+                s.unit_price * s.quantity * (1 - s.discount_percent / 100),
+                s.transaction_id
+            FROM staging_sales s
+            JOIN dim_date d ON d.date_value = s.transaction_date
+            JOIN dim_customer c ON c.customer_id = s.customer_id AND c.is_current = TRUE
+            JOIN dim_product p ON p.product_id = s.product_id AND p.is_current = TRUE
+            WHERE s.transaction_id = staging_record.transaction_id;
+            
+            -- Mark as processed
+            UPDATE staging_sales 
+            SET processed = TRUE 
+            WHERE transaction_id = staging_record.transaction_id;
+            
+            v_processed_rows := v_processed_rows + 1;
+            
+        EXCEPTION WHEN OTHERS THEN
+            -- Log error and continue
+            INSERT INTO etl_error_log (
+                batch_id, transaction_id, error_message, error_timestamp
+            ) VALUES (
+                p_batch_id, staging_record.transaction_id, SQLERRM, CURRENT_TIMESTAMP
+            );
+            
+            v_error_rows := v_error_rows + 1;
+        END;
+    END LOOP;
+    
+    RETURN QUERY SELECT v_processed_rows, v_error_rows;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### Data Quality and Validation
+```sql
+-- Data quality checks
+CREATE TABLE data_quality_rules (
+    rule_id SERIAL PRIMARY KEY,
+    rule_name VARCHAR(100),
+    table_name VARCHAR(50),
+    column_name VARCHAR(50),
+    rule_type VARCHAR(20), -- NOT_NULL, RANGE, FORMAT, REFERENCE
+    rule_definition TEXT,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Data quality validation function
+CREATE OR REPLACE FUNCTION validate_data_quality(p_batch_id INT)
+RETURNS TABLE(rule_name VARCHAR, failed_count INT) AS $$
+BEGIN
+    -- Check for null values in required fields
+    RETURN QUERY
+    SELECT 
+        'Customer ID Not Null'::VARCHAR,
+        COUNT(*)::INT
+    FROM staging_sales 
+    WHERE batch_id = p_batch_id 
+    AND customer_id IS NULL;
+    
+    -- Check for valid date ranges
+    RETURN QUERY
+    SELECT 
+        'Valid Transaction Date'::VARCHAR,
+        COUNT(*)::INT
+    FROM staging_sales 
+    WHERE batch_id = p_batch_id 
+    AND (transaction_date < '2020-01-01' OR transaction_date > CURRENT_DATE);
+    
+    -- Check for positive quantities and prices
+    RETURN QUERY
+    SELECT 
+        'Positive Quantity and Price'::VARCHAR,
+        COUNT(*)::INT
+    FROM staging_sales 
+    WHERE batch_id = p_batch_id 
+    AND (quantity <= 0 OR unit_price <= 0);
+    
+    -- Check referential integrity
+    RETURN QUERY
+    SELECT 
+        'Valid Customer Reference'::VARCHAR,
+        COUNT(*)::INT
+    FROM staging_sales s
+    LEFT JOIN dim_customer c ON s.customer_id = c.customer_id AND c.is_current = TRUE
+    WHERE s.batch_id = p_batch_id 
+    AND c.customer_key IS NULL;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## OLAP Operations
+
+### Cube and Rollup Operations
+```sql
+-- Sales cube with multiple dimensions
+SELECT 
+    COALESCE(dd.year::VARCHAR, 'All Years') AS year,
+    COALESCE(dc.region, 'All Regions') AS region,
+    COALESCE(dp.category, 'All Categories') AS category,
+    SUM(fs.total_amount) AS total_sales,
+    SUM(fs.quantity) AS total_quantity,
+    COUNT(*) AS transaction_count
+FROM fact_sales fs
+JOIN dim_date dd ON fs.date_key = dd.date_key
+JOIN dim_customer dc ON fs.customer_key = dc.customer_key
+JOIN dim_product dp ON fs.product_key = dp.product_key
+WHERE dd.year >= 2023
+GROUP BY ROLLUP (dd.year, dc.region, dp.category)
+ORDER BY year, region, category;
+
+-- Cube operation for all combinations
+SELECT 
+    COALESCE(dd.quarter::VARCHAR, 'All Quarters') AS quarter,
+    COALESCE(dc.customer_type, 'All Types') AS customer_type,
+    COALESCE(dp.brand, 'All Brands') AS brand,
+    SUM(fs.total_amount) AS total_sales,
+    AVG(fs.unit_price) AS avg_unit_price
+FROM fact_sales fs
+JOIN dim_date dd ON fs.date_key = dd.date_key
+JOIN dim_customer dc ON fs.customer_key = dc.customer_key
+JOIN dim_product dp ON fs.product_key = dp.product_key
+WHERE dd.year = 2024
+GROUP BY CUBE (dd.quarter, dc.customer_type, dp.brand)
+ORDER BY quarter, customer_type, brand;
+```
+
+### Window Functions for Analytics
+```sql
+-- Running totals and moving averages
+SELECT 
+    dd.date_value,
+    dc.region,
+    SUM(fs.total_amount) AS daily_sales,
+    SUM(SUM(fs.total_amount)) OVER (
+        PARTITION BY dc.region 
+        ORDER BY dd.date_value 
+        ROWS UNBOUNDED PRECEDING
+    ) AS running_total,
+    AVG(SUM(fs.total_amount)) OVER (
+        PARTITION BY dc.region 
+        ORDER BY dd.date_value 
+        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    ) AS moving_avg_7_days,
+    RANK() OVER (
+        PARTITION BY dd.year, dd.month 
+        ORDER BY SUM(fs.total_amount) DESC
+    ) AS monthly_rank
+FROM fact_sales fs
+JOIN dim_date dd ON fs.date_key = dd.date_key
+JOIN dim_customer dc ON fs.customer_key = dc.customer_key
+GROUP BY dd.date_value, dd.year, dd.month, dc.region
+ORDER BY dc.region, dd.date_value;
+```
+
+## Advanced Analytics
+
+### Time Intelligence Functions
+```sql
+-- Year-over-year comparison
+WITH monthly_sales AS (
+    SELECT 
+        dd.year,
+        dd.month,
+        dc.region,
+        SUM(fs.total_amount) AS monthly_total
+    FROM fact_sales fs
+    JOIN dim_date dd ON fs.date_key = dd.date_key
+    JOIN dim_customer dc ON fs.customer_key = dc.customer_key
+    GROUP BY dd.year, dd.month, dc.region
+)
+SELECT 
+    current_year.year,
+    current_year.month,
+    current_year.region,
+    current_year.monthly_total,
+    previous_year.monthly_total AS previous_year_total,
+    current_year.monthly_total - previous_year.monthly_total AS yoy_difference,
+    ROUND(
+        (current_year.monthly_total - previous_year.monthly_total) * 100.0 / 
+        previous_year.monthly_total, 2
+    ) AS yoy_growth_percent
+FROM monthly_sales current_year
+LEFT JOIN monthly_sales previous_year 
+    ON current_year.month = previous_year.month
+    AND current_year.region = previous_year.region
+    AND current_year.year = previous_year.year + 1
+WHERE current_year.year = 2024
+ORDER BY current_year.region, current_year.month;
+```
+
+### Cohort Analysis
+```sql
+-- Customer cohort analysis
+WITH customer_cohorts AS (
+    SELECT 
+        dc.customer_id,
+        MIN(dd.date_value) AS first_purchase_date,
+        DATE_TRUNC('month', MIN(dd.date_value)) AS cohort_month
+    FROM fact_sales fs
+    JOIN dim_date dd ON fs.date_key = dd.date_key
+    JOIN dim_customer dc ON fs.customer_key = dc.customer_key
+    GROUP BY dc.customer_id
+),
+cohort_data AS (
+    SELECT 
+        cc.cohort_month,
+        DATE_TRUNC('month', dd.date_value) AS purchase_month,
+        EXTRACT(YEAR FROM AGE(dd.date_value, cc.first_purchase_date)) * 12 + 
+        EXTRACT(MONTH FROM AGE(dd.date_value, cc.first_purchase_date)) AS period_number,
+        COUNT(DISTINCT dc.customer_id) AS customers
+    FROM fact_sales fs
+    JOIN dim_date dd ON fs.date_key = dd.date_key
+    JOIN dim_customer dc ON fs.customer_key = dc.customer_key
+    JOIN customer_cohorts cc ON dc.customer_id = cc.customer_id
+    GROUP BY cc.cohort_month, purchase_month, period_number
+)
+SELECT 
+    cohort_month,
+    period_number,
+    customers,
+    FIRST_VALUE(customers) OVER (
+        PARTITION BY cohort_month 
+        ORDER BY period_number
+    ) AS cohort_size,
+    ROUND(
+        customers * 100.0 / FIRST_VALUE(customers) OVER (
+            PARTITION BY cohort_month 
+            ORDER BY period_number
+        ), 2
+    ) AS retention_rate
+FROM cohort_data
+ORDER BY cohort_month, period_number;
+```
+
+## Performance Optimization
+
+### Aggregate Tables and Materialized Views
+```sql
+-- Pre-aggregated summary tables
+CREATE TABLE agg_sales_monthly (
+    year INT,
+    month INT,
+    region VARCHAR(50),
+    category VARCHAR(50),
+    total_sales DECIMAL(15,2),
+    total_quantity INT,
+    unique_customers INT,
+    avg_order_value DECIMAL(10,2),
+    
+    PRIMARY KEY (year, month, region, category)
+);
+
+-- Materialized view for daily aggregates
+CREATE MATERIALIZED VIEW mv_sales_daily AS
+SELECT 
+    dd.date_value,
+    dd.year,
+    dd.month,
+    dd.day_of_week,
+    dc.region,
+    dc.customer_type,
+    dp.category,
+    COUNT(*) AS transaction_count,
+    SUM(fs.total_amount) AS total_sales,
+    SUM(fs.quantity) AS total_quantity,
+    COUNT(DISTINCT fs.customer_key) AS unique_customers,
+    AVG(fs.total_amount) AS avg_transaction_value
+FROM fact_sales fs
+JOIN dim_date dd ON fs.date_key = dd.date_key
+JOIN dim_customer dc ON fs.customer_key = dc.customer_key
+JOIN dim_product dp ON fs.product_key = dp.product_key
+GROUP BY 
+    dd.date_value, dd.year, dd.month, dd.day_of_week,
+    dc.region, dc.customer_type, dp.category;
+
+-- Indexes on materialized view
+CREATE INDEX idx_mv_sales_daily_date ON mv_sales_daily (date_value);
+CREATE INDEX idx_mv_sales_daily_region ON mv_sales_daily (region);
+CREATE INDEX idx_mv_sales_daily_category ON mv_sales_daily (category);
+```
+
+### Partitioning Strategy
+```sql
+-- Partition fact table by date
+CREATE TABLE fact_sales_partitioned (
+    LIKE fact_sales INCLUDING ALL
+) PARTITION BY RANGE (date_key);
+
+-- Create monthly partitions
+CREATE TABLE fact_sales_2024_01 PARTITION OF fact_sales_partitioned
+FOR VALUES FROM (20240101) TO (20240201);
+
+CREATE TABLE fact_sales_2024_02 PARTITION OF fact_sales_partitioned
+FOR VALUES FROM (20240201) TO (20240301);
+
+-- Automated partition creation
+CREATE OR REPLACE FUNCTION create_monthly_partition(
+    table_name TEXT,
+    year_month DATE
+) RETURNS VOID AS $$
+DECLARE
+    partition_name TEXT;
+    start_date INT;
+    end_date INT;
+BEGIN
+    partition_name := table_name || '_' || to_char(year_month, 'YYYY_MM');
+    start_date := to_char(year_month, 'YYYYMMDD')::INT;
+    end_date := to_char(year_month + INTERVAL '1 month', 'YYYYMMDD')::INT;
+    
+    EXECUTE format('CREATE TABLE %I PARTITION OF %I FOR VALUES FROM (%s) TO (%s)',
+                   partition_name, table_name, start_date, end_date);
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## Data Warehouse Monitoring
+
+### Performance Metrics
+```sql
+-- Query performance monitoring
+CREATE TABLE dw_query_stats (
+    query_id SERIAL PRIMARY KEY,
+    query_text TEXT,
+    execution_time_ms INT,
+    rows_examined BIGINT,
+    rows_returned BIGINT,
+    tables_accessed TEXT[],
+    execution_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ETL monitoring
+CREATE TABLE etl_batch_log (
+    batch_id SERIAL PRIMARY KEY,
+    batch_name VARCHAR(100),
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    records_processed INT,
+    records_failed INT,
+    status VARCHAR(20), -- RUNNING, SUCCESS, FAILED
+    error_message TEXT
+);
+
+-- Data freshness monitoring
+CREATE VIEW data_freshness AS
+SELECT 
+    'fact_sales' AS table_name,
+    MAX(created_date) AS last_update,
+    COUNT(*) AS record_count,
+    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - MAX(created_date))) / 3600 AS hours_since_update
+FROM fact_sales
+UNION ALL
+SELECT 
+    'dim_customer' AS table_name,
+    MAX(updated_date) AS last_update,
+    COUNT(*) AS record_count,
+    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - MAX(updated_date))) / 3600 AS hours_since_update
+FROM dim_customer;
+```
+
+## Best Practices
+
+### Design Guidelines
+- Use surrogate keys for dimension tables
+- Implement proper SCD strategies based on business requirements
+- Design fact tables with appropriate grain (level of detail)
+- Use conformed dimensions across multiple fact tables
+- Implement comprehensive data quality checks
+- Plan for scalability with partitioning and indexing strategies
+
+### ETL Best Practices
+- Implement incremental loading where possible
+- Use staging areas for data validation
+- Maintain comprehensive error logging
+- Design for restartability and recovery
+- Monitor data lineage and dependencies
+- Implement proper change data capture (CDC)
+
+## Interview Tips
+
+- Understand dimensional modeling concepts (facts, dimensions, star/snowflake schemas)
+- Know different SCD types and when to use each
+- Be familiar with ETL processes and data quality considerations
+- Understand OLAP operations (rollup, cube, drill-down)
+- Know performance optimization techniques for data warehouses
+- Practice writing analytical queries with window functions
+- Be aware of modern alternatives (data lakes, cloud data warehouses)
+- Understand the differences between OLTP and OLAP systems

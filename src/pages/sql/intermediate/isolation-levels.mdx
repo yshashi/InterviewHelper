@@ -1,0 +1,472 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are different isolation levels in SQL?
+---
+
+# What are different isolation levels in SQL?
+
+## Answer
+
+**Isolation levels** define the degree to which transactions are isolated from each other. They control what data modifications made by one transaction can be seen by other concurrent transactions, balancing data consistency with performance.
+
+## The Four Standard Isolation Levels
+
+| Level | Dirty Read | Non-Repeatable Read | Phantom Read | Performance |
+|-------|------------|-------------------|--------------|-------------|
+| **Read Uncommitted** | ✓ Possible | ✓ Possible | ✓ Possible | Highest |
+| **Read Committed** | ✗ Prevented | ✓ Possible | ✓ Possible | High |
+| **Repeatable Read** | ✗ Prevented | ✗ Prevented | ✓ Possible | Medium |
+| **Serializable** | ✗ Prevented | ✗ Prevented | ✗ Prevented | Lowest |
+
+## 1. Read Uncommitted
+
+**Lowest isolation level** - Allows reading uncommitted changes from other transactions.
+
+### Setting Isolation Level
+```sql
+-- MySQL
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+START TRANSACTION;
+
+-- SQL Server
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+BEGIN TRANSACTION;
+
+-- PostgreSQL
+BEGIN TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+```
+
+### Dirty Read Example
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+START TRANSACTION;
+
+-- Session 2
+START TRANSACTION;
+UPDATE products SET price = 199.99 WHERE product_id = 'P001';
+-- Transaction not yet committed
+
+-- Session 1 (can see uncommitted changes)
+SELECT price FROM products WHERE product_id = 'P001';  -- Reads 199.99
+
+-- Session 2
+ROLLBACK;  -- Session 1 read data that was rolled back!
+
+-- Session 1
+SELECT price FROM products WHERE product_id = 'P001';  -- Now reads original price
+COMMIT;
+```
+
+### Use Cases
+```sql
+-- Reporting queries where approximate data is acceptable
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+SELECT 
+    COUNT(*) as total_orders,
+    SUM(order_total) as revenue_estimate
+FROM orders
+WHERE order_date = CURRENT_DATE;
+-- Fast query, but data might include uncommitted orders
+```
+
+## 2. Read Committed
+
+**Default isolation level** in most databases - Prevents dirty reads but allows non-repeatable reads.
+
+### Non-Repeatable Read Example
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+START TRANSACTION;
+SELECT price FROM products WHERE product_id = 'P001';  -- Reads $50.00
+
+-- Session 2
+START TRANSACTION;
+UPDATE products SET price = 75.00 WHERE product_id = 'P001';
+COMMIT;  -- Change is now committed
+
+-- Session 1 (same transaction, reads again)
+SELECT price FROM products WHERE product_id = 'P001';  -- Now reads $75.00
+-- Same query, different result within same transaction
+COMMIT;
+```
+
+### Practical Example
+```sql
+-- Order processing with Read Committed
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+START TRANSACTION;
+
+-- Check customer credit limit
+SELECT credit_limit, current_balance 
+FROM customers 
+WHERE customer_id = 123;  -- credit_limit: 5000, balance: 2000
+
+-- Another transaction might update customer balance here
+
+-- Process order
+INSERT INTO orders (customer_id, order_total) 
+VALUES (123, 1500);
+
+-- Update customer balance
+UPDATE customers 
+SET current_balance = current_balance + 1500 
+WHERE customer_id = 123;
+
+COMMIT;
+```
+
+## 3. Repeatable Read
+
+**Prevents dirty and non-repeatable reads** but allows phantom reads.
+
+### Repeatable Read Example
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+START TRANSACTION;
+SELECT price FROM products WHERE product_id = 'P001';  -- Reads $50.00
+
+-- Session 2
+START TRANSACTION;
+UPDATE products SET price = 75.00 WHERE product_id = 'P001';
+COMMIT;
+
+-- Session 1 (same transaction)
+SELECT price FROM products WHERE product_id = 'P001';  -- Still reads $50.00
+-- Repeatable read - same result as first read
+COMMIT;
+```
+
+### Phantom Read Example
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+START TRANSACTION;
+SELECT COUNT(*) FROM products WHERE category = 'Electronics';  -- Returns 10
+
+-- Session 2
+START TRANSACTION;
+INSERT INTO products (name, category, price) 
+VALUES ('New Phone', 'Electronics', 599.99);
+COMMIT;
+
+-- Session 1 (same transaction)
+SELECT COUNT(*) FROM products WHERE category = 'Electronics';  
+-- Might return 11 (phantom read) - new row appeared
+COMMIT;
+```
+
+### Financial Transaction Example
+```sql
+-- Account transfer with Repeatable Read
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+START TRANSACTION;
+
+-- Read account balances (these values won't change during transaction)
+SELECT balance FROM accounts WHERE account_id = 'ACC001';  -- $1000
+SELECT balance FROM accounts WHERE account_id = 'ACC002';  -- $500
+
+-- Perform transfer
+UPDATE accounts SET balance = balance - 200 WHERE account_id = 'ACC001';
+UPDATE accounts SET balance = balance + 200 WHERE account_id = 'ACC002';
+
+-- Balances remain consistent throughout transaction
+COMMIT;
+```
+
+## 4. Serializable
+
+**Highest isolation level** - Prevents all concurrency phenomena but lowest performance.
+
+### Serializable Example
+```sql
+-- Session 1
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION;
+SELECT SUM(quantity) FROM inventory WHERE product_category = 'Electronics';
+
+-- Session 2 (will wait or fail)
+START TRANSACTION;
+INSERT INTO inventory (product_id, product_category, quantity) 
+VALUES ('P999', 'Electronics', 100);
+-- This transaction will wait for Session 1 to complete
+
+-- Session 1
+UPDATE inventory SET quantity = quantity - 10 
+WHERE product_category = 'Electronics';
+COMMIT;  -- Now Session 2 can proceed
+```
+
+### Critical Business Logic
+```sql
+-- Inventory management with Serializable
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION;
+
+-- Get current stock (locked for entire transaction)
+SELECT quantity INTO @current_stock
+FROM inventory 
+WHERE product_id = 'P001';
+
+-- Business logic validation
+IF @current_stock >= 5 THEN
+    -- Reserve inventory
+    UPDATE inventory 
+    SET quantity = quantity - 5,
+        reserved = reserved + 5
+    WHERE product_id = 'P001';
+    
+    -- Create order
+    INSERT INTO orders (product_id, quantity, status)
+    VALUES ('P001', 5, 'CONFIRMED');
+ELSE
+    -- Insufficient stock
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient inventory';
+END IF;
+
+COMMIT;
+```
+
+## Database-Specific Implementations
+
+### MySQL InnoDB
+```sql
+-- MySQL uses MVCC (Multi-Version Concurrency Control)
+-- Repeatable Read is default and prevents phantom reads
+
+-- Check current isolation level
+SELECT @@transaction_isolation;
+
+-- Set global default
+SET GLOBAL transaction_isolation = 'READ-COMMITTED';
+
+-- Set session level
+SET SESSION transaction_isolation = 'REPEATABLE-READ';
+```
+
+### SQL Server
+```sql
+-- SQL Server specific isolation levels
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+-- Snapshot isolation (uses row versioning)
+ALTER DATABASE MyDB SET ALLOW_SNAPSHOT_ISOLATION ON;
+SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
+
+-- Read committed snapshot
+ALTER DATABASE MyDB SET READ_COMMITTED_SNAPSHOT ON;
+```
+
+### PostgreSQL
+```sql
+-- PostgreSQL uses MVCC
+-- Only supports Read Committed and Serializable effectively
+
+-- Check current level
+SHOW transaction_isolation;
+
+-- Set for transaction
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+-- Set for session
+SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED;
+```
+
+## Practical Use Cases by Isolation Level
+
+### Read Uncommitted
+```sql
+-- Dashboard queries, reporting, analytics
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+SELECT 
+    DATE(order_date) as date,
+    COUNT(*) as orders,
+    SUM(total) as revenue
+FROM orders 
+WHERE order_date >= CURRENT_DATE - INTERVAL 7 DAY
+GROUP BY DATE(order_date);
+-- Fast query, slight data inconsistency acceptable
+```
+
+### Read Committed
+```sql
+-- Most web applications, general CRUD operations
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+START TRANSACTION;
+
+-- User profile update
+UPDATE users 
+SET last_login = NOW(), login_count = login_count + 1
+WHERE user_id = 12345;
+
+-- Log activity
+INSERT INTO user_activity (user_id, action, timestamp)
+VALUES (12345, 'LOGIN', NOW());
+
+COMMIT;
+```
+
+### Repeatable Read
+```sql
+-- Financial calculations, order processing
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+START TRANSACTION;
+
+-- Calculate order total (prices won't change during calculation)
+SELECT @subtotal := SUM(quantity * unit_price)
+FROM order_items 
+WHERE order_id = 1001;
+
+SELECT @tax := @subtotal * 0.08;
+SELECT @total := @subtotal + @tax;
+
+-- Update order with calculated total
+UPDATE orders 
+SET subtotal = @subtotal, tax = @tax, total = @total
+WHERE order_id = 1001;
+
+COMMIT;
+```
+
+### Serializable
+```sql
+-- Critical business operations, inventory management
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION;
+
+-- Seat reservation system
+SELECT COUNT(*) INTO @available_seats
+FROM seats 
+WHERE flight_id = 'FL123' AND status = 'AVAILABLE';
+
+IF @available_seats > 0 THEN
+    -- Reserve seat
+    UPDATE seats 
+    SET status = 'RESERVED', passenger_id = 'P456'
+    WHERE flight_id = 'FL123' AND status = 'AVAILABLE'
+    LIMIT 1;
+    
+    -- Create booking
+    INSERT INTO bookings (flight_id, passenger_id, seat_number)
+    SELECT 'FL123', 'P456', seat_number
+    FROM seats 
+    WHERE flight_id = 'FL123' AND passenger_id = 'P456';
+END IF;
+
+COMMIT;
+```
+
+## Performance Impact Analysis
+
+### Locking Overhead
+```sql
+-- Monitor lock waits and deadlocks
+-- MySQL
+SELECT * FROM performance_schema.data_locks;
+SELECT * FROM performance_schema.data_lock_waits;
+
+-- SQL Server
+SELECT 
+    request_session_id,
+    resource_type,
+    resource_description,
+    request_mode,
+    request_status
+FROM sys.dm_tran_locks
+WHERE request_status = 'WAIT';
+```
+
+### Choosing the Right Level
+```sql
+-- High-volume read operations
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;  -- Fastest
+
+-- Standard web application
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;    -- Balanced
+
+-- Financial/critical data
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;   -- Consistent
+
+-- Inventory/booking systems
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;      -- Most secure
+```
+
+## Best Practices
+
+### 1. Choose Appropriate Level
+```sql
+-- Different operations, different levels
+-- Reporting
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+-- User updates
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+-- Financial transactions
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+```
+
+### 2. Keep Transactions Short
+```sql
+-- Bad: Long transaction with high isolation
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION;
+-- ... lots of operations ...
+-- ... user interaction ...
+COMMIT;  -- Holds locks too long
+
+-- Good: Short, focused transactions
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION;
+-- Only critical operations
+UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 'P001';
+COMMIT;  -- Quick release of locks
+```
+
+### 3. Handle Deadlocks
+```sql
+-- Implement retry logic for deadlocks
+DELIMITER //
+CREATE PROCEDURE SafeTransfer(
+    IN from_account INT,
+    IN to_account INT,
+    IN amount DECIMAL(10,2)
+)
+BEGIN
+    DECLARE retry_count INT DEFAULT 0;
+    DECLARE max_retries INT DEFAULT 3;
+    DECLARE done BOOLEAN DEFAULT FALSE;
+    
+    WHILE NOT done AND retry_count < max_retries DO
+        BEGIN
+            DECLARE EXIT HANDLER FOR 1213  -- Deadlock error code
+            BEGIN
+                SET retry_count = retry_count + 1;
+                SELECT SLEEP(0.1);  -- Brief delay before retry
+            END;
+            
+            SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+            START TRANSACTION;
+            
+            -- Transfer logic here
+            UPDATE accounts SET balance = balance - amount WHERE id = from_account;
+            UPDATE accounts SET balance = balance + amount WHERE id = to_account;
+            
+            COMMIT;
+            SET done = TRUE;
+        END;
+    END WHILE;
+END //
+DELIMITER ;
+```
+
+## Interview Tips
+
+- Understand the trade-off between consistency and performance
+- Know which phenomena each isolation level prevents
+- Be familiar with database-specific implementations (MVCC vs locking)
+- Understand when to use each isolation level based on business requirements
+- Know how to handle deadlocks and lock timeouts
+- Practice explaining isolation levels with concrete examples

@@ -1,0 +1,566 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is database partitioning and its types?
+---
+
+# What is database partitioning and its types?
+
+## Answer
+
+**Database partitioning** is a technique that divides large tables or indexes into smaller, more manageable pieces called partitions. Each partition can be stored separately and managed independently while appearing as a single logical table to applications.
+
+## Benefits of Partitioning
+
+### Performance Benefits
+```sql
+-- Query performance improvement through partition elimination
+SELECT * FROM sales_partitioned 
+WHERE sale_date BETWEEN '2024-01-01' AND '2024-01-31';
+-- Only January partition is scanned, not entire table
+
+-- Parallel processing across partitions
+SELECT region, SUM(sales_amount)
+FROM sales_partitioned
+GROUP BY region;
+-- Each partition can be processed in parallel
+```
+
+### Management Benefits
+```sql
+-- Partition-level maintenance operations
+-- Drop old data quickly
+ALTER TABLE sales_partitioned DROP PARTITION p_2020;
+
+-- Backup specific partitions
+BACKUP TABLE sales_partitioned PARTITION (p_2024_q1);
+
+-- Index maintenance per partition
+ALTER INDEX IX_sales_region ON sales_partitioned 
+REBUILD PARTITION = p_2024_q1;
+```
+
+## Types of Partitioning
+
+### 1. Range Partitioning
+Partitions data based on value ranges.
+
+```sql
+-- PostgreSQL range partitioning by date
+CREATE TABLE sales (
+    sale_id SERIAL,
+    sale_date DATE,
+    customer_id INT,
+    amount DECIMAL(10,2)
+) PARTITION BY RANGE (sale_date);
+
+-- Create partitions for each quarter
+CREATE TABLE sales_2024_q1 PARTITION OF sales
+FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE sales_2024_q2 PARTITION OF sales
+FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+CREATE TABLE sales_2024_q3 PARTITION OF sales
+FOR VALUES FROM ('2024-07-01') TO ('2024-10-01');
+
+CREATE TABLE sales_2024_q4 PARTITION OF sales
+FOR VALUES FROM ('2024-10-01') TO ('2025-01-01');
+
+-- SQL Server range partitioning
+CREATE PARTITION FUNCTION pf_sales_date (DATE)
+AS RANGE RIGHT FOR VALUES 
+('2024-01-01', '2024-04-01', '2024-07-01', '2024-10-01');
+
+CREATE PARTITION SCHEME ps_sales_date
+AS PARTITION pf_sales_date
+TO (fg_2023, fg_2024_q1, fg_2024_q2, fg_2024_q3, fg_2024_q4);
+
+CREATE TABLE sales (
+    sale_id INT IDENTITY(1,1),
+    sale_date DATE,
+    customer_id INT,
+    amount DECIMAL(10,2)
+) ON ps_sales_date(sale_date);
+```
+
+### 2. Hash Partitioning
+Distributes data evenly across partitions using a hash function.
+
+```sql
+-- PostgreSQL hash partitioning
+CREATE TABLE customers (
+    customer_id SERIAL,
+    customer_name VARCHAR(100),
+    email VARCHAR(100),
+    registration_date DATE
+) PARTITION BY HASH (customer_id);
+
+-- Create hash partitions
+CREATE TABLE customers_p0 PARTITION OF customers
+FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+
+CREATE TABLE customers_p1 PARTITION OF customers
+FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+
+CREATE TABLE customers_p2 PARTITION OF customers
+FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+
+CREATE TABLE customers_p3 PARTITION OF customers
+FOR VALUES WITH (MODULUS 4, REMAINDER 3);
+
+-- MySQL hash partitioning
+CREATE TABLE customers (
+    customer_id INT AUTO_INCREMENT,
+    customer_name VARCHAR(100),
+    email VARCHAR(100),
+    registration_date DATE,
+    PRIMARY KEY (customer_id)
+)
+PARTITION BY HASH(customer_id)
+PARTITIONS 4;
+```
+
+### 3. List Partitioning
+Partitions data based on explicit lists of values.
+
+```sql
+-- PostgreSQL list partitioning by region
+CREATE TABLE orders (
+    order_id SERIAL,
+    customer_id INT,
+    region VARCHAR(20),
+    order_date DATE,
+    amount DECIMAL(10,2)
+) PARTITION BY LIST (region);
+
+-- Create partitions for each region
+CREATE TABLE orders_north PARTITION OF orders
+FOR VALUES IN ('North', 'Northeast', 'Northwest');
+
+CREATE TABLE orders_south PARTITION OF orders
+FOR VALUES IN ('South', 'Southeast', 'Southwest');
+
+CREATE TABLE orders_east PARTITION OF orders
+FOR VALUES IN ('East', 'Central East');
+
+CREATE TABLE orders_west PARTITION OF orders
+FOR VALUES IN ('West', 'Central West');
+
+-- Default partition for unspecified values
+CREATE TABLE orders_other PARTITION OF orders DEFAULT;
+```
+
+### 4. Composite Partitioning
+Combines multiple partitioning methods.
+
+```sql
+-- Range-Hash composite partitioning
+CREATE TABLE sales_composite (
+    sale_id SERIAL,
+    sale_date DATE,
+    customer_id INT,
+    region VARCHAR(20),
+    amount DECIMAL(10,2)
+) PARTITION BY RANGE (sale_date);
+
+-- Create range partitions first
+CREATE TABLE sales_2024 PARTITION OF sales_composite
+FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')
+PARTITION BY HASH (customer_id);
+
+-- Then create hash sub-partitions
+CREATE TABLE sales_2024_h0 PARTITION OF sales_2024
+FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+
+CREATE TABLE sales_2024_h1 PARTITION OF sales_2024
+FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+
+CREATE TABLE sales_2024_h2 PARTITION OF sales_2024
+FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+
+CREATE TABLE sales_2024_h3 PARTITION OF sales_2024
+FOR VALUES WITH (MODULUS 4, REMAINDER 3);
+```
+
+## Partitioning Strategies by Use Case
+
+### Time-Series Data
+```sql
+-- Monthly partitioning for time-series data
+CREATE TABLE sensor_data (
+    sensor_id INT,
+    reading_time TIMESTAMP,
+    temperature DECIMAL(5,2),
+    humidity DECIMAL(5,2),
+    pressure DECIMAL(8,2)
+) PARTITION BY RANGE (reading_time);
+
+-- Automated partition creation function
+CREATE OR REPLACE FUNCTION create_monthly_partition(
+    table_name TEXT,
+    start_date DATE
+) RETURNS VOID AS $$
+DECLARE
+    partition_name TEXT;
+    end_date DATE;
+BEGIN
+    partition_name := table_name || '_' || to_char(start_date, 'YYYY_MM');
+    end_date := start_date + INTERVAL '1 month';
+    
+    EXECUTE format('CREATE TABLE %I PARTITION OF %I
+                    FOR VALUES FROM (%L) TO (%L)',
+                   partition_name, table_name, start_date, end_date);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create partitions for the year
+SELECT create_monthly_partition('sensor_data', date_trunc('month', CURRENT_DATE) + (n || ' months')::INTERVAL)
+FROM generate_series(0, 11) n;
+```
+
+### Geographic Distribution
+```sql
+-- Partition by geographic regions
+CREATE TABLE user_activities (
+    activity_id BIGSERIAL,
+    user_id INT,
+    country_code CHAR(2),
+    activity_type VARCHAR(50),
+    activity_timestamp TIMESTAMP,
+    data JSONB
+) PARTITION BY LIST (country_code);
+
+-- Create regional partitions
+CREATE TABLE user_activities_us PARTITION OF user_activities
+FOR VALUES IN ('US');
+
+CREATE TABLE user_activities_eu PARTITION OF user_activities
+FOR VALUES IN ('GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'SE', 'NO', 'DK');
+
+CREATE TABLE user_activities_asia PARTITION OF user_activities
+FOR VALUES IN ('JP', 'KR', 'CN', 'IN', 'SG', 'HK');
+
+CREATE TABLE user_activities_other PARTITION OF user_activities DEFAULT;
+```
+
+### High-Volume Transactional Data
+```sql
+-- Hash partitioning for even distribution
+CREATE TABLE transactions (
+    transaction_id BIGSERIAL,
+    account_id BIGINT,
+    transaction_type VARCHAR(20),
+    amount DECIMAL(15,2),
+    transaction_date TIMESTAMP,
+    description TEXT
+) PARTITION BY HASH (account_id);
+
+-- Create multiple hash partitions for load distribution
+DO $$
+BEGIN
+    FOR i IN 0..15 LOOP
+        EXECUTE format('CREATE TABLE transactions_p%s PARTITION OF transactions
+                        FOR VALUES WITH (MODULUS 16, REMAINDER %s)', i, i);
+    END LOOP;
+END $$;
+```
+
+## Partition Management
+
+### Automatic Partition Creation
+```sql
+-- PostgreSQL: pg_partman extension for automated management
+CREATE EXTENSION pg_partman;
+
+-- Set up automatic monthly partitioning
+SELECT partman.create_parent(
+    p_parent_table => 'public.sales',
+    p_control => 'sale_date',
+    p_type => 'range',
+    p_interval => 'monthly',
+    p_premake => 3  -- Create 3 future partitions
+);
+
+-- SQL Server: Automated partition management
+CREATE FUNCTION [dbo].[fn_partition_range](@date DATE)
+RETURNS INT
+AS
+BEGIN
+    RETURN YEAR(@date) * 100 + MONTH(@date)
+END
+
+-- Create sliding window maintenance job
+EXEC sp_add_job @job_name = 'Partition Maintenance';
+```
+
+### Partition Pruning and Elimination
+```sql
+-- Query that benefits from partition elimination
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT customer_id, SUM(amount)
+FROM sales
+WHERE sale_date BETWEEN '2024-06-01' AND '2024-06-30'
+GROUP BY customer_id;
+
+-- Execution plan shows:
+-- -> Seq Scan on sales_2024_q2 (actual rows=50000)
+-- Partitions eliminated: 3 (sales_2024_q1, q3, q4)
+```
+
+### Partition-wise Joins
+```sql
+-- Tables partitioned on same key enable partition-wise joins
+CREATE TABLE orders (
+    order_id SERIAL,
+    customer_id INT,
+    order_date DATE,
+    amount DECIMAL(10,2)
+) PARTITION BY HASH (customer_id);
+
+CREATE TABLE order_items (
+    item_id SERIAL,
+    order_id INT,
+    customer_id INT,  -- Same partition key
+    product_id INT,
+    quantity INT
+) PARTITION BY HASH (customer_id);
+
+-- Join can be performed partition-wise
+SELECT o.order_id, oi.product_id, oi.quantity
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.customer_id = 12345;
+```
+
+## Advanced Partitioning Techniques
+
+### Interval Partitioning
+```sql
+-- Oracle-style interval partitioning (PostgreSQL equivalent)
+CREATE TABLE sales_interval (
+    sale_id SERIAL,
+    sale_date DATE,
+    amount DECIMAL(10,2)
+) PARTITION BY RANGE (sale_date);
+
+-- Create initial partition
+CREATE TABLE sales_202401 PARTITION OF sales_interval
+FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+
+-- Function to auto-create partitions
+CREATE OR REPLACE FUNCTION create_partition_if_not_exists()
+RETURNS TRIGGER AS $$
+DECLARE
+    partition_date DATE;
+    partition_name TEXT;
+    start_date DATE;
+    end_date DATE;
+BEGIN
+    partition_date := date_trunc('month', NEW.sale_date);
+    partition_name := 'sales_' || to_char(partition_date, 'YYYYMM');
+    start_date := partition_date;
+    end_date := partition_date + INTERVAL '1 month';
+    
+    -- Check if partition exists
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_class WHERE relname = partition_name
+    ) THEN
+        EXECUTE format('CREATE TABLE %I PARTITION OF sales_interval
+                        FOR VALUES FROM (%L) TO (%L)',
+                       partition_name, start_date, end_date);
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for automatic partition creation
+CREATE TRIGGER trigger_create_partition
+    BEFORE INSERT ON sales_interval
+    FOR EACH ROW EXECUTE FUNCTION create_partition_if_not_exists();
+```
+
+### Reference Partitioning
+```sql
+-- Child table inherits partitioning from parent
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100),
+    region VARCHAR(20)
+) PARTITION BY LIST (region);
+
+CREATE TABLE customer_orders (
+    order_id SERIAL,
+    customer_id INT REFERENCES customers(customer_id),
+    order_date DATE,
+    amount DECIMAL(10,2)
+) PARTITION BY LIST (region);  -- Same partitioning scheme
+
+-- Partitions are created with matching constraints
+CREATE TABLE customers_north PARTITION OF customers
+FOR VALUES IN ('North');
+
+CREATE TABLE customer_orders_north PARTITION OF customer_orders
+FOR VALUES IN ('North');
+```
+
+## Performance Optimization
+
+### Partition-wise Statistics
+```sql
+-- Collect statistics per partition
+ANALYZE sales_2024_q1;
+ANALYZE sales_2024_q2;
+ANALYZE sales_2024_q3;
+ANALYZE sales_2024_q4;
+
+-- Automated statistics collection
+DO $$
+DECLARE
+    partition_name TEXT;
+BEGIN
+    FOR partition_name IN 
+        SELECT schemaname||'.'||tablename 
+        FROM pg_tables 
+        WHERE tablename LIKE 'sales_2024%'
+    LOOP
+        EXECUTE 'ANALYZE ' || partition_name;
+    END LOOP;
+END $$;
+```
+
+### Constraint Exclusion
+```sql
+-- Enable constraint exclusion for better performance
+SET constraint_exclusion = partition;
+
+-- Add check constraints to ensure partition elimination
+ALTER TABLE sales_2024_q1 
+ADD CONSTRAINT chk_sales_2024_q1_date 
+CHECK (sale_date >= '2024-01-01' AND sale_date < '2024-04-01');
+```
+
+### Parallel Processing
+```sql
+-- Configure parallel processing for partitioned tables
+SET max_parallel_workers_per_gather = 4;
+SET parallel_tuple_cost = 0.1;
+SET parallel_setup_cost = 1000;
+
+-- Query that benefits from parallel partition processing
+SELECT 
+    date_trunc('month', sale_date) as month,
+    COUNT(*) as transaction_count,
+    SUM(amount) as total_amount
+FROM sales
+WHERE sale_date >= '2024-01-01'
+GROUP BY date_trunc('month', sale_date)
+ORDER BY month;
+```
+
+## Monitoring and Maintenance
+
+### Partition Information Queries
+```sql
+-- PostgreSQL: View partition information
+SELECT 
+    schemaname,
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+FROM pg_tables 
+WHERE tablename LIKE 'sales_%'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+
+-- Check partition constraints
+SELECT 
+    t.tablename,
+    c.conname,
+    c.consrc
+FROM pg_tables t
+JOIN pg_constraint c ON c.conrelid = (t.schemaname||'.'||t.tablename)::regclass
+WHERE t.tablename LIKE 'sales_%'
+AND c.contype = 'c';
+```
+
+### Partition Maintenance Scripts
+```sql
+-- Drop old partitions
+CREATE OR REPLACE FUNCTION drop_old_partitions(
+    table_pattern TEXT,
+    retention_months INT
+) RETURNS VOID AS $$
+DECLARE
+    partition_name TEXT;
+    cutoff_date DATE;
+BEGIN
+    cutoff_date := CURRENT_DATE - (retention_months || ' months')::INTERVAL;
+    
+    FOR partition_name IN
+        SELECT tablename 
+        FROM pg_tables 
+        WHERE tablename ~ table_pattern
+        AND tablename < table_pattern || '_' || to_char(cutoff_date, 'YYYY_MM')
+    LOOP
+        EXECUTE 'DROP TABLE ' || partition_name;
+        RAISE NOTICE 'Dropped partition: %', partition_name;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Usage
+SELECT drop_old_partitions('sales', 24);  -- Keep 24 months
+```
+
+## Best Practices
+
+### 1. Choose Appropriate Partition Key
+```sql
+-- Good: Frequently filtered column with good distribution
+PARTITION BY RANGE (order_date)  -- Time-series data
+
+-- Good: Even distribution
+PARTITION BY HASH (customer_id)  -- Large customer base
+
+-- Avoid: Low cardinality columns
+-- PARTITION BY LIST (status)  -- Only few status values
+```
+
+### 2. Partition Size Guidelines
+```sql
+-- Target partition sizes:
+-- OLTP: 2-50 GB per partition
+-- OLAP: 10-100 GB per partition
+-- Time-series: Based on query patterns (daily/monthly/yearly)
+
+-- Monitor partition sizes
+SELECT 
+    tablename,
+    pg_size_pretty(pg_total_relation_size(tablename::regclass)) as size,
+    (SELECT COUNT(*) FROM tablename::regclass) as row_count
+FROM pg_tables 
+WHERE tablename LIKE 'sales_%';
+```
+
+### 3. Index Strategy
+```sql
+-- Create indexes on each partition
+CREATE INDEX CONCURRENTLY idx_sales_2024_q1_customer 
+ON sales_2024_q1 (customer_id);
+
+CREATE INDEX CONCURRENTLY idx_sales_2024_q1_amount 
+ON sales_2024_q1 (amount);
+
+-- Or use partitioned indexes (PostgreSQL 11+)
+CREATE INDEX idx_sales_customer ON sales (customer_id);
+-- Automatically creates matching indexes on all partitions
+```
+
+## Interview Tips
+
+- Understand different partitioning types and when to use each
+- Know the benefits: performance, manageability, parallel processing
+- Be familiar with partition elimination and pruning concepts
+- Understand the trade-offs: complexity vs performance gains
+- Know how to monitor and maintain partitioned tables
+- Practice designing partitioning strategies for different scenarios
+- Be aware of database-specific partitioning features and limitations

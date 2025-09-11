@@ -1,0 +1,251 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are aggregate functions in SQL?
+---
+
+# What are aggregate functions in SQL?
+
+## Answer
+
+**Aggregate functions** perform calculations on a set of values and return a single result. They are essential for data analysis, reporting, and statistical operations in SQL.
+
+## Common Aggregate Functions
+
+### 1. COUNT()
+Counts the number of rows or non-NULL values.
+
+```sql
+-- Count all rows
+SELECT COUNT(*) FROM employees;
+
+-- Count non-NULL values in a specific column
+SELECT COUNT(email) FROM employees;
+
+-- Count distinct values
+SELECT COUNT(DISTINCT department) FROM employees;
+```
+
+### 2. SUM()
+Calculates the total sum of numeric values.
+
+```sql
+-- Total salary expense
+SELECT SUM(salary) FROM employees;
+
+-- Sum by department
+SELECT department, SUM(salary) as total_salary
+FROM employees 
+GROUP BY department;
+```
+
+### 3. AVG()
+Calculates the average of numeric values.
+
+```sql
+-- Average salary
+SELECT AVG(salary) FROM employees;
+
+-- Average salary by department
+SELECT department, AVG(salary) as avg_salary
+FROM employees 
+GROUP BY department;
+```
+
+### 4. MIN()
+Returns the minimum value.
+
+```sql
+-- Lowest salary
+SELECT MIN(salary) FROM employees;
+
+-- Earliest hire date by department
+SELECT department, MIN(hire_date) as earliest_hire
+FROM employees 
+GROUP BY department;
+```
+
+### 5. MAX()
+Returns the maximum value.
+
+```sql
+-- Highest salary
+SELECT MAX(salary) FROM employees;
+
+-- Latest hire date by department
+SELECT department, MAX(hire_date) as latest_hire
+FROM employees 
+GROUP BY department;
+```
+
+## Sample Data for Examples
+
+```sql
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    department VARCHAR(50),
+    salary DECIMAL(10,2),
+    hire_date DATE
+);
+
+INSERT INTO employees VALUES 
+(1, 'John Doe', 'Engineering', 75000, '2022-01-15'),
+(2, 'Jane Smith', 'Marketing', 65000, '2022-03-20'),
+(3, 'Mike Johnson', 'Engineering', 80000, '2021-11-10'),
+(4, 'Sarah Wilson', 'Marketing', 70000, '2023-02-05'),
+(5, 'Tom Brown', 'Engineering', 85000, '2021-08-30');
+```
+
+## Practical Examples
+
+### Basic Statistics
+```sql
+-- Overall company statistics
+SELECT 
+    COUNT(*) as total_employees,
+    SUM(salary) as total_payroll,
+    AVG(salary) as average_salary,
+    MIN(salary) as lowest_salary,
+    MAX(salary) as highest_salary
+FROM employees;
+
+-- Result:
+-- total_employees | total_payroll | average_salary | lowest_salary | highest_salary
+-- 5              | 375000        | 75000          | 65000         | 85000
+```
+
+### Department Analysis
+```sql
+-- Statistics by department
+SELECT 
+    department,
+    COUNT(*) as employee_count,
+    AVG(salary) as avg_salary,
+    MIN(salary) as min_salary,
+    MAX(salary) as max_salary
+FROM employees 
+GROUP BY department;
+
+-- Result:
+-- department  | employee_count | avg_salary | min_salary | max_salary
+-- Engineering | 3             | 80000      | 75000      | 85000
+-- Marketing   | 2             | 67500      | 65000      | 70000
+```
+
+### Advanced Examples
+```sql
+-- Departments with more than 2 employees
+SELECT department, COUNT(*) as emp_count
+FROM employees 
+GROUP BY department 
+HAVING COUNT(*) > 2;
+
+-- Salary ranges by department
+SELECT 
+    department,
+    MAX(salary) - MIN(salary) as salary_range
+FROM employees 
+GROUP BY department;
+
+-- Percentage of total payroll by department
+SELECT 
+    department,
+    SUM(salary) as dept_payroll,
+    ROUND((SUM(salary) * 100.0 / (SELECT SUM(salary) FROM employees)), 2) as percentage
+FROM employees 
+GROUP BY department;
+```
+
+## Aggregate Functions with NULL Values
+
+```sql
+-- Sample data with NULLs
+INSERT INTO employees VALUES (6, 'Alex Green', 'Sales', NULL, '2023-01-10');
+
+-- COUNT(*) includes NULLs, COUNT(column) excludes NULLs
+SELECT 
+    COUNT(*) as total_rows,           -- Returns 6
+    COUNT(salary) as non_null_salaries -- Returns 5
+FROM employees;
+
+-- Other aggregates ignore NULL values
+SELECT 
+    AVG(salary),  -- Calculates average of non-NULL values only
+    SUM(salary)   -- Sums non-NULL values only
+FROM employees;
+```
+
+## String Aggregate Functions
+
+### GROUP_CONCAT() / STRING_AGG()
+Concatenates values from multiple rows.
+
+```sql
+-- MySQL syntax
+SELECT department, GROUP_CONCAT(name) as employees
+FROM employees 
+GROUP BY department;
+
+-- PostgreSQL/SQL Server syntax
+SELECT department, STRING_AGG(name, ', ') as employees
+FROM employees 
+GROUP BY department;
+```
+
+## Mathematical Aggregate Functions
+
+### STDDEV() and VARIANCE()
+```sql
+-- Standard deviation and variance of salaries
+SELECT 
+    department,
+    STDDEV(salary) as salary_stddev,
+    VARIANCE(salary) as salary_variance
+FROM employees 
+GROUP BY department;
+```
+
+## Window Functions vs Aggregate Functions
+
+```sql
+-- Aggregate function (one result per group)
+SELECT department, AVG(salary) as avg_salary
+FROM employees 
+GROUP BY department;
+
+-- Window function (keeps all rows)
+SELECT 
+    name, 
+    salary,
+    department,
+    AVG(salary) OVER (PARTITION BY department) as dept_avg_salary
+FROM employees;
+```
+
+## Performance Considerations
+
+1. **Indexes**: Aggregate functions benefit from indexes on grouped columns
+2. **WHERE vs HAVING**: Filter with WHERE before grouping when possible
+3. **DISTINCT**: Use COUNT(DISTINCT) carefully as it can be expensive
+4. **Large datasets**: Consider using approximate functions for very large tables
+
+## Common Mistakes
+
+### ❌ Mixing aggregates with non-aggregated columns
+```sql
+-- This will cause an error in most databases
+SELECT name, COUNT(*) FROM employees;
+```
+
+### ✅ Correct usage with GROUP BY
+```sql
+SELECT department, COUNT(*) FROM employees GROUP BY department;
+```
+
+## Interview Tips
+
+- Know the five main aggregate functions: COUNT, SUM, AVG, MIN, MAX
+- Understand how NULL values are handled
+- Practice using aggregates with GROUP BY and HAVING
+- Know the difference between COUNT(*) and COUNT(column)
+- Be familiar with window functions as an alternative

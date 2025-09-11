@@ -1,0 +1,223 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are the different types of JOINs in SQL?
+---
+
+# What are the different types of JOINs in SQL?
+
+## Answer
+
+SQL JOINs are used to combine rows from two or more tables based on a related column between them. Understanding different JOIN types is crucial for effective database querying.
+
+## Sample Tables for Examples
+
+```sql
+-- Employees table
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    dept_id INT
+);
+
+INSERT INTO employees VALUES 
+(1, 'John Doe', 10),
+(2, 'Jane Smith', 20),
+(3, 'Mike Johnson', 10),
+(4, 'Sarah Wilson', NULL);
+
+-- Departments table
+CREATE TABLE departments (
+    dept_id INT PRIMARY KEY,
+    dept_name VARCHAR(100)
+);
+
+INSERT INTO departments VALUES 
+(10, 'Engineering'),
+(20, 'Marketing'),
+(30, 'Finance');
+```
+
+## 1. INNER JOIN
+
+Returns only rows that have matching values in both tables.
+
+```sql
+SELECT e.name, d.dept_name
+FROM employees e
+INNER JOIN departments d ON e.dept_id = d.dept_id;
+
+-- Result:
+-- John Doe     | Engineering
+-- Jane Smith   | Marketing  
+-- Mike Johnson | Engineering
+```
+
+**Use Case**: When you only want records that exist in both tables.
+
+## 2. LEFT JOIN (LEFT OUTER JOIN)
+
+Returns all rows from the left table and matching rows from the right table. NULL values for non-matching right table columns.
+
+```sql
+SELECT e.name, d.dept_name
+FROM employees e
+LEFT JOIN departments d ON e.dept_id = d.dept_id;
+
+-- Result:
+-- John Doe     | Engineering
+-- Jane Smith   | Marketing
+-- Mike Johnson | Engineering
+-- Sarah Wilson | NULL
+```
+
+**Use Case**: When you want all records from the main table, regardless of matches.
+
+## 3. RIGHT JOIN (RIGHT OUTER JOIN)
+
+Returns all rows from the right table and matching rows from the left table. NULL values for non-matching left table columns.
+
+```sql
+SELECT e.name, d.dept_name
+FROM employees e
+RIGHT JOIN departments d ON e.dept_id = d.dept_id;
+
+-- Result:
+-- John Doe     | Engineering
+-- Jane Smith   | Marketing
+-- Mike Johnson | Engineering
+-- NULL         | Finance
+```
+
+**Use Case**: Less common, but useful when you want all records from the reference table.
+
+## 4. FULL OUTER JOIN
+
+Returns all rows when there's a match in either table. Shows NULL values where no match exists.
+
+```sql
+SELECT e.name, d.dept_name
+FROM employees e
+FULL OUTER JOIN departments d ON e.dept_id = d.dept_id;
+
+-- Result:
+-- John Doe     | Engineering
+-- Jane Smith   | Marketing
+-- Mike Johnson | Engineering
+-- Sarah Wilson | NULL
+-- NULL         | Finance
+```
+
+**Use Case**: When you want to see all records from both tables, including unmatched ones.
+
+## 5. CROSS JOIN
+
+Returns the Cartesian product of both tables (every row from first table combined with every row from second table).
+
+```sql
+SELECT e.name, d.dept_name
+FROM employees e
+CROSS JOIN departments d;
+
+-- Result: 4 employees × 3 departments = 12 rows
+-- John Doe     | Engineering
+-- John Doe     | Marketing
+-- John Doe     | Finance
+-- Jane Smith   | Engineering
+-- ... (and so on)
+```
+
+**Use Case**: Rarely used in practice, mainly for generating test data or specific analytical needs.
+
+## 6. SELF JOIN
+
+A table is joined with itself using aliases.
+
+```sql
+-- Example: Find employees and their managers
+CREATE TABLE employees_with_manager (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    manager_id INT
+);
+
+INSERT INTO employees_with_manager VALUES 
+(1, 'John Doe', NULL),
+(2, 'Jane Smith', 1),
+(3, 'Mike Johnson', 1),
+(4, 'Sarah Wilson', 2);
+
+SELECT e.name AS employee, m.name AS manager
+FROM employees_with_manager e
+LEFT JOIN employees_with_manager m ON e.manager_id = m.emp_id;
+
+-- Result:
+-- John Doe     | NULL
+-- Jane Smith   | John Doe
+-- Mike Johnson | John Doe
+-- Sarah Wilson | Jane Smith
+```
+
+**Use Case**: When you need to compare rows within the same table or establish hierarchical relationships.
+
+## Visual Representation
+
+```
+Table A    Table B
+-------    -------
+   1          1
+   2          3
+   3          4
+
+INNER JOIN:     1, 3
+LEFT JOIN:      1, 2, 3
+RIGHT JOIN:     1, 3, 4
+FULL OUTER:     1, 2, 3, 4
+```
+
+## Advanced JOIN Examples
+
+### Multiple JOINs:
+```sql
+SELECT e.name, d.dept_name, p.project_name
+FROM employees e
+INNER JOIN departments d ON e.dept_id = d.dept_id
+LEFT JOIN projects p ON e.emp_id = p.assigned_emp_id;
+```
+
+### JOIN with Conditions:
+```sql
+SELECT e.name, d.dept_name
+FROM employees e
+INNER JOIN departments d ON e.dept_id = d.dept_id
+WHERE d.dept_name = 'Engineering';
+```
+
+### JOIN with Aggregation:
+```sql
+SELECT d.dept_name, COUNT(e.emp_id) as employee_count
+FROM departments d
+LEFT JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name;
+```
+
+## Performance Considerations
+
+1. **INNER JOIN** - Generally fastest as it returns fewer rows
+2. **LEFT/RIGHT JOIN** - Slower than INNER JOIN due to NULL handling
+3. **FULL OUTER JOIN** - Slowest as it processes all rows from both tables
+4. **CROSS JOIN** - Can be very slow with large tables (avoid unless necessary)
+
+## Interview Tips
+
+1. **Understand the differences**: Know what each JOIN type returns
+2. **Practice with examples**: Work through JOIN scenarios with sample data
+3. **Know performance implications**: Understand which JOINs are faster
+4. **Visualize results**: Be able to predict JOIN output mentally
+5. **Real-world usage**: Know when to use each JOIN type
+
+## Common Interview Questions
+
+- "What's the difference between INNER JOIN and LEFT JOIN?"
+- "When would you use a FULL OUTER JOIN?"
+- "How do you find records that exist in one table but not another?"
+- "What happens when you JOIN on NULL values?"

@@ -1,0 +1,225 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is the difference between UNION and UNION ALL?
+---
+
+# What is the difference between UNION and UNION ALL?
+
+## Answer
+
+Both UNION and UNION ALL are used to combine results from multiple SELECT statements, but they handle duplicate rows differently.
+
+## UNION
+
+**Purpose**: Combines results and **removes duplicate rows**.
+
+### Characteristics:
+- Eliminates duplicate records
+- Performs implicit DISTINCT operation
+- Slower due to duplicate removal process
+- Results are typically sorted
+
+```sql
+-- Sample tables
+CREATE TABLE employees_dept1 (
+    id INT,
+    name VARCHAR(100)
+);
+
+CREATE TABLE employees_dept2 (
+    id INT,
+    name VARCHAR(100)
+);
+
+INSERT INTO employees_dept1 VALUES 
+(1, 'John Doe'),
+(2, 'Jane Smith'),
+(3, 'Mike Johnson');
+
+INSERT INTO employees_dept2 VALUES 
+(2, 'Jane Smith'),  -- Duplicate
+(4, 'Sarah Wilson'),
+(5, 'Tom Brown');
+
+-- UNION example
+SELECT id, name FROM employees_dept1
+UNION
+SELECT id, name FROM employees_dept2;
+
+-- Result (duplicates removed):
+-- 1 | John Doe
+-- 2 | Jane Smith
+-- 3 | Mike Johnson
+-- 4 | Sarah Wilson
+-- 5 | Tom Brown
+```
+
+## UNION ALL
+
+**Purpose**: Combines results and **keeps all rows including duplicates**.
+
+### Characteristics:
+- Preserves all records including duplicates
+- No duplicate removal process
+- Faster performance
+- Results maintain original order
+
+```sql
+-- UNION ALL example
+SELECT id, name FROM employees_dept1
+UNION ALL
+SELECT id, name FROM employees_dept2;
+
+-- Result (all rows included):
+-- 1 | John Doe
+-- 2 | Jane Smith
+-- 3 | Mike Johnson
+-- 2 | Jane Smith    -- Duplicate preserved
+-- 4 | Sarah Wilson
+-- 5 | Tom Brown
+```
+
+## Key Differences
+
+| Aspect | UNION | UNION ALL |
+|--------|-------|-----------|
+| **Duplicates** | Removes duplicates | Keeps duplicates |
+| **Performance** | Slower | Faster |
+| **Processing** | Sorts and deduplicates | Direct concatenation |
+| **Memory usage** | Higher | Lower |
+| **Use case** | When duplicates not wanted | When all records needed |
+
+## Performance Comparison
+
+```sql
+-- Slower - requires sorting and deduplication
+SELECT product_id, product_name FROM products_2023
+UNION
+SELECT product_id, product_name FROM products_2024;
+
+-- Faster - simple concatenation
+SELECT product_id, product_name FROM products_2023
+UNION ALL
+SELECT product_id, product_name FROM products_2024;
+```
+
+## Practical Examples
+
+### Example 1: Customer Data Consolidation
+```sql
+-- Get unique customers from multiple sources
+SELECT customer_id, email FROM online_customers
+UNION
+SELECT customer_id, email FROM store_customers;
+
+-- Get all customer records (including duplicates for analysis)
+SELECT customer_id, email FROM online_customers
+UNION ALL
+SELECT customer_id, email FROM store_customers;
+```
+
+### Example 2: Sales Reporting
+```sql
+-- Unique products sold across quarters
+SELECT product_id, product_name FROM q1_sales
+UNION
+SELECT product_id, product_name FROM q2_sales
+UNION
+SELECT product_id, product_name FROM q3_sales;
+
+-- All sales records for detailed analysis
+SELECT order_id, product_id, quantity FROM q1_sales
+UNION ALL
+SELECT order_id, product_id, quantity FROM q2_sales
+UNION ALL
+SELECT order_id, product_id, quantity FROM q3_sales;
+```
+
+### Example 3: Data Migration
+```sql
+-- Combine data from old and new systems (avoid duplicates)
+SELECT emp_id, name, department FROM old_employee_system
+UNION
+SELECT emp_id, name, department FROM new_employee_system;
+
+-- Archive all historical records
+SELECT log_id, action, timestamp FROM system_logs_2023
+UNION ALL
+SELECT log_id, action, timestamp FROM system_logs_2024;
+```
+
+## Requirements for UNION Operations
+
+Both UNION and UNION ALL require:
+
+1. **Same number of columns** in each SELECT statement
+2. **Compatible data types** in corresponding columns
+3. **Column order** must match
+
+```sql
+-- ✅ Valid - same structure
+SELECT id, name, salary FROM employees
+UNION
+SELECT id, name, salary FROM contractors;
+
+-- ❌ Invalid - different number of columns
+SELECT id, name FROM employees
+UNION
+SELECT id, name, salary FROM contractors;
+
+-- ❌ Invalid - incompatible data types
+SELECT id, name FROM employees
+UNION
+SELECT name, id FROM contractors;  -- Wrong order
+```
+
+## When to Use Each
+
+### Use UNION when:
+- You need unique records only
+- Duplicates would cause data integrity issues
+- Creating lookup lists or reference data
+- Combining master data from multiple sources
+
+### Use UNION ALL when:
+- You need all records including duplicates
+- Performance is critical
+- Doing data analysis that requires all occurrences
+- Combining transactional data for reporting
+
+## Advanced Examples
+
+### With ORDER BY
+```sql
+-- ORDER BY applies to the entire result set
+SELECT name, 'Employee' as type FROM employees
+UNION ALL
+SELECT name, 'Contractor' as type FROM contractors
+ORDER BY name;
+```
+
+### With WHERE clauses
+```sql
+-- Filter before combining
+SELECT id, name FROM employees WHERE department = 'IT'
+UNION
+SELECT id, name FROM contractors WHERE skill_set = 'Programming';
+```
+
+### Nested UNION operations
+```sql
+-- Multiple UNION operations
+SELECT id, name FROM current_employees
+UNION
+SELECT id, name FROM former_employees
+UNION ALL
+SELECT id, name FROM temporary_staff;
+```
+
+## Interview Tips
+
+- Remember: UNION removes duplicates, UNION ALL keeps them
+- Know that UNION is slower due to deduplication process
+- Understand the structural requirements for UNION operations
+- Practice examples with different scenarios
+- Be able to explain when to use each operator

@@ -1,0 +1,241 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What is normalization and why is it important?
+---
+
+# What is normalization and why is it important?
+
+## Answer
+
+**Database Normalization** is the process of organizing data in a database to reduce redundancy and improve data integrity. It involves decomposing tables into smaller, related tables and defining relationships between them.
+
+## Why Normalization is Important
+
+### Benefits:
+1. **Eliminates Data Redundancy** - Reduces duplicate data storage
+2. **Improves Data Integrity** - Prevents inconsistent data
+3. **Reduces Storage Space** - More efficient use of disk space
+4. **Easier Maintenance** - Updates need to be made in fewer places
+5. **Prevents Anomalies** - Avoids insertion, update, and deletion anomalies
+
+## Normal Forms
+
+### First Normal Form (1NF)
+
+**Rules:**
+- Each column contains atomic (indivisible) values
+- Each column contains values of the same type
+- Each column has a unique name
+- Order of rows and columns doesn't matter
+
+```sql
+-- Violates 1NF (multiple values in one column)
+CREATE TABLE students_bad (
+    student_id INT,
+    name VARCHAR(100),
+    subjects VARCHAR(200)  -- "Math, Science, English"
+);
+
+-- Follows 1NF
+CREATE TABLE students (
+    student_id INT,
+    name VARCHAR(100)
+);
+
+CREATE TABLE student_subjects (
+    student_id INT,
+    subject VARCHAR(50)
+);
+```
+
+### Second Normal Form (2NF)
+
+**Rules:**
+- Must be in 1NF
+- All non-key attributes must be fully functionally dependent on the primary key
+- Eliminates partial dependencies
+
+```sql
+-- Violates 2NF (partial dependency)
+CREATE TABLE order_details_bad (
+    order_id INT,
+    product_id INT,
+    product_name VARCHAR(100),  -- Depends only on product_id
+    quantity INT,
+    PRIMARY KEY (order_id, product_id)
+);
+
+-- Follows 2NF
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100)
+);
+
+CREATE TABLE order_details (
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+```
+
+### Third Normal Form (3NF)
+
+**Rules:**
+- Must be in 2NF
+- No transitive dependencies (non-key attributes should not depend on other non-key attributes)
+
+```sql
+-- Violates 3NF (transitive dependency)
+CREATE TABLE employees_bad (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    dept_id INT,
+    dept_name VARCHAR(100),  -- Depends on dept_id, not emp_id
+    salary DECIMAL(10,2)
+);
+
+-- Follows 3NF
+CREATE TABLE departments (
+    dept_id INT PRIMARY KEY,
+    dept_name VARCHAR(100)
+);
+
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    dept_id INT,
+    salary DECIMAL(10,2),
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+```
+
+### Boyce-Codd Normal Form (BCNF)
+
+**Rules:**
+- Must be in 3NF
+- Every determinant must be a candidate key
+- Stricter version of 3NF
+
+```sql
+-- Example: Student-Subject-Professor relationship
+-- Assumption: Each subject is taught by only one professor
+
+-- Violates BCNF
+CREATE TABLE teaching_bad (
+    student_id INT,
+    subject VARCHAR(50),
+    professor VARCHAR(100),
+    PRIMARY KEY (student_id, subject)
+    -- Professor determines subject, but professor is not a candidate key
+);
+
+-- Follows BCNF
+CREATE TABLE professors (
+    professor_id INT PRIMARY KEY,
+    professor_name VARCHAR(100)
+);
+
+CREATE TABLE subjects (
+    subject_id INT PRIMARY KEY,
+    subject_name VARCHAR(50),
+    professor_id INT,
+    FOREIGN KEY (professor_id) REFERENCES professors(professor_id)
+);
+
+CREATE TABLE enrollments (
+    student_id INT,
+    subject_id INT,
+    PRIMARY KEY (student_id, subject_id),
+    FOREIGN KEY (subject_id) REFERENCES subjects(subject_id)
+);
+```
+
+## Practical Example: E-commerce Database
+
+### Before Normalization (Unnormalized):
+```sql
+CREATE TABLE orders_unnormalized (
+    order_id INT,
+    customer_name VARCHAR(100),
+    customer_email VARCHAR(100),
+    customer_address VARCHAR(200),
+    product_names VARCHAR(500),  -- "Laptop, Mouse, Keyboard"
+    product_prices VARCHAR(100), -- "999.99, 25.99, 79.99"
+    quantities VARCHAR(50),      -- "1, 2, 1"
+    order_date DATE
+);
+```
+
+### After Normalization (3NF):
+```sql
+-- Customers table
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    email VARCHAR(100),
+    address VARCHAR(200)
+);
+
+-- Products table
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    price DECIMAL(10,2)
+);
+
+-- Orders table
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+-- Order items table
+CREATE TABLE order_items (
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+```
+
+## Data Anomalies Prevention
+
+### Insertion Anomaly:
+- **Problem**: Cannot add a new department without hiring an employee
+- **Solution**: Separate departments and employees tables
+
+### Update Anomaly:
+- **Problem**: Changing department name requires updating multiple rows
+- **Solution**: Store department name only in departments table
+
+### Deletion Anomaly:
+- **Problem**: Deleting last employee removes department information
+- **Solution**: Keep department data separate from employee data
+
+## When NOT to Normalize
+
+Sometimes denormalization is acceptable for:
+- **Performance reasons** - Fewer JOINs in read-heavy applications
+- **Data warehousing** - Analytical queries benefit from denormalized data
+- **Reporting systems** - Simplified queries for reports
+
+## Interview Tips
+
+1. **Know the normal forms**: Understand 1NF, 2NF, 3NF, and BCNF
+2. **Identify violations**: Be able to spot normalization violations
+3. **Understand trade-offs**: Know when normalization might hurt performance
+4. **Practice examples**: Work through normalization exercises
+5. **Explain benefits**: Articulate why normalization is important
+
+## Common Interview Questions
+
+- "What problems does normalization solve?"
+- "Can you normalize this table structure?"
+- "When might you choose not to normalize?"
+- "What's the difference between 3NF and BCNF?"

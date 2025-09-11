@@ -1,0 +1,264 @@
+---
+layout: ../../../layouts/QuizLayout.astro
+title: What are constraints in SQL?
+---
+
+# What are constraints in SQL?
+
+## Answer
+
+**SQL Constraints** are rules applied to table columns to enforce data integrity and ensure the accuracy and reliability of data in the database. They prevent invalid data from being entered into tables.
+
+## Types of Constraints
+
+### 1. PRIMARY KEY Constraint
+
+Uniquely identifies each row in a table.
+
+```sql
+-- Single column primary key
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+-- Composite primary key
+CREATE TABLE order_items (
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    PRIMARY KEY (order_id, product_id)
+);
+
+-- Adding primary key to existing table
+ALTER TABLE employees ADD PRIMARY KEY (emp_id);
+```
+
+### 2. FOREIGN KEY Constraint
+
+Maintains referential integrity between tables.
+
+```sql
+CREATE TABLE departments (
+    dept_id INT PRIMARY KEY,
+    dept_name VARCHAR(100)
+);
+
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+
+-- With referential actions
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+        ON DELETE CASCADE
+        ON UPDATE SET NULL
+);
+```
+
+### 3. UNIQUE Constraint
+
+Ensures all values in a column are unique.
+
+```sql
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE,
+    email VARCHAR(100) UNIQUE
+);
+
+-- Multiple column unique constraint
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_code VARCHAR(20),
+    category VARCHAR(50),
+    UNIQUE (product_code, category)
+);
+
+-- Adding unique constraint to existing table
+ALTER TABLE users ADD CONSTRAINT uk_email UNIQUE (email);
+```
+
+### 4. NOT NULL Constraint
+
+Prevents NULL values in a column.
+
+```sql
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20)  -- Can be NULL
+);
+
+-- Adding NOT NULL to existing column
+ALTER TABLE customers MODIFY COLUMN phone VARCHAR(20) NOT NULL;
+```
+
+### 5. CHECK Constraint
+
+Validates data based on a condition.
+
+```sql
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    age INT CHECK (age >= 18 AND age <= 65),
+    salary DECIMAL(10,2) CHECK (salary > 0),
+    email VARCHAR(100) CHECK (email LIKE '%@%.%')
+);
+
+-- Named check constraint
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    price DECIMAL(10,2),
+    CONSTRAINT chk_price CHECK (price >= 0)
+);
+
+-- Adding check constraint to existing table
+ALTER TABLE employees 
+ADD CONSTRAINT chk_age CHECK (age BETWEEN 18 AND 65);
+```
+
+### 6. DEFAULT Constraint
+
+Provides a default value for a column.
+
+```sql
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    order_date DATE DEFAULT CURRENT_DATE,
+    status VARCHAR(20) DEFAULT 'PENDING',
+    total_amount DECIMAL(10,2) DEFAULT 0.00
+);
+
+-- Adding default to existing column
+ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'ACTIVE';
+```
+
+## Practical Examples
+
+### E-commerce Database with Constraints
+```sql
+-- Customers table
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED'))
+);
+
+-- Products table
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(200) NOT NULL,
+    sku VARCHAR(50) UNIQUE NOT NULL,
+    price DECIMAL(10,2) CHECK (price >= 0),
+    stock_quantity INT DEFAULT 0 CHECK (stock_quantity >= 0),
+    category VARCHAR(50) NOT NULL
+);
+
+-- Orders table
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    order_date DATE DEFAULT CURRENT_DATE,
+    total_amount DECIMAL(10,2) CHECK (total_amount >= 0),
+    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED')),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT
+);
+```
+
+## Constraint Management
+
+### Viewing Constraints
+```sql
+-- MySQL
+SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE, TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+WHERE TABLE_SCHEMA = 'your_database';
+
+-- PostgreSQL
+SELECT conname, contype, relname
+FROM pg_constraint
+JOIN pg_class ON pg_constraint.conrelid = pg_class.oid;
+```
+
+### Dropping Constraints
+```sql
+-- Drop named constraint
+ALTER TABLE employees DROP CONSTRAINT chk_age;
+
+-- Drop foreign key
+ALTER TABLE orders DROP FOREIGN KEY fk_customer;
+
+-- Drop unique constraint
+ALTER TABLE users DROP CONSTRAINT uk_email;
+```
+
+### Disabling/Enabling Constraints
+```sql
+-- Disable constraint (MySQL)
+ALTER TABLE orders NOCHECK CONSTRAINT fk_customer;
+
+-- Enable constraint (MySQL)
+ALTER TABLE orders CHECK CONSTRAINT fk_customer;
+```
+
+## Benefits of Constraints
+
+1. **Data Integrity**: Ensures data accuracy and consistency
+2. **Business Rules**: Enforces business logic at database level
+3. **Error Prevention**: Catches invalid data before insertion
+4. **Documentation**: Serves as documentation of data rules
+5. **Performance**: Some constraints can improve query performance
+
+## Common Constraint Violations
+
+```sql
+-- PRIMARY KEY violation
+INSERT INTO employees (emp_id, name) VALUES (1, 'John');
+INSERT INTO employees (emp_id, name) VALUES (1, 'Jane'); -- Error: Duplicate key
+
+-- FOREIGN KEY violation
+INSERT INTO orders (order_id, customer_id) VALUES (1, 999); -- Error: Customer doesn't exist
+
+-- CHECK constraint violation
+INSERT INTO employees (emp_id, name, age) VALUES (1, 'John', 15); -- Error: Age < 18
+
+-- NOT NULL violation
+INSERT INTO customers (customer_id, first_name) VALUES (1, NULL); -- Error: NULL not allowed
+
+-- UNIQUE violation
+INSERT INTO users (user_id, email) VALUES (1, 'john@email.com');
+INSERT INTO users (user_id, email) VALUES (2, 'john@email.com'); -- Error: Duplicate email
+```
+
+## Best Practices
+
+1. **Use meaningful names** for constraints
+2. **Apply constraints at creation time** when possible
+3. **Document business rules** that constraints enforce
+4. **Test constraint violations** during development
+5. **Consider performance impact** of complex CHECK constraints
+6. **Use appropriate referential actions** for foreign keys
+
+## Interview Tips
+
+- Know all six main constraint types
+- Understand the difference between constraints and indexes
+- Be able to write CREATE TABLE statements with multiple constraints
+- Know how to add/drop constraints on existing tables
+- Understand referential integrity and cascading actions
