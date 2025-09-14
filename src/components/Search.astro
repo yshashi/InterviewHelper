@@ -60,19 +60,60 @@
   }
 
   window.addEventListener('load', () => {
+    let pagefindInstance: any = null;
+    
     const initializeSearch = () => {
       if (window.PagefindUI) {
-        new window.PagefindUI({
+        pagefindInstance = new window.PagefindUI({
           element: '#search',
           showImages: false,
           resetStyles: false,
           baseUrl: '/',
           bundleDirectory: (window.location.port === '4321' || window.location.port === '4322') ? '/dist/pagefind' : '/pagefind'
         });
+        
+        // Clear search results when clicking on search results
+        const searchElement = document.getElementById('search');
+        if (searchElement) {
+          searchElement.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            // Check if clicked element is a search result link
+            if (target.tagName === 'A' || target.closest('a')) {
+              setTimeout(() => {
+                clearSearchResults();
+              }, 100);
+            }
+          });
+        }
       } else {
         setTimeout(initializeSearch, 100);
       }
     };
+    
+    const clearSearchResults = () => {
+      const searchInput = document.querySelector('.pagefind-ui__search-input') as HTMLInputElement;
+      const resultsArea = document.querySelector('.pagefind-ui__results-area');
+      
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      
+      if (resultsArea) {
+        resultsArea.innerHTML = '';
+      }
+    };
+    
+    // Listen for SPA navigation events to clear search
+    window.addEventListener('spa-navigation', () => {
+      clearSearchResults();
+    });
+    
+    // Listen for regular navigation events
+    window.addEventListener('popstate', () => {
+      clearSearchResults();
+    });
+    
     initializeSearch();
   });
 </script>
