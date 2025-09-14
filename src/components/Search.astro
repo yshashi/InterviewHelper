@@ -104,12 +104,10 @@
       }
     };
     
-    // Listen for SPA navigation events to clear search
     window.addEventListener('spa-navigation', () => {
       clearSearchResults();
     });
     
-    // Listen for regular navigation events
     window.addEventListener('popstate', () => {
       clearSearchResults();
     });
