@@ -3,6 +3,7 @@ import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Search from '../components/Search.astro';
 import GoogleAnalytics from '../components/GoogleAnalytics.astro';
+import ClientRouter from '../components/ClientRouter.astro';
 
 interface Props {
   title?: string;
@@ -133,6 +134,9 @@ const metaTitle = `${pageTitle}`;
       </main>
     </div>
 
+    <!-- Include Client Router for SPA navigation -->
+    <ClientRouter />
+
     <script>
       // Get elements (in global scope)
       let mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -200,6 +204,11 @@ const metaTitle = `${pageTitle}`;
       
       // Re-initialize after navigation
       window.addEventListener('popstate', () => {
+        setTimeout(initializeMobileMenu, 0);
+      });
+
+      // Listen for SPA navigation events
+      window.addEventListener('spa-navigation', () => {
         setTimeout(initializeMobileMenu, 0);
       });
       

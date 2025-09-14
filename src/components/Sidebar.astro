@@ -2022,6 +2022,9 @@ const menuItems = [
     });
   }
 
+  // Make initializeSidebar globally available
+  window.initializeSidebar = initializeSidebar;
+
   // Initialize immediately
   initializeSidebar();
 
@@ -2030,7 +2033,12 @@ const menuItems = [
     setTimeout(initializeSidebar, 0);
   });
 
-  // Handle clicks on links
+  // Listen for SPA navigation events
+  window.addEventListener("spa-navigation", () => {
+    setTimeout(initializeSidebar, 0);
+  });
+
+  // Handle clicks on links (fallback for non-SPA navigation)
   document.addEventListener("click", (e) => {
     const link = (e.target as HTMLElement).closest("a");
     if (link && link.href && link.href.startsWith(window.location.origin)) {

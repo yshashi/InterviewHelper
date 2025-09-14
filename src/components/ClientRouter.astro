@@ -1,0 +1,235 @@
+---
+// Client-side router for SPA-like navigation
+---
+
+<script>
+declare global {
+  interface Window {
+    clientRouter: ClientRouter;
+    initializeSidebar?: () => void;
+  }
+}
+
+class ClientRouter {
+  constructor() {
+    this.init();
+  }
+
+  init(): void {
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', () => {
+      this.handleNavigation(window.location.pathname, false);
+    });
+
+    // Intercept all link clicks
+    document.addEventListener('click', (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+      
+      const link = target.closest('a');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      
+      // Check if it's an internal link
+      if (href.startsWith('/') || href.startsWith(window.location.origin)) {
+        e.preventDefault();
+        const path = href.startsWith('/') ? href : new URL(href).pathname;
+        this.navigateTo(path);
+      }
+    });
+  }
+
+  async navigateTo(path: string): Promise<void> {
+    if (window.location.pathname === path) return;
+
+    // Show loading state
+    this.showLoadingState();
+
+    try {
+      // Fetch the new page
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const html = await response.text();
+      
+      // Parse the new HTML and extract the content
+      const parser = new DOMParser();
+      const newDoc = parser.parseFromString(html, 'text/html');
+      
+      // Update the page content while preserving search
+      this.updatePageContent(newDoc, path);
+      
+      // Update browser history
+      window.history.pushState({ path }, '', path);
+      
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      // Fallback to regular navigation
+      window.location.href = path;
+    } finally {
+      this.hideLoadingState();
+    }
+  }
+
+  handleNavigation(path: string, updateHistory: boolean = true): void {
+    this.navigateTo(path);
+  }
+
+  updatePageContent(newDoc: Document, path: string): void {
+    const isAuthPage = path.includes('/auth/') || path.includes('/login') || path.includes('/register');
+    
+    // Get current and new content areas
+    const currentMain = document.querySelector('main');
+    const newMain = newDoc.querySelector('main');
+    
+    if (!currentMain || !newMain) {
+      this.updatePage(newDoc, path);
+      return;
+    }
+    
+    const currentContainer = currentMain.querySelector('.container');
+    const newContainer = newMain.querySelector('.container');
+    
+    if (!currentContainer || !newContainer) {
+      this.updatePage(newDoc, path);
+      return;
+    }
+    
+    // Preserve the search component if it exists and should exist on the new page
+    const currentSearch = currentContainer.querySelector('.mb-6');
+    const hasCurrentSearch = currentSearch && currentSearch.querySelector('[data-pagefind-ui]');
+    
+    // Get all children of the new container
+    const newChildren = Array.from(newContainer.children);
+    
+    // Clear current container
+    currentContainer.innerHTML = '';
+    
+    // Add search component if it should exist on this page
+    if (!isAuthPage && hasCurrentSearch) {
+      currentContainer.appendChild(currentSearch);
+    }
+    
+    // Add new content (skip search if it exists in new content)
+    newChildren.forEach(child => {
+      const isSearchComponent = child.classList.contains('mb-6') && child.querySelector('[data-pagefind-ui]');
+      if (!isSearchComponent || isAuthPage) {
+        currentContainer.appendChild(child.cloneNode(true));
+      }
+    });
+    
+    // Update meta tags
+    this.updateMetaTags(newDoc);
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+    
+    // Dispatch navigation event
+    window.dispatchEvent(new CustomEvent('spa-navigation', { detail: { path } }));
+  }
+
+  updatePage(newDoc: Document, path: string): void {
+    // Update title
+    document.title = newDoc.title;
+
+    // Update main content
+    const currentMain = document.querySelector('main');
+    const newMain = newDoc.querySelector('main');
+    
+    if (currentMain && newMain) {
+      currentMain.innerHTML = newMain.innerHTML;
+    }
+
+    // Update meta tags
+    this.updateMetaTags(newDoc);
+
+    // Re-initialize any scripts that need to run
+    this.reinitializeScripts();
+
+    // Scroll to top
+    window.scrollTo(0, 0);
+
+    // Dispatch custom event for other components to listen to
+    window.dispatchEvent(new CustomEvent('spa-navigation', { 
+      detail: { path } 
+    }));
+  }
+
+  updateMetaTags(newDoc: Document): void {
+    // Update title
+    document.title = newDoc.title;
+    // Update meta description
+    const currentMeta = document.querySelector('meta[name="description"]');
+    const newMeta = newDoc.querySelector('meta[name="description"]');
+    if (currentMeta && newMeta) {
+      currentMeta.setAttribute('content', newMeta.getAttribute('content') || '');
+    }
+
+    // Update other meta tags as needed
+    const metaSelectors = [
+      'meta[property="og:title"]',
+      'meta[property="og:description"]',
+      'meta[property="og:url"]',
+      'meta[name="twitter:title"]',
+      'meta[name="twitter:description"]'
+    ];
+
+    metaSelectors.forEach(selector => {
+      const current = document.querySelector(selector);
+      const newElement = newDoc.querySelector(selector);
+      if (current && newElement) {
+        current.setAttribute('content', newElement.getAttribute('content') || '');
+      }
+    });
+  }
+
+  reinitializeScripts(): void {
+    // Re-run sidebar initialization
+    if (window.initializeSidebar) {
+      setTimeout(() => window.initializeSidebar?.(), 0);
+    }
+
+    // Re-initialize any other components that need it
+    window.dispatchEvent(new CustomEvent('reinitialize-components'));
+  }
+
+  showLoadingState() {
+    // Add a subtle loading indicator
+    const loader = document.createElement('div');
+    loader.id = 'spa-loader';
+    loader.innerHTML = `
+      <div class="fixed top-0 left-0 w-full h-1 bg-blue-500 z-50 animate-pulse"></div>
+    `;
+    document.body.appendChild(loader);
+  }
+
+  hideLoadingState() {
+    const loader = document.getElementById('spa-loader');
+    if (loader) {
+      loader.remove();
+    }
+  }
+}
+
+// Initialize the router when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.clientRouter = new ClientRouter();
+  });
+} else {
+  window.clientRouter = new ClientRouter();
+}
+</script>
+
+<style>
+  @keyframes spa-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  main {
+    animation: spa-fade-in 0.2s ease-in-out;
+  }
+</style>
