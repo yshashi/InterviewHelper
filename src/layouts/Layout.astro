@@ -3,7 +3,6 @@ import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Search from '../components/Search.astro';
 import GoogleAnalytics from '../components/GoogleAnalytics.astro';
-import ClientRouter from '../components/ClientRouter.astro';
 
 interface Props {
   title?: string;
@@ -66,13 +65,8 @@ const metaTitle = `${pageTitle}`;
     <link rel="icon" type="image/png" href="/favicon.png" />
 
     <GoogleAnalytics />
-    <title>{metaTitle}</title>
-    <meta name="title" content={metaTitle} />
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonicalURL} />
-    <meta name="image" property="og:image" content={new URL(image, Astro.site)}>
-    <meta name="author" content="SashiKumar Yadav">
-    
+    <!-- ViewTransitions disabled - causes React components to re-render -->
+    <!-- <ViewTransitions /> -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={metaTitle} />
@@ -134,8 +128,31 @@ const metaTitle = `${pageTitle}`;
       </main>
     </div>
 
-    <!-- Include Client Router for SPA navigation -->
-    <ClientRouter />
+    <!-- Simple CSS solution to eliminate white flash -->
+    <style>
+      /* Set background colors to match your theme */
+      html {
+        background-color: #f9fafb; /* gray-50 */
+      }
+      html.dark {
+        background-color: #111827; /* gray-900 */
+      }
+      body {
+        background-color: inherit;
+        min-height: 100vh;
+      }
+      
+      /* Prevent flash of unstyled content */
+      main {
+        opacity: 1;
+        animation: fadeIn 0.2s ease-in-out;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    </style>
 
     <script>
       // Get elements (in global scope)
@@ -207,17 +224,7 @@ const metaTitle = `${pageTitle}`;
         setTimeout(initializeMobileMenu, 0);
       });
 
-      // Listen for SPA navigation events
-      window.addEventListener('spa-navigation', () => {
-        setTimeout(initializeMobileMenu, 0);
-      });
-      
-      document.addEventListener('click', (e) => {
-        const link = (e.target as HTMLElement).closest('a');
-        if (link && link.href && link.href.startsWith(window.location.origin)) {
-          setTimeout(initializeMobileMenu, 0);
-        }
-      });
+      // Simple solution - CSS handles the smooth transitions
 
       window.addEventListener('resize', () => {
         if (window.innerWidth >= 1024) {

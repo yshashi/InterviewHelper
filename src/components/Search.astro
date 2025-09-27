@@ -104,13 +104,8 @@
       }
     };
     
-    window.addEventListener('spa-navigation', () => {
-      clearSearchResults();
-    });
-    
-    window.addEventListener('popstate', () => {
-      clearSearchResults();
-    });
+    // Search results clear automatically on page navigation
+    // No need for SPA events since we're using regular Astro navigation
     
     initializeSearch();
   });

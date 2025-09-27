@@ -2028,21 +2028,10 @@ const menuItems = [
   // Initialize immediately
   initializeSidebar();
 
-  // Re-initialize after navigation
+  // Re-initialize after navigation (including View Transitions)
   window.addEventListener("popstate", () => {
     setTimeout(initializeSidebar, 0);
   });
 
-  // Listen for SPA navigation events
-  window.addEventListener("spa-navigation", () => {
-    setTimeout(initializeSidebar, 0);
-  });
-
-  // Handle clicks on links (fallback for non-SPA navigation)
-  document.addEventListener("click", (e) => {
-    const link = (e.target as HTMLElement).closest("a");
-    if (link && link.href && link.href.startsWith(window.location.origin)) {
-      setTimeout(initializeSidebar, 0);
-    }
-  });
+  // Sidebar state is preserved via sessionStorage across page loads
 </script>
