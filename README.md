@@ -4,7 +4,7 @@ A comprehensive platform for Interview preparation, featuring in-depth explanati
 
 ## Features
 
-- 📚 Comprehensive interview questions and answers
+- 📚 Comprehensive interview questions and answers currently in Beta mode
 - 💻 Interactive code examples with syntax highlighting
 - 🌓 Dark/Light mode support
 - 📱 Responsive design for all devices
